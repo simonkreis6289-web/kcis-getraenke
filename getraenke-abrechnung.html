@@ -791,9 +791,12 @@ function confirmReset() {
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
   
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+    .then(() => console.log('Service Worker registered'))
+    .catch(console.error);
+  }
 </script>
   
 </body>
