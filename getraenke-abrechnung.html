@@ -19,8 +19,8 @@
   <style>
     :root {
       --bg: #ffffff;
-      --surface: #ffffff; // #4a4a4a;  // Farbe Hintergrund oben
-      --surface2: #ffffff; //#ff4a89;
+      --surface: #ffffff; /* #4a4a4a;  // Farbe Hintergrund oben */
+      --surface2: #ffffff; /* #ff4a89; */
       --border: #2e3350;
       --accent: #f5a623;
       --accent2: #e8412a;
@@ -1922,10 +1922,12 @@ function renderAbrechnung() {
   const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
   const bezahlt = present.reduce((s, p) => s + (p.paid || 0), 0);
   const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
+  const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
 
   document.getElementById('sum-offen').textContent = euros(offen);
   document.getElementById('sum-bezahlt').textContent = euros(bezahlt);
   document.getElementById('sum-ueberschuss').textContent = euros(ueberschuss);
+  document.getElementById('sum-gesamt').textContent = euros(gesamt);
 
   const ag = document.getElementById('abrech-grid');
   ag.innerHTML = '';
