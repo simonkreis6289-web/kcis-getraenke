@@ -77,8 +77,14 @@
   .unassigned-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
   .unassigned-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
 
-  .drinks-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  .drinks-table-wrap { overflow-x: hidden; border-radius: 12px; border: 1px solid var(--border); }
+
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  min-width: unset; 
+}
+  
   thead th { background: var(--surface2); padding: 10px 8px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
   thead th:first-child { text-align: left; padding-left: 14px; min-width: 120px; }
   tbody tr { border-bottom: 1px solid var(--border); }
@@ -241,10 +247,11 @@
       <h1>KC IS</h1>
       <div class="subtitle">Getränkeabrechnung</div>
     </div>
-    <div class="header-btns">
-      <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
-      <button class="sync-btn" onclick="saveToSheet()" id="saveBtn">💾 Speichern</button>
-    </div>
+<div class="header-btns">
+  <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
+  <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
+  <button class="sync-btn" onclick="saveToSheet()" id="saveBtn">💾 Speichern</button>
+</div>
   </header>
 
   <div class="tabs">
@@ -330,7 +337,23 @@
     </div>
   </main>
 </div>
+  
+<div class="modal-overlay hidden" id="reset-modal">
+  <div class="modal">
+    <h3>Alles löschen?</h3>
+    <div class="modal-sub">Dieser Vorgang kann rückgängig gemacht werden (5 Sekunden)</div>
 
+    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
+      Getränke, Teamspiele und Zahlungen werden komplett zurückgesetzt.
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeResetModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmReset()">JA, ALLES LÖSCHEN</button>
+    </div>
+  </div>
+</div>
+  
 <div id="toast"></div>
 
 <script>
@@ -357,7 +380,9 @@ let tokenClient, accessToken = null;
 let modalPerson = null;
 let selectedLoser = null;
 let teamDrinks = {};
-
+let lastState = null;
+let undoTimer = null;
+  
 // ── AUTH ──
 function gapiLoaded() { gapi.load('client', initGapiClient); }
 async function initGapiClient() {
@@ -689,10 +714,70 @@ function addPerson() {
 
 // ── TOAST ──
 let toastTimer;
-function showToast(msg,type='success') {
-  const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type;
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{t.className='';},2800);
+function showUndoToast() {
+  const t = document.getElementById('toast');
+  t.innerHTML = `🧨 Alles gelöscht 
+    <button onclick="undoReset()" 
+      style="margin-left:10px;padding:4px 8px;border-radius:6px;border:none;background:var(--green);font-weight:700;cursor:pointer;">
+      Undo
+    </button>`;
+  t.className = 'show success';
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.className = '';
+  }, 5000);
 }
+
+function openResetModal() {
+  document.getElementById('reset-modal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.add('hidden');
+}
+
+function confirmReset() {
+  // 🧠 Zustand speichern
+  lastState = JSON.stringify({
+    persons,
+    spiele
+  });
+
+  // 🧨 Reset durchführen
+  persons.forEach(p => {
+    Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
+    p.paid = 0;
+    p.teamExtra = 0;
+  });
+
+  spiele = [];
+
+  closeResetModal();
+  renderAll();
+
+  showUndoToast();
+
+  // ⏳ 5 Sekunden Undo
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    lastState = null;
+  }, 5000);
+}
+  
+  function undoReset() {
+  if (!lastState) return;
+
+  const state = JSON.parse(lastState);
+  persons = state.persons;
+  spiele = state.spiele;
+
+  renderAll();
+  showToast('↩️ Wiederhergestellt!', 'success');
+
+  lastState = null;
+}
+  
 </script>
 
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
