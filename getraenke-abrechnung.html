@@ -259,8 +259,8 @@
   <main>
     <div class="status-bar">
       <div class="stat"><span class="stat-val" id="stat-anwesend">0</span><span class="stat-label">Anwesend</span></div>
-      <div class="stat"><span class="stat-val" id="stat-t1">0</span><span class="stat-label">Tisch 1</span></div>
-      <div class="stat"><span class="stat-val" id="stat-t2">0</span><span class="stat-label">Tisch 2</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t1">0</span><span class="stat-label">Wand</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t2">0</span><span class="stat-label">TV</span></div>
       <div class="stat"><span class="stat-val" id="stat-offen">0,00 €</span><span class="stat-label">Offen</span></div>
       <div class="stat"><span class="stat-val" id="stat-bezahlt" style="color:var(--green)">0,00 €</span><span class="stat-label">Bezahlt</span></div>
     </div>
@@ -300,8 +300,8 @@
       <div class="team-spiel-form">
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
         <div class="team-select-row">
-          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">🔵 Tisch 1 verloren</button>
-          <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 Tisch 2 verloren</button>
+          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">🔵 Wand verloren</button>
+          <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
         </div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Getränke die das Verlierer-Team zahlt:</div>
         <div class="team-drinks-grid" id="team-drinks-grid"></div>
@@ -489,10 +489,11 @@ function calcTotal(p) { return calcDrinksTotal(p)+(p.teamExtra||0); }
 function recalcTeamExtras() {
   persons.forEach(p=>p.teamExtra=0);
   spiele.forEach(s=>{
-    const members = persons.filter(p=>p.present&&p.tisch===s.loser);
+    // Preise neu berechnen falls nötig, aber Mitglieder-Snapshot ist EINGEFROREN
     const total = DRINKS.reduce((sum,d)=>sum+(s.drinks[d.key]||0)*(prices[d.key]||0),0);
-    s.total=total; s.proKopf=members.length?total/members.length:0; s.members=members.map(m=>m.name);
-    members.forEach(m=>{ const p=persons.find(x=>x.name===m.name); if(p) p.teamExtra=(p.teamExtra||0)+s.proKopf; });
+    s.total = total;
+    s.proKopf = (s.members&&s.members.length) ? total/s.members.length : 0;
+    (s.members||[]).forEach(name=>{ const p=persons.find(x=>x.name===name); if(p) p.teamExtra=(p.teamExtra||0)+s.proKopf; });
   });
 }
 
@@ -545,7 +546,7 @@ function renderGetranke() {
   present.forEach(p=>{
     const tr=document.createElement('tr');
     if(p.tisch==='T1') tr.className='t1-row'; if(p.tisch==='T2') tr.className='t2-row';
-    const tl=p.tisch?`<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch==='T1'?'🔵 T1':'🔴 T2'}</span>`:'';
+    const tl=p.tisch?`<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch==='T1'?'🔵 Wand':'🔴 TV'}</span>`:'';
     let html=`<td><div class="person-cell"><span class="pname">${p.name}</span>${tl}</div></td>`;
     DRINKS.forEach(d=>{ const v=p.drinks[d.key]||0; html+=`<td><div class="counter"><button class="counter-btn minus" onclick="changeDrink('${p.name}','${d.key}',-1)">−</button><span class="counter-val ${v>0?'nonzero':''}">${v}</span><button class="counter-btn plus" onclick="changeDrink('${p.name}','${d.key}',1)">+</button></div></td>`; });
     const te=p.teamExtra||0;
@@ -582,7 +583,7 @@ function renderTeamspiele() {
   spiele.forEach((s,i)=>{
     const di=DRINKS.filter(d=>(s.drinks[d.key]||0)>0).map(d=>`${s.drinks[d.key]}x ${d.label}`).join(', ');
     const c=document.createElement('div'); c.className='spiel-card';
-    c.innerHTML=`<div class="spiel-info"><div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser==='T1'?'🔵 Tisch 1':'🔴 Tisch 2'} hat verloren</div><div class="spiel-detail">${di||'Keine Getränke'}</div><div class="spiel-detail">Aufgeteilt auf: ${(s.members||[]).join(', ')||'?'}</div></div><div><div class="spiel-betrag">${(s.total||0).toFixed(2).replace('.',',')}€</div><div class="spiel-pro-kopf">${(s.proKopf||0).toFixed(2).replace('.',',')}€/Person</div></div><button class="del-spiel-btn" onclick="deleteSpiel(${i})">✕</button>`;
+    c.innerHTML=`<div class="spiel-info"><div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser==='T1'?'🔵 Wand':'🔴 TV'} hat verloren</div><div class="spiel-detail">${di||'Keine Getränke'}</div><div class="spiel-detail">Aufgeteilt auf: ${(s.members||[]).join(', ')||'?'}</div></div><div><div class="spiel-betrag">${(s.total||0).toFixed(2).replace('.',',')}€</div><div class="spiel-pro-kopf">${(s.proKopf||0).toFixed(2).replace('.',',')}€/Person</div></div><button class="del-spiel-btn" onclick="deleteSpiel(${i})">✕</button>`;
     list.appendChild(c);
   });
 }
@@ -622,7 +623,7 @@ function renderAbrechnung() {
     const teamLine=(p.teamExtra||0)>0?`<div class="abrech-item"><span>⚽ Team-Strafe</span><span style="color:var(--accent2)">+${(p.teamExtra||0).toFixed(2).replace('.',',')}€</span></div>`:'';
     c.innerHTML=`
       <div class="abrech-name">${p.name}</div>
-      <div class="abrech-tisch">${p.tisch==='T1'?'🔵 Tisch 1':p.tisch==='T2'?'🔴 Tisch 2':'Kein Tisch'}</div>
+      <div class="abrech-tisch">${p.tisch==='T1'?'🔵 Wand':p.tisch==='T2'?'🔴 TV':'Kein Team'}</div>
       <div class="abrech-total">${total.toFixed(2).replace('.',',')}€</div>
       ${pd>0?`<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.',',')}€</div>`:''}
       ${rest>0.01?`<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.',',')}€</div>`:''}
