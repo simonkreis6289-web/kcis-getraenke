@@ -1632,13 +1632,15 @@ function updateStats() {
   const bezahlt = present.reduce((s, p) => s + (p.paid || 0), 0);
   const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
   const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
-
+  const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
+  
   document.getElementById('stat-anwesend').textContent = present.length;
   document.getElementById('stat-t1').textContent = present.filter(p => p.tisch === 'T1').length;
   document.getElementById('stat-t2').textContent = present.filter(p => p.tisch === 'T2').length;
   document.getElementById('stat-offen').textContent = euros(offen);
   document.getElementById('stat-bezahlt').textContent = euros(bezahlt);
   document.getElementById('stat-ueberschuss').textContent = euros(ueberschuss);
+  document.getElementById('stat-gesamt').textContent = euros(gesamt);
 }
 
 function renderAnwesenheit() {
