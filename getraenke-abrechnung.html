@@ -31,6 +31,7 @@
       --t1b: #3498db;
       --t2b: #e8412a;
       --purple: #9b59b6;
+      --red: #ff084e; 
     }
 
     * {
@@ -531,7 +532,7 @@
 
     .abrech-summary {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
       margin-bottom: 16px;
     }
@@ -547,6 +548,7 @@
     .abrech-summary-card.offen { border-color: var(--accent2); }
     .abrech-summary-card.bezahlt { border-color: var(--green); }
     .abrech-summary-card.ueberschuss { border-color: var(--purple); }
+    .abrech-summary-card.gesamt { border-color: var(--red); }
 
     .abrech-summary-val {
       font-family: 'Bebas Neue', sans-serif;
@@ -557,6 +559,7 @@
     .abrech-summary-card.offen .abrech-summary-val { color: var(--accent2); }
     .abrech-summary-card.bezahlt .abrech-summary-val { color: var(--green); }
     .abrech-summary-card.ueberschuss .abrech-summary-val { color: var(--purple); }
+    .abrech-summery-card.gesamt .abrech-summery-val { color: var(--red); }
 
     .abrech-summary-label {
       font-size: 0.7rem;
@@ -629,6 +632,13 @@
     .abrech-ueberschuss {
       font-size: 0.75rem;
       color: var(--purple);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    abrech-gesamt {
+      font-size: 0.75rem;
+      color: var(--red);
       font-weight: 700;
       margin-top: 2px;
     }
