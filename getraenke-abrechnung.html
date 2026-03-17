@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -389,7 +389,7 @@
     tbody tr.t1-row { border-left: 3px solid var(--t1b); }
     tbody tr.t2-row { border-left: 3px solid var(--t2b); }
     tbody td {
-      padding: 8px 6px;
+      padding: 12px 6px;
       text-align: center;
       vertical-align: middle;
     }
@@ -398,7 +398,18 @@
       text-align: left;
       padding-left: 12px;
     }
+    
+#getraenke-fullwidth {
+  width: 100%;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: 16px;
+  padding-right: 16px;
+}
 
+#getraenke-fullwidth table {
+  width: 100%;
+}
     .person-cell {
       display: flex;
       flex-direction: column;
@@ -1145,15 +1156,17 @@
       </div>
     </div>
 
-    <div id="tab-getraenke" class="hidden">
-      <div class="section-title">Getränke erfassen</div>
-      <div class="drinks-table-wrap">
-        <table>
-          <thead><tr id="drinks-header"></tr></thead>
-          <tbody id="drinks-body"></tbody>
-        </table>
-      </div>
+<div id="tab-getraenke" class="hidden">
+  <div id="getraenke-fullwidth">
+    <div class="section-title">Getränke erfassen</div>
+    <div class="drinks-table-wrap">
+      <table>
+        <thead><tr id="drinks-header"></tr></thead>
+        <tbody id="drinks-body"></tbody>
+      </table>
     </div>
+  </div>
+</div>
 
     <div id="tab-teamspiele" class="hidden">
       <div class="section-title">Neues Teamspiel</div>
@@ -1532,9 +1545,9 @@ async function archiveSheet() {
     await saveToSheet();
     await refreshToken();
 
-    const now = new Date();
-    const d = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()}`;
-
+const now = new Date();
+const d = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+    
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${SHEET_ID}/copy?supportsAllDrives=true`, {
       method: 'POST',
       headers: {
@@ -1542,8 +1555,8 @@ async function archiveSheet() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        name: `KC IS Abrechnung ${d}`
-      })
+        name: `${d}_Getränke KC IS`
+    })
     });
 
     const result = await response.json();
@@ -1555,7 +1568,7 @@ async function archiveSheet() {
       return;
     }
 
-    showToast(`📁 Archiv erstellt: KC IS Abrechnung ${d}`, 'success');
+  showToast(`📁 Archiv erstellt: ${d}_Getränke KC IS`, 'success');
   } catch (e) {
     console.error(e);
     alert('Archivieren fehlgeschlagen:\n' + e.message);
