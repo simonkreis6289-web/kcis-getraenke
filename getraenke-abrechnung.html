@@ -77,12 +77,17 @@
   .unassigned-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
   .unassigned-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
 
-  .drinks-table-wrap { overflow-x: hidden; border-radius: 12px; border: 1px solid var(--border); }
+.drinks-table-wrap {
+  overflow-x: auto;
+}
 
-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  min-width: unset; 
+/* hübsche Scrollbar */
+.drinks-table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+.drinks-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 10px;
 }
   
   thead th { background: var(--surface2); padding: 10px 8px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
