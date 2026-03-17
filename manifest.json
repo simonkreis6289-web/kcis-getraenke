@@ -1,7 +1,7 @@
 {
   "name": "KC Getränkeabrechnung",
   "short_name": "KC Drinks",
-  "start_url": "/kcis-getraenke/getraenke-abrechnung.html",
+  "start_url": "./getraenke-abrechnung.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#293d6e",
