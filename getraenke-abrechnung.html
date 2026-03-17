@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#293d6e">
+  
+  <title>KC IS – Getränkeabrechnung</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+    --bg: #ffffff;
+    --surface: #293d6e;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #f5a623;
+    --accent2: #e8412a;
+    --green: #2ecc71;
+    --blue: #3498db;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --t1b: #3498db;
+    --t2b: #e8412a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  header {
+    background: var(--surface); border-bottom: 2px solid var(--accent);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 2px; color: var(--accent); line-height: 1; }
+  header .subtitle { font-size: 0.7rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .header-btns { display: flex; gap: 8px; align-items: center; }
+  .sync-btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s; }
+  .sync-btn:active { opacity: 0.7; }
+  .sync-btn.loading { opacity: 0.6; pointer-events: none; }
+  .archive-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.75rem; cursor: pointer; }
+  .archive-btn:active { opacity: 0.7; }
+
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 8px; gap: 2px; overflow-x: auto; }
+  .tab { padding: 10px 12px; font-size: 0.8rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+  .status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; }
+  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: var(--muted); margin: 20px 0 10px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .persons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .person-card { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 6px; user-select: none; }
+  .person-card.present { border-color: var(--green); background: rgba(46,204,113,0.08); }
+  .person-card.absent { opacity: 0.45; }
+  .person-card:active { transform: scale(0.95); }
+  .person-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; background: var(--surface2); border: 2px solid var(--border); }
+  .person-card.present .person-avatar { border-color: var(--green); color: var(--green); }
+  .person-name { font-size: 0.8rem; font-weight: 600; text-align: center; line-height: 1.2; }
+  .present-badge { font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; background: rgba(46,204,113,0.2); color: var(--green); font-weight: 700; letter-spacing: 1px; }
+  .absent-badge { font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; background: rgba(107,114,128,0.2); color: var(--muted); font-weight: 700; letter-spacing: 1px; }
+
+  .gruppe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .gruppe-box { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 12px; min-height: 100px; }
+  .gruppe-box.t1 { border-color: var(--t1b); background: rgba(52,152,219,0.06); }
+  .gruppe-box.t2 { border-color: var(--t2b); background: rgba(232,65,42,0.06); }
+  .gruppe-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .gruppe-box.t1 .gruppe-title { color: var(--t1b); }
+  .gruppe-box.t2 .gruppe-title { color: var(--t2b); }
+  .gruppe-persons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gruppe-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; user-select: none; display: flex; align-items: center; gap: 4px; }
+  .gruppe-chip:active { transform: scale(0.93); }
+  .gruppe-box.t1 .gruppe-chip { border-color: var(--t1b); color: var(--t1b); }
+  .gruppe-box.t2 .gruppe-chip { border-color: var(--t2b); color: var(--t2b); }
+  .unassigned-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .unassigned-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+
+.drinks-table-wrap {
+  overflow-x: auto;
+}
+
+/* hübsche Scrollbar */
+.drinks-table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+.drinks-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 10px;
+}
+  
+  thead th { background: var(--surface2); padding: 10px 8px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  thead th:first-child { text-align: left; padding-left: 14px; min-width: 120px; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr.t1-row { border-left: 3px solid var(--t1b); }
+  tbody tr.t2-row { border-left: 3px solid var(--t2b); }
+  tbody td { padding: 8px 6px; text-align: center; vertical-align: middle; }
+  tbody td:first-child { text-align: left; padding-left: 12px; }
+  .person-cell { display: flex; flex-direction: column; }
+  .person-cell .pname { font-weight: 600; font-size: 0.85rem; }
+  .person-cell .ptisch { font-size: 0.65rem; }
+  .person-cell .ptisch.t1 { color: var(--t1b); }
+  .person-cell .ptisch.t2 { color: var(--t2b); }
+  .counter { display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .counter-btn { width: 28px; height: 28px; border-radius: 8px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.1s; user-select: none; }
+  .counter-btn.minus { background: rgba(232,65,42,0.15); color: var(--accent2); }
+  .counter-btn.plus  { background: rgba(245,166,35,0.15); color: var(--accent); }
+  .counter-btn:active { transform: scale(0.85); }
+  .counter-val { min-width: 22px; text-align: center; font-weight: 700; font-size: 0.95rem; }
+  .counter-val.nonzero { color: var(--accent); }
+  .total-cell { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--accent); min-width: 60px; }
+
+  /* PREISE */
+  .prices-editor { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .price-edit-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .price-edit-card label { font-size: 0.85rem; font-weight: 600; flex: 1; }
+  .price-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--accent); font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; width: 80px; text-align: right; outline: none; }
+  .price-input:focus { border-color: var(--accent); }
+  .save-prices-btn { background: var(--green); color: #000; border: none; border-radius: 10px; padding: 12px 24px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; margin-top: 16px; width: 100%; }
+
+  /* ABRECHNUNG */
+  .abrech-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .abrech-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
+  .abrech-summary-card.offen { border-color: var(--accent2); }
+  .abrech-summary-card.bezahlt { border-color: var(--green); }
+  .abrech-summary-val { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 1; }
+  .abrech-summary-card.offen .abrech-summary-val { color: var(--accent2); }
+  .abrech-summary-card.bezahlt .abrech-summary-val { color: var(--green); }
+  .abrech-summary-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .abrech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .abrech-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; }
+  .abrech-card.t1 { border-color: var(--t1b); }
+  .abrech-card.t2 { border-color: var(--t2b); }
+  .abrech-card.paid { border-color: var(--green) !important; background: rgba(46,204,113,0.06); }
+  .abrech-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+  .abrech-tisch { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .abrech-card.t1 .abrech-tisch { color: var(--t1b); }
+  .abrech-card.t2 .abrech-tisch { color: var(--t2b); }
+  .abrech-total { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--accent); line-height: 1; }
+  .abrech-card.paid .abrech-total { color: var(--green); }
+  .abrech-paid-info { font-size: 0.7rem; color: var(--green); margin-top: 4px; font-weight: 600; }
+  .abrech-rest { font-size: 0.75rem; color: var(--accent2); font-weight: 700; margin-top: 2px; }
+  .abrech-items { margin-top: 6px; }
+  .abrech-item { font-size: 0.7rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .tap-hint { font-size: 0.65rem; color: var(--muted); margin-top: 8px; text-align: center; opacity: 0.6; }
+
+  /* TEAMSPIELE */
+  .team-spiel-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .team-select-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .team-btn { border: 2px solid var(--border); background: var(--surface2); border-radius: 10px; padding: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: var(--text); transition: all 0.15s; text-align: center; }
+  .team-btn.t1.active { border-color: var(--t1b); background: rgba(52,152,219,0.15); color: var(--t1b); }
+  .team-btn.t2.active { border-color: var(--t2b); background: rgba(232,65,42,0.15); color: var(--t2b); }
+  .team-drinks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .team-drink-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .team-drink-name { font-size: 0.8rem; font-weight: 600; flex: 1; }
+  .add-spiel-btn { background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; width: 100%; }
+  .spiele-list { display: flex; flex-direction: column; gap: 10px; }
+  .spiel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .spiel-info { flex: 1; }
+  .spiel-verlierer { font-weight: 700; font-size: 0.9rem; }
+  .spiel-verlierer.t1 { color: var(--t1b); }
+  .spiel-verlierer.t2 { color: var(--t2b); }
+  .spiel-detail { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .spiel-betrag { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--accent2); text-align: right; }
+  .spiel-pro-kopf { font-size: 0.7rem; color: var(--muted); text-align: right; }
+  .del-spiel-btn { background: rgba(232,65,42,0.15); border: none; border-radius: 8px; color: var(--accent2); font-size: 1.1rem; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; }
+  .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: var(--accent); margin-bottom: 4px; }
+  .modal-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; }
+  .modal-total-due { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; color: var(--accent); text-align: center; margin-bottom: 16px; }
+  .modal-input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .modal-input-row label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+  .modal-euro-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 1.1rem; font-weight: 700; outline: none; text-align: right; }
+  .modal-euro-input:focus { border-color: var(--accent); }
+  .modal-rest { font-size: 0.85rem; text-align: center; margin-bottom: 16px; font-weight: 700; min-height: 20px; }
+  .modal-rest.pos { color: var(--green); }
+  .modal-rest.neg { color: var(--accent2); }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-ok { flex: 1; background: var(--green); color: #000; border: none; border-radius: 10px; padding: 12px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+  .modal-cancel { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+
+  .add-person-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .add-person-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; }
+  .add-person-row input:focus { border-color: var(--accent); }
+  .add-btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 20px; font-size: 0.85rem; font-weight: 600; z-index: 999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+  #loading-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+  #loading-screen h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--accent); letter-spacing: 3px; }
+  .loader { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #login-screen { position: fixed; inset: 0; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9998; gap: 20px; padding: 24px; }
+  #login-screen h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--accent); letter-spacing: 3px; }
+  #login-screen p { color: var(--muted); font-size: 0.9rem; text-align: center; max-width: 300px; }
+  .login-btn { background: var(--accent); color: #000; border: none; border-radius: 12px; padding: 14px 32px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  .hidden { display: none !important; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <h2>KC IS</h2>
+  <div class="loader"></div>
+  <span style="color:var(--muted);font-size:0.8rem">Verbinde mit Google…</span>
+</div>
+
+<div id="login-screen">
+  <h2>KC IS</h2>
+  <p>Bitte melde dich mit deinem Google-Konto an, um die Abrechnung zu öffnen.</p>
+  <button class="login-btn" onclick="signIn()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+    Mit Google anmelden
+  </button>
+</div>
+
+<!-- ZAHLUNG MODAL -->
+<div class="modal-overlay hidden" id="payment-modal">
+  <div class="modal">
+    <h3 id="modal-name">Name</h3>
+    <div class="modal-sub">Zahlung erfassen</div>
+    <div class="modal-total-due" id="modal-due">0,00 €</div>
+    <div class="modal-input-row">
+      <label>Bezahlt (€)</label>
+      <input type="number" step="0.01" min="0" class="modal-euro-input" id="modal-paid-input" oninput="updateModalRest()" placeholder="0.00">
+    </div>
+    <div class="modal-rest" id="modal-rest-display"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmPayment()">✓ Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div>
+      <h1>KC IS</h1>
+      <div class="subtitle">Getränkeabrechnung</div>
+    </div>
+<div class="header-btns">
+  <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
+  <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
+  <button class="sync-btn" onclick="saveToSheet()" id="saveBtn">💾 Speichern</button>
+</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('anwesenheit',this)">👥 Anwesenheit</div>
+    <div class="tab" onclick="showTab('gruppen',this)">🎯 Gruppen</div>
+    <div class="tab" onclick="showTab('getraenke',this)">🍺 Getränke</div>
+    <div class="tab" onclick="showTab('teamspiele',this)">⚽ Teamspiele</div>
+    <div class="tab" onclick="showTab('abrechnung',this)">💶 Abrechnung</div>
+    <div class="tab" onclick="showTab('preise',this)">🏷️ Preise</div>
+  </div>
+
+  <main>
+    <div class="status-bar">
+      <div class="stat"><span class="stat-val" id="stat-anwesend">0</span><span class="stat-label">Anwesend</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t1">0</span><span class="stat-label">Wand</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t2">0</span><span class="stat-label">TV</span></div>
+      <div class="stat"><span class="stat-val" id="stat-offen">0,00 €</span><span class="stat-label">Offen</span></div>
+      <div class="stat"><span class="stat-val" id="stat-bezahlt" style="color:var(--green)">0,00 €</span><span class="stat-label">Bezahlt</span></div>
+    </div>
+
+    <!-- ANWESENHEIT -->
+    <div id="tab-anwesenheit">
+      <div class="section-title">Wer ist heute da?</div>
+      <div class="persons-grid" id="persons-grid"></div>
+      <div class="add-person-row">
+        <input type="text" id="new-person-input" placeholder="Neuen Namen hinzufügen…" onkeydown="if(event.key==='Enter') addPerson()">
+        <button class="add-btn" onclick="addPerson()">+ Hinzufügen</button>
+      </div>
+    </div>
+
+    <!-- GRUPPEN -->
+    <div id="tab-gruppen" class="hidden">
+      <div class="section-title">Tisch-Zuweisung</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Nicht zugewiesen – antippen zum Zuweisen:</div>
+      <div class="unassigned-list" id="unassigned-list"></div>
+      <div class="gruppe-grid">
+        <div class="gruppe-box t1"><div class="gruppe-title">🔵 Tisch 1</div><div class="gruppe-persons" id="gruppe-t1"></div></div>
+        <div class="gruppe-box t2"><div class="gruppe-title">🔴 Tisch 2</div><div class="gruppe-persons" id="gruppe-t2"></div></div>
+      </div>
+    </div>
+
+    <!-- GETRÄNKE -->
+    <div id="tab-getraenke" class="hidden">
+      <div class="section-title">Getränke erfassen</div>
+      <div class="drinks-table-wrap">
+        <table><thead><tr id="drinks-header"></tr></thead><tbody id="drinks-body"></tbody></table>
+      </div>
+    </div>
+
+    <!-- TEAMSPIELE -->
+    <div id="tab-teamspiele" class="hidden">
+      <div class="section-title">Neues Teamspiel</div>
+      <div class="team-spiel-form">
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
+        <div class="team-select-row">
+          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">🔵 Wand verloren</button>
+          <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Getränke die das Verlierer-Team zahlt:</div>
+        <div class="team-drinks-grid" id="team-drinks-grid"></div>
+        <button class="add-spiel-btn" onclick="addSpiel()">⚽ Spiel hinzufügen & aufteilen</button>
+      </div>
+      <div class="section-title">Gebuchte Spiele</div>
+      <div class="spiele-list" id="spiele-list"></div>
+    </div>
+
+    <!-- ABRECHNUNG -->
+    <div id="tab-abrechnung" class="hidden">
+      <div class="section-title">Übersicht</div>
+      <div class="abrech-summary">
+        <div class="abrech-summary-card offen"><div class="abrech-summary-val" id="sum-offen">0,00 €</div><div class="abrech-summary-label">Gesamt offen</div></div>
+        <div class="abrech-summary-card bezahlt"><div class="abrech-summary-val" id="sum-bezahlt">0,00 €</div><div class="abrech-summary-label">Gesamt bezahlt</div></div>
+      </div>
+      <div class="section-title">Pro Person <span style="font-size:0.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted);letter-spacing:0;text-transform:none">– antippen zum Zahlung eintragen</span></div>
+      <div class="abrech-grid" id="abrech-grid"></div>
+    </div>
+
+    <!-- PREISE -->
+    <div id="tab-preise" class="hidden">
+      <div class="section-title">Preise bearbeiten</div>
+      <div class="prices-editor" id="prices-editor"></div>
+      <button class="save-prices-btn" onclick="savePrices()">💾 Preise speichern & ins Sheet</button>
+    </div>
+  </main>
+</div>
+  
+<div class="modal-overlay hidden" id="reset-modal">
+  <div class="modal">
+    <h3>Alles löschen?</h3>
+    <div class="modal-sub">Dieser Vorgang kann rückgängig gemacht werden (5 Sekunden)</div>
+
+    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
+      Getränke, Teamspiele und Zahlungen werden komplett zurückgesetzt.
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeResetModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmReset()">JA, ALLES LÖSCHEN</button>
+    </div>
+  </div>
+</div>
+  
+<div id="toast"></div>
+
+<script>
+const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
+const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
+const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
+
+const DRINKS = [
+  { key: 'kl_bier',  label: 'Kl. Bier' },
+  { key: 'gr_bier',  label: 'Gr. Bier' },
+  { key: 'kl_softd', label: 'Kl. Fanta/Cola' },
+  { key: 'gr_softd', label: 'Gr. Fanta/Cola' },
+  { key: 'malz',     label: 'Malzbier' },
+  { key: 'wasser',   label: 'Wasser' },
+  { key: 'schnaps',  label: 'Schnaps' },
+  { key: 'weizen',   label: 'Weizen' },
+  { key: 'wein',     label: 'Wein/Sekt' },
+];
+
+let persons = [];
+let prices  = {};
+let spiele  = [];
+let tokenClient, accessToken = null;
+let modalPerson = null;
+let selectedLoser = null;
+let teamDrinks = {};
+let lastState = null;
+let undoTimer = null;
+  
+// ── AUTH ──
+function gapiLoaded() { gapi.load('client', initGapiClient); }
+async function initGapiClient() {
+  await gapi.client.init({ discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
+  gisLoaded();
+}
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID, scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { document.getElementById('loading-screen').style.display='none'; document.getElementById('login-screen').style.display='flex'; return; }
+      accessToken = resp.access_token;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('loading-screen').style.display = 'flex';
+      await loadFromSheet();
+      document.getElementById('loading-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    },
+  });
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+function signIn() { tokenClient.requestAccessToken({ prompt: 'consent' }); }
+
+// ── SHEET SETUP ──
+async function ensureSheetSetup() {
+  const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const sheets = meta.result.sheets.map(s=>s.properties.title);
+  const reqs = [];
+  if (!sheets.includes('Abrechnung')) reqs.push({ addSheet: { properties: { title: 'Abrechnung' } } });
+  if (!sheets.includes('Preise'))     reqs.push({ addSheet: { properties: { title: 'Preise' } } });
+  if (!sheets.includes('Teamspiele')) reqs.push({ addSheet: { properties: { title: 'Teamspiele' } } });
+  if (reqs.length) await gapi.client.sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, resource: { requests: reqs } });
+  // Headers: Name, Anwesend, Tisch, ...9 drinks, TeamExtra, Gesamt, Bezahlt
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: 'Abrechnung!A1:O1', valueInputOption: 'RAW',
+    resource: { values: [['Name','Anwesend','Tisch',...DRINKS.map(d=>d.label),'Team-Extra','Gesamt','Bezahlt']] }
+  });
+  const pc = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Preise!A1:B1' });
+  if (!pc.result.values) {
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `Preise!A1:B${DRINKS.length+1}`, valueInputOption: 'RAW',
+      resource: { values: [['Getränk','Preis'], ...DRINKS.map(d=>[d.label,0])] }
+    });
+  }
+}
+
+// ── LOAD ──
+async function loadFromSheet() {
+  try { await ensureSheetSetup(); } catch(e) { console.error('setup',e); }
+  try {
+    const pr = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Preise!A2:B20' });
+    prices = {};
+    (pr.result.values||[]).forEach(r => { const d=DRINKS.find(d=>d.label===r[0]); if(d) prices[d.key]=parseFloat((r[1]||'0').toString().replace(',','.'))||0; });
+    DRINKS.forEach(d=>{ if(prices[d.key]===undefined) prices[d.key]=0; });
+  } catch(e) { console.error('prices',e); }
+  try {
+    const ab = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Abrechnung!A2:O200' });
+    persons = [];
+    (ab.result.values||[]).forEach(r => {
+      if(!r[0]) return;
+      const drinks={}; DRINKS.forEach((d,i)=>{ drinks[d.key]=parseInt(r[3+i]||'0')||0; });
+      persons.push({ name:r[0], present:r[1]==='TRUE', tisch:r[2]||'', drinks, teamExtra:parseFloat(r[12]||'0')||0, paid:parseFloat(r[14]||'0')||0 });
+    });
+  } catch(e) { console.error('persons',e); }
+  try {
+    const sp = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Teamspiele!A2:D200' });
+    spiele = [];
+    (sp.result.values||[]).forEach(r=>{ if(!r[3]) return; try { spiele.push(JSON.parse(r[3])); } catch(e){} });
+  } catch(e) { console.error('spiele',e); }
+  renderAll();
+}
+
+// ── SAVE ──
+async function saveToSheet() {
+  const btn = document.getElementById('saveBtn');
+  btn.classList.add('loading'); btn.textContent='⏳ Speichern…';
+  try {
+    recalcTeamExtras();
+    const rows = persons.map(p => {
+      const total = calcTotal(p);
+      return [p.name, p.present?'TRUE':'FALSE', p.tisch, ...DRINKS.map(d=>p.drinks[d.key]||0), (p.teamExtra||0).toFixed(2), total.toFixed(2), (p.paid||0).toFixed(2)];
+    });
+    await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: 'Abrechnung!A2:O200' });
+    if (rows.length) await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `Abrechnung!A2:O${rows.length+1}`, valueInputOption: 'RAW', resource: { values: rows }
+    });
+    await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: 'Teamspiele!A2:D200' });
+    if (spiele.length) await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `Teamspiele!A2:D${spiele.length+1}`, valueInputOption: 'RAW',
+      resource: { values: spiele.map((s,i)=>[i+1, s.loser, (s.total||0).toFixed(2), JSON.stringify(s)]) }
+    });
+    showToast('✅ Gespeichert!', 'success');
+  } catch(e) { console.error(e); showToast('❌ Fehler beim Speichern', 'error'); }
+  btn.classList.remove('loading'); btn.textContent='💾 Speichern';
+}
+
+async function savePrices() {
+  DRINKS.forEach(d => { const el=document.getElementById('price-input-'+d.key); if(el) prices[d.key]=parseFloat(el.value.replace(',','.'))||0; });
+  try {
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `Preise!A2:B${DRINKS.length+1}`, valueInputOption: 'RAW',
+      resource: { values: DRINKS.map(d=>[d.label, prices[d.key].toFixed(2)]) }
+    });
+    showToast('✅ Preise gespeichert!', 'success');
+    recalcTeamExtras(); renderAll();
+  } catch(e) { showToast('❌ Fehler', 'error'); }
+}
+
+// ── ARCHIVE ──
+async function archiveSheet() {
+  if (!confirm('Abend abschließen?\nEine Kopie wird mit dem heutigen Datum erstellt.')) return;
+  try {
+    await saveToSheet();
+    const now = new Date();
+    const d = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()}`;
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${SHEET_ID}/copy`, {
+      method:'POST', headers:{'Authorization':`Bearer ${accessToken}`,'Content-Type':'application/json'},
+      body: JSON.stringify({ name: `KC IS Abrechnung ${d}` })
+    });
+    if (r.ok) showToast(`📁 Archiv erstellt: KC IS Abrechnung ${d}`, 'success');
+    else showToast('❌ Fehler beim Archivieren', 'error');
+  } catch(e) { showToast('❌ Fehler beim Archivieren', 'error'); }
+}
+
+// ── CALC ──
+function calcDrinksTotal(p) { return DRINKS.reduce((s,d)=>s+(p.drinks[d.key]||0)*(prices[d.key]||0),0); }
+function calcTotal(p) { return calcDrinksTotal(p)+(p.teamExtra||0); }
+function recalcTeamExtras() {
+  persons.forEach(p=>p.teamExtra=0);
+  spiele.forEach(s=>{
+    // Preise neu berechnen falls nötig, aber Mitglieder-Snapshot ist EINGEFROREN
+    const total = DRINKS.reduce((sum,d)=>sum+(s.drinks[d.key]||0)*(prices[d.key]||0),0);
+    s.total = total;
+    s.proKopf = (s.members&&s.members.length) ? total/s.members.length : 0;
+    (s.members||[]).forEach(name=>{ const p=persons.find(x=>x.name===name); if(p) p.teamExtra=(p.teamExtra||0)+s.proKopf; });
+  });
+}
+
+// ── RENDER ──
+function renderAll() {
+  recalcTeamExtras(); updateStats(); renderAnwesenheit(); renderGruppen();
+  renderGetranke(); renderTeamspiele(); renderAbrechnung(); renderPreisEditor();
+}
+
+function updateStats() {
+  const present=persons.filter(p=>p.present);
+  const due=present.reduce((s,p)=>s+calcTotal(p),0);
+  const paid=present.reduce((s,p)=>s+(p.paid||0),0);
+  document.getElementById('stat-anwesend').textContent=present.length;
+  document.getElementById('stat-t1').textContent=present.filter(p=>p.tisch==='T1').length;
+  document.getElementById('stat-t2').textContent=present.filter(p=>p.tisch==='T2').length;
+  document.getElementById('stat-offen').textContent=Math.max(0,due-paid).toFixed(2).replace('.',',')+' €';
+  document.getElementById('stat-bezahlt').textContent=paid.toFixed(2).replace('.',',')+' €';
+}
+
+function renderAnwesenheit() {
+  const g=document.getElementById('persons-grid'); g.innerHTML='';
+  persons.forEach(p=>{
+    const c=document.createElement('div'); c.className='person-card'+(p.present?' present':' absent');
+    const i=p.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    c.innerHTML=`<div class="person-avatar">${i}</div><div class="person-name">${p.name}</div><div class="${p.present?'present-badge':'absent-badge'}">${p.present?'DA':'FEHLT'}</div>`;
+    c.onclick=()=>{ p.present=!p.present; if(!p.present) p.tisch=''; renderAll(); };
+    g.appendChild(c);
+  });
+}
+
+function renderGruppen() {
+  const present=persons.filter(p=>p.present);
+  const unEl=document.getElementById('unassigned-list'); unEl.innerHTML='';
+  const un=present.filter(p=>!p.tisch);
+  if(!un.length) unEl.innerHTML='<span style="font-size:0.75rem;color:var(--green)">✅ Alle zugewiesen</span>';
+  un.forEach(p=>{ const c=document.createElement('div'); c.className='unassigned-chip'; c.textContent=p.name+' →'; c.onclick=()=>{ p.tisch='T1'; renderAll(); }; unEl.appendChild(c); });
+  const t1El=document.getElementById('gruppe-t1'); t1El.innerHTML='';
+  present.filter(p=>p.tisch==='T1').forEach(p=>{ const c=document.createElement('div'); c.className='gruppe-chip'; c.innerHTML=p.name+' <span style="opacity:0.5;font-size:0.7rem">→T2</span>'; c.onclick=()=>{ p.tisch='T2'; renderAll(); }; t1El.appendChild(c); });
+  if(!present.find(p=>p.tisch==='T1')) t1El.innerHTML='<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
+  const t2El=document.getElementById('gruppe-t2'); t2El.innerHTML='';
+  present.filter(p=>p.tisch==='T2').forEach(p=>{ const c=document.createElement('div'); c.className='gruppe-chip'; c.innerHTML=p.name+' <span style="opacity:0.5;font-size:0.7rem">→T1</span>'; c.onclick=()=>{ p.tisch='T1'; renderAll(); }; t2El.appendChild(c); });
+  if(!present.find(p=>p.tisch==='T2')) t2El.innerHTML='<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
+}
+
+function renderGetranke() {
+  const present=persons.filter(p=>p.present);
+  document.getElementById('drinks-header').innerHTML='<th>Name</th>'+DRINKS.map(d=>`<th>${d.label}</th>`).join('')+'<th>Team+</th><th>Gesamt</th>';
+  const body=document.getElementById('drinks-body'); body.innerHTML='';
+  present.forEach(p=>{
+    const tr=document.createElement('tr');
+    if(p.tisch==='T1') tr.className='t1-row'; if(p.tisch==='T2') tr.className='t2-row';
+    const tl=p.tisch?`<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch==='T1'?'🔵 Wand':'🔴 TV'}</span>`:'';
+    let html=`<td><div class="person-cell"><span class="pname">${p.name}</span>${tl}</div></td>`;
+    DRINKS.forEach(d=>{ const v=p.drinks[d.key]||0; html+=`<td><div class="counter"><button class="counter-btn minus" onclick="changeDrink('${p.name}','${d.key}',-1)">−</button><span class="counter-val ${v>0?'nonzero':''}">${v}</span><button class="counter-btn plus" onclick="changeDrink('${p.name}','${d.key}',1)">+</button></div></td>`; });
+    const te=p.teamExtra||0;
+    html+=`<td style="color:${te>0?'var(--accent2)':'var(--muted)'};font-weight:700;font-size:0.85rem">${te>0?'+'+te.toFixed(2).replace('.',',')+'€':'—'}</td>`;
+    html+=`<td class="total-cell">${calcTotal(p).toFixed(2).replace('.',',')}€</td>`;
+    tr.innerHTML=html; body.appendChild(tr);
+  });
+  if(!present.length) body.innerHTML=`<tr><td colspan="${DRINKS.length+3}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+}
+
+function changeDrink(name,key,delta) {
+  const p=persons.find(x=>x.name===name); if(!p) return;
+  p.drinks[key]=Math.max(0,(p.drinks[key]||0)+delta);
+  renderGetranke(); updateStats(); renderAbrechnung();
+}
+
+// ── TEAMSPIELE ──
+function selectLoser(t) {
+  selectedLoser=t;
+  document.getElementById('team-btn-t1').classList.toggle('active',t==='T1');
+  document.getElementById('team-btn-t2').classList.toggle('active',t==='T2');
+}
+
+function renderTeamspiele() {
+  const g=document.getElementById('team-drinks-grid'); g.innerHTML='';
+  DRINKS.forEach(d=>{
+    const v=teamDrinks[d.key]||0;
+    const r=document.createElement('div'); r.className='team-drink-row';
+    r.innerHTML=`<span class="team-drink-name">${d.label}</span><div class="counter"><button class="counter-btn minus" onclick="changeTeamDrink('${d.key}',-1)">−</button><span class="counter-val ${v>0?'nonzero':''}" id="td-${d.key}">${v}</span><button class="counter-btn plus" onclick="changeTeamDrink('${d.key}',1)">+</button></div>`;
+    g.appendChild(r);
+  });
+  const list=document.getElementById('spiele-list'); list.innerHTML='';
+  if(!spiele.length) { list.innerHTML='<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Spiele eingetragen</div>'; return; }
+  spiele.forEach((s,i)=>{
+    const di=DRINKS.filter(d=>(s.drinks[d.key]||0)>0).map(d=>`${s.drinks[d.key]}x ${d.label}`).join(', ');
+    const c=document.createElement('div'); c.className='spiel-card';
+    c.innerHTML=`<div class="spiel-info"><div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser==='T1'?'🔵 Wand':'🔴 TV'} hat verloren</div><div class="spiel-detail">${di||'Keine Getränke'}</div><div class="spiel-detail">Aufgeteilt auf: ${(s.members||[]).join(', ')||'?'}</div></div><div><div class="spiel-betrag">${(s.total||0).toFixed(2).replace('.',',')}€</div><div class="spiel-pro-kopf">${(s.proKopf||0).toFixed(2).replace('.',',')}€/Person</div></div><button class="del-spiel-btn" onclick="deleteSpiel(${i})">✕</button>`;
+    list.appendChild(c);
+  });
+}
+
+function changeTeamDrink(key,delta) {
+  teamDrinks[key]=Math.max(0,(teamDrinks[key]||0)+delta);
+  const el=document.getElementById('td-'+key);
+  if(el){ el.textContent=teamDrinks[key]; el.className='counter-val'+(teamDrinks[key]>0?' nonzero':''); }
+}
+
+function addSpiel() {
+  if(!selectedLoser) { showToast('Bitte zuerst Verlierer-Team wählen!','error'); return; }
+  if(!DRINKS.some(d=>(teamDrinks[d.key]||0)>0)) { showToast('Bitte mindestens ein Getränk eintragen!','error'); return; }
+  const members=persons.filter(p=>p.present&&p.tisch===selectedLoser);
+  const total=DRINKS.reduce((s,d)=>s+(teamDrinks[d.key]||0)*(prices[d.key]||0),0);
+  spiele.push({ loser:selectedLoser, drinks:{...teamDrinks}, total, proKopf:members.length?total/members.length:0, members:members.map(m=>m.name) });
+  teamDrinks={}; selectedLoser=null;
+  document.getElementById('team-btn-t1').classList.remove('active');
+  document.getElementById('team-btn-t2').classList.remove('active');
+  renderAll(); showToast('⚽ Spiel hinzugefügt!','success');
+}
+
+function deleteSpiel(i) { spiele.splice(i,1); renderAll(); }
+
+// ── ABRECHNUNG ──
+function renderAbrechnung() {
+  const present=persons.filter(p=>p.present);
+  const due=present.reduce((s,p)=>s+calcTotal(p),0);
+  const paid=present.reduce((s,p)=>s+(p.paid||0),0);
+  document.getElementById('sum-offen').textContent=Math.max(0,due-paid).toFixed(2).replace('.',',')+' €';
+  document.getElementById('sum-bezahlt').textContent=paid.toFixed(2).replace('.',',')+' €';
+  const ag=document.getElementById('abrech-grid'); ag.innerHTML='';
+  [...present].sort((a,b)=>calcTotal(b)-calcTotal(a)).forEach(p=>{
+    const total=calcTotal(p), pd=p.paid||0, rest=total-pd, isPaid=pd>=total&&total>0;
+    const c=document.createElement('div'); c.className='abrech-card '+(p.tisch||'').toLowerCase()+(isPaid?' paid':'');
+    const items=DRINKS.filter(d=>(p.drinks[d.key]||0)>0).map(d=>`<div class="abrech-item"><span>${p.drinks[d.key]}x ${d.label}</span><span>${((p.drinks[d.key]||0)*(prices[d.key]||0)).toFixed(2).replace('.',',')}€</span></div>`).join('');
+    const teamLine=(p.teamExtra||0)>0?`<div class="abrech-item"><span>⚽ Team-Strafe</span><span style="color:var(--accent2)">+${(p.teamExtra||0).toFixed(2).replace('.',',')}€</span></div>`:'';
+    c.innerHTML=`
+      <div class="abrech-name">${p.name}</div>
+      <div class="abrech-tisch">${p.tisch==='T1'?'🔵 Wand':p.tisch==='T2'?'🔴 TV':'Kein Team'}</div>
+      <div class="abrech-total">${total.toFixed(2).replace('.',',')}€</div>
+      ${pd>0?`<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.',',')}€</div>`:''}
+      ${rest>0.01?`<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.',',')}€</div>`:''}
+      ${isPaid?'<div class="abrech-paid-info">✅ Vollständig bezahlt</div>':''}
+      <div class="abrech-items">${items}${teamLine}${!items&&!teamLine?'<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>':''}</div>
+      <div class="tap-hint">Antippen → Zahlung eintragen</div>`;
+    c.onclick=()=>openPaymentModal(p);
+    ag.appendChild(c);
+  });
+}
+
+// ── PAYMENT MODAL ──
+function openPaymentModal(p) {
+  modalPerson=p;
+  document.getElementById('modal-name').textContent=p.name;
+  document.getElementById('modal-due').textContent=calcTotal(p).toFixed(2).replace('.',',')+' €';
+  document.getElementById('modal-paid-input').value=(p.paid||0)>0?(p.paid||0).toFixed(2):'';
+  updateModalRest();
+  document.getElementById('payment-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('modal-paid-input').focus(),100);
+}
+function closeModal() { document.getElementById('payment-modal').classList.add('hidden'); modalPerson=null; }
+function updateModalRest() {
+  if(!modalPerson) return;
+  const total=calcTotal(modalPerson), paid=parseFloat(document.getElementById('modal-paid-input').value)||0, rest=total-paid;
+  const el=document.getElementById('modal-rest-display');
+  if(rest<=0.005) { el.textContent='✅ Vollständig bezahlt'+(rest<-0.005?` (${Math.abs(rest).toFixed(2).replace('.',',')}€ Wechselgeld)`:''); el.className='modal-rest pos'; }
+  else { el.textContent=`Noch offen: ${rest.toFixed(2).replace('.',',')} €`; el.className='modal-rest neg'; }
+}
+function confirmPayment() {
+  if(!modalPerson) return;
+  modalPerson.paid=parseFloat(document.getElementById('modal-paid-input').value)||0;
+  closeModal(); updateStats(); renderAbrechnung();
+  showToast('✅ Zahlung gespeichert','success');
+}
+
+// ── PREISE EDITOR ──
+function renderPreisEditor() {
+  const ed=document.getElementById('prices-editor'); ed.innerHTML='';
+  DRINKS.forEach(d=>{
+    const c=document.createElement('div'); c.className='price-edit-card';
+    c.innerHTML=`<label>${d.label}</label><input type="number" step="0.10" min="0" class="price-input" id="price-input-${d.key}" value="${(prices[d.key]||0).toFixed(2)}" placeholder="0.00"> €`;
+    ed.appendChild(c);
+  });
+}
+
+// ── TABS ──
+function showTab(name,el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  el.classList.add('active');
+}
+
+// ── ADD PERSON ──
+function addPerson() {
+  const input=document.getElementById('new-person-input'), name=input.value.trim(); if(!name) return;
+  if(persons.find(p=>p.name.toLowerCase()===name.toLowerCase())) { showToast('Name existiert bereits','error'); return; }
+  const drinks={}; DRINKS.forEach(d=>drinks[d.key]=0);
+  persons.push({ name, present:true, tisch:'', drinks, paid:0, teamExtra:0 });
+  input.value=''; renderAll(); showToast('✅ '+name+' hinzugefügt','success');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showUndoToast() {
+  const t = document.getElementById('toast');
+  t.innerHTML = `🧨 Alles gelöscht 
+    <button onclick="undoReset()" 
+      style="margin-left:10px;padding:4px 8px;border-radius:6px;border:none;background:var(--green);font-weight:700;cursor:pointer;">
+      Undo
+    </button>`;
+  t.className = 'show success';
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.className = '';
+  }, 5000);
+}
+
+function openResetModal() {
+  document.getElementById('reset-modal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.add('hidden');
+}
+
+function confirmReset() {
+  // 🧠 Zustand speichern
+  lastState = JSON.stringify({
+    persons,
+    spiele
+  });
+
+  // 🧨 Reset durchführen
+  persons.forEach(p => {
+    Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
+    p.paid = 0;
+    p.teamExtra = 0;
+  });
+
+  spiele = [];
+
+  closeResetModal();
+  renderAll();
+
+  showUndoToast();
+
+  // ⏳ 5 Sekunden Undo
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    lastState = null;
+  }, 5000);
+}
+  
+  function undoReset() {
+  if (!lastState) return;
+
+  const state = JSON.parse(lastState);
+  persons = state.persons;
+  spiele = state.spiele;
+
+  renderAll();
+  showToast('↩️ Wiederhergestellt!', 'success');
+
+  lastState = null;
+}
+  
+</script>
+
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+  
+</body>
+</html>
