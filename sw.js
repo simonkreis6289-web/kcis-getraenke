@@ -1,10 +1,10 @@
-const CACHE_NAME = 'kcis-cache-v3';
+const CACHE_NAME = 'kcis-cache-v4';
 
 const ASSETS = [
   './',
-  './manifest.json?v=20260317',
-  './icon-192.png?v=20260317',
-  './icon-512.png?v=20260317'
+  './manifest.json?v=20260317-v4',
+  './icon-192.png?v=20260317-v4',
+  './icon-512.png?v=20260317-v4'
 ];
 
 self.addEventListener('install', event => {
@@ -24,6 +24,12 @@ self.addEventListener('activate', event => {
       )
     ).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', event => {
