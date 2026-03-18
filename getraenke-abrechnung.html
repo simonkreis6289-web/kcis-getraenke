@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v1">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v1">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v1">
+  <link rel="manifest" href="manifest.json?v=20260318-v2">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v2">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v2">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -41,12 +41,16 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
     header {
@@ -80,7 +84,6 @@
       font-size: 0.72rem;
       color: var(--muted);
       margin-top: 3px;
-      text-transform: none;
       letter-spacing: 0;
     }
 
@@ -151,9 +154,10 @@
     }
 
     main {
-      padding: 16px;
-      max-width: 1200px;
+      width: 100%;
+      max-width: 1400px;
       margin: 0 auto;
+      padding: 16px;
     }
 
     .status-bar {
@@ -366,14 +370,41 @@
       user-select: none;
     }
 
-    .drinks-table-wrap { overflow-x: auto; }
-    .drinks-table-wrap::-webkit-scrollbar { height: 6px; }
+    #tab-getraenke {
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .getraenke-section {
+      width: 100%;
+    }
+
+    .drinks-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .drinks-table-wrap::-webkit-scrollbar { height: 8px; }
+
     .drinks-table-wrap::-webkit-scrollbar-thumb {
       background: var(--accent);
       border-radius: 10px;
     }
 
-    table { width: 100%; border-collapse: collapse; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .drinks-table {
+      min-width: max-content;
+      width: 100%;
+    }
 
     thead th {
       background: var(--surface2);
@@ -391,33 +422,24 @@
     thead th:first-child {
       text-align: left;
       padding-left: 14px;
-      min-width: 120px;
+      min-width: 180px;
     }
 
     tbody tr { border-bottom: 1px solid var(--border); }
     tbody tr.t1-row { border-left: 3px solid var(--t1b); }
     tbody tr.t2-row { border-left: 3px solid var(--t2b); }
+
     tbody td {
       padding: 12px 6px;
       text-align: center;
       vertical-align: middle;
+      white-space: nowrap;
     }
 
     tbody td:first-child {
       text-align: left;
       padding-left: 12px;
-    }
-
-    #getraenke-fullwidth {
-      width: 100%;
-      margin-left: calc(50% - 50vw);
-      margin-right: calc(50% - 50vw);
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-
-    #getraenke-fullwidth table {
-      width: 100%;
+      min-width: 180px;
     }
 
     .person-cell {
@@ -484,7 +506,7 @@
       font-family: 'Bebas Neue', sans-serif;
       font-size: 1.1rem;
       color: var(--accent);
-      min-width: 60px;
+      min-width: 70px;
     }
 
     .prices-toolbar {
@@ -598,7 +620,7 @@
 
     .abrech-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 10px;
     }
 
@@ -1134,6 +1156,11 @@
       .gruppe-grid {
         grid-template-columns: 1fr;
       }
+
+      .add-person-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 </head>
@@ -1273,10 +1300,10 @@
     </div>
 
     <div id="tab-getraenke" class="hidden">
-      <div id="getraenke-fullwidth">
+      <div class="getraenke-section">
         <div class="section-title">Getränke erfassen</div>
         <div class="drinks-table-wrap">
-          <table>
+          <table class="drinks-table">
             <thead><tr id="drinks-header"></tr></thead>
             <tbody id="drinks-body"></tbody>
           </table>
@@ -1357,7 +1384,7 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-3';
+const APP_VERSION = '20260318-4';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1514,6 +1541,21 @@ function isFullyPaid(p) {
   return getPersonOpenAmount(p) <= 0.01;
 }
 
+function columnLetter(colNum) {
+  let temp = '';
+  let n = colNum;
+  while (n > 0) {
+    let rem = (n - 1) % 26;
+    temp = String.fromCharCode(65 + rem) + temp;
+    n = Math.floor((n - 1) / 26);
+  }
+  return temp;
+}
+
+function escapeForJs(str) {
+  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
 // ── SHEET SETUP ──
 async function ensureSheetSetup() {
   const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
@@ -1521,7 +1563,7 @@ async function ensureSheetSetup() {
   const reqs = [];
 
   if (!sheets.includes('Abrechnung')) reqs.push({ addSheet: { properties: { title: 'Abrechnung' } } });
-  if (!sheets.includes('Preise'))     reqs.push({ addSheet: { properties: { title: 'Preise' } } });
+  if (!sheets.includes('Preise')) reqs.push({ addSheet: { properties: { title: 'Preise' } } });
   if (!sheets.includes('Teamspiele')) reqs.push({ addSheet: { properties: { title: 'Teamspiele' } } });
 
   if (reqs.length) {
@@ -1630,7 +1672,6 @@ async function loadFromSheet() {
       });
 
       const teamExtraIndex = 3 + DRINKS.length;
-      const totalIndex = teamExtraIndex + 1;
       const paidIndex = teamExtraIndex + 2;
       const leftIndex = teamExtraIndex + 3;
       const leftAtIndex = teamExtraIndex + 4;
@@ -1846,10 +1887,7 @@ function updateStats() {
 }
 
 function renderAnwesenheit() {
-  const sorted = persons
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
-
+  const sorted = persons.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const g = document.getElementById('persons-grid');
   g.innerHTML = '';
 
@@ -1980,7 +2018,7 @@ function renderGetraenke() {
   });
 
   if (!present.length) {
-    body.innerHTML = `<tr><td colspan="${DRINKS.length+3}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${DRINKS.length + 3}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
   }
 }
 
@@ -2263,7 +2301,7 @@ function confirmPayment() {
   showToast('✅ Zahlung gespeichert', 'success');
 }
 
-// ── PREISE EDITOR ──
+// ── PREISE ──
 function renderPreisEditor() {
   const ed = document.getElementById('prices-editor');
   ed.innerHTML = '';
@@ -2360,7 +2398,7 @@ function showTab(name, el) {
   el.classList.add('active');
 }
 
-// ── ADD PERSON ──
+// ── PERSONEN ──
 function addPerson() {
   const input = document.getElementById('new-person-input');
   const name = input.value.trim();
@@ -2470,34 +2508,18 @@ window.addEventListener('beforeinstallprompt', (e) => {
   deferredPrompt = e;
 });
 
-// ── HELPERS FOR INLINE JS ──
-function escapeForJs(str) {
-  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-}
-
-function columnLetter(colNum) {
-  let temp = '';
-  let n = colNum;
-  while (n > 0) {
-    let rem = (n - 1) % 26;
-    temp = String.fromCharCode(65 + rem) + temp;
-    n = Math.floor((n - 1) / 26);
-  }
-  return temp;
-}
-
 updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v2" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v1');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v2');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
