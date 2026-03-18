@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v6">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v6">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v6">
+  <link rel="manifest" href="manifest.json?v=20260318-v7">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v7">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v7">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -23,15 +23,12 @@
       --surface2: #ffffff;
       --border: #2e3350;
 
-      /* Branding wieder orange/gelb */
       --accent: #f5a623;
       --accent-soft: rgba(245, 166, 35, 0.15);
 
-      /* Zweit-Akzent für offene Beträge / Warnungen */
       --accent2: #e8412a;
       --accent2-soft: rgba(232, 65, 42, 0.15);
 
-      /* Deine neuen Button-Farben nur für + / - */
       --btn-plus-bg: rgba(204, 0, 0, 0.15);
       --btn-plus-fg: rgba(204, 0, 0, 1);
       --btn-minus-bg: rgba(7, 148, 0, 0.15);
@@ -501,6 +498,7 @@
       text-align: center;
       vertical-align: middle;
       white-space: nowrap;
+      color: #000000;
     }
 
     tbody td:first-child {
@@ -531,6 +529,7 @@
     .person-cell .pname {
       font-weight: 600;
       font-size: 0.85rem;
+      color: #000000;
     }
 
     .person-cell .prole {
@@ -586,15 +585,22 @@
       text-align: center;
       font-weight: 700;
       font-size: 0.95rem;
+      color: #000000;
     }
 
-    .counter-val.nonzero { color: var(--accent); }
+    .counter-val.nonzero { color: #000000; }
 
     .total-cell {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 1.1rem;
-      color: var(--accent);
+      color: #000000;
       min-width: 70px;
+    }
+
+    .team-extra-cell {
+      color: #000000 !important;
+      font-weight: 700;
+      font-size: 0.85rem;
     }
 
     .prices-toolbar {
@@ -1366,7 +1372,7 @@
     <div class="header-btns">
       <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
       <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
-      <button class="sync-btn" onclick="saveToSheet()" id="saveBtn">💾 Speichern</button>
+      <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
     </div>
   </header>
 
@@ -1529,7 +1535,7 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-7';
+const APP_VERSION = '20260318-8';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1566,6 +1572,10 @@ let lastState = null;
 let undoTimer = null;
 let deferredPrompt = null;
 let toastTimer;
+
+let autoSaveTimer = null;
+let autoSaveRunning = false;
+let autoSaveQueued = false;
 
 // ── AUTH ──
 function gapiLoaded() {
@@ -1744,6 +1754,17 @@ function getPersonTeamspielBreakdown(p) {
     }
   });
   return result;
+}
+
+function queueAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async () => {
+    if (autoSaveRunning) {
+      autoSaveQueued = true;
+      return;
+    }
+    await saveToSheet(true, false);
+  }, 800);
 }
 
 // ── SHEET SETUP ──
@@ -1986,10 +2007,19 @@ async function loadFromSheet() {
 }
 
 // ── SAVE ──
-async function saveToSheet() {
+async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
+  if (autoSaveRunning) {
+    autoSaveQueued = true;
+    return;
+  }
+
+  autoSaveRunning = true;
+
   const btn = document.getElementById('saveBtn');
-  btn.classList.add('loading');
-  btn.textContent = '⏳ Speichern…';
+  if (btn) {
+    btn.classList.add('loading');
+    btn.textContent = isAutoSave ? '⏳ AutoSave…' : '⏳ Speichern…';
+  }
 
   try {
     recalcTeamExtras();
@@ -2048,14 +2078,27 @@ async function saveToSheet() {
       });
     }
 
-    showToast('✅ Gespeichert!', 'success');
+    if (showSuccessToast) {
+      showToast(isAutoSave ? '✅ Automatisch gespeichert' : '✅ Gespeichert!', 'success');
+    }
   } catch (e) {
     console.error(e);
-    showToast('❌ Fehler beim Speichern', 'error');
-  }
+    showToast(isAutoSave ? '❌ AutoSave fehlgeschlagen' : '❌ Fehler beim Speichern', 'error');
+  } finally {
+    autoSaveRunning = false;
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.textContent = '💾 Speichern';
+    }
 
-  btn.classList.remove('loading');
-  btn.textContent = '💾 Speichern';
+    if (autoSaveQueued) {
+      autoSaveQueued = false;
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(async () => {
+        await saveToSheet(true, false);
+      }, 400);
+    }
+  }
 }
 
 async function savePrices() {
@@ -2069,6 +2112,7 @@ async function savePrices() {
     showToast('✅ Preise gespeichert!', 'success');
     recalcTeamExtras();
     renderAll();
+    queueAutoSave();
   } catch (e) {
     console.error(e);
     showToast('❌ Fehler', 'error');
@@ -2080,7 +2124,7 @@ async function archiveSheet() {
   if (!confirm('Abend abschließen?\nEine Kopie wird mit dem heutigen Datum erstellt.')) return;
 
   try {
-    await saveToSheet();
+    await saveToSheet(false, true);
     await refreshToken();
 
     const now = new Date();
@@ -2319,7 +2363,7 @@ function renderDrinkRows(list, body) {
     });
 
     const te = p.teamExtra || 0;
-    html += `<td style="color:${te > 0 ? 'var(--accent2)' : 'var(--muted)'};font-weight:700;font-size:0.85rem">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    html += `<td class="team-extra-cell">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
     html += `<td class="total-cell">${calcTotal(p).toFixed(2).replace('.', ',')}€</td>`;
 
     tr.innerHTML = html;
@@ -2364,6 +2408,7 @@ function changeDrink(name, key, delta) {
   renderGetraenke();
   updateStats();
   renderAbrechnung();
+  queueAutoSave();
 }
 
 // ── TEAMSPIELE ──
@@ -2504,11 +2549,13 @@ function addSpiel() {
 
   renderAll();
   showToast('⚽ Spiel hinzugefügt!', 'success');
+  queueAutoSave();
 }
 
 function deleteSpiel(i) {
   spiele.splice(i, 1);
   renderAll();
+  queueAutoSave();
 }
 
 // ── ABRECHNUNG ──
@@ -2699,6 +2746,7 @@ function confirmPayment() {
   renderAnwesenheit();
   renderTeamspiele();
   showToast('✅ Zahlung gespeichert', 'success');
+  queueAutoSave();
 }
 
 // ── PREISE ──
@@ -2761,6 +2809,7 @@ function confirmAddDrink() {
   closeDrinkModal();
   renderAll();
   showToast('✅ Getränk hinzugefügt', 'success');
+  queueAutoSave();
 }
 
 function deleteDrink(key) {
@@ -2788,6 +2837,7 @@ function deleteDrink(key) {
 
   renderAll();
   showToast('🗑️ Getränk gelöscht', 'success');
+  queueAutoSave();
 }
 
 // ── SPIELE KATALOG ──
@@ -2850,6 +2900,7 @@ function addSpielToKatalog() {
   renderSpieltypSelect();
   renderSpieleKatalog();
   showToast('✅ Spiel hinzugefügt', 'success');
+  queueAutoSave();
 }
 
 function deleteSpielFromKatalog(name) {
@@ -2865,6 +2916,7 @@ function deleteSpielFromKatalog(name) {
   renderSpieltypSelect();
   renderSpieleKatalog();
   showToast('🗑️ Spiel gelöscht', 'success');
+  queueAutoSave();
 }
 
 // ── PERSONEN ──
@@ -2896,6 +2948,7 @@ function addPerson(isGuest) {
   input.value = '';
   renderAll();
   showToast(`✅ ${name} hinzugefügt`, 'success');
+  queueAutoSave();
 }
 
 function deletePerson(name) {
@@ -2916,6 +2969,7 @@ function deletePerson(name) {
 
   renderAll();
   showToast('🗑️ Person gelöscht', 'success');
+  queueAutoSave();
 }
 
 // ── TABS ──
@@ -2979,6 +3033,7 @@ function confirmReset() {
   closeResetModal();
   renderAll();
   showUndoToast();
+  queueAutoSave();
 
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => {
@@ -2999,6 +3054,7 @@ function undoReset() {
   renderAll();
   showToast('↩️ Wiederhergestellt!', 'success');
   lastState = null;
+  queueAutoSave();
 }
 
 // ── PWA INSTALL ──
@@ -3011,14 +3067,14 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v6" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v7" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v6');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v7');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
