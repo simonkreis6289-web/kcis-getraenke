@@ -28,8 +28,8 @@
       --blue: #3498db;
       --text: #000000;
       --muted: #121824;
-      --t1b: #b5002d;
-      --t2b: #1e00b5;
+      --t1b: #1e00b5;
+      --t2b: #b5002d;
       --purple: #9b59b6;
       --red: #ff084e;
     }
@@ -1458,6 +1458,7 @@ function formatDateTime(dt) {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
+    second: '2-digit'
   });
 }
 
@@ -1468,6 +1469,7 @@ function formatTime(dt) {
   return d.toLocaleTimeString('de-DE', {
     hour: '2-digit',
     minute: '2-digit'
+    second: '2-digit'
   });
 }
 
@@ -1482,6 +1484,7 @@ function updateHeaderDateTime() {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
+    second: '2-digit'
   });
 }
 
