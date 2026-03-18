@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v5">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v5">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v5">
+  <link rel="manifest" href="manifest.json?v=20260318-v6">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v6">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v6">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -22,10 +22,21 @@
       --surface: #ffffff;
       --surface2: #ffffff;
       --border: #2e3350;
-      --accent: rgba(204,0,0,1);
-      --accent_font: rgba(204,0,0,0.15);
-      --accent2: rgba(7,148,0,1);
-      --accent2_font: rgba(7,148,0,0.15);
+
+      /* Branding wieder orange/gelb */
+      --accent: #f5a623;
+      --accent-soft: rgba(245, 166, 35, 0.15);
+
+      /* Zweit-Akzent für offene Beträge / Warnungen */
+      --accent2: #e8412a;
+      --accent2-soft: rgba(232, 65, 42, 0.15);
+
+      /* Deine neuen Button-Farben nur für + / - */
+      --btn-plus-bg: rgba(204, 0, 0, 0.15);
+      --btn-plus-fg: rgba(204, 0, 0, 1);
+      --btn-minus-bg: rgba(7, 148, 0, 0.15);
+      --btn-minus-fg: rgba(7, 148, 0, 1);
+
       --green: #2ecc71;
       --blue: #c4c4c4;
       --text: #000000;
@@ -559,13 +570,13 @@
     }
 
     .counter-btn.minus {
-      background: var(--accent2_font);
-      color: var(--accent2);
+      background: var(--btn-minus-bg);
+      color: var(--btn-minus-fg);
     }
 
     .counter-btn.plus {
-      background: var(--accent_font);
-      color: var(--accent);
+      background: var(--btn-plus-bg);
+      color: var(--btn-plus-fg);
     }
 
     .counter-btn:active { transform: scale(0.85); }
@@ -1229,7 +1240,7 @@
     }
 
     .login-btn {
-      background: var(--accent);
+      background: rgba(204, 0, 0, 0.15);
       color: #000;
       border: none;
       border-radius: 12px;
@@ -1404,7 +1415,7 @@
       <div class="unassigned-list" id="unassigned-list"></div>
       <div class="gruppe-grid">
         <div class="gruppe-box t1">
-          <div class="gruppe-title">⚫​ Wand</div>
+          <div class="gruppe-title">⚫ Wand</div>
           <div class="gruppe-persons" id="gruppe-t1"></div>
         </div>
         <div class="gruppe-box t2">
@@ -1440,7 +1451,7 @@
 
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
         <div class="team-select-row">
-          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">⚫​ Wand verloren</button>
+          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">⚫ Wand verloren</button>
           <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
         </div>
 
@@ -2281,7 +2292,7 @@ function renderDrinkRows(list, body) {
     tr.className = (p.tisch === 'T1' ? 't1-row ' : '') + (p.tisch === 'T2' ? 't2-row ' : '');
 
     const tl = p.tisch
-      ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫​ Wand' : '🔴 TV'}</span>`
+      ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫ Wand' : '🔴 TV'}</span>`
       : '';
 
     let html = `
@@ -2375,7 +2386,7 @@ function updateTeamInfoBox() {
   }
 
   const members = getActiveTeamMembers(selectedLoser);
-  const teamName = selectedLoser === 'T1' ? '⚫​ Wand' : '🔴 TV';
+  const teamName = selectedLoser === 'T1' ? '⚫ Wand' : '🔴 TV';
 
   box.innerHTML = `
     <strong>${teamName}</strong><br>
@@ -2427,7 +2438,7 @@ function renderTeamspiele() {
     c.className = 'spiel-card';
     c.innerHTML = `
       <div class="spiel-info">
-        <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? '⚫​ Wand' : '🔴 TV'} hat verloren</div>
+        <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? '⚫ Wand' : '🔴 TV'} hat verloren</div>
         <div class="spiel-detail"><strong>${getSpielDisplayName(s)}</strong></div>
         <div class="spiel-detail">${di || 'Keine Getränke'}</div>
         <div class="spiel-detail">Aufgeteilt auf: ${displayMembers || '?'}</div>
@@ -2528,7 +2539,7 @@ function createAbrechGrid(list) {
     c.innerHTML = `
       <div class="abrech-name">${p.name}</div>
       ${p.isGuest ? '<div class="abrech-role">Gastkegler</div>' : ''}
-      <div class="abrech-tisch">${p.tisch === 'T1' ? '⚫​ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
+      <div class="abrech-tisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
       <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
       ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
       ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
@@ -3000,14 +3011,14 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v5" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v6" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v5');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v6');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
