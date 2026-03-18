@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v7">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v7">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v7">
+  <link rel="manifest" href="manifest.json?v=20260318-v10">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v10">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v10">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -588,19 +588,15 @@
       color: #000000;
     }
 
-    .counter-val.nonzero { color: #000000; }
+    .counter-val.nonzero {
+      color: #000000;
+    }
 
     .total-cell {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 1.1rem;
       color: #000000;
       min-width: 70px;
-    }
-
-    .team-extra-cell {
-      color: #000000 !important;
-      font-weight: 700;
-      font-size: 0.85rem;
     }
 
     .prices-toolbar {
@@ -1186,6 +1182,10 @@
     #toast.success { border-color: var(--green); color: var(--green); }
     #toast.error { border-color: var(--accent2); color: var(--accent2); }
 
+    #toast button {
+      pointer-events: auto;
+    }
+
     #loading-screen {
       position: fixed;
       inset: 0;
@@ -1221,7 +1221,7 @@
     #login-screen {
       position: fixed;
       inset: 0;
-      background: var(--bg);
+      background: rgba(255,255,255,0.92);
       display: none;
       flex-direction: column;
       align-items: center;
@@ -1242,7 +1242,7 @@
       color: var(--muted);
       font-size: 0.9rem;
       text-align: center;
-      max-width: 300px;
+      max-width: 320px;
     }
 
     .login-btn {
@@ -1289,12 +1289,12 @@
 <div id="loading-screen">
   <h2>KC IS</h2>
   <div class="loader"></div>
-  <span style="color:var(--muted);font-size:0.8rem">Verbinde mit Google…</span>
+  <span style="color:var(--muted);font-size:0.8rem">Lade Daten…</span>
 </div>
 
 <div id="login-screen">
   <h2>KC IS</h2>
-  <p>Bitte melde dich mit deinem Google-Konto an, um die Abrechnung zu öffnen.</p>
+  <p>Google-Anmeldung nötig, wenn lokal gespeicherte Daten ins Sheet synchronisiert werden sollen.</p>
   <button class="login-btn" onclick="signIn()">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -1535,11 +1535,14 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-8';
+const APP_VERSION = '20260318-10';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
 const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
+
+const LOCAL_STATE_KEY = 'kcis_local_state_v3';
+const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v3';
 
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
@@ -1564,20 +1567,22 @@ let SPIELE_KATALOG = [
 let persons = [];
 let prices  = {};
 let spiele  = [];
-let tokenClient, accessToken = null;
+let tokenClient = null;
+let accessToken = null;
 let modalPerson = null;
 let selectedLoser = null;
 let teamDrinks = {};
 let lastState = null;
 let undoTimer = null;
 let deferredPrompt = null;
-let toastTimer;
+let toastTimer = null;
 
 let autoSaveTimer = null;
 let autoSaveRunning = false;
 let autoSaveQueued = false;
+let appReady = false;
 
-// ── AUTH ──
+// ── AUTH / START ──
 function gapiLoaded() {
   gapi.load('client', initGapiClient);
 }
@@ -1593,35 +1598,108 @@ function gisLoaded() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
-    callback: async (resp) => {
-      if (resp.error) {
-        document.getElementById('loading-screen').style.display = 'none';
-        document.getElementById('login-screen').style.display = 'flex';
-        return;
-      }
-
-      accessToken = resp.access_token;
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('loading-screen').style.display = 'flex';
-
-      await loadFromSheet();
-
-      document.getElementById('loading-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-    }
+    callback: () => {}
   });
 
+  startApp();
+}
+
+async function startApp() {
+  loadLocal();
+  renderAll();
+  appReady = true;
+
   document.getElementById('loading-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
+
+  if (!navigator.onLine) {
+    showToast('📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', 'success');
+    return;
+  }
+
+  if (hasPendingSync()) {
+    document.getElementById('login-screen').style.display = 'flex';
+    showToast('📌 Lokale Änderungen gefunden. Bitte Google-Anmeldung für Sync.', 'success');
+    return;
+  }
+
+  try {
+    const ok = await ensureAccessToken(false);
+    if (!ok) return;
+    await loadFromSheet();
+    saveLocal(false);
+  } catch (e) {
+    console.error('startApp', e);
+    showToast('⚠️ Start lokal. Sync folgt später.', 'error');
+  }
 }
 
 function signIn() {
+  if (!tokenClient) return;
+
+  tokenClient.callback = async (resp) => {
+    if (resp.error) {
+      showToast('❌ Google-Anmeldung fehlgeschlagen', 'error');
+      return;
+    }
+
+    accessToken = resp.access_token;
+    document.getElementById('login-screen').style.display = 'none';
+
+    try {
+      if (hasPendingSync()) {
+        await saveToSheet(false, true);
+      } else {
+        await loadFromSheet();
+        saveLocal(false);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('⚠️ Anmeldung ok, aber Sync fehlgeschlagen', 'error');
+    }
+  };
+
   tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function ensureAccessToken(interactive = false) {
+  return new Promise((resolve) => {
+    if (accessToken) {
+      resolve(true);
+      return;
+    }
+
+    if (!navigator.onLine || !tokenClient) {
+      resolve(false);
+      return;
+    }
+
+    tokenClient.callback = (resp) => {
+      if (resp && !resp.error && resp.access_token) {
+        accessToken = resp.access_token;
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    };
+
+    try {
+      tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+    } catch (e) {
+      console.error('ensureAccessToken', e);
+      resolve(false);
+    }
+  });
 }
 
 function refreshToken() {
   return new Promise((resolve, reject) => {
-    tokenClient.callback = async (resp) => {
+    if (!tokenClient) {
+      reject(new Error('Token client nicht bereit'));
+      return;
+    }
+
+    tokenClient.callback = (resp) => {
       if (resp.error) {
         reject(resp);
         return;
@@ -1629,8 +1707,103 @@ function refreshToken() {
       accessToken = resp.access_token;
       resolve(accessToken);
     };
+
     tokenClient.requestAccessToken({ prompt: '' });
   });
+}
+
+// ── LOCAL STORAGE ──
+function getSerializableState() {
+  return {
+    persons,
+    spiele,
+    DRINKS,
+    prices,
+    SPIELE_KATALOG,
+    selectedLoser,
+    teamDrinks
+  };
+}
+
+function saveLocal(markPending = true) {
+  try {
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(getSerializableState()));
+    if (markPending) {
+      localStorage.setItem(LOCAL_PENDING_SYNC_KEY, '1');
+    }
+  } catch (e) {
+    console.error('saveLocal', e);
+  }
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LOCAL_STATE_KEY);
+    if (!raw) return false;
+
+    const state = JSON.parse(raw);
+
+    persons = Array.isArray(state.persons) ? state.persons : [];
+    spiele = Array.isArray(state.spiele) ? state.spiele : [];
+    DRINKS = Array.isArray(state.DRINKS) && state.DRINKS.length ? state.DRINKS : DRINKS;
+    prices = state.prices || prices;
+    SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
+    selectedLoser = state.selectedLoser || null;
+    teamDrinks = state.teamDrinks || {};
+
+    hydrateState();
+    return true;
+  } catch (e) {
+    console.error('loadLocal', e);
+    return false;
+  }
+}
+
+function hydrateState() {
+  DRINKS.forEach(d => {
+    if (prices[d.key] === undefined) prices[d.key] = 0;
+  });
+
+  persons.forEach(p => {
+    if (!p.drinks) p.drinks = {};
+    DRINKS.forEach(d => {
+      if (p.drinks[d.key] === undefined) p.drinks[d.key] = 0;
+    });
+
+    p.present = !!p.present;
+    p.isGuest = !!p.isGuest;
+    p.tisch = normalizeTisch(p.tisch);
+    p.teamExtra = parseFloat(p.teamExtra || 0) || 0;
+    p.paid = parseFloat(p.paid || 0) || 0;
+    p.left = !!p.left;
+    p.leftAt = p.leftAt || '';
+  });
+}
+
+function hasPendingSync() {
+  return localStorage.getItem(LOCAL_PENDING_SYNC_KEY) === '1';
+}
+
+function clearPendingSync() {
+  localStorage.removeItem(LOCAL_PENDING_SYNC_KEY);
+}
+
+function persistState() {
+  if (!appReady) return;
+  saveLocal(true);
+  queueAutoSave();
+}
+
+function queueAutoSave() {
+  clearTimeout(autoSaveTimer);
+
+  autoSaveTimer = setTimeout(async () => {
+    if (autoSaveRunning) {
+      autoSaveQueued = true;
+      return;
+    }
+    await saveToSheet(true, false);
+  }, 800);
 }
 
 // ── HELPERS ──
@@ -1686,10 +1859,6 @@ function makeDrinkKey(label) {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
   return key || ('drink_' + Date.now());
-}
-
-function hasPaidSomething(p) {
-  return (parseFloat(p.paid) || 0) > 0;
 }
 
 function getPersonOpenAmount(p) {
@@ -1754,17 +1923,6 @@ function getPersonTeamspielBreakdown(p) {
     }
   });
   return result;
-}
-
-function queueAutoSave() {
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(async () => {
-    if (autoSaveRunning) {
-      autoSaveQueued = true;
-      return;
-    }
-    await saveToSheet(true, false);
-  }, 800);
 }
 
 // ── SHEET SETUP ──
@@ -1920,55 +2078,21 @@ async function loadFromSheet() {
     (ab.result.values || []).forEach(r => {
       if (!r[0]) return;
 
-      const hasTypeColumn =
-        (r[1] || '').toUpperCase() === 'MITGLIED' ||
-        (r[1] || '').toUpperCase() === 'GAST';
+      const name = r[0] || '';
+      const isGuest = (r[1] || '').toUpperCase() === 'GAST';
+      const present = r[2] === 'TRUE';
+      const tisch = normalizeTisch(r[3] || '');
+      const drinks = {};
 
-      let name = r[0] || '';
-      let isGuest = false;
-      let present = false;
-      let tisch = '';
-      let drinks = {};
-      let teamExtra = 0;
-      let paid = 0;
-      let left = false;
-      let leftAt = '';
+      DRINKS.forEach((d, i) => {
+        drinks[d.key] = parseInt(r[4 + i] || '0') || 0;
+      });
 
-      if (hasTypeColumn) {
-        isGuest = (r[1] || '').toUpperCase() === 'GAST';
-        present = r[2] === 'TRUE';
-        tisch = normalizeTisch(r[3] || '');
-
-        DRINKS.forEach((d, i) => {
-          drinks[d.key] = parseInt(r[4 + i] || '0') || 0;
-        });
-
-        const teamExtraIndex = 4 + DRINKS.length;
-        const paidIndex = teamExtraIndex + 2;
-        const leftIndex = teamExtraIndex + 3;
-        const leftAtIndex = teamExtraIndex + 4;
-
-        teamExtra = parseFloat(r[teamExtraIndex] || '0') || 0;
-        paid = parseFloat(r[paidIndex] || '0') || 0;
-        left = r[leftIndex] === 'TRUE';
-        leftAt = r[leftAtIndex] || '';
-      } else {
-        isGuest = false;
-        present = r[1] === 'TRUE';
-        tisch = normalizeTisch(r[2] || '');
-
-        DRINKS.forEach((d, i) => {
-          drinks[d.key] = parseInt(r[3 + i] || '0') || 0;
-        });
-
-        const teamExtraIndex = 3 + DRINKS.length;
-        const paidIndex = teamExtraIndex + 2;
-
-        teamExtra = parseFloat(r[teamExtraIndex] || '0') || 0;
-        paid = parseFloat(r[paidIndex] || '0') || 0;
-        left = false;
-        leftAt = '';
-      }
+      const teamExtraIndex = 4 + DRINKS.length;
+      const totalIndex = teamExtraIndex + 1;
+      const paidIndex = teamExtraIndex + 2;
+      const leftIndex = teamExtraIndex + 3;
+      const leftAtIndex = teamExtraIndex + 4;
 
       persons.push({
         name,
@@ -1976,10 +2100,10 @@ async function loadFromSheet() {
         present,
         tisch,
         drinks,
-        teamExtra,
-        paid,
-        left,
-        leftAt
+        teamExtra: parseFloat(r[teamExtraIndex] || '0') || 0,
+        paid: parseFloat(r[paidIndex] || '0') || 0,
+        left: r[leftIndex] === 'TRUE',
+        leftAt: r[leftAtIndex] || ''
       });
     });
   } catch (e) {
@@ -2003,13 +2127,28 @@ async function loadFromSheet() {
     console.error('spiele', e);
   }
 
+  hydrateState();
   renderAll();
 }
 
 // ── SAVE ──
 async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
+  saveLocal(true);
+
+  if (!navigator.onLine) {
+    if (showSuccessToast) showToast('📴 Offline gespeichert. Sync folgt später.', 'success');
+    return;
+  }
+
   if (autoSaveRunning) {
     autoSaveQueued = true;
+    return;
+  }
+
+  const ok = await ensureAccessToken(!isAutoSave);
+  if (!ok) {
+    document.getElementById('login-screen').style.display = 'flex';
+    if (showSuccessToast) showToast('📌 Lokal gespeichert. Bitte Google-Anmeldung für Sync.', 'success');
     return;
   }
 
@@ -2078,14 +2217,19 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
       });
     }
 
+    clearPendingSync();
+    saveLocal(false);
+    document.getElementById('login-screen').style.display = 'none';
+
     if (showSuccessToast) {
-      showToast(isAutoSave ? '✅ Automatisch gespeichert' : '✅ Gespeichert!', 'success');
+      showToast(isAutoSave ? '✅ Automatisch synchronisiert' : '✅ Gespeichert!', 'success');
     }
   } catch (e) {
     console.error(e);
-    showToast(isAutoSave ? '❌ AutoSave fehlgeschlagen' : '❌ Fehler beim Speichern', 'error');
+    showToast(isAutoSave ? '❌ AutoSync fehlgeschlagen' : '❌ Fehler beim Speichern', 'error');
   } finally {
     autoSaveRunning = false;
+
     if (btn) {
       btn.classList.remove('loading');
       btn.textContent = '💾 Speichern';
@@ -2107,16 +2251,10 @@ async function savePrices() {
     if (el) prices[d.key] = parseFloat(String(el.value).replace(',', '.')) || 0;
   });
 
-  try {
-    await writeHeadersToSheet();
-    showToast('✅ Preise gespeichert!', 'success');
-    recalcTeamExtras();
-    renderAll();
-    queueAutoSave();
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Fehler', 'error');
-  }
+  recalcTeamExtras();
+  renderAll();
+  persistState();
+  showToast('✅ Preise gespeichert!', 'success');
 }
 
 // ── ARCHIVE ──
@@ -2125,6 +2263,13 @@ async function archiveSheet() {
 
   try {
     await saveToSheet(false, true);
+
+    const ok = await ensureAccessToken(true);
+    if (!ok) {
+      showToast('❌ Für Archiv bitte mit Google anmelden', 'error');
+      return;
+    }
+
     await refreshToken();
 
     const now = new Date();
@@ -2253,6 +2398,7 @@ function renderPersonCards(targetId, list) {
         p.leftAt = '';
       }
       renderAll();
+      persistState();
     };
 
     g.appendChild(c);
@@ -2291,6 +2437,7 @@ function renderGruppen() {
     c.onclick = () => {
       p.tisch = 'T1';
       renderAll();
+      persistState();
     };
     unEl.appendChild(c);
   });
@@ -2307,6 +2454,7 @@ function renderGruppen() {
     c.onclick = () => {
       p.tisch = 'T2';
       renderAll();
+      persistState();
     };
     t1El.appendChild(c);
   });
@@ -2324,6 +2472,7 @@ function renderGruppen() {
     c.onclick = () => {
       p.tisch = 'T1';
       renderAll();
+      persistState();
     };
     t2El.appendChild(c);
   });
@@ -2355,7 +2504,7 @@ function renderDrinkRows(list, body) {
         <td>
           <div class="counter">
             <button class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
-            <span class="counter-val ${v > 0 ? 'nonzero' : ''}">${v}</span>
+            <span class="counter-val">${v}</span>
             <button class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
           </div>
         </td>
@@ -2363,7 +2512,7 @@ function renderDrinkRows(list, body) {
     });
 
     const te = p.teamExtra || 0;
-    html += `<td class="team-extra-cell">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    html += `<td style="color:#000000;font-weight:700;font-size:0.85rem">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
     html += `<td class="total-cell">${calcTotal(p).toFixed(2).replace('.', ',')}€</td>`;
 
     tr.innerHTML = html;
@@ -2408,7 +2557,7 @@ function changeDrink(name, key, delta) {
   renderGetraenke();
   updateStats();
   renderAbrechnung();
-  queueAutoSave();
+  persistState();
 }
 
 // ── TEAMSPIELE ──
@@ -2417,6 +2566,7 @@ function selectLoser(t) {
   document.getElementById('team-btn-t1').classList.toggle('active', t === 'T1');
   document.getElementById('team-btn-t2').classList.toggle('active', t === 'T2');
   updateTeamInfoBox();
+  saveLocal(true);
 }
 
 function getActiveTeamMembers(teamKey) {
@@ -2453,7 +2603,7 @@ function renderTeamspiele() {
       <span class="team-drink-name">${d.label}</span>
       <div class="counter">
         <button class="counter-btn minus" onclick="changeTeamDrink('${escapeForJs(d.key)}',-1)">−</button>
-        <span class="counter-val ${v > 0 ? 'nonzero' : ''}" id="td-${d.key}">${v}</span>
+        <span class="counter-val" id="td-${d.key}">${v}</span>
         <button class="counter-btn plus" onclick="changeTeamDrink('${escapeForJs(d.key)}',1)">+</button>
       </div>
     `;
@@ -2501,10 +2651,8 @@ function renderTeamspiele() {
 function changeTeamDrink(key, delta) {
   teamDrinks[key] = Math.max(0, (teamDrinks[key] || 0) + delta);
   const el = document.getElementById('td-' + key);
-  if (el) {
-    el.textContent = teamDrinks[key];
-    el.className = 'counter-val' + (teamDrinks[key] > 0 ? ' nonzero' : '');
-  }
+  if (el) el.textContent = teamDrinks[key];
+  saveLocal(true);
 }
 
 function addSpiel() {
@@ -2549,13 +2697,13 @@ function addSpiel() {
 
   renderAll();
   showToast('⚽ Spiel hinzugefügt!', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 function deleteSpiel(i) {
   spiele.splice(i, 1);
   renderAll();
-  queueAutoSave();
+  persistState();
 }
 
 // ── ABRECHNUNG ──
@@ -2746,7 +2894,7 @@ function confirmPayment() {
   renderAnwesenheit();
   renderTeamspiele();
   showToast('✅ Zahlung gespeichert', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 // ── PREISE ──
@@ -2809,7 +2957,7 @@ function confirmAddDrink() {
   closeDrinkModal();
   renderAll();
   showToast('✅ Getränk hinzugefügt', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 function deleteDrink(key) {
@@ -2837,7 +2985,7 @@ function deleteDrink(key) {
 
   renderAll();
   showToast('🗑️ Getränk gelöscht', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 // ── SPIELE KATALOG ──
@@ -2900,7 +3048,7 @@ function addSpielToKatalog() {
   renderSpieltypSelect();
   renderSpieleKatalog();
   showToast('✅ Spiel hinzugefügt', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 function deleteSpielFromKatalog(name) {
@@ -2916,7 +3064,7 @@ function deleteSpielFromKatalog(name) {
   renderSpieltypSelect();
   renderSpieleKatalog();
   showToast('🗑️ Spiel gelöscht', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 // ── PERSONEN ──
@@ -2948,7 +3096,7 @@ function addPerson(isGuest) {
   input.value = '';
   renderAll();
   showToast(`✅ ${name} hinzugefügt`, 'success');
-  queueAutoSave();
+  persistState();
 }
 
 function deletePerson(name) {
@@ -2969,7 +3117,7 @@ function deletePerson(name) {
 
   renderAll();
   showToast('🗑️ Person gelöscht', 'success');
-  queueAutoSave();
+  persistState();
 }
 
 // ── TABS ──
@@ -3016,7 +3164,7 @@ function closeResetModal() {
 }
 
 function confirmReset() {
-  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG });
+  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG, selectedLoser, teamDrinks });
 
   persons.forEach(p => {
     Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
@@ -3033,7 +3181,7 @@ function confirmReset() {
   closeResetModal();
   renderAll();
   showUndoToast();
-  queueAutoSave();
+  persistState();
 
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => {
@@ -3045,17 +3193,32 @@ function undoReset() {
   if (!lastState) return;
 
   const state = JSON.parse(lastState);
-  persons = state.persons;
-  spiele = state.spiele;
-  DRINKS = state.DRINKS;
-  prices = state.prices;
+  persons = state.persons || [];
+  spiele = state.spiele || [];
+  DRINKS = state.DRINKS || DRINKS;
+  prices = state.prices || prices;
   SPIELE_KATALOG = state.SPIELE_KATALOG || SPIELE_KATALOG;
+  selectedLoser = state.selectedLoser || null;
+  teamDrinks = state.teamDrinks || {};
 
+  hydrateState();
   renderAll();
   showToast('↩️ Wiederhergestellt!', 'success');
   lastState = null;
-  queueAutoSave();
+  persistState();
 }
+
+// ── NETWORK EVENTS ──
+window.addEventListener('online', async () => {
+  showToast('🌐 Wieder online.', 'success');
+  if (hasPendingSync()) {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+});
+
+window.addEventListener('offline', () => {
+  showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
+});
 
 // ── PWA INSTALL ──
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -3067,14 +3230,14 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v7" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v10" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v7');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v10');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
