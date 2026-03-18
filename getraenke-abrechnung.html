@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v10">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v10">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v10">
+  <link rel="manifest" href="manifest.json?v=20260318-v12">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v12">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v12">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -24,10 +24,7 @@
       --border: #2e3350;
 
       --accent: #f5a623;
-      --accent-soft: rgba(245, 166, 35, 0.15);
-
       --accent2: #e8412a;
-      --accent2-soft: rgba(232, 65, 42, 0.15);
 
       --btn-plus-bg: rgba(204, 0, 0, 0.15);
       --btn-plus-fg: rgba(204, 0, 0, 1);
@@ -35,7 +32,6 @@
       --btn-minus-fg: rgba(7, 148, 0, 1);
 
       --green: #2ecc71;
-      --blue: #c4c4c4;
       --text: #000000;
       --muted: #121824;
       --t1b: #292929;
@@ -43,6 +39,13 @@
       --purple: #9b59b6;
       --red: #ff084e;
       --guest: #7f8c8d;
+      --round: #a85ad4;
+
+      --table-row-bg: #ffffff;
+      --table-row-alt-bg: #f5f5f5;
+      --table-sticky-bg: #ffffff;
+      --table-sticky-alt-bg: #eeeeee;
+      --table-left-fade: 0.42;
     }
 
     * {
@@ -106,7 +109,7 @@
       justify-content: flex-end;
     }
 
-    .sync-btn {
+    .sync-btn, .add-btn, .round-btn {
       background: var(--accent);
       color: #000;
       border: none;
@@ -116,13 +119,23 @@
       font-weight: 700;
       font-size: 0.8rem;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      transition: opacity 0.2s;
     }
 
-    .sync-btn:active { opacity: 0.7; }
+    .round-btn {
+      background: rgba(168, 90, 212, 0.14);
+      color: var(--round);
+      border: 1px solid rgba(168, 90, 212, 0.3);
+    }
+
+    .sync-btn:active,
+    .archive-btn:active,
+    .add-btn:active,
+    .round-btn:active { opacity: 0.7; }
+
     .sync-btn.loading { opacity: 0.6; pointer-events: none; }
 
     .archive-btn {
@@ -136,8 +149,6 @@
       font-size: 0.75rem;
       cursor: pointer;
     }
-
-    .archive-btn:active { opacity: 0.7; }
 
     .tabs {
       display: flex;
@@ -166,7 +177,6 @@
 
     main {
       width: 100%;
-      max-width: none;
       margin: 0;
       padding: 16px;
     }
@@ -445,7 +455,13 @@
 
     .getraenke-section {
       width: 100%;
-      max-width: none;
+    }
+
+    .getraenke-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
     }
 
     .drinks-table-wrap {
@@ -453,6 +469,8 @@
       overflow-x: auto;
       overflow-y: visible;
       -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: 12px;
     }
 
     .drinks-table-wrap::-webkit-scrollbar { height: 8px; }
@@ -462,11 +480,12 @@
     }
 
     table {
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
     }
 
     .drinks-table {
-      width: 100%;
+      width: max-content;
       min-width: 100%;
     }
 
@@ -481,17 +500,31 @@
       text-align: center;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
+      position: relative;
+      z-index: 1;
     }
 
     thead th:first-child {
       text-align: left;
       padding-left: 14px;
-      min-width: 200px;
+      min-width: 230px;
     }
 
-    tbody tr { border-bottom: 1px solid var(--border); }
-    tbody tr.t1-row { border-left: 3px solid var(--t1b); }
-    tbody tr.t2-row { border-left: 3px solid var(--t2b); }
+    thead th.sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: var(--table-sticky-bg);
+      box-shadow: 6px 0 10px rgba(0,0,0,0.04);
+    }
+
+    tbody tr {
+      background: var(--table-row-bg);
+    }
+
+    tbody tr.alt-row {
+      background: var(--table-row-alt-bg);
+    }
 
     tbody td {
       padding: 12px 6px;
@@ -499,25 +532,40 @@
       vertical-align: middle;
       white-space: nowrap;
       color: #000000;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
     tbody td:first-child {
       text-align: left;
       padding-left: 12px;
-      min-width: 200px;
+      min-width: 230px;
+    }
+
+    tbody td.sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      background: var(--table-sticky-bg);
+      box-shadow: 6px 0 10px rgba(0,0,0,0.04);
+    }
+
+    tbody tr.alt-row td.sticky-col {
+      background: var(--table-sticky-alt-bg);
     }
 
     .guest-separator-row td {
       padding: 8px 12px;
       border-top: 1px solid var(--border);
       border-bottom: none;
-      background: rgba(0,0,0,0.02);
+      background: rgba(0,0,0,0.02) !important;
       font-size: 0.72rem;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 1px;
       text-align: left !important;
+      position: static !important;
+      box-shadow: none !important;
     }
 
     .person-cell {
@@ -526,10 +574,24 @@
       gap: 2px;
     }
 
+    .person-cell.left-state .pname,
+    .person-cell.left-state .prole,
+    .person-cell.left-state .ptisch {
+      opacity: var(--table-left-fade);
+    }
+
     .person-cell .pname {
       font-weight: 600;
       font-size: 0.85rem;
       color: #000000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .person-cell .left-emoji {
+      font-size: 0.9rem;
+      line-height: 1;
     }
 
     .person-cell .prole {
@@ -588,8 +650,28 @@
       color: #000000;
     }
 
-    .counter-val.nonzero {
+    .paid-cell {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      min-width: 80px;
+      color: var(--green);
+    }
+
+    .paid-cell.zero {
       color: #000000;
+      opacity: 0.55;
+    }
+
+    .round-cell {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      min-width: 80px;
+      color: var(--round);
+    }
+
+    .round-cell.zero {
+      color: #000000;
+      opacity: 0.55;
     }
 
     .total-cell {
@@ -805,6 +887,7 @@
       color: var(--muted);
       display: flex;
       justify-content: space-between;
+      gap: 10px;
     }
 
     .tap-hint {
@@ -856,14 +939,16 @@
       color: var(--t2b);
     }
 
-    .team-drinks-grid {
+    .team-drinks-grid,
+    .round-drinks-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 8px;
       margin-bottom: 14px;
     }
 
-    .team-drink-row {
+    .team-drink-row,
+    .round-drink-row {
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -874,7 +959,8 @@
       gap: 8px;
     }
 
-    .team-drink-name {
+    .team-drink-name,
+    .round-drink-name {
       font-size: 0.8rem;
       font-weight: 600;
       flex: 1;
@@ -984,7 +1070,7 @@
       border-radius: 16px;
       padding: 24px;
       width: 100%;
-      max-width: 420px;
+      max-width: 520px;
       max-height: 90vh;
       overflow-y: auto;
     }
@@ -1040,7 +1126,7 @@
       font-size: 0.8rem;
       color: var(--muted);
       white-space: nowrap;
-      min-width: 80px;
+      min-width: 100px;
     }
 
     .modal-euro-input,
@@ -1058,14 +1144,8 @@
       outline: none;
     }
 
-    .modal-euro-input {
-      text-align: right;
-    }
-
-    .modal-text-input {
-      text-align: left;
-      font-weight: 600;
-    }
+    .modal-euro-input { text-align: right; }
+    .modal-text-input { text-align: left; font-weight: 600; }
 
     .modal-euro-input:focus,
     .modal-text-input:focus,
@@ -1129,137 +1209,6 @@
       cursor: pointer;
     }
 
-    .add-person-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      align-items: center;
-    }
-
-    .add-person-row input {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      outline: none;
-    }
-
-    .add-person-row input:focus { border-color: var(--accent); }
-
-    .add-btn {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-
-    #toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      z-index: 999;
-      transition: transform 0.3s ease;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    #toast.show { transform: translateX(-50%) translateY(0); }
-    #toast.success { border-color: var(--green); color: var(--green); }
-    #toast.error { border-color: var(--accent2); color: var(--accent2); }
-
-    #toast button {
-      pointer-events: auto;
-    }
-
-    #loading-screen {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      gap: 16px;
-    }
-
-    #loading-screen h2 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 2rem;
-      color: var(--accent);
-      letter-spacing: 3px;
-    }
-
-    .loader {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    #login-screen {
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,0.92);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9998;
-      gap: 20px;
-      padding: 24px;
-    }
-
-    #login-screen h2 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 2rem;
-      color: var(--accent);
-      letter-spacing: 3px;
-    }
-
-    #login-screen p {
-      color: var(--muted);
-      font-size: 0.9rem;
-      text-align: center;
-      max-width: 320px;
-    }
-
-    .login-btn {
-      background: rgba(204, 0, 0, 0.15);
-      color: #000;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 32px;
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
     .hidden { display: none !important; }
     #app { display: none; }
 
@@ -1320,6 +1269,7 @@
     </div>
 
     <div id="modal-teamspiele-breakdown" style="margin-bottom:14px;"></div>
+    <div id="modal-runden-breakdown" style="margin-bottom:14px;"></div>
 
     <div class="modal-input-row">
       <label>Bezahlt (€)</label>
@@ -1358,6 +1308,34 @@
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeDrinkModal()">Abbrechen</button>
       <button class="modal-ok" onclick="confirmAddDrink()">+ Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="round-modal">
+  <div class="modal">
+    <h3>Runde geben</h3>
+    <div class="modal-sub">Wähle die Person aus und dann die Getränke der Runde</div>
+
+    <div class="modal-input-row">
+      <label>Wer zahlt?</label>
+      <select id="round-person-select" class="modal-select" onchange="handleRoundPersonChange()"></select>
+    </div>
+
+    <div id="round-drinks-area" class="hidden">
+      <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Getränke der Runde
+      </div>
+      <div class="round-drinks-grid" id="round-drinks-grid"></div>
+      <div class="modal-meta-row" style="margin-bottom:14px;">
+        <span>Preis der Runde</span>
+        <strong id="round-total-display">0,00 €</strong>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeRoundModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmGiveRound()">🍻 Runde geben</button>
     </div>
   </div>
 </div>
@@ -1434,6 +1412,9 @@
     <div id="tab-getraenke" class="hidden">
       <div class="getraenke-section">
         <div class="section-title">Getränke erfassen</div>
+        <div class="getraenke-toolbar">
+          <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
+        </div>
         <div class="drinks-table-wrap">
           <table class="drinks-table">
             <thead><tr id="drinks-header"></tr></thead>
@@ -1522,7 +1503,7 @@
     <div class="modal-sub">Dieser Vorgang kann rückgängig gemacht werden (5 Sekunden)</div>
 
     <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
-      Getränke, Teamspiele und Zahlungen werden komplett zurückgesetzt.
+      Getränke, Teamspiele, Runden und Zahlungen werden komplett zurückgesetzt.
     </div>
 
     <div class="modal-btns">
@@ -1535,14 +1516,14 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-10';
+const APP_VERSION = '20260318-12';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
 const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
 
-const LOCAL_STATE_KEY = 'kcis_local_state_v3';
-const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v3';
+const LOCAL_STATE_KEY = 'kcis_local_state_v5';
+const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v5';
 
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
@@ -1572,6 +1553,7 @@ let accessToken = null;
 let modalPerson = null;
 let selectedLoser = null;
 let teamDrinks = {};
+let roundDraftDrinks = {};
 let lastState = null;
 let undoTimer = null;
 let deferredPrompt = null;
@@ -1766,6 +1748,9 @@ function hydrateState() {
 
   persons.forEach(p => {
     if (!p.drinks) p.drinks = {};
+    if (!Array.isArray(p.rounds)) p.rounds = [];
+    if (p.roundExtra === undefined) p.roundExtra = 0;
+
     DRINKS.forEach(d => {
       if (p.drinks[d.key] === undefined) p.drinks[d.key] = 0;
     });
@@ -1774,6 +1759,7 @@ function hydrateState() {
     p.isGuest = !!p.isGuest;
     p.tisch = normalizeTisch(p.tisch);
     p.teamExtra = parseFloat(p.teamExtra || 0) || 0;
+    p.roundExtra = parseFloat(p.roundExtra || 0) || 0;
     p.paid = parseFloat(p.paid || 0) || 0;
     p.left = !!p.left;
     p.leftAt = p.leftAt || '';
@@ -1908,6 +1894,10 @@ function getPresentGuests() {
   return persons.filter(p => p.present && p.isGuest);
 }
 
+function getPresentNotLeftPeople() {
+  return persons.filter(p => p.present && !p.left);
+}
+
 function getSpielDisplayName(spiel) {
   return spiel.spieltyp || 'Teamspiel';
 }
@@ -1923,6 +1913,17 @@ function getPersonTeamspielBreakdown(p) {
     }
   });
   return result;
+}
+
+function describeRoundDrinks(drinksObj) {
+  return DRINKS
+    .filter(d => (drinksObj[d.key] || 0) > 0)
+    .map(d => `${drinksObj[d.key]}x ${d.label}`)
+    .join(', ');
+}
+
+function calcRoundTotal(drinksObj) {
+  return DRINKS.reduce((sum, d) => sum + ((drinksObj[d.key] || 0) * (prices[d.key] || 0)), 0);
 }
 
 // ── SHEET SETUP ──
@@ -1971,10 +1972,12 @@ async function writeHeadersToSheet() {
         'Tisch',
         ...DRINKS.map(d => d.label),
         'Team-Extra',
+        'Runde-Extra',
         'Gesamt',
         'Bezahlt',
         'Weg',
-        'Weg seit'
+        'Weg seit',
+        'Runden-Details'
       ]]
     }
   });
@@ -2089,10 +2092,20 @@ async function loadFromSheet() {
       });
 
       const teamExtraIndex = 4 + DRINKS.length;
-      const totalIndex = teamExtraIndex + 1;
-      const paidIndex = teamExtraIndex + 2;
-      const leftIndex = teamExtraIndex + 3;
-      const leftAtIndex = teamExtraIndex + 4;
+      const roundExtraIndex = teamExtraIndex + 1;
+      const paidIndex = teamExtraIndex + 3;
+      const leftIndex = teamExtraIndex + 4;
+      const leftAtIndex = teamExtraIndex + 5;
+      const roundsDetailsIndex = teamExtraIndex + 6;
+
+      let rounds = [];
+      if (r[roundsDetailsIndex]) {
+        try {
+          rounds = JSON.parse(r[roundsDetailsIndex]);
+        } catch (e) {
+          rounds = [];
+        }
+      }
 
       persons.push({
         name,
@@ -2101,9 +2114,11 @@ async function loadFromSheet() {
         tisch,
         drinks,
         teamExtra: parseFloat(r[teamExtraIndex] || '0') || 0,
+        roundExtra: parseFloat(r[roundExtraIndex] || '0') || 0,
         paid: parseFloat(r[paidIndex] || '0') || 0,
         left: r[leftIndex] === 'TRUE',
-        leftAt: r[leftAtIndex] || ''
+        leftAt: r[leftAtIndex] || '',
+        rounds
       });
     });
   } catch (e) {
@@ -2173,10 +2188,12 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
         p.tisch,
         ...DRINKS.map(d => p.drinks[d.key] || 0),
         (p.teamExtra || 0).toFixed(2),
+        (p.roundExtra || 0).toFixed(2),
         total.toFixed(2),
         (p.paid || 0).toFixed(2),
         p.left ? 'TRUE' : 'FALSE',
-        p.leftAt || ''
+        p.leftAt || '',
+        JSON.stringify(p.rounds || [])
       ];
     });
 
@@ -2186,7 +2203,7 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
     });
 
     if (rows.length) {
-      const lastCol = columnLetter(4 + DRINKS.length + 5);
+      const lastCol = columnLetter(4 + DRINKS.length + 7);
       await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
         range: `Abrechnung!A2:${lastCol}${rows.length + 1}`,
@@ -2308,12 +2325,19 @@ function calcDrinksTotal(p) {
   return DRINKS.reduce((s, d) => s + (p.drinks[d.key] || 0) * (prices[d.key] || 0), 0);
 }
 
+function calcRoundsTotal(p) {
+  return (p.rounds || []).reduce((sum, r) => sum + (r.total || 0), 0);
+}
+
 function calcTotal(p) {
-  return calcDrinksTotal(p) + (p.teamExtra || 0);
+  return calcDrinksTotal(p) + (p.teamExtra || 0) + (p.roundExtra || 0);
 }
 
 function recalcTeamExtras() {
-  persons.forEach(p => p.teamExtra = 0);
+  persons.forEach(p => {
+    p.teamExtra = 0;
+    p.roundExtra = calcRoundsTotal(p);
+  });
 
   spiele.forEach(s => {
     const total = DRINKS.reduce((sum, d) => sum + (s.drinks[d.key] || 0) * (prices[d.key] || 0), 0);
@@ -2479,19 +2503,25 @@ function renderGruppen() {
   if (!present.find(p => p.tisch === 'T2')) t2El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 }
 
-function renderDrinkRows(list, body) {
+function renderDrinkRows(list, body, startIndex = 0) {
+  let rowIndex = startIndex;
+
   list.forEach(p => {
     const tr = document.createElement('tr');
-    tr.className = (p.tisch === 'T1' ? 't1-row ' : '') + (p.tisch === 'T2' ? 't2-row ' : '');
+    const isAlt = rowIndex % 2 === 1;
+    tr.className = isAlt ? 'alt-row' : '';
+
+    const leftClass = p.left ? 'left-state' : '';
+    const leftEmoji = p.left ? '<span class="left-emoji">🚪</span>' : '';
 
     const tl = p.tisch
       ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫ Wand' : '🔴 TV'}</span>`
-      : '';
+      : `<span class="ptisch">Kein Team</span>`;
 
     let html = `
-      <td>
-        <div class="person-cell">
-          <span class="pname">${p.name}</span>
+      <td class="sticky-col">
+        <div class="person-cell ${leftClass}">
+          <span class="pname">${leftEmoji}${p.name}</span>
           ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
           ${tl}
         </div>
@@ -2512,12 +2542,20 @@ function renderDrinkRows(list, body) {
     });
 
     const te = p.teamExtra || 0;
-    html += `<td style="color:#000000;font-weight:700;font-size:0.85rem">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    const re = p.roundExtra || 0;
+    const paid = p.paid || 0;
+
+    html += `<td style="color:${te > 0 ? 'var(--accent2)' : '#000'};font-weight:700;font-size:0.85rem">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    html += `<td class="round-cell ${re > 0 ? '' : 'zero'}">${re > 0 ? '+' + re.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
     html += `<td class="total-cell">${calcTotal(p).toFixed(2).replace('.', ',')}€</td>`;
+    html += `<td class="paid-cell ${paid > 0 ? '' : 'zero'}">${paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
 
     tr.innerHTML = html;
     body.appendChild(tr);
+    rowIndex++;
   });
+
+  return rowIndex;
 }
 
 function renderGetraenke() {
@@ -2525,26 +2563,27 @@ function renderGetraenke() {
   const guests = getPresentGuests().sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
   document.getElementById('drinks-header').innerHTML =
-    '<th>Name</th>' +
+    '<th class="sticky-col">Name</th>' +
     DRINKS.map(d => `<th>${d.label}</th>`).join('') +
-    '<th>Team+</th><th>Gesamt</th>';
+    '<th>Strafen+</th><th>Runde+</th><th>Gesamt</th><th>Bezahlt</th>';
 
   const body = document.getElementById('drinks-body');
   body.innerHTML = '';
 
-  renderDrinkRows(members, body);
+  let rowIndex = 0;
+  rowIndex = renderDrinkRows(members, body, rowIndex);
 
   if (members.length && guests.length) {
     const sep = document.createElement('tr');
     sep.className = 'guest-separator-row';
-    sep.innerHTML = `<td colspan="${DRINKS.length + 3}">Gastkegler</td>`;
+    sep.innerHTML = `<td colspan="${DRINKS.length + 5}">Gastkegler</td>`;
     body.appendChild(sep);
   }
 
-  renderDrinkRows(guests, body);
+  rowIndex = renderDrinkRows(guests, body, rowIndex);
 
   if (!members.length && !guests.length) {
-    body.innerHTML = `<tr><td colspan="${DRINKS.length + 3}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${DRINKS.length + 5}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
   }
 }
 
@@ -2557,6 +2596,111 @@ function changeDrink(name, key, delta) {
   renderGetraenke();
   updateStats();
   renderAbrechnung();
+  persistState();
+}
+
+// ── RUNDE GEBEN ──
+function openRoundModal() {
+  const select = document.getElementById('round-person-select');
+  const list = getPresentNotLeftPeople().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  roundDraftDrinks = {};
+  DRINKS.forEach(d => roundDraftDrinks[d.key] = 0);
+
+  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+  list.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+
+  document.getElementById('round-drinks-area').classList.add('hidden');
+  document.getElementById('round-total-display').textContent = '0,00 €';
+  document.getElementById('round-modal').classList.remove('hidden');
+}
+
+function closeRoundModal() {
+  document.getElementById('round-modal').classList.add('hidden');
+}
+
+function handleRoundPersonChange() {
+  const selected = document.getElementById('round-person-select').value;
+  const area = document.getElementById('round-drinks-area');
+  const grid = document.getElementById('round-drinks-grid');
+
+  if (!selected) {
+    area.classList.add('hidden');
+    grid.innerHTML = '';
+    return;
+  }
+
+  area.classList.remove('hidden');
+  grid.innerHTML = '';
+
+  DRINKS.forEach(d => {
+    const v = roundDraftDrinks[d.key] || 0;
+    const row = document.createElement('div');
+    row.className = 'round-drink-row';
+    row.innerHTML = `
+      <span class="round-drink-name">${d.label}</span>
+      <div class="counter">
+        <button class="counter-btn minus" onclick="changeRoundDrink('${escapeForJs(d.key)}',-1)">−</button>
+        <span class="counter-val" id="round-count-${d.key}">${v}</span>
+        <button class="counter-btn plus" onclick="changeRoundDrink('${escapeForJs(d.key)}',1)">+</button>
+      </div>
+    `;
+    grid.appendChild(row);
+  });
+
+  updateRoundTotalDisplay();
+}
+
+function changeRoundDrink(key, delta) {
+  roundDraftDrinks[key] = Math.max(0, (roundDraftDrinks[key] || 0) + delta);
+  const el = document.getElementById('round-count-' + key);
+  if (el) el.textContent = roundDraftDrinks[key];
+  updateRoundTotalDisplay();
+}
+
+function updateRoundTotalDisplay() {
+  document.getElementById('round-total-display').textContent = euros(calcRoundTotal(roundDraftDrinks));
+}
+
+function confirmGiveRound() {
+  const personName = document.getElementById('round-person-select').value.trim();
+  if (!personName) {
+    showToast('Bitte erst auswählen, wer die Runde gibt', 'error');
+    return;
+  }
+
+  if (!DRINKS.some(d => (roundDraftDrinks[d.key] || 0) > 0)) {
+    showToast('Bitte mindestens ein Getränk eintragen', 'error');
+    return;
+  }
+
+  const p = persons.find(x => x.name === personName);
+  if (!p) {
+    showToast('Person nicht gefunden', 'error');
+    return;
+  }
+
+  if (!Array.isArray(p.rounds)) p.rounds = [];
+
+  const roundTotal = calcRoundTotal(roundDraftDrinks);
+
+  p.rounds.push({
+    drinks: { ...roundDraftDrinks },
+    total: roundTotal,
+    createdAt: new Date().toISOString()
+  });
+
+  p.roundExtra = calcRoundsTotal(p);
+
+  closeRoundModal();
+  renderAll();
+  showToast(`🍻 Runde auf ${p.name} gebucht`, 'success');
   persistState();
 }
 
@@ -2728,8 +2872,15 @@ function createAbrechGrid(list) {
       .join('');
 
     const teamLine = (p.teamExtra || 0) > 0
-      ? `<div class="abrech-item"><span>⚽ Team-Strafe</span><span style="color:var(--accent2)">+${(p.teamExtra || 0).toFixed(2).replace('.', ',')}€</span></div>`
+      ? `<div class="abrech-item"><span>⚽ Strafen</span><span style="color:var(--accent2)">+${(p.teamExtra || 0).toFixed(2).replace('.', ',')}€</span></div>`
       : '';
+
+    const roundLines = (p.rounds || []).map(r => `
+      <div class="abrech-item">
+        <span>🍻 Runde gegeben: ${describeRoundDrinks(r.drinks)}</span>
+        <span style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')}€</span>
+      </div>
+    `).join('');
 
     c.innerHTML = `
       <div class="abrech-name">${p.name}</div>
@@ -2741,7 +2892,7 @@ function createAbrechGrid(list) {
       ${over > 0.01 ? `<div class="abrech-ueberschuss">Überschuss: ${over.toFixed(2).replace('.', ',')}€</div>` : ''}
       ${fullyPaid ? '<div class="abrech-paid-info">✅ Komplett bezahlt</div>' : ''}
       ${left ? `<div class="abrech-left-info">🚪 Weg seit ${formatTime(p.leftAt)}</div>` : ''}
-      <div class="abrech-items">${items}${teamLine}${!items && !teamLine ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
+      <div class="abrech-items">${items}${teamLine}${roundLines}${!items && !teamLine && !roundLines ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
       <div class="tap-hint">${left && p.leftAt ? `Weg markiert: ${formatDateTime(p.leftAt)}` : 'Antippen → Zahlung eintragen'}</div>
     `;
 
@@ -2826,6 +2977,31 @@ function renderModalTeamspielBreakdown(p) {
   `;
 }
 
+function renderModalRoundsBreakdown(p) {
+  const el = document.getElementById('modal-runden-breakdown');
+  if (!el) return;
+
+  const rounds = p.rounds || [];
+  if (!rounds.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+      Runde gegeben
+    </div>
+    <div style="display:grid;gap:6px;">
+      ${rounds.map(r => `
+        <div class="modal-meta-row" style="align-items:flex-start;">
+          <span style="max-width:70%;">${describeRoundDrinks(r.drinks)}</span>
+          <strong style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')} €</strong>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function openPaymentModal(p) {
   modalPerson = p;
   const total = calcTotal(p);
@@ -2841,6 +3017,7 @@ function openPaymentModal(p) {
   document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
   document.getElementById('modal-left-check').checked = !!p.left;
   renderModalTeamspielBreakdown(p);
+  renderModalRoundsBreakdown(p);
   updateModalRest();
   document.getElementById('payment-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('modal-paid-input').focus(), 100);
@@ -2893,6 +3070,7 @@ function confirmPayment() {
   renderAbrechnung();
   renderAnwesenheit();
   renderTeamspiele();
+  renderGetraenke();
   showToast('✅ Zahlung gespeichert', 'success');
   persistState();
 }
@@ -2965,7 +3143,10 @@ function deleteDrink(key) {
   if (!drink) return;
 
   const used = persons.some(p => (p.drinks && (p.drinks[key] || 0) > 0));
-  if (used) {
+  const usedInTeam = spiele.some(s => (s.drinks && (s.drinks[key] || 0) > 0));
+  const usedInRounds = persons.some(p => (p.rounds || []).some(r => (r.drinks && (r.drinks[key] || 0) > 0)));
+
+  if (used || usedInTeam || usedInRounds) {
     showToast('Getränk kann nicht gelöscht werden, weil bereits Buchungen existieren', 'error');
     return;
   }
@@ -3089,6 +3270,8 @@ function addPerson(isGuest) {
     drinks,
     paid: 0,
     teamExtra: 0,
+    roundExtra: 0,
+    rounds: [],
     left: false,
     leftAt: ''
   });
@@ -3170,6 +3353,8 @@ function confirmReset() {
     Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
     p.paid = 0;
     p.teamExtra = 0;
+    p.roundExtra = 0;
+    p.rounds = [];
     p.left = false;
     p.leftAt = '';
   });
@@ -3177,6 +3362,7 @@ function confirmReset() {
   spiele = [];
   teamDrinks = {};
   selectedLoser = null;
+  roundDraftDrinks = {};
 
   closeResetModal();
   renderAll();
@@ -3230,14 +3416,14 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v10" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v12" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v10');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v12');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
