@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260317-v4">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260317-v4">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260317-v4">
+  <link rel="manifest" href="manifest.json?v=20260318-v1">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v1">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v1">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -28,8 +28,8 @@
       --blue: #3498db;
       --text: #000000;
       --muted: #121824;
-      --t1b: #1e00b5;
-      --t2b: #b5002d;
+      --t1b: #b5002d;
+      --t2b: #1e00b5;
       --purple: #9b59b6;
       --red: #ff084e;
     }
@@ -74,6 +74,14 @@
       color: var(--muted);
       letter-spacing: 1px;
       text-transform: uppercase;
+    }
+
+    .header-datetime {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 3px;
+      text-transform: none;
+      letter-spacing: 0;
     }
 
     .header-btns {
@@ -479,9 +487,16 @@
       min-width: 60px;
     }
 
+    .prices-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
     .prices-editor {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 10px;
     }
 
@@ -516,6 +531,17 @@
     }
 
     .price-input:focus { border-color: var(--accent); }
+
+    .delete-drink-btn {
+      background: rgba(232, 65, 42, 0.15);
+      color: var(--accent2);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
 
     .save-prices-btn {
       background: var(--green);
@@ -587,11 +613,6 @@
     .abrech-card.t1 { border-color: var(--t1b); }
     .abrech-card.t2 { border-color: var(--t2b); }
 
-    .abrech-card.paid {
-      border-color: var(--green) !important;
-      background: rgba(46, 204, 113, 0.06);
-    }
-
     .abrech-name {
       font-weight: 700;
       font-size: 0.9rem;
@@ -615,13 +636,18 @@
       line-height: 1;
     }
 
-    .abrech-card.paid .abrech-total { color: var(--green); }
-
     .abrech-paid-info {
       font-size: 0.7rem;
       color: var(--green);
       margin-top: 4px;
       font-weight: 600;
+    }
+
+    .abrech-left-info {
+      font-size: 0.7rem;
+      color: var(--purple);
+      margin-top: 4px;
+      font-weight: 700;
     }
 
     .abrech-rest {
@@ -634,13 +660,6 @@
     .abrech-ueberschuss {
       font-size: 0.75rem;
       color: var(--purple);
-      font-weight: 700;
-      margin-top: 2px;
-    }
-
-    .abrech-gesamt {
-      font-size: 0.75rem;
-      color: var(--red);
       font-weight: 700;
       margin-top: 2px;
     }
@@ -659,7 +678,8 @@
       color: var(--muted);
       margin-top: 8px;
       text-align: center;
-      opacity: 0.6;
+      opacity: 0.75;
+      line-height: 1.3;
     }
 
     .team-spiel-form {
@@ -830,7 +850,7 @@
       border-radius: 16px;
       padding: 24px;
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
     }
 
     .modal h3 {
@@ -852,25 +872,25 @@
       font-size: 2.5rem;
       color: var(--accent);
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
     }
 
     .modal-meta {
       display: grid;
-      gap: 6px;
-      margin-bottom: 16px;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
     .modal-meta-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--muted);
-      background: rgba(0,0,0,0.03);
-      border: 1px solid var(--border);
-      border-radius: 10px;
       padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.02);
     }
 
     .modal-input-row {
@@ -884,9 +904,11 @@
       font-size: 0.8rem;
       color: var(--muted);
       white-space: nowrap;
+      min-width: 80px;
     }
 
-    .modal-euro-input {
+    .modal-euro-input,
+    .modal-text-input {
       flex: 1;
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -894,29 +916,22 @@
       padding: 10px 12px;
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
       outline: none;
+    }
+
+    .modal-euro-input {
       text-align: right;
     }
 
-    .modal-euro-input:focus { border-color: var(--accent); }
-
-    .modal-check-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      font-size: 0.9rem;
-      color: var(--text);
+    .modal-text-input {
+      text-align: left;
+      font-weight: 600;
     }
 
-    .modal-check-row input {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--green);
-      cursor: pointer;
-    }
+    .modal-euro-input:focus,
+    .modal-text-input:focus { border-color: var(--accent); }
 
     .modal-rest {
       font-size: 0.85rem;
@@ -930,9 +945,25 @@
     .modal-rest.neg { color: var(--accent2); }
     .modal-rest.over { color: var(--purple); }
 
+    .modal-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .modal-check input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+
     .modal-btns {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
     .modal-ok {
@@ -1132,22 +1163,13 @@
   <div class="modal">
     <h3 id="modal-name">Name</h3>
     <div class="modal-sub">Zahlung erfassen</div>
-
     <div class="modal-total-due" id="modal-due">0,00 €</div>
 
     <div class="modal-meta">
-      <div class="modal-meta-row">
-        <span>Gesamt</span>
-        <strong id="modal-total-display">0,00 €</strong>
-      </div>
-      <div class="modal-meta-row">
-        <span>Schon bezahlt</span>
-        <strong id="modal-paid-display">0,00 €</strong>
-      </div>
-      <div class="modal-meta-row">
-        <span>Noch offen</span>
-        <strong id="modal-open-display">0,00 €</strong>
-      </div>
+      <div class="modal-meta-row"><span>Gesamt</span><strong id="modal-total-display">0,00 €</strong></div>
+      <div class="modal-meta-row"><span>Schon bezahlt</span><strong id="modal-paid-display">0,00 €</strong></div>
+      <div class="modal-meta-row"><span>Noch offen</span><strong id="modal-open-display">0,00 €</strong></div>
+      <div class="modal-meta-row"><span>Weg seit</span><strong id="modal-leftat-display">—</strong></div>
     </div>
 
     <div class="modal-input-row">
@@ -1155,7 +1177,7 @@
       <input type="number" step="0.01" min="0" class="modal-euro-input" id="modal-paid-input" oninput="updateModalRest()" placeholder="0.00">
     </div>
 
-    <label class="modal-check-row">
+    <label class="modal-check">
       <input type="checkbox" id="modal-left-check">
       <span>Person ist wirklich weg</span>
     </label>
@@ -1169,11 +1191,34 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="drink-modal">
+  <div class="modal">
+    <h3>Getränk hinzufügen</h3>
+    <div class="modal-sub">Neues Getränk mit Preis anlegen</div>
+
+    <div class="modal-input-row">
+      <label>Name</label>
+      <input type="text" id="new-drink-name" class="modal-text-input" placeholder="z. B. Aperol">
+    </div>
+
+    <div class="modal-input-row">
+      <label>Preis (€)</label>
+      <input type="number" step="0.01" min="0" id="new-drink-price" class="modal-euro-input" placeholder="0.00">
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeDrinkModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmAddDrink()">+ Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
 <div id="app">
   <header>
     <div>
       <h1>KC IS</h1>
       <div class="subtitle">Getränkeabrechnung</div>
+      <div class="header-datetime" id="header-datetime"></div>
     </div>
     <div class="header-btns">
       <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
@@ -1284,6 +1329,9 @@
 
     <div id="tab-preise" class="hidden">
       <div class="section-title">Preise bearbeiten</div>
+      <div class="prices-toolbar">
+        <button class="add-btn" onclick="openDrinkModal()">+ Getränk hinzufügen</button>
+      </div>
       <div class="prices-editor" id="prices-editor"></div>
       <button class="save-prices-btn" onclick="savePrices()">💾 Preise speichern & ins Sheet</button>
     </div>
@@ -1309,13 +1357,13 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-2';
+const APP_VERSION = '20260318-3';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
 const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
 
-const DRINKS = [
+let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
   { key: 'gr_bier',  label: 'Gr. Bier' },
   { key: 'kl_softd', label: 'Kl. Fanta/Cola' },
@@ -1324,7 +1372,7 @@ const DRINKS = [
   { key: 'wasser',   label: 'Wasser' },
   { key: 'schnaps',  label: 'Schnaps' },
   { key: 'weizen',   label: 'Weizen' },
-  { key: 'wein',     label: 'Wein/Sekt' },
+  { key: 'wein',     label: 'Wein/Sekt' }
 ];
 
 let persons = [];
@@ -1337,6 +1385,7 @@ let teamDrinks = {};
 let lastState = null;
 let undoTimer = null;
 let deferredPrompt = null;
+let toastTimer;
 
 // ── AUTH ──
 function gapiLoaded() {
@@ -1369,7 +1418,7 @@ function gisLoaded() {
 
       document.getElementById('loading-screen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
-    },
+    }
   });
 
   document.getElementById('loading-screen').style.display = 'none';
@@ -1399,16 +1448,55 @@ function euros(val) {
   return (val || 0).toFixed(2).replace('.', ',') + ' €';
 }
 
+function formatDateTime(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function formatTime(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return '';
+  return d.toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function updateHeaderDateTime() {
+  const el = document.getElementById('header-datetime');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleString('de-DE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function makeDrinkKey(label) {
+  const key = label
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return key || ('drink_' + Date.now());
+}
+
 function hasPaidSomething(p) {
   return (parseFloat(p.paid) || 0) > 0;
-}
-
-function isFullyPaid(p) {
-  return getPersonOpenAmount(p) <= 0.01;
-}
-
-function isLeft(p) {
-  return !!p.left;
 }
 
 function getPersonOpenAmount(p) {
@@ -1417,6 +1505,10 @@ function getPersonOpenAmount(p) {
 
 function getPersonOverpayAmount(p) {
   return Math.max(0, (p.paid || 0) - calcTotal(p));
+}
+
+function isFullyPaid(p) {
+  return getPersonOpenAmount(p) <= 0.01;
 }
 
 // ── SHEET SETUP ──
@@ -1435,31 +1527,39 @@ async function ensureSheetSetup() {
       resource: { requests: reqs }
     });
   }
+}
 
+async function writeHeadersToSheet() {
   await gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: 'Abrechnung!A1:P1',
+    range: 'Abrechnung!A1:ZZ1',
     valueInputOption: 'RAW',
     resource: {
-      values: [['Name','Anwesend','Tisch', ...DRINKS.map(d => d.label), 'Team-Extra','Gesamt','Bezahlt','Weg']]
+      values: [[
+        'Name',
+        'Anwesend',
+        'Tisch',
+        ...DRINKS.map(d => d.label),
+        'Team-Extra',
+        'Gesamt',
+        'Bezahlt',
+        'Weg',
+        'Weg seit'
+      ]]
     }
   });
 
-  const pc = await gapi.client.sheets.spreadsheets.values.get({
+  await gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: 'Preise!A1:B1'
+    range: 'Preise!A1:C300',
+    valueInputOption: 'RAW',
+    resource: {
+      values: [
+        ['Key', 'Getränk', 'Preis'],
+        ...DRINKS.map(d => [d.key, d.label, (prices[d.key] || 0).toFixed(2)])
+      ]
+    }
   });
-
-  if (!pc.result.values) {
-    await gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `Preise!A1:B${DRINKS.length+1}`,
-      valueInputOption: 'RAW',
-      resource: {
-        values: [['Getränk','Preis'], ...DRINKS.map(d => [d.label, 0])]
-      }
-    });
-  }
 }
 
 // ── LOAD ──
@@ -1473,14 +1573,30 @@ async function loadFromSheet() {
   try {
     const pr = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: 'Preise!A2:B20'
+      range: 'Preise!A2:C300'
     });
 
-    prices = {};
-    (pr.result.values || []).forEach(r => {
-      const d = DRINKS.find(d => d.label === r[0]);
-      if (d) prices[d.key] = parseFloat((r[1] || '0').toString().replace(',', '.')) || 0;
-    });
+    const rows = pr.result.values || [];
+
+    if (rows.length) {
+      const loadedDrinks = [];
+      const loadedPrices = {};
+
+      rows.forEach(r => {
+        const key = (r[0] || '').trim();
+        const label = (r[1] || '').trim();
+        const price = parseFloat((r[2] || '0').toString().replace(',', '.')) || 0;
+
+        if (!key || !label) return;
+        loadedDrinks.push({ key, label });
+        loadedPrices[key] = price;
+      });
+
+      if (loadedDrinks.length) {
+        DRINKS = loadedDrinks;
+        prices = loadedPrices;
+      }
+    }
 
     DRINKS.forEach(d => {
       if (prices[d.key] === undefined) prices[d.key] = 0;
@@ -1490,25 +1606,41 @@ async function loadFromSheet() {
   }
 
   try {
+    await writeHeadersToSheet();
+  } catch (e) {
+    console.error('write headers', e);
+  }
+
+  try {
     const ab = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: 'Abrechnung!A2:P200'
+      range: 'Abrechnung!A2:ZZ200'
     });
 
     persons = [];
     (ab.result.values || []).forEach(r => {
       if (!r[0]) return;
+
       const drinks = {};
-      DRINKS.forEach((d, i) => { drinks[d.key] = parseInt(r[3 + i] || '0') || 0; });
+      DRINKS.forEach((d, i) => {
+        drinks[d.key] = parseInt(r[3 + i] || '0') || 0;
+      });
+
+      const teamExtraIndex = 3 + DRINKS.length;
+      const totalIndex = teamExtraIndex + 1;
+      const paidIndex = teamExtraIndex + 2;
+      const leftIndex = teamExtraIndex + 3;
+      const leftAtIndex = teamExtraIndex + 4;
 
       persons.push({
         name: r[0],
         present: r[1] === 'TRUE',
         tisch: r[2] || '',
         drinks,
-        teamExtra: parseFloat(r[12] || '0') || 0,
-        paid: parseFloat(r[14] || '0') || 0,
-        left: r[15] === 'TRUE'
+        teamExtra: parseFloat(r[teamExtraIndex] || '0') || 0,
+        paid: parseFloat(r[paidIndex] || '0') || 0,
+        left: r[leftIndex] === 'TRUE',
+        leftAt: r[leftAtIndex] || ''
       });
     });
   } catch (e) {
@@ -1543,6 +1675,7 @@ async function saveToSheet() {
 
   try {
     recalcTeamExtras();
+    await writeHeadersToSheet();
 
     const rows = persons.map(p => {
       const total = calcTotal(p);
@@ -1554,19 +1687,21 @@ async function saveToSheet() {
         (p.teamExtra || 0).toFixed(2),
         total.toFixed(2),
         (p.paid || 0).toFixed(2),
-        p.left ? 'TRUE' : 'FALSE'
+        p.left ? 'TRUE' : 'FALSE',
+        p.leftAt || ''
       ];
     });
 
     await gapi.client.sheets.spreadsheets.values.clear({
       spreadsheetId: SHEET_ID,
-      range: 'Abrechnung!A2:P200'
+      range: 'Abrechnung!A2:ZZ200'
     });
 
     if (rows.length) {
+      const lastCol = columnLetter(3 + DRINKS.length + 5);
       await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: `Abrechnung!A2:P${rows.length + 1}`,
+        range: `Abrechnung!A2:${lastCol}${rows.length + 1}`,
         valueInputOption: 'RAW',
         resource: { values: rows }
       });
@@ -1601,23 +1736,16 @@ async function saveToSheet() {
 async function savePrices() {
   DRINKS.forEach(d => {
     const el = document.getElementById('price-input-' + d.key);
-    if (el) prices[d.key] = parseFloat(el.value.replace(',', '.')) || 0;
+    if (el) prices[d.key] = parseFloat(String(el.value).replace(',', '.')) || 0;
   });
 
   try {
-    await gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `Preise!A2:B${DRINKS.length+1}`,
-      valueInputOption: 'RAW',
-      resource: {
-        values: DRINKS.map(d => [d.label, prices[d.key].toFixed(2)])
-      }
-    });
-
+    await writeHeadersToSheet();
     showToast('✅ Preise gespeichert!', 'success');
     recalcTeamExtras();
     renderAll();
   } catch (e) {
+    console.error(e);
     showToast('❌ Fehler', 'error');
   }
 }
@@ -1631,7 +1759,7 @@ async function archiveSheet() {
     await refreshToken();
 
     const now = new Date();
-    const d = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
 
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${SHEET_ID}/copy?supportsAllDrives=true`, {
       method: 'POST',
@@ -1688,6 +1816,7 @@ function recalcTeamExtras() {
 // ── RENDER ──
 function renderAll() {
   recalcTeamExtras();
+  updateHeaderDateTime();
   updateStats();
   renderAnwesenheit();
   renderGruppen();
@@ -1742,12 +1871,11 @@ function renderAnwesenheit() {
 
     c.onclick = () => {
       p.present = !p.present;
-
       if (!p.present) {
         p.tisch = '';
         p.left = false;
+        p.leftAt = '';
       }
-
       renderAll();
     };
 
@@ -1760,7 +1888,7 @@ function renderGruppen() {
   const unEl = document.getElementById('unassigned-list');
   unEl.innerHTML = '';
 
-  const un = present.filter(p => !p.tisch);
+  const un = present.filter(p => !p.tisch).sort((a, b) => a.name.localeCompare(b.name, 'de'));
   if (!un.length) {
     unEl.innerHTML = '<span style="font-size:0.75rem;color:var(--green)">✅ Alle zugewiesen</span>';
   }
@@ -1778,43 +1906,35 @@ function renderGruppen() {
 
   const t1El = document.getElementById('gruppe-t1');
   t1El.innerHTML = '';
-  present
-    .filter(p => p.tisch === 'T1')
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
-    .forEach(p => {
-      const c = document.createElement('div');
-      c.className = 'gruppe-chip';
-      c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T2</span>';
-      c.onclick = () => {
-        p.tisch = 'T2';
-        renderAll();
-      };
-      t1El.appendChild(c);
-    });
+  present.filter(p => p.tisch === 'T1').sort((a, b) => a.name.localeCompare(b.name, 'de')).forEach(p => {
+    const c = document.createElement('div');
+    c.className = 'gruppe-chip';
+    c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T2</span>';
+    c.onclick = () => {
+      p.tisch = 'T2';
+      renderAll();
+    };
+    t1El.appendChild(c);
+  });
   if (!present.find(p => p.tisch === 'T1')) t1El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 
   const t2El = document.getElementById('gruppe-t2');
   t2El.innerHTML = '';
-  present
-    .filter(p => p.tisch === 'T2')
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
-    .forEach(p => {
-      const c = document.createElement('div');
-      c.className = 'gruppe-chip';
-      c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T1</span>';
-      c.onclick = () => {
-        p.tisch = 'T1';
-        renderAll();
-      };
-      t2El.appendChild(c);
-    });
+  present.filter(p => p.tisch === 'T2').sort((a, b) => a.name.localeCompare(b.name, 'de')).forEach(p => {
+    const c = document.createElement('div');
+    c.className = 'gruppe-chip';
+    c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T1</span>';
+    c.onclick = () => {
+      p.tisch = 'T1';
+      renderAll();
+    };
+    t2El.appendChild(c);
+  });
   if (!present.find(p => p.tisch === 'T2')) t2El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 }
 
 function renderGetraenke() {
-  const present = persons
-    .filter(p => p.present)
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const present = persons.filter(p => p.present).sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
   document.getElementById('drinks-header').innerHTML =
     '<th>Name</th>' +
@@ -1840,9 +1960,9 @@ function renderGetraenke() {
       html += `
         <td>
           <div class="counter">
-            <button class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${d.key}',-1)">−</button>
+            <button class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
             <span class="counter-val ${v > 0 ? 'nonzero' : ''}">${v}</span>
-            <button class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${d.key}',1)">+</button>
+            <button class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
           </div>
         </td>
       `;
@@ -1864,6 +1984,7 @@ function renderGetraenke() {
 function changeDrink(name, key, delta) {
   const p = persons.find(x => x.name === name);
   if (!p) return;
+  if (!p.drinks) p.drinks = {};
 
   p.drinks[key] = Math.max(0, (p.drinks[key] || 0) + delta);
   renderGetraenke();
@@ -1912,9 +2033,9 @@ function renderTeamspiele() {
     r.innerHTML = `
       <span class="team-drink-name">${d.label}</span>
       <div class="counter">
-        <button class="counter-btn minus" onclick="changeTeamDrink('${d.key}',-1)">−</button>
+        <button class="counter-btn minus" onclick="changeTeamDrink('${escapeForJs(d.key)}',-1)">−</button>
         <span class="counter-val ${v > 0 ? 'nonzero' : ''}" id="td-${d.key}">${v}</span>
-        <button class="counter-btn plus" onclick="changeTeamDrink('${d.key}',1)">+</button>
+        <button class="counter-btn plus" onclick="changeTeamDrink('${escapeForJs(d.key)}',1)">+</button>
       </div>
     `;
     g.appendChild(r);
@@ -2022,11 +2143,11 @@ function renderAbrechnung() {
 
   [...present]
     .sort((a, b) => {
-      const aDone = isFullyPaid(a);
-      const bDone = isFullyPaid(b);
+      const aLeft = !!a.left;
+      const bLeft = !!b.left;
 
-      if (aDone !== bDone) {
-        return aDone ? 1 : -1;
+      if (aLeft !== bLeft) {
+        return aLeft ? 1 : -1;
       }
 
       return a.name.localeCompare(b.name, 'de');
@@ -2040,7 +2161,7 @@ function renderAbrechnung() {
       const left = !!p.left;
 
       const c = document.createElement('div');
-      c.className = 'abrech-card ' + (p.tisch || '').toLowerCase() + (fullyPaid ? ' paid' : '');
+      c.className = 'abrech-card ' + (p.tisch || '').toLowerCase();
 
       const items = DRINKS
         .filter(d => (p.drinks[d.key] || 0) > 0)
@@ -2059,9 +2180,9 @@ function renderAbrechnung() {
         ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
         ${over > 0.01 ? `<div class="abrech-ueberschuss">Überschuss: ${over.toFixed(2).replace('.', ',')}€</div>` : ''}
         ${fullyPaid ? '<div class="abrech-paid-info">✅ Komplett bezahlt</div>' : ''}
-        ${left ? '<div class="abrech-paid-info">🚪 Wirklich weg</div>' : ''}
+        ${left ? `<div class="abrech-left-info">🚪 Weg seit ${formatTime(p.leftAt)}</div>` : ''}
         <div class="abrech-items">${items}${teamLine}${!items && !teamLine ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
-        <div class="tap-hint">Antippen → Zahlung eintragen</div>
+        <div class="tap-hint">${left && p.leftAt ? `Weg markiert: ${formatDateTime(p.leftAt)}` : 'Antippen → Zahlung eintragen'}</div>
       `;
 
       c.onclick = () => openPaymentModal(p);
@@ -2072,7 +2193,6 @@ function renderAbrechnung() {
 // ── PAYMENT MODAL ──
 function openPaymentModal(p) {
   modalPerson = p;
-
   const total = calcTotal(p);
   const paid = p.paid || 0;
   const open = getPersonOpenAmount(p);
@@ -2082,9 +2202,9 @@ function openPaymentModal(p) {
   document.getElementById('modal-total-display').textContent = euros(total);
   document.getElementById('modal-paid-display').textContent = euros(paid);
   document.getElementById('modal-open-display').textContent = euros(open);
+  document.getElementById('modal-leftat-display').textContent = p.leftAt ? formatDateTime(p.leftAt) : '—';
   document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
   document.getElementById('modal-left-check').checked = !!p.left;
-
   updateModalRest();
   document.getElementById('payment-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('modal-paid-input').focus(), 100);
@@ -2118,8 +2238,19 @@ function updateModalRest() {
 function confirmPayment() {
   if (!modalPerson) return;
 
+  const wasLeft = !!modalPerson.left;
+  const nowLeft = document.getElementById('modal-left-check').checked;
+
   modalPerson.paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
-  modalPerson.left = document.getElementById('modal-left-check').checked;
+  modalPerson.left = nowLeft;
+
+  if (!wasLeft && nowLeft) {
+    modalPerson.leftAt = new Date().toISOString();
+  }
+
+  if (wasLeft && !nowLeft) {
+    modalPerson.leftAt = '';
+  }
 
   closeModal();
   updateStats();
@@ -2139,10 +2270,83 @@ function renderPreisEditor() {
     c.className = 'price-edit-card';
     c.innerHTML = `
       <label>${d.label}</label>
-      <input type="number" step="0.10" min="0" class="price-input" id="price-input-${d.key}" value="${(prices[d.key] || 0).toFixed(2)}" placeholder="0.00"> €
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" step="0.10" min="0" class="price-input" id="price-input-${d.key}" value="${(prices[d.key] || 0).toFixed(2)}" placeholder="0.00">
+        <button class="delete-drink-btn" onclick="deleteDrink('${escapeForJs(d.key)}')" title="Getränk löschen">✕</button>
+      </div>
     `;
     ed.appendChild(c);
   });
+}
+
+function openDrinkModal() {
+  document.getElementById('new-drink-name').value = '';
+  document.getElementById('new-drink-price').value = '';
+  document.getElementById('drink-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('new-drink-name').focus(), 100);
+}
+
+function closeDrinkModal() {
+  document.getElementById('drink-modal').classList.add('hidden');
+}
+
+function confirmAddDrink() {
+  const name = document.getElementById('new-drink-name').value.trim();
+  const price = parseFloat(String(document.getElementById('new-drink-price').value).replace(',', '.')) || 0;
+
+  if (!name) {
+    showToast('Bitte Getränkenamen eingeben', 'error');
+    return;
+  }
+
+  if (DRINKS.find(d => d.label.toLowerCase() === name.toLowerCase())) {
+    showToast('Getränk existiert bereits', 'error');
+    return;
+  }
+
+  let key = makeDrinkKey(name);
+  while (DRINKS.find(d => d.key === key)) {
+    key = key + '_' + Math.floor(Math.random() * 1000);
+  }
+
+  DRINKS.push({ key, label: name });
+  prices[key] = price;
+
+  persons.forEach(p => {
+    if (!p.drinks) p.drinks = {};
+    p.drinks[key] = 0;
+  });
+
+  closeDrinkModal();
+  renderAll();
+  showToast('✅ Getränk hinzugefügt', 'success');
+}
+
+function deleteDrink(key) {
+  const drink = DRINKS.find(d => d.key === key);
+  if (!drink) return;
+
+  const used = persons.some(p => (p.drinks && (p.drinks[key] || 0) > 0));
+  if (used) {
+    showToast('Getränk kann nicht gelöscht werden, weil bereits Buchungen existieren', 'error');
+    return;
+  }
+
+  if (!confirm(`Getränk "${drink.label}" wirklich löschen?`)) return;
+
+  DRINKS = DRINKS.filter(d => d.key !== key);
+  delete prices[key];
+
+  persons.forEach(p => {
+    if (p.drinks && key in p.drinks) delete p.drinks[key];
+  });
+
+  Object.keys(teamDrinks).forEach(k => {
+    if (k === key) delete teamDrinks[k];
+  });
+
+  renderAll();
+  showToast('🗑️ Getränk gelöscht', 'success');
 }
 
 // ── TABS ──
@@ -2174,7 +2378,8 @@ function addPerson() {
     drinks,
     paid: 0,
     teamExtra: 0,
-    left: false
+    left: false,
+    leftAt: ''
   });
 
   input.value = '';
@@ -2183,8 +2388,6 @@ function addPerson() {
 }
 
 // ── RESET / UNDO ──
-let toastTimer;
-
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -2220,16 +2423,19 @@ function closeResetModal() {
 }
 
 function confirmReset() {
-  lastState = JSON.stringify({ persons, spiele });
+  lastState = JSON.stringify({ persons, spiele, DRINKS, prices });
 
   persons.forEach(p => {
     Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
     p.paid = 0;
     p.teamExtra = 0;
     p.left = false;
+    p.leftAt = '';
   });
 
   spiele = [];
+  teamDrinks = {};
+  selectedLoser = null;
 
   closeResetModal();
   renderAll();
@@ -2247,6 +2453,8 @@ function undoReset() {
   const state = JSON.parse(lastState);
   persons = state.persons;
   spiele = state.spiele;
+  DRINKS = state.DRINKS;
+  prices = state.prices;
 
   renderAll();
   showToast('↩️ Wiederhergestellt!', 'success');
@@ -2263,16 +2471,30 @@ window.addEventListener('beforeinstallprompt', (e) => {
 function escapeForJs(str) {
   return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
+
+function columnLetter(colNum) {
+  let temp = '';
+  let n = colNum;
+  while (n > 0) {
+    let rem = (n - 1) % 26;
+    temp = String.fromCharCode(65 + rem) + temp;
+    n = Math.floor((n - 1) / 26);
+  }
+  return temp;
+}
+
+updateHeaderDateTime();
+setInterval(updateHeaderDateTime, 30000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260317" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260317-v4');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v1');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
