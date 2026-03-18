@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v4">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v4">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v4">
+  <link rel="manifest" href="manifest.json?v=20260318-v5">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v5">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v5">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -591,13 +591,15 @@
       margin-bottom: 14px;
     }
 
-    .prices-editor {
+    .prices-editor,
+    .spiele-editor {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 10px;
     }
 
-    .price-edit-card {
+    .price-edit-card,
+    .spiel-edit-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -608,7 +610,8 @@
       gap: 10px;
     }
 
-    .price-edit-card label {
+    .price-edit-card label,
+    .spiel-edit-card label {
       font-size: 0.85rem;
       font-weight: 600;
       flex: 1;
@@ -966,7 +969,9 @@
       border-radius: 16px;
       padding: 24px;
       width: 100%;
-      max-width: 380px;
+      max-width: 420px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal h3 {
@@ -1024,7 +1029,8 @@
     }
 
     .modal-euro-input,
-    .modal-text-input {
+    .modal-text-input,
+    .modal-select {
       flex: 1;
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -1047,7 +1053,8 @@
     }
 
     .modal-euro-input:focus,
-    .modal-text-input:focus { border-color: var(--accent); }
+    .modal-text-input:focus,
+    .modal-select:focus { border-color: var(--accent); }
 
     .modal-rest {
       font-size: 0.85rem;
@@ -1293,6 +1300,8 @@
       <div class="modal-meta-row"><span>Weg seit</span><strong id="modal-leftat-display">—</strong></div>
     </div>
 
+    <div id="modal-teamspiele-breakdown" style="margin-bottom:14px;"></div>
+
     <div class="modal-input-row">
       <label>Bezahlt (€)</label>
       <input type="number" step="0.01" min="0" class="modal-euro-input" id="modal-paid-input" oninput="updateModalRest()" placeholder="0.00">
@@ -1354,6 +1363,7 @@
     <div class="tab" onclick="showTab('getraenke',this)">🍺 Getränke</div>
     <div class="tab" onclick="showTab('teamspiele',this)">⚽ Teamspiele</div>
     <div class="tab" onclick="showTab('abrechnung',this)">💶 Abrechnung</div>
+    <div class="tab" onclick="showTab('spiele',this)">🎲 Spiele</div>
     <div class="tab" onclick="showTab('preise',this)">🏷️ Preise</div>
   </div>
 
@@ -1420,15 +1430,23 @@
         <div class="team-info-box" id="team-info-box">
           Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.
         </div>
+
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Spiel auswählen:</div>
+        <div style="margin-bottom:14px;">
+          <select id="spieltyp-select" class="modal-select" style="width:100%;"></select>
+        </div>
+
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
         <div class="team-select-row">
           <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">🔵 Wand verloren</button>
           <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
         </div>
+
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Getränke die das Verlierer-Team zahlt:</div>
         <div class="team-drinks-grid" id="team-drinks-grid"></div>
         <button class="add-spiel-btn" onclick="addSpiel()">⚽ Spiel hinzufügen & aufteilen</button>
       </div>
+
       <div class="section-title">Gebuchte Spiele</div>
       <div class="spiele-list" id="spiele-list"></div>
     </div>
@@ -1455,6 +1473,17 @@
       </div>
       <div class="section-title">Pro Person <span style="font-size:0.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted);letter-spacing:0;text-transform:none">– antippen zum Zahlung eintragen</span></div>
       <div id="abrech-content"></div>
+    </div>
+
+    <div id="tab-spiele" class="hidden">
+      <div class="section-title">Spiele anlegen</div>
+
+      <div class="add-person-row">
+        <input type="text" id="new-spiel-input" placeholder="Neues Teamspiel hinzufügen…" onkeydown="if(event.key==='Enter') addSpielToKatalog()">
+        <button class="add-btn" onclick="addSpielToKatalog()">+ Spiel hinzufügen</button>
+      </div>
+
+      <div class="spiele-editor" id="spiele-katalog-list" style="margin-top:14px;"></div>
     </div>
 
     <div id="tab-preise" class="hidden">
@@ -1487,7 +1516,7 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-6';
+const APP_VERSION = '20260318-7';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1503,6 +1532,14 @@ let DRINKS = [
   { key: 'schnaps',  label: 'Schnaps' },
   { key: 'weizen',   label: 'Weizen' },
   { key: 'wein',     label: 'Wein/Sekt' }
+];
+
+let SPIELE_KATALOG = [
+  'Tannenbaum',
+  'Fuchsjagd',
+  'Hausnummer',
+  '9er',
+  'Kranz'
 ];
 
 let persons = [];
@@ -1659,6 +1696,10 @@ function escapeForJs(str) {
   return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function normalizeTisch(value) {
+  return value === 'T1' || value === 'T2' ? value : '';
+}
+
 function getMembers() {
   return persons.filter(p => !p.isGuest);
 }
@@ -1675,6 +1716,23 @@ function getPresentGuests() {
   return persons.filter(p => p.present && p.isGuest);
 }
 
+function getSpielDisplayName(spiel) {
+  return spiel.spieltyp || 'Teamspiel';
+}
+
+function getPersonTeamspielBreakdown(p) {
+  const result = [];
+  spiele.forEach(s => {
+    if ((s.members || []).includes(p.name)) {
+      result.push({
+        spieltyp: getSpielDisplayName(s),
+        betrag: s.proKopf || 0
+      });
+    }
+  });
+  return result;
+}
+
 // ── SHEET SETUP ──
 async function ensureSheetSetup() {
   const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
@@ -1684,6 +1742,7 @@ async function ensureSheetSetup() {
   if (!sheets.includes('Abrechnung')) reqs.push({ addSheet: { properties: { title: 'Abrechnung' } } });
   if (!sheets.includes('Preise')) reqs.push({ addSheet: { properties: { title: 'Preise' } } });
   if (!sheets.includes('Teamspiele')) reqs.push({ addSheet: { properties: { title: 'Teamspiele' } } });
+  if (!sheets.includes('Spiele')) reqs.push({ addSheet: { properties: { title: 'Spiele' } } });
 
   if (reqs.length) {
     await gapi.client.sheets.spreadsheets.batchUpdate({
@@ -1691,6 +1750,20 @@ async function ensureSheetSetup() {
       resource: { requests: reqs }
     });
   }
+}
+
+async function writeSpielKatalogToSheet() {
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: 'Spiele!A1:A300',
+    valueInputOption: 'RAW',
+    resource: {
+      values: [
+        ['Spielname'],
+        ...SPIELE_KATALOG.map(name => [name])
+      ]
+    }
+  });
 }
 
 async function writeHeadersToSheet() {
@@ -1725,6 +1798,17 @@ async function writeHeadersToSheet() {
       ]
     }
   });
+
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: 'Teamspiele!A1:E300',
+    valueInputOption: 'RAW',
+    resource: {
+      values: [['Nr', 'Spieltyp', 'Verlierer', 'Gesamt', 'Daten']]
+    }
+  });
+
+  await writeSpielKatalogToSheet();
 }
 
 // ── LOAD ──
@@ -1771,6 +1855,21 @@ async function loadFromSheet() {
   }
 
   try {
+    const sk = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'Spiele!A2:A300'
+    });
+
+    const rows = sk.result.values || [];
+    const loaded = rows.map(r => (r[0] || '').trim()).filter(Boolean);
+    if (loaded.length) {
+      SPIELE_KATALOG = loaded;
+    }
+  } catch (e) {
+    console.error('spielkatalog', e);
+  }
+
+  try {
     await writeHeadersToSheet();
   } catch (e) {
     console.error('write headers', e);
@@ -1783,29 +1882,70 @@ async function loadFromSheet() {
     });
 
     persons = [];
+
     (ab.result.values || []).forEach(r => {
       if (!r[0]) return;
 
-      const drinks = {};
-      DRINKS.forEach((d, i) => {
-        drinks[d.key] = parseInt(r[4 + i] || '0') || 0;
-      });
+      const hasTypeColumn =
+        (r[1] || '').toUpperCase() === 'MITGLIED' ||
+        (r[1] || '').toUpperCase() === 'GAST';
 
-      const teamExtraIndex = 4 + DRINKS.length;
-      const paidIndex = teamExtraIndex + 2;
-      const leftIndex = teamExtraIndex + 3;
-      const leftAtIndex = teamExtraIndex + 4;
+      let name = r[0] || '';
+      let isGuest = false;
+      let present = false;
+      let tisch = '';
+      let drinks = {};
+      let teamExtra = 0;
+      let paid = 0;
+      let left = false;
+      let leftAt = '';
+
+      if (hasTypeColumn) {
+        isGuest = (r[1] || '').toUpperCase() === 'GAST';
+        present = r[2] === 'TRUE';
+        tisch = normalizeTisch(r[3] || '');
+
+        DRINKS.forEach((d, i) => {
+          drinks[d.key] = parseInt(r[4 + i] || '0') || 0;
+        });
+
+        const teamExtraIndex = 4 + DRINKS.length;
+        const paidIndex = teamExtraIndex + 2;
+        const leftIndex = teamExtraIndex + 3;
+        const leftAtIndex = teamExtraIndex + 4;
+
+        teamExtra = parseFloat(r[teamExtraIndex] || '0') || 0;
+        paid = parseFloat(r[paidIndex] || '0') || 0;
+        left = r[leftIndex] === 'TRUE';
+        leftAt = r[leftAtIndex] || '';
+      } else {
+        isGuest = false;
+        present = r[1] === 'TRUE';
+        tisch = normalizeTisch(r[2] || '');
+
+        DRINKS.forEach((d, i) => {
+          drinks[d.key] = parseInt(r[3 + i] || '0') || 0;
+        });
+
+        const teamExtraIndex = 3 + DRINKS.length;
+        const paidIndex = teamExtraIndex + 2;
+
+        teamExtra = parseFloat(r[teamExtraIndex] || '0') || 0;
+        paid = parseFloat(r[paidIndex] || '0') || 0;
+        left = false;
+        leftAt = '';
+      }
 
       persons.push({
-        name: r[0],
-        isGuest: (r[1] || '').toUpperCase() === 'GAST',
-        present: r[2] === 'TRUE',
-        tisch: r[3] || '',
+        name,
+        isGuest,
+        present,
+        tisch,
         drinks,
-        teamExtra: parseFloat(r[teamExtraIndex] || '0') || 0,
-        paid: parseFloat(r[paidIndex] || '0') || 0,
-        left: r[leftIndex] === 'TRUE',
-        leftAt: r[leftAtIndex] || ''
+        teamExtra,
+        paid,
+        left,
+        leftAt
       });
     });
   } catch (e) {
@@ -1815,14 +1955,14 @@ async function loadFromSheet() {
   try {
     const sp = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: 'Teamspiele!A2:D300'
+      range: 'Teamspiele!A2:E300'
     });
 
     spiele = [];
     (sp.result.values || []).forEach(r => {
-      if (!r[3]) return;
+      if (!r[4]) return;
       try {
-        spiele.push(JSON.parse(r[3]));
+        spiele.push(JSON.parse(r[4]));
       } catch (e) {}
     });
   } catch (e) {
@@ -1875,16 +2015,22 @@ async function saveToSheet() {
 
     await gapi.client.sheets.spreadsheets.values.clear({
       spreadsheetId: SHEET_ID,
-      range: 'Teamspiele!A2:D300'
+      range: 'Teamspiele!A2:E300'
     });
 
     if (spiele.length) {
       await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: `Teamspiele!A2:D${spiele.length + 1}`,
+        range: `Teamspiele!A2:E${spiele.length + 1}`,
         valueInputOption: 'RAW',
         resource: {
-          values: spiele.map((s, i) => [i + 1, s.loser, (s.total || 0).toFixed(2), JSON.stringify(s)])
+          values: spiele.map((s, i) => [
+            i + 1,
+            s.spieltyp || '',
+            s.loser,
+            (s.total || 0).toFixed(2),
+            JSON.stringify(s)
+          ])
         }
       });
     }
@@ -1990,6 +2136,8 @@ function renderAll() {
   renderTeamspiele();
   renderAbrechnung();
   renderPreisEditor();
+  renderSpieltypSelect();
+  renderSpieleKatalog();
 }
 
 function updateStats() {
@@ -2060,7 +2208,13 @@ function renderAnwesenheit() {
 }
 
 function renderGruppen() {
-  const present = persons.filter(p => p.present);
+  const present = persons
+    .filter(p => p.present)
+    .map(p => {
+      p.tisch = normalizeTisch(p.tisch);
+      return p;
+    });
+
   const unEl = document.getElementById('unassigned-list');
   unEl.innerHTML = '';
 
@@ -2272,6 +2426,7 @@ function renderTeamspiele() {
     c.innerHTML = `
       <div class="spiel-info">
         <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? '🔵 Wand' : '🔴 TV'} hat verloren</div>
+        <div class="spiel-detail"><strong>${getSpielDisplayName(s)}</strong></div>
         <div class="spiel-detail">${di || 'Keine Getränke'}</div>
         <div class="spiel-detail">Aufgeteilt auf: ${displayMembers || '?'}</div>
       </div>
@@ -2300,6 +2455,12 @@ function addSpiel() {
     return;
   }
 
+  const spieltyp = (document.getElementById('spieltyp-select')?.value || '').trim();
+  if (!spieltyp) {
+    showToast('Bitte zuerst ein Spiel auswählen!', 'error');
+    return;
+  }
+
   if (!DRINKS.some(d => (teamDrinks[d.key] || 0) > 0)) {
     showToast('Bitte mindestens ein Getränk eintragen!', 'error');
     return;
@@ -2315,6 +2476,7 @@ function addSpiel() {
   const total = DRINKS.reduce((s, d) => s + (teamDrinks[d.key] || 0) * (prices[d.key] || 0), 0);
 
   spiele.push({
+    spieltyp,
     loser: selectedLoser,
     drinks: { ...teamDrinks },
     total,
@@ -2430,6 +2592,32 @@ function renderAbrechnung() {
 }
 
 // ── PAYMENT MODAL ──
+function renderModalTeamspielBreakdown(p) {
+  const el = document.getElementById('modal-teamspiele-breakdown');
+  if (!el) return;
+
+  const breakdown = getPersonTeamspielBreakdown(p);
+
+  if (!breakdown.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+      Verlorene Teamspiele
+    </div>
+    <div style="display:grid;gap:6px;">
+      ${breakdown.map(item => `
+        <div class="modal-meta-row">
+          <span>${item.spieltyp}</span>
+          <strong style="color:var(--accent2)">+${item.betrag.toFixed(2).replace('.', ',')} €</strong>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function openPaymentModal(p) {
   modalPerson = p;
   const total = calcTotal(p);
@@ -2444,6 +2632,7 @@ function openPaymentModal(p) {
   document.getElementById('modal-leftat-display').textContent = p.leftAt ? formatDateTime(p.leftAt) : '—';
   document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
   document.getElementById('modal-left-check').checked = !!p.left;
+  renderModalTeamspielBreakdown(p);
   updateModalRest();
   document.getElementById('payment-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('modal-paid-input').focus(), 100);
@@ -2588,6 +2777,83 @@ function deleteDrink(key) {
   showToast('🗑️ Getränk gelöscht', 'success');
 }
 
+// ── SPIELE KATALOG ──
+function renderSpieltypSelect() {
+  const sel = document.getElementById('spieltyp-select');
+  if (!sel) return;
+
+  sel.innerHTML = '';
+
+  if (!SPIELE_KATALOG.length) {
+    sel.innerHTML = '<option value="">Kein Spiel angelegt</option>';
+    return;
+  }
+
+  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderSpieleKatalog() {
+  const el = document.getElementById('spiele-katalog-list');
+  if (!el) return;
+
+  el.innerHTML = '';
+
+  if (!SPIELE_KATALOG.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch keine Spiele angelegt</div>';
+    return;
+  }
+
+  SPIELE_KATALOG
+    .slice()
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .forEach(name => {
+      const card = document.createElement('div');
+      card.className = 'spiel-edit-card';
+      card.innerHTML = `
+        <label>${name}</label>
+        <button class="delete-drink-btn" onclick="deleteSpielFromKatalog('${escapeForJs(name)}')">✕</button>
+      `;
+      el.appendChild(card);
+    });
+}
+
+function addSpielToKatalog() {
+  const input = document.getElementById('new-spiel-input');
+  const name = (input.value || '').trim();
+  if (!name) return;
+
+  if (SPIELE_KATALOG.find(s => s.toLowerCase() === name.toLowerCase())) {
+    showToast('Spiel existiert bereits', 'error');
+    return;
+  }
+
+  SPIELE_KATALOG.push(name);
+  input.value = '';
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  showToast('✅ Spiel hinzugefügt', 'success');
+}
+
+function deleteSpielFromKatalog(name) {
+  const used = spiele.some(s => (s.spieltyp || '') === name);
+  if (used) {
+    showToast('Spiel kann nicht gelöscht werden, da es bereits verwendet wurde', 'error');
+    return;
+  }
+
+  if (!confirm(`Spiel "${name}" wirklich löschen?`)) return;
+
+  SPIELE_KATALOG = SPIELE_KATALOG.filter(s => s !== name);
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  showToast('🗑️ Spiel gelöscht', 'success');
+}
+
 // ── PERSONEN ──
 function addPerson(isGuest) {
   const input = document.getElementById(isGuest ? 'new-guest-input' : 'new-person-input');
@@ -2624,7 +2890,6 @@ function deletePerson(name) {
   if (!p) return;
 
   const typeLabel = p.isGuest ? 'Gastkegler' : 'Mitglied';
-
   if (!confirm(`${typeLabel} "${p.name}" wirklich löschen?`)) return;
 
   persons = persons.filter(x => x.name !== name);
@@ -2684,7 +2949,7 @@ function closeResetModal() {
 }
 
 function confirmReset() {
-  lastState = JSON.stringify({ persons, spiele, DRINKS, prices });
+  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG });
 
   persons.forEach(p => {
     Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
@@ -2716,6 +2981,7 @@ function undoReset() {
   spiele = state.spiele;
   DRINKS = state.DRINKS;
   prices = state.prices;
+  SPIELE_KATALOG = state.SPIELE_KATALOG || SPIELE_KATALOG;
 
   renderAll();
   showToast('↩️ Wiederhergestellt!', 'success');
@@ -2732,14 +2998,14 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v4" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v5" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v4');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v5');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
