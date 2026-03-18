@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -10,17 +10,17 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-<link rel="manifest" href="manifest.json?v=20260317-v4">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260317-v4">
-<link rel="apple-touch-icon" href="icon-512.png?v=20260317-v4">
+  <link rel="manifest" href="manifest.json?v=20260317-v4">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260317-v4">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260317-v4">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --bg: #ffffff;
-      --surface: #ffffff; /* #4a4a4a;  // Farbe Hintergrund oben */
-      --surface2: #ffffff; /* #ff4a89; */
+      --surface: #ffffff;
+      --surface2: #ffffff;
       --border: #2e3350;
       --accent: #f5a623;
       --accent2: #e8412a;
@@ -31,7 +31,7 @@
       --t1b: #b5002d;
       --t2b: #1e00b5;
       --purple: #9b59b6;
-      --red: #ff084e; 
+      --red: #ff084e;
     }
 
     * {
@@ -399,18 +399,19 @@
       text-align: left;
       padding-left: 12px;
     }
-    
-#getraenke-fullwidth {
-  width: 100%;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  padding-left: 16px;
-  padding-right: 16px;
-}
 
-#getraenke-fullwidth table {
-  width: 100%;
-}
+    #getraenke-fullwidth {
+      width: 100%;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    #getraenke-fullwidth table {
+      width: 100%;
+    }
+
     .person-cell {
       display: flex;
       flex-direction: column;
@@ -585,6 +586,7 @@
 
     .abrech-card.t1 { border-color: var(--t1b); }
     .abrech-card.t2 { border-color: var(--t2b); }
+
     .abrech-card.paid {
       border-color: var(--green) !important;
       background: rgba(46, 204, 113, 0.06);
@@ -850,7 +852,25 @@
       font-size: 2.5rem;
       color: var(--accent);
       text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .modal-meta {
+      display: grid;
+      gap: 6px;
       margin-bottom: 16px;
+    }
+
+    .modal-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: rgba(0,0,0,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
     }
 
     .modal-input-row {
@@ -881,6 +901,22 @@
     }
 
     .modal-euro-input:focus { border-color: var(--accent); }
+
+    .modal-check-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .modal-check-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
 
     .modal-rest {
       font-size: 0.85rem;
@@ -1096,12 +1132,36 @@
   <div class="modal">
     <h3 id="modal-name">Name</h3>
     <div class="modal-sub">Zahlung erfassen</div>
+
     <div class="modal-total-due" id="modal-due">0,00 €</div>
+
+    <div class="modal-meta">
+      <div class="modal-meta-row">
+        <span>Gesamt</span>
+        <strong id="modal-total-display">0,00 €</strong>
+      </div>
+      <div class="modal-meta-row">
+        <span>Schon bezahlt</span>
+        <strong id="modal-paid-display">0,00 €</strong>
+      </div>
+      <div class="modal-meta-row">
+        <span>Noch offen</span>
+        <strong id="modal-open-display">0,00 €</strong>
+      </div>
+    </div>
+
     <div class="modal-input-row">
       <label>Bezahlt (€)</label>
       <input type="number" step="0.01" min="0" class="modal-euro-input" id="modal-paid-input" oninput="updateModalRest()" placeholder="0.00">
     </div>
+
+    <label class="modal-check-row">
+      <input type="checkbox" id="modal-left-check">
+      <span>Person ist wirklich weg</span>
+    </label>
+
     <div class="modal-rest" id="modal-rest-display"></div>
+
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">Abbrechen</button>
       <button class="modal-ok" onclick="confirmPayment()">✓ Speichern</button>
@@ -1139,7 +1199,7 @@
       <div class="stat"><span class="stat-val" id="stat-offen">0,00 €</span><span class="stat-label">Offen</span></div>
       <div class="stat"><span class="stat-val" id="stat-bezahlt" style="color:var(--green)">0,00 €</span><span class="stat-label">Bezahlt</span></div>
       <div class="stat"><span class="stat-val" id="stat-ueberschuss" style="color:var(--purple)">0,00 €</span><span class="stat-label">Überschuss</span></div>
-    <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
+      <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
     </div>
 
     <div id="tab-anwesenheit">
@@ -1167,23 +1227,23 @@
       </div>
     </div>
 
-<div id="tab-getraenke" class="hidden">
-  <div id="getraenke-fullwidth">
-    <div class="section-title">Getränke erfassen</div>
-    <div class="drinks-table-wrap">
-      <table>
-        <thead><tr id="drinks-header"></tr></thead>
-        <tbody id="drinks-body"></tbody>
-      </table>
+    <div id="tab-getraenke" class="hidden">
+      <div id="getraenke-fullwidth">
+        <div class="section-title">Getränke erfassen</div>
+        <div class="drinks-table-wrap">
+          <table>
+            <thead><tr id="drinks-header"></tr></thead>
+            <tbody id="drinks-body"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
     <div id="tab-teamspiele" class="hidden">
       <div class="section-title">Neues Teamspiel</div>
       <div class="team-spiel-form">
         <div class="team-info-box" id="team-info-box">
-          Bezahlt markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.
+          Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.
         </div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
         <div class="team-select-row">
@@ -1249,7 +1309,7 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260317-1';
+const APP_VERSION = '20260318-2';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1343,6 +1403,14 @@ function hasPaidSomething(p) {
   return (parseFloat(p.paid) || 0) > 0;
 }
 
+function isFullyPaid(p) {
+  return getPersonOpenAmount(p) <= 0.01;
+}
+
+function isLeft(p) {
+  return !!p.left;
+}
+
 function getPersonOpenAmount(p) {
   return Math.max(0, calcTotal(p) - (p.paid || 0));
 }
@@ -1370,10 +1438,10 @@ async function ensureSheetSetup() {
 
   await gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: 'Abrechnung!A1:O1',
+    range: 'Abrechnung!A1:P1',
     valueInputOption: 'RAW',
     resource: {
-      values: [['Name','Anwesend','Tisch', ...DRINKS.map(d => d.label), 'Team-Extra','Gesamt','Bezahlt']]
+      values: [['Name','Anwesend','Tisch', ...DRINKS.map(d => d.label), 'Team-Extra','Gesamt','Bezahlt','Weg']]
     }
   });
 
@@ -1424,7 +1492,7 @@ async function loadFromSheet() {
   try {
     const ab = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: 'Abrechnung!A2:O200'
+      range: 'Abrechnung!A2:P200'
     });
 
     persons = [];
@@ -1439,7 +1507,8 @@ async function loadFromSheet() {
         tisch: r[2] || '',
         drinks,
         teamExtra: parseFloat(r[12] || '0') || 0,
-        paid: parseFloat(r[14] || '0') || 0
+        paid: parseFloat(r[14] || '0') || 0,
+        left: r[15] === 'TRUE'
       });
     });
   } catch (e) {
@@ -1484,19 +1553,20 @@ async function saveToSheet() {
         ...DRINKS.map(d => p.drinks[d.key] || 0),
         (p.teamExtra || 0).toFixed(2),
         total.toFixed(2),
-        (p.paid || 0).toFixed(2)
+        (p.paid || 0).toFixed(2),
+        p.left ? 'TRUE' : 'FALSE'
       ];
     });
 
     await gapi.client.sheets.spreadsheets.values.clear({
       spreadsheetId: SHEET_ID,
-      range: 'Abrechnung!A2:O200'
+      range: 'Abrechnung!A2:P200'
     });
 
     if (rows.length) {
       await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: `Abrechnung!A2:O${rows.length + 1}`,
+        range: `Abrechnung!A2:P${rows.length + 1}`,
         valueInputOption: 'RAW',
         resource: { values: rows }
       });
@@ -1560,9 +1630,9 @@ async function archiveSheet() {
     await saveToSheet();
     await refreshToken();
 
-const now = new Date();
-const d = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
-    
+    const now = new Date();
+    const d = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${SHEET_ID}/copy?supportsAllDrives=true`, {
       method: 'POST',
       headers: {
@@ -1571,7 +1641,7 @@ const d = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}$
       },
       body: JSON.stringify({
         name: `${d}_Getränke KC IS`
-    })
+      })
     });
 
     const result = await response.json();
@@ -1583,7 +1653,7 @@ const d = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}$
       return;
     }
 
-  showToast(`📁 Archiv erstellt: ${d}_Getränke KC IS`, 'success');
+    showToast(`📁 Archiv erstellt: ${d}_Getränke KC IS`, 'success');
   } catch (e) {
     console.error(e);
     alert('Archivieren fehlgeschlagen:\n' + e.message);
@@ -1633,7 +1703,7 @@ function updateStats() {
   const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
   const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
   const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
-  
+
   document.getElementById('stat-anwesend').textContent = present.length;
   document.getElementById('stat-t1').textContent = present.filter(p => p.tisch === 'T1').length;
   document.getElementById('stat-t2').textContent = present.filter(p => p.tisch === 'T2').length;
@@ -1644,10 +1714,14 @@ function updateStats() {
 }
 
 function renderAnwesenheit() {
+  const sorted = persons
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
   const g = document.getElementById('persons-grid');
   g.innerHTML = '';
 
-  persons.forEach(p => {
+  sorted.forEach(p => {
     const c = document.createElement('div');
     c.className = 'person-card' + (p.present ? ' present' : ' absent');
     const i = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -1655,7 +1729,7 @@ function renderAnwesenheit() {
     let badgeClass = p.present ? 'present-badge' : 'absent-badge';
     let badgeText = p.present ? 'DA' : 'FEHLT';
 
-    if (p.present && hasPaidSomething(p)) {
+    if (p.present && p.left) {
       badgeClass = 'left-badge';
       badgeText = 'RAUS';
     }
@@ -1668,7 +1742,12 @@ function renderAnwesenheit() {
 
     c.onclick = () => {
       p.present = !p.present;
-      if (!p.present) p.tisch = '';
+
+      if (!p.present) {
+        p.tisch = '';
+        p.left = false;
+      }
+
       renderAll();
     };
 
@@ -1699,35 +1778,44 @@ function renderGruppen() {
 
   const t1El = document.getElementById('gruppe-t1');
   t1El.innerHTML = '';
-  present.filter(p => p.tisch === 'T1').forEach(p => {
-    const c = document.createElement('div');
-    c.className = 'gruppe-chip';
-    c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T2</span>';
-    c.onclick = () => {
-      p.tisch = 'T2';
-      renderAll();
-    };
-    t1El.appendChild(c);
-  });
+  present
+    .filter(p => p.tisch === 'T1')
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+    .forEach(p => {
+      const c = document.createElement('div');
+      c.className = 'gruppe-chip';
+      c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T2</span>';
+      c.onclick = () => {
+        p.tisch = 'T2';
+        renderAll();
+      };
+      t1El.appendChild(c);
+    });
   if (!present.find(p => p.tisch === 'T1')) t1El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 
   const t2El = document.getElementById('gruppe-t2');
   t2El.innerHTML = '';
-  present.filter(p => p.tisch === 'T2').forEach(p => {
-    const c = document.createElement('div');
-    c.className = 'gruppe-chip';
-    c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T1</span>';
-    c.onclick = () => {
-      p.tisch = 'T1';
-      renderAll();
-    };
-    t2El.appendChild(c);
-  });
+  present
+    .filter(p => p.tisch === 'T2')
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+    .forEach(p => {
+      const c = document.createElement('div');
+      c.className = 'gruppe-chip';
+      c.innerHTML = p.name + ' <span style="opacity:0.5;font-size:0.7rem">→T1</span>';
+      c.onclick = () => {
+        p.tisch = 'T1';
+        renderAll();
+      };
+      t2El.appendChild(c);
+    });
   if (!present.find(p => p.tisch === 'T2')) t2El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 }
 
 function renderGetraenke() {
-  const present = persons.filter(p => p.present);
+  const present = persons
+    .filter(p => p.present)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
   document.getElementById('drinks-header').innerHTML =
     '<th>Name</th>' +
     DRINKS.map(d => `<th>${d.label}</th>`).join('') +
@@ -1792,13 +1880,13 @@ function selectLoser(t) {
 }
 
 function getActiveTeamMembers(teamKey) {
-  return persons.filter(p => p.present && p.tisch === teamKey && !hasPaidSomething(p));
+  return persons.filter(p => p.present && p.tisch === teamKey && !p.left);
 }
 
 function updateTeamInfoBox() {
   const box = document.getElementById('team-info-box');
   if (!selectedLoser) {
-    box.innerHTML = 'Bezahlt markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.';
+    box.innerHTML = 'Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.';
     return;
   }
 
@@ -1932,48 +2020,71 @@ function renderAbrechnung() {
   const ag = document.getElementById('abrech-grid');
   ag.innerHTML = '';
 
-  [...present].sort((a, b) => calcTotal(b) - calcTotal(a)).forEach(p => {
-    const total = calcTotal(p);
-    const pd = p.paid || 0;
-    const rest = getPersonOpenAmount(p);
-    const over = getPersonOverpayAmount(p);
-    const isPaid = pd > 0;
+  [...present]
+    .sort((a, b) => {
+      const aDone = isFullyPaid(a);
+      const bDone = isFullyPaid(b);
 
-    const c = document.createElement('div');
-    c.className = 'abrech-card ' + (p.tisch || '').toLowerCase() + (isPaid ? ' paid' : '');
+      if (aDone !== bDone) {
+        return aDone ? 1 : -1;
+      }
 
-    const items = DRINKS
-      .filter(d => (p.drinks[d.key] || 0) > 0)
-      .map(d => `<div class="abrech-item"><span>${p.drinks[d.key]}x ${d.label}</span><span>${((p.drinks[d.key] || 0) * (prices[d.key] || 0)).toFixed(2).replace('.', ',')}€</span></div>`)
-      .join('');
+      return a.name.localeCompare(b.name, 'de');
+    })
+    .forEach(p => {
+      const total = calcTotal(p);
+      const pd = p.paid || 0;
+      const rest = getPersonOpenAmount(p);
+      const over = getPersonOverpayAmount(p);
+      const fullyPaid = isFullyPaid(p);
+      const left = !!p.left;
 
-    const teamLine = (p.teamExtra || 0) > 0
-      ? `<div class="abrech-item"><span>⚽ Team-Strafe</span><span style="color:var(--accent2)">+${(p.teamExtra || 0).toFixed(2).replace('.', ',')}€</span></div>`
-      : '';
+      const c = document.createElement('div');
+      c.className = 'abrech-card ' + (p.tisch || '').toLowerCase() + (fullyPaid ? ' paid' : '');
 
-    c.innerHTML = `
-      <div class="abrech-name">${p.name}</div>
-      <div class="abrech-tisch">${p.tisch === 'T1' ? '🔵 Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
-      <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
-      ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
-      ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
-      ${over > 0.01 ? `<div class="abrech-ueberschuss">Überschuss: ${over.toFixed(2).replace('.', ',')}€</div>` : ''}
-      ${isPaid ? '<div class="abrech-paid-info">✅ Für den Abend raus</div>' : ''}
-      <div class="abrech-items">${items}${teamLine}${!items && !teamLine ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
-      <div class="tap-hint">Antippen → Zahlung eintragen</div>
-    `;
+      const items = DRINKS
+        .filter(d => (p.drinks[d.key] || 0) > 0)
+        .map(d => `<div class="abrech-item"><span>${p.drinks[d.key]}x ${d.label}</span><span>${((p.drinks[d.key] || 0) * (prices[d.key] || 0)).toFixed(2).replace('.', ',')}€</span></div>`)
+        .join('');
 
-    c.onclick = () => openPaymentModal(p);
-    ag.appendChild(c);
-  });
+      const teamLine = (p.teamExtra || 0) > 0
+        ? `<div class="abrech-item"><span>⚽ Team-Strafe</span><span style="color:var(--accent2)">+${(p.teamExtra || 0).toFixed(2).replace('.', ',')}€</span></div>`
+        : '';
+
+      c.innerHTML = `
+        <div class="abrech-name">${p.name}</div>
+        <div class="abrech-tisch">${p.tisch === 'T1' ? '🔵 Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
+        <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
+        ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
+        ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
+        ${over > 0.01 ? `<div class="abrech-ueberschuss">Überschuss: ${over.toFixed(2).replace('.', ',')}€</div>` : ''}
+        ${fullyPaid ? '<div class="abrech-paid-info">✅ Komplett bezahlt</div>' : ''}
+        ${left ? '<div class="abrech-paid-info">🚪 Wirklich weg</div>' : ''}
+        <div class="abrech-items">${items}${teamLine}${!items && !teamLine ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
+        <div class="tap-hint">Antippen → Zahlung eintragen</div>
+      `;
+
+      c.onclick = () => openPaymentModal(p);
+      ag.appendChild(c);
+    });
 }
 
 // ── PAYMENT MODAL ──
 function openPaymentModal(p) {
   modalPerson = p;
+
+  const total = calcTotal(p);
+  const paid = p.paid || 0;
+  const open = getPersonOpenAmount(p);
+
   document.getElementById('modal-name').textContent = p.name;
-  document.getElementById('modal-due').textContent = calcTotal(p).toFixed(2).replace('.', ',') + ' €';
-  document.getElementById('modal-paid-input').value = (p.paid || 0) > 0 ? (p.paid || 0).toFixed(2) : '';
+  document.getElementById('modal-due').textContent = total.toFixed(2).replace('.', ',') + ' €';
+  document.getElementById('modal-total-display').textContent = euros(total);
+  document.getElementById('modal-paid-display').textContent = euros(paid);
+  document.getElementById('modal-open-display').textContent = euros(open);
+  document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
+  document.getElementById('modal-left-check').checked = !!p.left;
+
   updateModalRest();
   document.getElementById('payment-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('modal-paid-input').focus(), 100);
@@ -2008,6 +2119,8 @@ function confirmPayment() {
   if (!modalPerson) return;
 
   modalPerson.paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
+  modalPerson.left = document.getElementById('modal-left-check').checked;
+
   closeModal();
   updateStats();
   renderAbrechnung();
@@ -2060,7 +2173,8 @@ function addPerson() {
     tisch: '',
     drinks,
     paid: 0,
-    teamExtra: 0
+    teamExtra: 0,
+    left: false
   });
 
   input.value = '';
@@ -2112,6 +2226,7 @@ function confirmReset() {
     Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
     p.paid = 0;
     p.teamExtra = 0;
+    p.left = false;
   });
 
   spiele = [];
