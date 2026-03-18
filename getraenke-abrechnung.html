@@ -10,9 +10,9 @@
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v3">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v3">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v3">
+  <link rel="manifest" href="manifest.json?v=20260318-v4">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v4">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v4">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -1487,7 +1487,7 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-5';
+const APP_VERSION = '20260318-6';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -2076,7 +2076,7 @@ function renderGruppen() {
   un.forEach(p => {
     const c = document.createElement('div');
     c.className = 'unassigned-chip' + (p.isGuest ? ' guest' : '');
-    c.textContent = p.name + (p.isGuest ? ' (Gast) →' : ' →');
+    c.textContent = p.name + ' →';
     c.onclick = () => {
       p.tisch = 'T1';
       renderAll();
@@ -2092,7 +2092,7 @@ function renderGruppen() {
   }).forEach(p => {
     const c = document.createElement('div');
     c.className = 'gruppe-chip' + (p.isGuest ? ' guest' : '');
-    c.innerHTML = `${p.name}${p.isGuest ? ' (Gast)' : ''} <span style="opacity:0.5;font-size:0.7rem">→T2</span>`;
+    c.innerHTML = `${p.name} <span style="opacity:0.5;font-size:0.7rem">→T2</span>`;
     c.onclick = () => {
       p.tisch = 'T2';
       renderAll();
@@ -2109,7 +2109,7 @@ function renderGruppen() {
   }).forEach(p => {
     const c = document.createElement('div');
     c.className = 'gruppe-chip' + (p.isGuest ? ' guest' : '');
-    c.innerHTML = `${p.name}${p.isGuest ? ' (Gast)' : ''} <span style="opacity:0.5;font-size:0.7rem">→T1</span>`;
+    c.innerHTML = `${p.name} <span style="opacity:0.5;font-size:0.7rem">→T1</span>`;
     c.onclick = () => {
       p.tisch = 'T1';
       renderAll();
@@ -2223,7 +2223,7 @@ function updateTeamInfoBox() {
 
   box.innerHTML = `
     <strong>${teamName}</strong><br>
-    Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name + (m.isGuest ? ' (Gast)' : '')).join(', ') : 'niemand'}
+    Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name).join(', ') : 'niemand'}
   `;
 }
 
@@ -2262,13 +2262,18 @@ function renderTeamspiele() {
       .map(d => `${s.drinks[d.key]}x ${d.label}`)
       .join(', ');
 
+    const displayMembers = (s.members || []).map(name => {
+      const p = persons.find(x => x.name === name);
+      return p ? p.name : name;
+    }).join(', ');
+
     const c = document.createElement('div');
     c.className = 'spiel-card';
     c.innerHTML = `
       <div class="spiel-info">
         <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? '🔵 Wand' : '🔴 TV'} hat verloren</div>
         <div class="spiel-detail">${di || 'Keine Getränke'}</div>
-        <div class="spiel-detail">Aufgeteilt auf: ${(s.members || []).join(', ') || '?'}</div>
+        <div class="spiel-detail">Aufgeteilt auf: ${displayMembers || '?'}</div>
       </div>
       <div>
         <div class="spiel-betrag">${(s.total || 0).toFixed(2).replace('.', ',')}€</div>
@@ -2314,7 +2319,7 @@ function addSpiel() {
     drinks: { ...teamDrinks },
     total,
     proKopf: members.length ? total / members.length : 0,
-    members: members.map(m => m.name + (m.isGuest ? ' (Gast)' : ''))
+    members: members.map(m => m.name)
   });
 
   teamDrinks = {};
@@ -2431,7 +2436,7 @@ function openPaymentModal(p) {
   const paid = p.paid || 0;
   const open = getPersonOpenAmount(p);
 
-  document.getElementById('modal-name').textContent = p.name + (p.isGuest ? ' (Gast)' : '');
+  document.getElementById('modal-name').textContent = p.name;
   document.getElementById('modal-due').textContent = total.toFixed(2).replace('.', ',') + ' €';
   document.getElementById('modal-total-display').textContent = euros(total);
   document.getElementById('modal-paid-display').textContent = euros(paid);
@@ -2627,7 +2632,7 @@ function deletePerson(name) {
   spiele = spiele
     .map(s => ({
       ...s,
-      members: (s.members || []).filter(m => m !== name && m !== `${name} (Gast)`)
+      members: (s.members || []).filter(m => m !== name)
     }))
     .filter(s => (s.members || []).length > 0);
 
@@ -2727,14 +2732,14 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v3" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v4" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v3');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v4');
       console.log('Service Worker registered', reg);
 
       if (reg.waiting) {
