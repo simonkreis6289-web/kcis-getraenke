@@ -22,10 +22,12 @@
       --surface: #ffffff;
       --surface2: #ffffff;
       --border: #2e3350;
-      --accent: #f5a623;
-      --accent2: #e8412a;
+      --accent: rgba(204,0,0,0.15);
+      --accent_font: rgba(204,0,0,1);
+      --accent2: rgba(7,148,0,1);
+      --accent2_font: rgba(7,148,0,0.15);
       --green: #2ecc71;
-      --blue: #3498db;
+      --blue: #c4c4c4;
       --text: #000000;
       --muted: #121824;
       --t1b: #292929;
@@ -557,12 +559,12 @@
     }
 
     .counter-btn.minus {
-      background: rgba(232, 65, 42, 0.15);
+      background: var(--accent2_font);
       color: var(--accent2);
     }
 
     .counter-btn.plus {
-      background: rgba(245, 166, 35, 0.15);
+      background: var(--accent_font);
       color: var(--accent);
     }
 
