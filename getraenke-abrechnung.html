@@ -41,9 +41,6 @@
       --guest: #7f8c8d;
       --round: #a85ad4;
 
-      --google-on: #2ecc71;
-      --google-off: #e8412a;
-
       --table-row-bg: #ffffff;
       --table-row-alt-bg: #f5f5f5;
       --table-sticky-bg: #ffffff;
@@ -104,20 +101,6 @@
       margin-top: 3px;
     }
 
-    .header-google-status {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 4px;
-      font-weight: 700;
-    }
-
-    .header-google-sync {
-      font-size: 0.68rem;
-      color: var(--muted);
-      margin-top: 2px;
-      opacity: 0.9;
-    }
-
     .header-btns {
       display: flex;
       gap: 8px;
@@ -163,22 +146,6 @@
       font-weight: 600;
       font-size: 0.75rem;
       cursor: pointer;
-    }
-
-    .archive-btn.google-btn {
-      color: #fff;
-      border: none;
-      font-weight: 700;
-    }
-
-    .archive-btn.google-btn.connected {
-      background: var(--google-on);
-      color: #000;
-    }
-
-    .archive-btn.google-btn.disconnected {
-      background: var(--google-off);
-      color: #fff;
     }
 
     .tabs {
@@ -1442,11 +1409,9 @@
       <h1>KC IS</h1>
       <div class="subtitle">Getränkeabrechnung</div>
       <div class="header-datetime" id="header-datetime"></div>
-      <div class="header-google-status" id="header-google-status">🛑 - keine Verbindung mit Google</div>
-      <div class="header-google-sync" id="header-google-sync">Letzte Synchronisation mit Google: keine</div>
     </div>
     <div class="header-btns">
-      <button class="archive-btn google-btn disconnected" onclick="openLoginModal()" id="googleBtn">🛑 Google</button>
+      <button class="archive-btn" onclick="openLoginModal()">🔐 Google</button>
       <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
       <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
       <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
@@ -1623,7 +1588,6 @@ const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.goog
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v6';
-const LOCAL_LAST_SYNC_KEY = 'kcis_last_sync_v1';
 
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
@@ -1680,8 +1644,6 @@ function gisLoaded() {
 
 async function startApp() {
   loadLocal();
-  updateGoogleStatusUI();
-  updateLastSyncUI();
   renderAll();
   appReady = true;
 
@@ -1689,13 +1651,11 @@ async function startApp() {
   document.getElementById('app').style.display = 'block';
 
   if (!navigator.onLine) {
-    updateGoogleStatusUI(false);
     showToast('📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', 'success');
     return;
   }
 
   if (hasPendingSync()) {
-    updateGoogleStatusUI(false);
     openLoginModal();
     showToast('📌 Lokale Änderungen gefunden. Bitte Google-Anmeldung für Sync.', 'success');
     return;
@@ -1703,15 +1663,11 @@ async function startApp() {
 
   try {
     const ok = await ensureAccessToken(false);
-    if (!ok) {
-      updateGoogleStatusUI(false);
-      return;
-    }
+    if (!ok) return;
     await loadFromSheet();
     saveLocal(false);
   } catch (e) {
     console.error(e);
-    updateGoogleStatusUI(false);
   }
 }
 
@@ -1728,13 +1684,11 @@ function signIn() {
 
   tokenClient.callback = async (resp) => {
     if (resp.error) {
-      updateGoogleStatusUI(false);
       showToast('❌ Google-Anmeldung fehlgeschlagen', 'error');
       return;
     }
 
     accessToken = resp.access_token;
-    updateGoogleStatusUI(true);
     closeLoginModal();
 
     try {
@@ -1755,22 +1709,14 @@ function signIn() {
 
 function ensureAccessToken(interactive = false) {
   return new Promise((resolve) => {
-    if (accessToken) {
-      updateGoogleStatusUI(true);
-      return resolve(true);
-    }
-    if (!navigator.onLine || !tokenClient) {
-      updateGoogleStatusUI(false);
-      return resolve(false);
-    }
+    if (accessToken) return resolve(true);
+    if (!navigator.onLine || !tokenClient) return resolve(false);
 
     tokenClient.callback = (resp) => {
       if (resp && !resp.error && resp.access_token) {
         accessToken = resp.access_token;
-        updateGoogleStatusUI(true);
         resolve(true);
       } else {
-        updateGoogleStatusUI(false);
         resolve(false);
       }
     };
@@ -1778,7 +1724,6 @@ function ensureAccessToken(interactive = false) {
     try {
       tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
     } catch (e) {
-      updateGoogleStatusUI(false);
       resolve(false);
     }
   });
@@ -1788,63 +1733,12 @@ function refreshToken() {
   return new Promise((resolve, reject) => {
     if (!tokenClient) return reject(new Error('Token client nicht bereit'));
     tokenClient.callback = (resp) => {
-      if (resp.error) {
-        updateGoogleStatusUI(false);
-        return reject(resp);
-      }
+      if (resp.error) return reject(resp);
       accessToken = resp.access_token;
-      updateGoogleStatusUI(true);
       resolve(accessToken);
     };
     tokenClient.requestAccessToken({ prompt: '' });
   });
-}
-
-// ── GOOGLE STATUS / LAST SYNC ──
-function getLastSync() {
-  try {
-    return localStorage.getItem(LOCAL_LAST_SYNC_KEY) || '';
-  } catch (e) {
-    return '';
-  }
-}
-
-function setLastSyncNow() {
-  try {
-    const nowIso = new Date().toISOString();
-    localStorage.setItem(LOCAL_LAST_SYNC_KEY, nowIso);
-    updateLastSyncUI();
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function updateLastSyncUI() {
-  const el = document.getElementById('header-google-sync');
-  if (!el) return;
-  const lastSync = getLastSync();
-  el.textContent = 'Letzte Synchronisation mit Google: ' + (lastSync ? formatDateTime(lastSync) : 'keine');
-}
-
-function updateGoogleStatusUI(forceState = null) {
-  const connected = forceState !== null ? !!forceState : !!accessToken;
-
-  const btn = document.getElementById('googleBtn');
-  const statusEl = document.getElementById('header-google-status');
-
-  if (btn) {
-    btn.classList.remove('connected', 'disconnected');
-    btn.classList.add(connected ? 'connected' : 'disconnected');
-    btn.textContent = connected ? '🌍 Google' : '🛑 Google';
-  }
-
-  if (statusEl) {
-    statusEl.textContent = connected
-      ? '🌍 - mit Google verbunden'
-      : '🛑 - keine Verbindung mit Google';
-  }
-
-  updateLastSyncUI();
 }
 
 // ── LOCAL STORAGE ──
@@ -2207,8 +2101,6 @@ async function loadFromSheet() {
 
   hydrateState();
   renderAll();
-  setLastSyncNow();
-  updateGoogleStatusUI(true);
 }
 
 // ── SAVE ──
@@ -2216,7 +2108,6 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
   saveLocal(true);
 
   if (!navigator.onLine) {
-    updateGoogleStatusUI(false);
     if (showSuccessToast) showToast('📴 Offline gespeichert. Sync folgt später.', 'success');
     return;
   }
@@ -2228,7 +2119,6 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
 
   const ok = await ensureAccessToken(!isAutoSave);
   if (!ok) {
-    updateGoogleStatusUI(false);
     openLoginModal();
     if (showSuccessToast) showToast('📌 Lokal gespeichert. Bitte Google-Anmeldung für Sync.', 'success');
     return;
@@ -2304,8 +2194,6 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
     clearPendingSync();
     saveLocal(false);
     closeLoginModal();
-    setLastSyncNow();
-    updateGoogleStatusUI(true);
 
     if (showSuccessToast) {
       showToast(isAutoSave ? '✅ Automatisch synchronisiert' : '✅ Gespeichert!', 'success');
@@ -2351,7 +2239,6 @@ async function archiveSheet() {
 
     const ok = await ensureAccessToken(true);
     if (!ok) {
-      updateGoogleStatusUI(false);
       showToast('❌ Für Archiv bitte mit Google anmelden', 'error');
       return;
     }
@@ -2378,7 +2265,6 @@ async function archiveSheet() {
       return;
     }
 
-    updateGoogleStatusUI(true);
     showToast(`📁 Archiv erstellt: ${d}_Getränke KC IS`, 'success');
   } catch (e) {
     alert('Archivieren fehlgeschlagen:\n' + e.message);
@@ -2421,7 +2307,6 @@ function recalcTeamExtras() {
 function renderAll() {
   recalcTeamExtras();
   updateHeaderDateTime();
-  updateGoogleStatusUI();
   updateStats();
   renderAnwesenheit();
   renderGruppen();
@@ -3173,4 +3058,354 @@ function confirmPayment() {
   persistState();
 }
 
-//
+// ── PREISE ──
+function renderPreisEditor() {
+  const ed = document.getElementById('prices-editor');
+  ed.innerHTML = '';
+
+  DRINKS.forEach(d => {
+    const c = document.createElement('div');
+    c.className = 'price-edit-card';
+    c.innerHTML = `
+      <label>${d.label}</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" step="0.10" min="0" class="price-input" id="price-input-${d.key}" value="${(prices[d.key] || 0).toFixed(2)}" placeholder="0.00">
+        <button class="delete-drink-btn" onclick="deleteDrink('${escapeForJs(d.key)}')" title="Getränk löschen">✕</button>
+      </div>
+    `;
+    ed.appendChild(c);
+  });
+}
+
+function openDrinkModal() {
+  document.getElementById('new-drink-name').value = '';
+  document.getElementById('new-drink-price').value = '';
+  document.getElementById('drink-modal').classList.remove('hidden');
+}
+
+function closeDrinkModal() {
+  document.getElementById('drink-modal').classList.add('hidden');
+}
+
+function confirmAddDrink() {
+  const name = document.getElementById('new-drink-name').value.trim();
+  const price = parseFloat(String(document.getElementById('new-drink-price').value).replace(',', '.')) || 0;
+
+  if (!name) {
+    showToast('Bitte Getränkenamen eingeben', 'error');
+    return;
+  }
+
+  if (DRINKS.find(d => d.label.toLowerCase() === name.toLowerCase())) {
+    showToast('Getränk existiert bereits', 'error');
+    return;
+  }
+
+  let key = makeDrinkKey(name);
+  while (DRINKS.find(d => d.key === key)) key = key + '_' + Math.floor(Math.random() * 1000);
+
+  DRINKS.push({ key, label: name });
+  prices[key] = price;
+
+  persons.forEach(p => {
+    if (!p.drinks) p.drinks = {};
+    p.drinks[key] = 0;
+  });
+
+  closeDrinkModal();
+  renderAll();
+  showToast('✅ Getränk hinzugefügt', 'success');
+  persistState();
+}
+
+function deleteDrink(key) {
+  const drink = DRINKS.find(d => d.key === key);
+  if (!drink) return;
+
+  const used = persons.some(p => (p.drinks && (p.drinks[key] || 0) > 0));
+  const usedInTeam = spiele.some(s => (s.drinks && (s.drinks[key] || 0) > 0));
+  const usedInRounds = persons.some(p => (p.rounds || []).some(r => (r.drinks && (r.drinks[key] || 0) > 0)));
+
+  if (used || usedInTeam || usedInRounds) {
+    showToast('Getränk kann nicht gelöscht werden, weil bereits Buchungen existieren', 'error');
+    return;
+  }
+
+  if (!confirm(`Getränk "${drink.label}" wirklich löschen?`)) return;
+
+  DRINKS = DRINKS.filter(d => d.key !== key);
+  delete prices[key];
+
+  persons.forEach(p => {
+    if (p.drinks && key in p.drinks) delete p.drinks[key];
+  });
+
+  Object.keys(teamDrinks).forEach(k => {
+    if (k === key) delete teamDrinks[k];
+  });
+
+  renderAll();
+  showToast('🗑️ Getränk gelöscht', 'success');
+  persistState();
+}
+
+// ── SPIELE KATALOG ──
+function renderSpieltypSelect() {
+  const sel = document.getElementById('spieltyp-select');
+  if (!sel) return;
+
+  sel.innerHTML = '';
+
+  if (!SPIELE_KATALOG.length) {
+    sel.innerHTML = '<option value="">Kein Spiel angelegt</option>';
+    return;
+  }
+
+  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderSpieleKatalog() {
+  const el = document.getElementById('spiele-katalog-list');
+  el.innerHTML = '';
+
+  if (!SPIELE_KATALOG.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch keine Spiele angelegt</div>';
+    return;
+  }
+
+  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const card = document.createElement('div');
+    card.className = 'spiel-edit-card';
+    card.innerHTML = `
+      <label>${name}</label>
+      <button class="delete-drink-btn" onclick="deleteSpielFromKatalog('${escapeForJs(name)}')">✕</button>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function addSpielToKatalog() {
+  const input = document.getElementById('new-spiel-input');
+  const name = (input.value || '').trim();
+  if (!name) return;
+
+  if (SPIELE_KATALOG.find(s => s.toLowerCase() === name.toLowerCase())) {
+    showToast('Spiel existiert bereits', 'error');
+    return;
+  }
+
+  SPIELE_KATALOG.push(name);
+  input.value = '';
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  showToast('✅ Spiel hinzugefügt', 'success');
+  persistState();
+}
+
+function deleteSpielFromKatalog(name) {
+  const used = spiele.some(s => (s.spieltyp || '') === name);
+  if (used) {
+    showToast('Spiel kann nicht gelöscht werden, da es bereits verwendet wurde', 'error');
+    return;
+  }
+
+  if (!confirm(`Spiel "${name}" wirklich löschen?`)) return;
+
+  SPIELE_KATALOG = SPIELE_KATALOG.filter(s => s !== name);
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  showToast('🗑️ Spiel gelöscht', 'success');
+  persistState();
+}
+
+// ── PERSONEN ──
+function addPerson(isGuest) {
+  const input = document.getElementById(isGuest ? 'new-guest-input' : 'new-person-input');
+  const name = input.value.trim();
+  if (!name) return;
+
+  if (persons.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+    showToast('Name existiert bereits', 'error');
+    return;
+  }
+
+  const drinks = {};
+  DRINKS.forEach(d => drinks[d.key] = 0);
+
+  persons.push({
+    name,
+    isGuest: !!isGuest,
+    present: true,
+    tisch: '',
+    drinks,
+    paid: 0,
+    teamExtra: 0,
+    roundExtra: 0,
+    rounds: [],
+    left: false,
+    leftAt: ''
+  });
+
+  input.value = '';
+  renderAll();
+  showToast(`✅ ${name} hinzugefügt`, 'success');
+  persistState();
+}
+
+function deletePerson(name) {
+  const p = persons.find(x => x.name === name);
+  if (!p) return;
+
+  const typeLabel = p.isGuest ? 'Gastkegler' : 'Mitglied';
+  if (!confirm(`${typeLabel} "${p.name}" wirklich löschen?`)) return;
+
+  persons = persons.filter(x => x.name !== name);
+  spiele = spiele
+    .map(s => ({ ...s, members: (s.members || []).filter(m => m !== name) }))
+    .filter(s => (s.members || []).length > 0);
+
+  renderAll();
+  showToast('🗑️ Person gelöscht', 'success');
+  persistState();
+}
+
+// ── TABS ──
+function showTab(name, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  el.classList.add('active');
+}
+
+// ── RESET / UNDO ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+
+  toastTimer = setTimeout(() => {
+    t.className = '';
+    setTimeout(() => { t.textContent = ''; }, 250);
+  }, 2600);
+}
+
+function showUndoToast() {
+  const t = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  t.innerHTML = `🧨 Alles gelöscht <button onclick="undoReset()" style="margin-left:10px;padding:4px 8px;border-radius:6px;border:none;background:var(--green);font-weight:700;cursor:pointer;">Undo</button>`;
+  t.className = 'show success';
+
+  toastTimer = setTimeout(() => {
+    t.className = '';
+    setTimeout(() => { t.innerHTML = ''; }, 250);
+  }, 5000);
+}
+
+function openResetModal() {
+  document.getElementById('reset-modal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.add('hidden');
+}
+
+function confirmReset() {
+  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG, selectedLoser, teamDrinks });
+
+  persons.forEach(p => {
+    Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
+    p.paid = 0;
+    p.teamExtra = 0;
+    p.roundExtra = 0;
+    p.rounds = [];
+    p.left = false;
+    p.leftAt = '';
+  });
+
+  spiele = [];
+  teamDrinks = {};
+  selectedLoser = null;
+  roundDraftDrinks = {};
+
+  closeResetModal();
+  renderAll();
+  showUndoToast();
+  persistState();
+
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => { lastState = null; }, 5000);
+}
+
+function undoReset() {
+  if (!lastState) return;
+
+  const state = JSON.parse(lastState);
+  persons = state.persons || [];
+  spiele = state.spiele || [];
+  DRINKS = state.DRINKS || DRINKS;
+  prices = state.prices || prices;
+  SPIELE_KATALOG = state.SPIELE_KATALOG || SPIELE_KATALOG;
+  selectedLoser = state.selectedLoser || null;
+  teamDrinks = state.teamDrinks || {};
+
+  hydrateState();
+  renderAll();
+  showToast('↩️ Wiederhergestellt!', 'success');
+  lastState = null;
+  persistState();
+}
+
+// ── NETWORK EVENTS ──
+window.addEventListener('online', () => {
+  showToast('🌐 Wieder online.', 'success');
+  if (hasPendingSync()) openLoginModal();
+});
+
+window.addEventListener('offline', () => {
+  showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
+});
+
+updateHeaderDateTime();
+setInterval(updateHeaderDateTime, 1000);
+</script>
+
+<script src="https://apis.google.com/js/api.js?v=20260318-v13" onload="gapiLoaded()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v13');
+
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    } catch (err) {
+      console.log('SW registration failed:', err);
+    }
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+</script>
+
+</body>
+</html>
