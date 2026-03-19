@@ -1882,6 +1882,8 @@ function hydrateState() {
     p.paid = parseFloat(p.paid || 0) || 0;
     p.left = !!p.left;
     p.leftAt = p.leftAt || '';
+	p.present = false;
+	p.tisch = '';
   });
 }
 
