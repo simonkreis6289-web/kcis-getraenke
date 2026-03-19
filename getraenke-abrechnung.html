@@ -46,6 +46,12 @@
       --table-sticky-bg: #ffffff;
       --table-sticky-alt-bg: #eeeeee;
       --table-left-fade: 0.42;
+
+      --google-connected-bg: #dff5e3;
+      --google-connected-fg: #1f8f45;
+      --google-disconnected-bg: #fde3e3;
+      --google-disconnected-fg: #c62828;
+      
     }
 
     * {
@@ -147,7 +153,37 @@
       font-size: 0.75rem;
       cursor: pointer;
     }
+    
+    .google-status-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.75rem;
+      cursor: pointer;
+      min-width: 190px;
+    }
 
+    .google-status-btn.connected {
+      background: var(--google-connected-bg);
+      color: var(--google-connected-fg);
+    }
+
+    .google-status-btn.disconnected {
+      background: var(--google-disconnected-bg);
+      color: var(--google-disconnected-fg);
+    }
+
+    .google-sync-info {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.2;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+    
     .tabs {
       display: flex;
       background: var(--surface);
@@ -1409,9 +1445,14 @@
       <h1>KC IS</h1>
       <div class="subtitle">Getränkeabrechnung</div>
       <div class="header-datetime" id="header-datetime"></div>
-    </div>
-    <div class="header-btns">
-      <button class="archive-btn" onclick="openLoginModal()">🔐 Google</button>
+          </div>
+          <div class="header-btns">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;">
+            <button class="google-status-btn disconnected" onclick="openLoginModal()" id="googleStatusBtn">
+              🛑 Keine Verbindung mit Google
+            </button>
+            <div class="google-sync-info" id="googleSyncInfo">Letzte Synchronisation mit Google: –</div>
+          </div>
       <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
       <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
       <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
@@ -1588,6 +1629,7 @@ const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.goog
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v6';
+const LOCAL_LAST_SYNC_KEY = 'kcis_last_sync_v6';
 
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
@@ -1620,7 +1662,10 @@ let autoSaveTimer = null;
 let autoSaveRunning = false;
 let autoSaveQueued = false;
 let appReady = false;
-
+  
+let googleConnected = false;
+let lastSyncAt = '';
+  
 // ── AUTH / START ──
 function gapiLoaded() {
   gapi.load('client', initGapiClient);
@@ -1645,6 +1690,7 @@ function gisLoaded() {
 async function startApp() {
   loadLocal();
   renderAll();
+  updateGoogleStatusUI();
   appReady = true;
 
   document.getElementById('loading-screen').style.display = 'none';
@@ -1690,7 +1736,9 @@ function signIn() {
 
     accessToken = resp.access_token;
     closeLoginModal();
-
+    googleConnected = true;
+    updateGoogleStatusUI();
+	
     try {
       if (hasPendingSync()) {
         await saveToSheet(false, true);
@@ -1715,8 +1763,12 @@ function ensureAccessToken(interactive = false) {
     tokenClient.callback = (resp) => {
       if (resp && !resp.error && resp.access_token) {
         accessToken = resp.access_token;
+        googleConnected = true;
+        updateGoogleStatusUI();
         resolve(true);
       } else {
+        googleConnected = false;
+        updateGoogleStatusUI();
         resolve(false);
       }
     };
@@ -1733,8 +1785,14 @@ function refreshToken() {
   return new Promise((resolve, reject) => {
     if (!tokenClient) return reject(new Error('Token client nicht bereit'));
     tokenClient.callback = (resp) => {
-      if (resp.error) return reject(resp);
+      if (resp.error) {
+        googleConnected = false;
+        updateGoogleStatusUI();
+        return reject(resp);
+      }
       accessToken = resp.access_token;
+      googleConnected = true;
+      updateGoogleStatusUI();
       resolve(accessToken);
     };
     tokenClient.requestAccessToken({ prompt: '' });
@@ -1768,7 +1826,9 @@ function loadLocal() {
     SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
     selectedLoser = state.selectedLoser || null;
     teamDrinks = state.teamDrinks || {};
+    lastSyncAt = localStorage.getItem(LOCAL_LAST_SYNC_KEY) || '';
     hydrateState();
+    googleConnected = false;
     return true;
   } catch (e) {
     return false;
@@ -1929,6 +1989,20 @@ function getPersonTeamspielBreakdown(p) {
     }
   });
   return result;
+}
+  
+  function updateGoogleStatusUI() {
+  const btn = document.getElementById('googleStatusBtn');
+  const info = document.getElementById('googleSyncInfo');
+  if (!btn || !info) return;
+
+  const connected = !!accessToken && navigator.onLine && googleConnected;
+
+  btn.classList.remove('connected', 'disconnected');
+  btn.classList.add(connected ? 'connected' : 'disconnected');
+  btn.textContent = connected ? '🌍 Mit Google verbunden' : '🛑 Keine Verbindung mit Google';
+
+  info.textContent = 'Letzte Synchronisation mit Google: ' + (lastSyncAt ? formatDateTime(lastSyncAt) : '–');
 }
 
 // ── SHEET SETUP ──
@@ -2098,9 +2172,13 @@ async function loadFromSheet() {
       try { spiele.push(JSON.parse(r[4])); } catch (e) {}
     });
   } catch (e) { console.error(e); }
-
+  
+  googleConnected = true;
+  lastSyncAt = new Date().toISOString();
+  localStorage.setItem(LOCAL_LAST_SYNC_KEY, lastSyncAt);
   hydrateState();
   renderAll();
+  updateGoogleStatusUI();
 }
 
 // ── SAVE ──
@@ -2191,7 +2269,11 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
       });
     }
 
-    clearPendingSync();
+    clearPendingSync();    
+	googleConnected = true;
+    lastSyncAt = new Date().toISOString();
+    localStorage.setItem(LOCAL_LAST_SYNC_KEY, lastSyncAt);
+    updateGoogleStatusUI();
     saveLocal(false);
     closeLoginModal();
 
@@ -2200,6 +2282,8 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
     }
   } catch (e) {
     console.error(e);
+    googleConnected = false;
+    updateGoogleStatusUI();
     showToast(isAutoSave ? '❌ AutoSync fehlgeschlagen' : '❌ Fehler beim Speichern', 'error');
   } finally {
     autoSaveRunning = false;
@@ -3363,15 +3447,19 @@ function undoReset() {
 
 // ── NETWORK EVENTS ──
 window.addEventListener('online', () => {
+  updateGoogleStatusUI();
   showToast('🌐 Wieder online.', 'success');
   if (hasPendingSync()) openLoginModal();
 });
 
 window.addEventListener('offline', () => {
+  googleConnected = false;
+  updateGoogleStatusUI();
   showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
 });
 
 updateHeaderDateTime();
+updateGoogleStatusUI();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
