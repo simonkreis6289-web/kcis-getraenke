@@ -180,7 +180,6 @@
   color: var(--muted);
   text-align: right;
   margin-top: 4px;
-  padding-right: 16px;
 }
     
     .tabs {
@@ -1419,7 +1418,10 @@
       <label>Wer zahlt?</label>
       <select id="round-person-select" class="modal-select" onchange="handleRoundPersonChange()"></select>
     </div>
-
+		<div class="modal-input-row">
+		  <label>Grund</label>
+		  <select id="round-reason-select" class="modal-select"></select>
+		</div>
     <div id="round-drinks-area" class="hidden">
       <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
         Getränke der Runde
@@ -1439,26 +1441,29 @@
 </div>
 
 <div id="app">
-  <header>
-    <div>
-      <h1>KC IS</h1>
-      <div class="subtitle">Getränkeabrechnung</div>
-      <div class="header-datetime" id="header-datetime"></div>
-          </div>
-		<div class="header-btns">
-		  <button class="google-status-btn disconnected" onclick="openLoginModal()" id="googleStatusBtn">
-		    🛑 Keine Verbindung mit Google
-		  </button>
-		
-		  <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
-		  <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
-		  <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
-		</div>
-		
-		<div class="google-sync-info" id="googleSyncInfo">
-		  Letzte Synchronisation mit Google: –
-		</div>
-  </header>
+<header>
+  <div>
+    <h1>KC IS</h1>
+    <div class="subtitle">Getränkeabrechnung</div>
+    <div class="header-datetime" id="header-datetime"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:flex-end;">
+    <div class="header-btns">
+      <button class="google-status-btn disconnected" onclick="openLoginModal()" id="googleStatusBtn">
+        🛑 Keine Verbindung mit Google
+      </button>
+
+      <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
+      <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
+      <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
+    </div>
+
+    <div class="google-sync-info" id="googleSyncInfo">
+      Letzte Synchronisation mit Google: –
+    </div>
+  </div>
+</header>
 
   <div class="tabs">
     <div class="tab active" onclick="showTab('anwesenheit',this)">👥 Anwesenheit</div>
@@ -1592,6 +1597,12 @@
         <button class="add-btn" onclick="addSpielToKatalog()">+ Spiel hinzufügen</button>
       </div>
       <div class="spiele-editor" id="spiele-katalog-list" style="margin-top:14px;"></div>
+	  <div class="section-title">Rundengründe anlegen</div>
+		<div class="add-person-row">
+		  <input type="text" id="new-rundengrund-input" placeholder="Neuen Rundengrund hinzufügen…" onkeydown="if(event.key==='Enter') addRoundReasonToKatalog()">
+		  <button class="add-btn" onclick="addRoundReasonToKatalog()">+ Rundengrund hinzufügen</button>
+		</div>
+<div class="spiele-editor" id="rundengruende-katalog-list" style="margin-top:14px;"></div>
     </div>
 
     <div id="tab-preise" class="hidden">
@@ -1644,7 +1655,8 @@ let DRINKS = [
   { key: 'wein',     label: 'Wein/Sekt' }
 ];
 
-let SPIELE_KATALOG = ['Tannenbaum','Fuchsjagd','Hausnummer','9er','Kranz'];
+let SPIELE_KATALOG = ['Tannenbaum','Darts'];
+let RUNDEN_GRUENDE = ['1000er-Runde', '2000er-Runde', 'Geburtstag'];
 
 let persons = [];
 let prices  = {};
@@ -1810,7 +1822,7 @@ function refreshToken() {
 
 // ── LOCAL STORAGE ──
 function getSerializableState() {
-  return { persons, spiele, DRINKS, prices, SPIELE_KATALOG, selectedLoser, teamDrinks };
+  return { persons, spiele, DRINKS, prices, SPIELE_KATALOG, RUNDEN_GRUENDE, selectedLoser, teamDrinks };
 }
 
 function saveLocal(markPending = true) {
@@ -1833,7 +1845,8 @@ function loadLocal() {
     DRINKS = Array.isArray(state.DRINKS) && state.DRINKS.length ? state.DRINKS : DRINKS;
     prices = state.prices || prices;
     SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
-    selectedLoser = state.selectedLoser || null;
+    RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
+	selectedLoser = state.selectedLoser || null;
     teamDrinks = state.teamDrinks || {};
     lastSyncAt = localStorage.getItem(LOCAL_LAST_SYNC_KEY) || '';
     hydrateState();
@@ -1852,6 +1865,9 @@ function hydrateState() {
   persons.forEach(p => {
     if (!p.drinks) p.drinks = {};
     if (!Array.isArray(p.rounds)) p.rounds = [];
+		(p.rounds || []).forEach(r => {
+		  if (!r.reason) r.reason = '';
+		});
     if (p.roundExtra === undefined) p.roundExtra = 0;
 
     DRINKS.forEach(d => {
@@ -2036,11 +2052,21 @@ async function ensureSheetSetup() {
 }
 
 async function writeSpielKatalogToSheet() {
+  const maxLen = Math.max(SPIELE_KATALOG.length, RUNDEN_GRUENDE.length);
+
+  const rows = [['Spielname', 'Rundengrund']];
+  for (let i = 0; i < maxLen; i++) {
+    rows.push([
+      SPIELE_KATALOG[i] || '',
+      RUNDEN_GRUENDE[i] || ''
+    ]);
+  }
+
   await gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: 'Spiele!A1:A300',
+    range: 'Spiele!A1:B300',
     valueInputOption: 'RAW',
-    resource: { values: [['Spielname'], ...SPIELE_KATALOG.map(name => [name])] }
+    resource: { values: rows }
   });
 }
 
@@ -2111,13 +2137,17 @@ async function loadFromSheet() {
   } catch (e) { console.error(e); }
 
   try {
-    const sk = await gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: 'Spiele!A2:A300'
-    });
-    const rows = sk.result.values || [];
-    const loaded = rows.map(r => (r[0] || '').trim()).filter(Boolean);
-    if (loaded.length) SPIELE_KATALOG = loaded;
+		const sk = await gapi.client.sheets.spreadsheets.values.get({
+		  spreadsheetId: SHEET_ID,
+		  range: 'Spiele!A2:B300'
+		});
+		const rows = sk.result.values || [];
+
+		const loadedSpiele = rows.map(r => (r[0] || '').trim()).filter(Boolean);
+		const loadedGruende = rows.map(r => (r[1] || '').trim()).filter(Boolean);
+
+		if (loadedSpiele.length) SPIELE_KATALOG = loadedSpiele;
+		if (loadedGruende.length) RUNDEN_GRUENDE = loadedGruende;
   } catch (e) { console.error(e); }
 
   try { await writeHeadersToSheet(); } catch (e) { console.error(e); }
@@ -2412,6 +2442,8 @@ function renderAll() {
   renderPreisEditor();
   renderSpieltypSelect();
   renderSpieleKatalog();
+  renderRoundReasonSelect();
+  renderRoundReasonsKatalog();
 }
 
 function updateStats() {
@@ -2651,6 +2683,8 @@ function openRoundModal() {
   const select = document.getElementById('round-person-select');
   const list = getPresentNotLeftPeople().sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
+	renderRoundReasonSelect();
+
   roundDraftDrinks = {};
   DRINKS.forEach(d => roundDraftDrinks[d.key] = 0);
 
@@ -2716,6 +2750,7 @@ function updateRoundTotalDisplay() {
 
 function confirmGiveRound() {
   const personName = document.getElementById('round-person-select').value.trim();
+  const roundReason = (document.getElementById('round-reason-select')?.value || '').trim();
   if (!personName) {
     showToast('Bitte erst auswählen, wer die Runde gibt', 'error');
     return;
@@ -2734,8 +2769,14 @@ function confirmGiveRound() {
 
   if (!Array.isArray(p.rounds)) p.rounds = [];
 
+	if (!roundReason) {
+	  showToast('Bitte einen Grund auswählen', 'error');
+	  return;
+	}
+
   const roundTotal = calcRoundTotal(roundDraftDrinks);
   p.rounds.push({
+	reason: roundReason,
     drinks: { ...roundDraftDrinks },
     total: roundTotal,
     createdAt: new Date().toISOString()
@@ -2779,6 +2820,7 @@ function renderRunden() {
     c.innerHTML = `
       <div class="spiel-info">
         <div class="spiel-verlierer round">🍻 ${entry.person} hat eine Runde gegeben</div>
+		<div class="spiel-detail"><strong>${entry.round.reason || 'Ohne Grund'}</strong></div>
         <div class="spiel-detail">${describeRoundDrinks(entry.round.drinks) || 'Keine Getränke'}</div>
         <div class="spiel-detail">${entry.round.createdAt ? formatDateTime(entry.round.createdAt) : ''}</div>
       </div>
@@ -2965,12 +3007,12 @@ function createAbrechGrid(list) {
       ? `<div class="abrech-item"><span>⚽ Strafen</span><span style="color:var(--accent2)">+${(p.teamExtra || 0).toFixed(2).replace('.', ',')}€</span></div>`
       : '';
 
-    const roundLines = (p.rounds || []).map(r => `
-      <div class="abrech-item">
-        <span>🍻 Runde gegeben: ${describeRoundDrinks(r.drinks)}</span>
-        <span style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')}€</span>
-      </div>
-    `).join('');
+	const roundLines = (p.rounds || []).map(r => `
+	  <div class="abrech-item">
+		<span>🍻 ${r.reason || 'Ohne Grund'}: ${describeRoundDrinks(r.drinks)}</span>
+		<span style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')}€</span>
+	  </div>
+	`).join('');
 
     c.innerHTML = `
       <div class="abrech-name">${p.name}</div>
@@ -2991,6 +3033,47 @@ function createAbrechGrid(list) {
   });
 
   return grid;
+}
+
+function renderRoundReasonSelect() {
+  const sel = document.getElementById('round-reason-select');
+  if (!sel) return;
+
+  sel.innerHTML = '<option value="">Bitte Grund wählen</option>';
+
+  if (!RUNDEN_GRUENDE.length) {
+    sel.innerHTML = '<option value="">Kein Grund angelegt</option>';
+    return;
+  }
+
+  RUNDEN_GRUENDE.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderRoundReasonsKatalog() {
+  const el = document.getElementById('rundengruende-katalog-list');
+  if (!el) return;
+
+  el.innerHTML = '';
+
+  if (!RUNDEN_GRUENDE.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch keine Rundengründe angelegt</div>';
+    return;
+  }
+
+  RUNDEN_GRUENDE.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const card = document.createElement('div');
+    card.className = 'spiel-edit-card';
+    card.innerHTML = `
+      <label>${name}</label>
+      <button class="delete-drink-btn" onclick="deleteRoundReasonFromKatalog('${escapeForJs(name)}')">✕</button>
+    `;
+    el.appendChild(card);
+  });
 }
 
 function renderAbrechnung() {
@@ -3075,7 +3158,7 @@ function renderModalRoundsBreakdown(p) {
     <div style="display:grid;gap:6px;">
       ${rounds.map(r => `
         <div class="modal-meta-row" style="align-items:flex-start;">
-          <span style="max-width:70%;">${describeRoundDrinks(r.drinks)}</span>
+			<span style="max-width:70%;">${r.reason ? r.reason + ': ' : ''}${describeRoundDrinks(r.drinks)}</span>
           <strong style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')} €</strong>
         </div>
       `).join('')}
@@ -3150,6 +3233,41 @@ function confirmPayment() {
   renderRunden();
   renderGetraenke();
   showToast('✅ Zahlung gespeichert', 'success');
+  persistState();
+}
+
+// ── RUNDENGRUENDE ──
+function addRoundReasonToKatalog() {
+  const input = document.getElementById('new-rundengrund-input');
+  const name = (input.value || '').trim();
+  if (!name) return;
+
+  if (RUNDEN_GRUENDE.find(s => s.toLowerCase() === name.toLowerCase())) {
+    showToast('Grund existiert bereits', 'error');
+    return;
+  }
+
+  RUNDEN_GRUENDE.push(name);
+  input.value = '';
+  renderRoundReasonSelect();
+  renderRoundReasonsKatalog();
+  showToast('✅ Rundengrund hinzugefügt', 'success');
+  persistState();
+}
+
+function deleteRoundReasonFromKatalog(name) {
+  const used = persons.some(p => (p.rounds || []).some(r => (r.reason || '') === name));
+  if (used) {
+    showToast('Grund kann nicht gelöscht werden, da er bereits verwendet wurde', 'error');
+    return;
+  }
+
+  if (!confirm(`Rundengrund "${name}" wirklich löschen?`)) return;
+
+  RUNDEN_GRUENDE = RUNDEN_GRUENDE.filter(s => s !== name);
+  renderRoundReasonSelect();
+  renderRoundReasonsKatalog();
+  showToast('🗑️ Rundengrund gelöscht', 'success');
   persistState();
 }
 
@@ -3411,7 +3529,7 @@ function closeResetModal() {
 }
 
 function confirmReset() {
-  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG, selectedLoser, teamDrinks });
+  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG, RUNDEN_GRUENDE, selectedLoser, teamDrinks });
 
   persons.forEach(p => {
     Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
@@ -3446,6 +3564,7 @@ function undoReset() {
   DRINKS = state.DRINKS || DRINKS;
   prices = state.prices || prices;
   SPIELE_KATALOG = state.SPIELE_KATALOG || SPIELE_KATALOG;
+  RUNDEN_GRUENDE = state.RUNDEN_GRUENDE || RUNDEN_GRUENDE;
   selectedLoser = state.selectedLoser || null;
   teamDrinks = state.teamDrinks || {};
 
@@ -3481,7 +3600,7 @@ setInterval(updateHeaderDateTime, 1000);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v13');
+      const reg = await navigator.serviceWorker.register('./sw.js?v=20260318-v13');
 
       if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
 
