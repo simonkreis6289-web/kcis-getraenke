@@ -1719,14 +1719,15 @@ async function startApp() {
     return;
   }
 
-  try {
-    const ok = await ensureAccessToken(false);
-    if (!ok) return;
-    await loadFromSheet();
-    saveLocal(false);
-  } catch (e) {
-    console.error(e);
-  }
+	try {
+	  const ok = await ensureAccessToken(false);
+	  if (ok) {
+		await loadFromSheet();
+		saveLocal(false);
+	  }
+	} catch (e) {
+	  console.error(e);
+	}
 }
 
 function openLoginModal() {
@@ -1905,7 +1906,14 @@ function queueAutoSave() {
       autoSaveQueued = true;
       return;
     }
-    await saveToSheet(true, false);
+
+    // Immer lokal speichern
+    saveLocal(true);
+
+    // Nur direkt ins Sheet schreiben, wenn Google wirklich verbunden ist
+    if (navigator.onLine && accessToken && googleConnected) {
+      await saveToSheet(true, false);
+    }
   }, 800);
 }
 
@@ -2235,11 +2243,15 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
     return;
   }
 
-  const ok = await ensureAccessToken(!isAutoSave);
+  let ok = !!(navigator.onLine && accessToken && googleConnected);
+
+  if (!ok && !isAutoSave) {
+    ok = await ensureAccessToken(true);
+  }
+
   if (!ok) {
-    if (!isAutoSave) {
-      openLoginModal();
-      if (showSuccessToast) showToast('📌 Lokal gespeichert. Bitte Google-Anmeldung für Sync.', 'success');
+    if (!isAutoSave && showSuccessToast) {
+      showToast('📌 Lokal gespeichert. Nicht mit Google verbunden.', 'success');
     }
     return;
   }
@@ -3577,9 +3589,18 @@ function undoReset() {
 }
 
 // ── NETWORK EVENTS ──
-window.addEventListener('online', () => {
+window.addEventListener('online', async () => {
+  showToast('🌐 Wieder online. Prüfe Google-Verbindung…', 'success');
+
+  const ok = await ensureAccessToken(false);
   updateGoogleStatusUI();
-  showToast('🌐 Wieder online. Lokale Änderungen warten auf Sync.', 'success');
+
+  if (ok && hasPendingSync()) {
+    await saveToSheet(true, false);
+    showToast('✅ Lokale Änderungen wurden synchronisiert', 'success');
+  } else if (hasPendingSync()) {
+    showToast('📌 Lokale Änderungen bleiben gespeichert, bis Google wieder verbunden ist.', 'success');
+  }
 });
 
 window.addEventListener('offline', () => {
