@@ -1715,8 +1715,7 @@ async function startApp() {
   }
 
   if (hasPendingSync()) {
-    openLoginModal();
-    showToast('📌 Lokale Änderungen gefunden. Bitte Google-Anmeldung für Sync.', 'success');
+    showToast('📌 Lokale Änderungen gefunden. Sie werden später synchronisiert.', 'success');
     return;
   }
 
@@ -2238,8 +2237,10 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
 
   const ok = await ensureAccessToken(!isAutoSave);
   if (!ok) {
-    openLoginModal();
-    if (showSuccessToast) showToast('📌 Lokal gespeichert. Bitte Google-Anmeldung für Sync.', 'success');
+    if (!isAutoSave) {
+      openLoginModal();
+      if (showSuccessToast) showToast('📌 Lokal gespeichert. Bitte Google-Anmeldung für Sync.', 'success');
+    }
     return;
   }
 
@@ -3578,8 +3579,7 @@ function undoReset() {
 // ── NETWORK EVENTS ──
 window.addEventListener('online', () => {
   updateGoogleStatusUI();
-  showToast('🌐 Wieder online.', 'success');
-  if (hasPendingSync()) openLoginModal();
+  showToast('🌐 Wieder online. Lokale Änderungen warten auf Sync.', 'success');
 });
 
 window.addEventListener('offline', () => {
