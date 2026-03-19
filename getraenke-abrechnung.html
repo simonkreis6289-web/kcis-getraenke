@@ -3590,16 +3590,21 @@ function undoReset() {
 
 // ── NETWORK EVENTS ──
 window.addEventListener('online', async () => {
-  showToast('🌐 Wieder online. Prüfe Google-Verbindung…', 'success');
+  try {
+    showToast('🌐 Wieder online. Prüfe Google-Verbindung…', 'success');
 
-  const ok = await ensureAccessToken(false);
-  updateGoogleStatusUI();
+    const ok = await ensureAccessToken(false);
+    updateGoogleStatusUI();
 
-  if (ok && hasPendingSync()) {
-    await saveToSheet(true, false);
-    showToast('✅ Lokale Änderungen wurden synchronisiert', 'success');
-  } else if (hasPendingSync()) {
-    showToast('📌 Lokale Änderungen bleiben gespeichert, bis Google wieder verbunden ist.', 'success');
+    if (ok && hasPendingSync()) {
+      await saveToSheet(true, false);
+      showToast('✅ Lokale Änderungen wurden synchronisiert', 'success');
+    } else if (hasPendingSync()) {
+      showToast('📌 Lokale Änderungen bleiben gespeichert, bis Google wieder verbunden ist.', 'success');
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Online, aber Synchronisierung gerade nicht möglich', 'error');
   }
 });
 
