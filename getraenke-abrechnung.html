@@ -1771,6 +1771,7 @@ function ensureAccessToken(interactive = false) {
         resolve(true);
       } else {
         googleConnected = false;
+        accessToken = null;
         updateGoogleStatusUI();
         resolve(false);
       }
@@ -1793,6 +1794,7 @@ function refreshToken() {
     tokenClient.callback = (resp) => {
       if (resp.error) {
         googleConnected = false;
+        accessToken = null;
         updateGoogleStatusUI();
         return reject(resp);
       }
