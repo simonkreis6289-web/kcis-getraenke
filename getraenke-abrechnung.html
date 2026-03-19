@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#293d6e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="KegelClub InvalidenSchwadron">
+  <meta name="apple-mobile-web-app-title" content="KC IS">
 
   <title>KC IS – Getränkeabrechnung</title>
 
-  <link rel="manifest" href="manifest.json?v=20260318-v12">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v12">
-  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v12">
+  <link rel="manifest" href="manifest.json?v=20260318-v13">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
 
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -72,8 +72,9 @@
       border-bottom: 2px solid var(--accent);
       padding: 12px 16px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
+      gap: 12px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -98,7 +99,6 @@
       font-size: 0.72rem;
       color: var(--muted);
       margin-top: 3px;
-      letter-spacing: 0;
     }
 
     .header-btns {
@@ -131,12 +131,10 @@
       border: 1px solid rgba(168, 90, 212, 0.3);
     }
 
-    .sync-btn:active,
-    .archive-btn:active,
-    .add-btn:active,
-    .round-btn:active { opacity: 0.7; }
-
-    .sync-btn.loading { opacity: 0.6; pointer-events: none; }
+    .sync-btn.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
 
     .archive-btn {
       background: var(--surface2);
@@ -166,7 +164,6 @@
       color: var(--muted);
       cursor: pointer;
       border-bottom: 3px solid transparent;
-      transition: all 0.2s;
       white-space: nowrap;
     }
 
@@ -252,7 +249,6 @@
       border-radius: 12px;
       padding: 12px;
       cursor: pointer;
-      transition: all 0.15s;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -271,7 +267,6 @@
     }
 
     .person-card.absent { opacity: 0.45; }
-    .person-card:active { transform: scale(0.95); }
 
     .person-delete-btn {
       position: absolute;
@@ -407,8 +402,6 @@
       font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
-      user-select: none;
       display: flex;
       align-items: center;
       gap: 4px;
@@ -418,7 +411,6 @@
       border-style: dashed;
     }
 
-    .gruppe-chip:active { transform: scale(0.93); }
     .gruppe-box.t1 .gruppe-chip { border-color: var(--t1b); color: var(--t1b); }
     .gruppe-box.t2 .gruppe-chip { border-color: var(--t2b); color: var(--t2b); }
 
@@ -438,8 +430,6 @@
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
-      transition: all 0.15s;
-      user-select: none;
     }
 
     .unassigned-chip.guest {
@@ -453,11 +443,8 @@
       padding-right: 16px;
     }
 
-    .getraenke-section {
-      width: 100%;
-    }
-
-    .getraenke-toolbar {
+    .getraenke-toolbar,
+    .prices-toolbar {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -506,8 +493,9 @@
 
     thead th:first-child {
       text-align: left;
-      padding-left: 14px;
-      min-width: 230px;
+      padding-left: 12px;
+      min-width: 160px;
+      max-width: 160px;
     }
 
     thead th.sticky-col {
@@ -538,7 +526,8 @@
     tbody td:first-child {
       text-align: left;
       padding-left: 12px;
-      min-width: 230px;
+      min-width: 160px;
+      max-width: 160px;
     }
 
     tbody td.sticky-col {
@@ -572,6 +561,7 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+      overflow: hidden;
     }
 
     .person-cell.left-state .pname,
@@ -582,27 +572,30 @@
 
     .person-cell .pname {
       font-weight: 600;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: #000000;
       display: flex;
       align-items: center;
       gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .person-cell .left-emoji {
       font-size: 0.9rem;
       line-height: 1;
+      flex-shrink: 0;
     }
 
     .person-cell .prole {
-      font-size: 0.62rem;
+      font-size: 0.6rem;
       color: var(--guest);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
     .person-cell .ptisch {
-      font-size: 0.65rem;
+      font-size: 0.63rem;
     }
 
     .person-cell .ptisch.t1 { color: var(--t1b); }
@@ -626,7 +619,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.1s;
       user-select: none;
     }
 
@@ -640,7 +632,11 @@
       color: var(--btn-plus-fg);
     }
 
-    .counter-btn:active { transform: scale(0.85); }
+    .counter-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      transform: none;
+    }
 
     .counter-val {
       min-width: 22px;
@@ -681,13 +677,6 @@
       min-width: 70px;
     }
 
-    .prices-toolbar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
     .prices-editor,
     .spiele-editor {
       display: grid;
@@ -726,8 +715,6 @@
       text-align: right;
       outline: none;
     }
-
-    .price-input:focus { border-color: var(--accent); }
 
     .delete-drink-btn {
       background: rgba(232, 65, 42, 0.15);
@@ -923,7 +910,6 @@
       font-size: 0.85rem;
       cursor: pointer;
       color: var(--text);
-      transition: all 0.15s;
       text-align: center;
     }
 
@@ -1016,6 +1002,7 @@
 
     .spiel-verlierer.t1 { color: var(--t1b); }
     .spiel-verlierer.t2 { color: var(--t2b); }
+    .spiel-verlierer.round { color: var(--round); }
 
     .spiel-detail {
       font-size: 0.75rem;
@@ -1028,6 +1015,10 @@
       font-size: 1.4rem;
       color: var(--accent2);
       text-align: right;
+    }
+
+    .spiel-betrag.round {
+      color: var(--round);
     }
 
     .spiel-pro-kopf {
@@ -1113,6 +1104,7 @@
       border-radius: 10px;
       border: 1px solid var(--border);
       background: rgba(0,0,0,0.02);
+      gap: 12px;
     }
 
     .modal-input-row {
@@ -1145,11 +1137,6 @@
     }
 
     .modal-euro-input { text-align: right; }
-    .modal-text-input { text-align: left; font-weight: 600; }
-
-    .modal-euro-input:focus,
-    .modal-text-input:focus,
-    .modal-select:focus { border-color: var(--accent); }
 
     .modal-rest {
       font-size: 0.85rem;
@@ -1209,15 +1196,91 @@
       cursor: pointer;
     }
 
+    .add-person-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .add-person-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 999;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+      max-width: calc(100vw - 40px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.success { border-color: var(--green); color: var(--green); }
+    #toast.error { border-color: var(--accent2); color: var(--accent2); }
+    #toast button { pointer-events: auto; }
+
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      gap: 16px;
+    }
+
+    #loading-screen h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+    }
+
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     .hidden { display: none !important; }
     #app { display: none; }
 
     @media (max-width: 760px) {
-      header {
-        align-items: flex-start;
-        gap: 12px;
-      }
-
       .abrech-summary {
         grid-template-columns: 1fr;
       }
@@ -1241,18 +1304,18 @@
   <span style="color:var(--muted);font-size:0.8rem">Lade Daten…</span>
 </div>
 
-<div id="login-screen">
-  <h2>KC IS</h2>
-  <p>Google-Anmeldung nötig, wenn lokal gespeicherte Daten ins Sheet synchronisiert werden sollen.</p>
-  <button class="login-btn" onclick="signIn()">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-    </svg>
-    Mit Google anmelden
-  </button>
+<div class="modal-overlay hidden" id="login-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>Google-Anmeldung</h3>
+    <div class="modal-sub">Nur nötig, wenn lokale Daten mit Google Sheets synchronisiert werden sollen.</div>
+    <div style="font-size:0.9rem;color:var(--muted);line-height:1.5;margin-bottom:18px;">
+      Offline läuft die App ganz normal weiter. Für den Abgleich mit Google Sheets bitte hier anmelden.
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeLoginModal()">Später</button>
+      <button class="modal-ok" onclick="signIn()">Bei Google anmelden</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay hidden" id="payment-modal">
@@ -1348,6 +1411,7 @@
       <div class="header-datetime" id="header-datetime"></div>
     </div>
     <div class="header-btns">
+      <button class="archive-btn" onclick="openLoginModal()">🔐 Google</button>
       <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
       <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
       <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
@@ -1359,6 +1423,7 @@
     <div class="tab" onclick="showTab('gruppen',this)">🎯 Gruppen</div>
     <div class="tab" onclick="showTab('getraenke',this)">🍺 Getränke</div>
     <div class="tab" onclick="showTab('teamspiele',this)">⚽ Teamspiele</div>
+    <div class="tab" onclick="showTab('runden',this)">🍻 Runden</div>
     <div class="tab" onclick="showTab('abrechnung',this)">💶 Abrechnung</div>
     <div class="tab" onclick="showTab('spiele',this)">🎲 Spiele</div>
     <div class="tab" onclick="showTab('preise',this)">🏷️ Preise</div>
@@ -1410,17 +1475,15 @@
     </div>
 
     <div id="tab-getraenke" class="hidden">
-      <div class="getraenke-section">
-        <div class="section-title">Getränke erfassen</div>
-        <div class="getraenke-toolbar">
-          <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
-        </div>
-        <div class="drinks-table-wrap">
-          <table class="drinks-table">
-            <thead><tr id="drinks-header"></tr></thead>
-            <tbody id="drinks-body"></tbody>
-          </table>
-        </div>
+      <div class="section-title">Getränke erfassen</div>
+      <div class="getraenke-toolbar">
+        <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
+      </div>
+      <div class="drinks-table-wrap">
+        <table class="drinks-table">
+          <thead><tr id="drinks-header"></tr></thead>
+          <tbody id="drinks-body"></tbody>
+        </table>
       </div>
     </div>
 
@@ -1451,6 +1514,11 @@
       <div class="spiele-list" id="spiele-list"></div>
     </div>
 
+    <div id="tab-runden" class="hidden">
+      <div class="section-title">Gegebene Runden</div>
+      <div class="spiele-list" id="runden-list"></div>
+    </div>
+
     <div id="tab-abrechnung" class="hidden">
       <div class="section-title">Übersicht</div>
       <div class="abrech-summary">
@@ -1477,12 +1545,10 @@
 
     <div id="tab-spiele" class="hidden">
       <div class="section-title">Spiele anlegen</div>
-
       <div class="add-person-row">
         <input type="text" id="new-spiel-input" placeholder="Neues Teamspiel hinzufügen…" onkeydown="if(event.key==='Enter') addSpielToKatalog()">
         <button class="add-btn" onclick="addSpielToKatalog()">+ Spiel hinzufügen</button>
       </div>
-
       <div class="spiele-editor" id="spiele-katalog-list" style="margin-top:14px;"></div>
     </div>
 
@@ -1501,11 +1567,9 @@
   <div class="modal">
     <h3>Alles löschen?</h3>
     <div class="modal-sub">Dieser Vorgang kann rückgängig gemacht werden (5 Sekunden)</div>
-
     <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
       Getränke, Teamspiele, Runden und Zahlungen werden komplett zurückgesetzt.
     </div>
-
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeResetModal()">Abbrechen</button>
       <button class="modal-ok" onclick="confirmReset()">JA, ALLES LÖSCHEN</button>
@@ -1516,14 +1580,14 @@
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '20260318-12';
+const APP_VERSION = '20260318-13';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
 const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
 
-const LOCAL_STATE_KEY = 'kcis_local_state_v5';
-const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v5';
+const LOCAL_STATE_KEY = 'kcis_local_state_v6';
+const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v6';
 
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
@@ -1537,13 +1601,7 @@ let DRINKS = [
   { key: 'wein',     label: 'Wein/Sekt' }
 ];
 
-let SPIELE_KATALOG = [
-  'Tannenbaum',
-  'Fuchsjagd',
-  'Hausnummer',
-  '9er',
-  'Kranz'
-];
+let SPIELE_KATALOG = ['Tannenbaum','Fuchsjagd','Hausnummer','9er','Kranz'];
 
 let persons = [];
 let prices  = {};
@@ -1556,7 +1614,6 @@ let teamDrinks = {};
 let roundDraftDrinks = {};
 let lastState = null;
 let undoTimer = null;
-let deferredPrompt = null;
 let toastTimer = null;
 
 let autoSaveTimer = null;
@@ -1582,7 +1639,6 @@ function gisLoaded() {
     scope: SCOPES,
     callback: () => {}
   });
-
   startApp();
 }
 
@@ -1600,7 +1656,7 @@ async function startApp() {
   }
 
   if (hasPendingSync()) {
-    document.getElementById('login-screen').style.display = 'flex';
+    openLoginModal();
     showToast('📌 Lokale Änderungen gefunden. Bitte Google-Anmeldung für Sync.', 'success');
     return;
   }
@@ -1611,9 +1667,16 @@ async function startApp() {
     await loadFromSheet();
     saveLocal(false);
   } catch (e) {
-    console.error('startApp', e);
-    showToast('⚠️ Start lokal. Sync folgt später.', 'error');
+    console.error(e);
   }
+}
+
+function openLoginModal() {
+  document.getElementById('login-modal').classList.remove('hidden');
+}
+
+function closeLoginModal() {
+  document.getElementById('login-modal').classList.add('hidden');
 }
 
 function signIn() {
@@ -1626,7 +1689,7 @@ function signIn() {
     }
 
     accessToken = resp.access_token;
-    document.getElementById('login-screen').style.display = 'none';
+    closeLoginModal();
 
     try {
       if (hasPendingSync()) {
@@ -1646,15 +1709,8 @@ function signIn() {
 
 function ensureAccessToken(interactive = false) {
   return new Promise((resolve) => {
-    if (accessToken) {
-      resolve(true);
-      return;
-    }
-
-    if (!navigator.onLine || !tokenClient) {
-      resolve(false);
-      return;
-    }
+    if (accessToken) return resolve(true);
+    if (!navigator.onLine || !tokenClient) return resolve(false);
 
     tokenClient.callback = (resp) => {
       if (resp && !resp.error && resp.access_token) {
@@ -1668,7 +1724,6 @@ function ensureAccessToken(interactive = false) {
     try {
       tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
     } catch (e) {
-      console.error('ensureAccessToken', e);
       resolve(false);
     }
   });
@@ -1676,45 +1731,27 @@ function ensureAccessToken(interactive = false) {
 
 function refreshToken() {
   return new Promise((resolve, reject) => {
-    if (!tokenClient) {
-      reject(new Error('Token client nicht bereit'));
-      return;
-    }
-
+    if (!tokenClient) return reject(new Error('Token client nicht bereit'));
     tokenClient.callback = (resp) => {
-      if (resp.error) {
-        reject(resp);
-        return;
-      }
+      if (resp.error) return reject(resp);
       accessToken = resp.access_token;
       resolve(accessToken);
     };
-
     tokenClient.requestAccessToken({ prompt: '' });
   });
 }
 
 // ── LOCAL STORAGE ──
 function getSerializableState() {
-  return {
-    persons,
-    spiele,
-    DRINKS,
-    prices,
-    SPIELE_KATALOG,
-    selectedLoser,
-    teamDrinks
-  };
+  return { persons, spiele, DRINKS, prices, SPIELE_KATALOG, selectedLoser, teamDrinks };
 }
 
 function saveLocal(markPending = true) {
   try {
     localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(getSerializableState()));
-    if (markPending) {
-      localStorage.setItem(LOCAL_PENDING_SYNC_KEY, '1');
-    }
+    if (markPending) localStorage.setItem(LOCAL_PENDING_SYNC_KEY, '1');
   } catch (e) {
-    console.error('saveLocal', e);
+    console.error(e);
   }
 }
 
@@ -1722,7 +1759,6 @@ function loadLocal() {
   try {
     const raw = localStorage.getItem(LOCAL_STATE_KEY);
     if (!raw) return false;
-
     const state = JSON.parse(raw);
 
     persons = Array.isArray(state.persons) ? state.persons : [];
@@ -1732,11 +1768,9 @@ function loadLocal() {
     SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
     selectedLoser = state.selectedLoser || null;
     teamDrinks = state.teamDrinks || {};
-
     hydrateState();
     return true;
   } catch (e) {
-    console.error('loadLocal', e);
     return false;
   }
 }
@@ -1782,7 +1816,6 @@ function persistState() {
 
 function queueAutoSave() {
   clearTimeout(autoSaveTimer);
-
   autoSaveTimer = setTimeout(async () => {
     if (autoSaveRunning) {
       autoSaveQueued = true;
@@ -1802,12 +1835,8 @@ function formatDateTime(dt) {
   const d = new Date(dt);
   if (isNaN(d)) return '';
   return d.toLocaleString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 }
 
@@ -1816,17 +1845,14 @@ function formatTime(dt) {
   const d = new Date(dt);
   if (isNaN(d)) return '';
   return d.toLocaleTimeString('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 }
 
 function updateHeaderDateTime() {
   const el = document.getElementById('header-datetime');
   if (!el) return;
-  const now = new Date();
-  el.textContent = now.toLocaleString('de-DE', {
+  el.textContent = new Date().toLocaleString('de-DE', {
     weekday: 'long',
     day: '2-digit',
     month: '2-digit',
@@ -1838,14 +1864,24 @@ function updateHeaderDateTime() {
 }
 
 function makeDrinkKey(label) {
-  const key = label
-    .toLowerCase()
+  const key = label.toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
   return key || ('drink_' + Date.now());
 }
+
+function normalizeTisch(value) {
+  return value === 'T1' || value === 'T2' ? value : '';
+}
+
+function getMembers() { return persons.filter(p => !p.isGuest); }
+function getGuests() { return persons.filter(p => p.isGuest); }
+function getPresentMembers() { return persons.filter(p => p.present && !p.isGuest); }
+function getPresentGuests() { return persons.filter(p => p.present && p.isGuest); }
+function getPresentNotLeftPeople() { return persons.filter(p => p.present && !p.left); }
+function getSpielDisplayName(spiel) { return spiel.spieltyp || 'Teamspiel'; }
 
 function getPersonOpenAmount(p) {
   return Math.max(0, calcTotal(p) - (p.paid || 0));
@@ -1874,47 +1910,6 @@ function escapeForJs(str) {
   return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-function normalizeTisch(value) {
-  return value === 'T1' || value === 'T2' ? value : '';
-}
-
-function getMembers() {
-  return persons.filter(p => !p.isGuest);
-}
-
-function getGuests() {
-  return persons.filter(p => p.isGuest);
-}
-
-function getPresentMembers() {
-  return persons.filter(p => p.present && !p.isGuest);
-}
-
-function getPresentGuests() {
-  return persons.filter(p => p.present && p.isGuest);
-}
-
-function getPresentNotLeftPeople() {
-  return persons.filter(p => p.present && !p.left);
-}
-
-function getSpielDisplayName(spiel) {
-  return spiel.spieltyp || 'Teamspiel';
-}
-
-function getPersonTeamspielBreakdown(p) {
-  const result = [];
-  spiele.forEach(s => {
-    if ((s.members || []).includes(p.name)) {
-      result.push({
-        spieltyp: getSpielDisplayName(s),
-        betrag: s.proKopf || 0
-      });
-    }
-  });
-  return result;
-}
-
 function describeRoundDrinks(drinksObj) {
   return DRINKS
     .filter(d => (drinksObj[d.key] || 0) > 0)
@@ -1924,6 +1919,16 @@ function describeRoundDrinks(drinksObj) {
 
 function calcRoundTotal(drinksObj) {
   return DRINKS.reduce((sum, d) => sum + ((drinksObj[d.key] || 0) * (prices[d.key] || 0)), 0);
+}
+
+function getPersonTeamspielBreakdown(p) {
+  const result = [];
+  spiele.forEach(s => {
+    if ((s.members || []).includes(p.name)) {
+      result.push({ spieltyp: getSpielDisplayName(s), betrag: s.proKopf || 0 });
+    }
+  });
+  return result;
 }
 
 // ── SHEET SETUP ──
@@ -1950,12 +1955,7 @@ async function writeSpielKatalogToSheet() {
     spreadsheetId: SHEET_ID,
     range: 'Spiele!A1:A300',
     valueInputOption: 'RAW',
-    resource: {
-      values: [
-        ['Spielname'],
-        ...SPIELE_KATALOG.map(name => [name])
-      ]
-    }
+    resource: { values: [['Spielname'], ...SPIELE_KATALOG.map(name => [name])] }
   });
 }
 
@@ -1966,18 +1966,9 @@ async function writeHeadersToSheet() {
     valueInputOption: 'RAW',
     resource: {
       values: [[
-        'Name',
-        'Typ',
-        'Anwesend',
-        'Tisch',
+        'Name','Typ','Anwesend','Tisch',
         ...DRINKS.map(d => d.label),
-        'Team-Extra',
-        'Runde-Extra',
-        'Gesamt',
-        'Bezahlt',
-        'Weg',
-        'Weg seit',
-        'Runden-Details'
+        'Team-Extra','Runde-Extra','Gesamt','Bezahlt','Weg','Weg seit','Runden-Details'
       ]]
     }
   });
@@ -1986,21 +1977,14 @@ async function writeHeadersToSheet() {
     spreadsheetId: SHEET_ID,
     range: 'Preise!A1:C300',
     valueInputOption: 'RAW',
-    resource: {
-      values: [
-        ['Key', 'Getränk', 'Preis'],
-        ...DRINKS.map(d => [d.key, d.label, (prices[d.key] || 0).toFixed(2)])
-      ]
-    }
+    resource: { values: [['Key', 'Getränk', 'Preis'], ...DRINKS.map(d => [d.key, d.label, (prices[d.key] || 0).toFixed(2)])] }
   });
 
   await gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
     range: 'Teamspiele!A1:E300',
     valueInputOption: 'RAW',
-    resource: {
-      values: [['Nr', 'Spieltyp', 'Verlierer', 'Gesamt', 'Daten']]
-    }
+    resource: { values: [['Nr', 'Spieltyp', 'Verlierer', 'Gesamt', 'Daten']] }
   });
 
   await writeSpielKatalogToSheet();
@@ -2008,11 +1992,7 @@ async function writeHeadersToSheet() {
 
 // ── LOAD ──
 async function loadFromSheet() {
-  try {
-    await ensureSheetSetup();
-  } catch (e) {
-    console.error('setup', e);
-  }
+  try { await ensureSheetSetup(); } catch (e) { console.error(e); }
 
   try {
     const pr = await gapi.client.sheets.spreadsheets.values.get({
@@ -2021,7 +2001,6 @@ async function loadFromSheet() {
     });
 
     const rows = pr.result.values || [];
-
     if (rows.length) {
       const loadedDrinks = [];
       const loadedPrices = {};
@@ -2030,7 +2009,6 @@ async function loadFromSheet() {
         const key = (r[0] || '').trim();
         const label = (r[1] || '').trim();
         const price = parseFloat((r[2] || '0').toString().replace(',', '.')) || 0;
-
         if (!key || !label) return;
         loadedDrinks.push({ key, label });
         loadedPrices[key] = price;
@@ -2045,30 +2023,19 @@ async function loadFromSheet() {
     DRINKS.forEach(d => {
       if (prices[d.key] === undefined) prices[d.key] = 0;
     });
-  } catch (e) {
-    console.error('prices', e);
-  }
+  } catch (e) { console.error(e); }
 
   try {
     const sk = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: 'Spiele!A2:A300'
     });
-
     const rows = sk.result.values || [];
     const loaded = rows.map(r => (r[0] || '').trim()).filter(Boolean);
-    if (loaded.length) {
-      SPIELE_KATALOG = loaded;
-    }
-  } catch (e) {
-    console.error('spielkatalog', e);
-  }
+    if (loaded.length) SPIELE_KATALOG = loaded;
+  } catch (e) { console.error(e); }
 
-  try {
-    await writeHeadersToSheet();
-  } catch (e) {
-    console.error('write headers', e);
-  }
+  try { await writeHeadersToSheet(); } catch (e) { console.error(e); }
 
   try {
     const ab = await gapi.client.sheets.spreadsheets.values.get({
@@ -2100,11 +2067,7 @@ async function loadFromSheet() {
 
       let rounds = [];
       if (r[roundsDetailsIndex]) {
-        try {
-          rounds = JSON.parse(r[roundsDetailsIndex]);
-        } catch (e) {
-          rounds = [];
-        }
+        try { rounds = JSON.parse(r[roundsDetailsIndex]); } catch (e) { rounds = []; }
       }
 
       persons.push({
@@ -2121,9 +2084,7 @@ async function loadFromSheet() {
         rounds
       });
     });
-  } catch (e) {
-    console.error('persons', e);
-  }
+  } catch (e) { console.error(e); }
 
   try {
     const sp = await gapi.client.sheets.spreadsheets.values.get({
@@ -2134,13 +2095,9 @@ async function loadFromSheet() {
     spiele = [];
     (sp.result.values || []).forEach(r => {
       if (!r[4]) return;
-      try {
-        spiele.push(JSON.parse(r[4]));
-      } catch (e) {}
+      try { spiele.push(JSON.parse(r[4])); } catch (e) {}
     });
-  } catch (e) {
-    console.error('spiele', e);
-  }
+  } catch (e) { console.error(e); }
 
   hydrateState();
   renderAll();
@@ -2162,7 +2119,7 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
 
   const ok = await ensureAccessToken(!isAutoSave);
   if (!ok) {
-    document.getElementById('login-screen').style.display = 'flex';
+    openLoginModal();
     if (showSuccessToast) showToast('📌 Lokal gespeichert. Bitte Google-Anmeldung für Sync.', 'success');
     return;
   }
@@ -2236,7 +2193,7 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
 
     clearPendingSync();
     saveLocal(false);
-    document.getElementById('login-screen').style.display = 'none';
+    closeLoginModal();
 
     if (showSuccessToast) {
       showToast(isAutoSave ? '✅ Automatisch synchronisiert' : '✅ Gespeichert!', 'success');
@@ -2246,7 +2203,6 @@ async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
     showToast(isAutoSave ? '❌ AutoSync fehlgeschlagen' : '❌ Fehler beim Speichern', 'error');
   } finally {
     autoSaveRunning = false;
-
     if (btn) {
       btn.classList.remove('loading');
       btn.textContent = '💾 Speichern';
@@ -2298,15 +2254,12 @@ async function archiveSheet() {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        name: `${d}_Getränke KC IS`
-      })
+      body: JSON.stringify({ name: `${d}_Getränke KC IS` })
     });
 
     const result = await response.json();
 
     if (!response.ok) {
-      console.error(result);
       alert('Google Drive Fehler:\n' + (result.error?.message || 'Unbekannter Fehler'));
       showToast('❌ Fehler beim Archivieren', 'error');
       return;
@@ -2314,7 +2267,6 @@ async function archiveSheet() {
 
     showToast(`📁 Archiv erstellt: ${d}_Getränke KC IS`, 'success');
   } catch (e) {
-    console.error(e);
     alert('Archivieren fehlgeschlagen:\n' + e.message);
     showToast('❌ Fehler beim Archivieren', 'error');
   }
@@ -2360,6 +2312,7 @@ function renderAll() {
   renderGruppen();
   renderGetraenke();
   renderTeamspiele();
+  renderRunden();
   renderAbrechnung();
   renderPreisEditor();
   renderSpieltypSelect();
@@ -2435,12 +2388,10 @@ function renderAnwesenheit() {
 }
 
 function renderGruppen() {
-  const present = persons
-    .filter(p => p.present)
-    .map(p => {
-      p.tisch = normalizeTisch(p.tisch);
-      return p;
-    });
+  const present = persons.filter(p => p.present).map(p => {
+    p.tisch = normalizeTisch(p.tisch);
+    return p;
+  });
 
   const unEl = document.getElementById('unassigned-list');
   unEl.innerHTML = '';
@@ -2530,12 +2481,13 @@ function renderDrinkRows(list, body, startIndex = 0) {
 
     DRINKS.forEach(d => {
       const v = p.drinks[d.key] || 0;
+      const disabled = p.left ? 'disabled' : '';
       html += `
         <td>
           <div class="counter">
-            <button class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
+            <button class="counter-btn minus" ${disabled} onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
             <span class="counter-val">${v}</span>
-            <button class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
+            <button class="counter-btn plus" ${disabled} onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
           </div>
         </td>
       `;
@@ -2589,7 +2541,7 @@ function renderGetraenke() {
 
 function changeDrink(name, key, delta) {
   const p = persons.find(x => x.name === name);
-  if (!p) return;
+  if (!p || p.left) return;
   if (!p.drinks) p.drinks = {};
 
   p.drinks[key] = Math.max(0, (p.drinks[key] || 0) + delta);
@@ -2608,7 +2560,6 @@ function openRoundModal() {
   DRINKS.forEach(d => roundDraftDrinks[d.key] = 0);
 
   select.innerHTML = '<option value="">Bitte Person wählen</option>';
-
   list.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.name;
@@ -2689,7 +2640,6 @@ function confirmGiveRound() {
   if (!Array.isArray(p.rounds)) p.rounds = [];
 
   const roundTotal = calcRoundTotal(roundDraftDrinks);
-
   p.rounds.push({
     drinks: { ...roundDraftDrinks },
     total: roundTotal,
@@ -2702,6 +2652,58 @@ function confirmGiveRound() {
   renderAll();
   showToast(`🍻 Runde auf ${p.name} gebucht`, 'success');
   persistState();
+}
+
+function renderRunden() {
+  const list = document.getElementById('runden-list');
+  list.innerHTML = '';
+
+  const entries = [];
+  persons.forEach(p => {
+    (p.rounds || []).forEach((r, idx) => {
+      entries.push({
+        person: p.name,
+        tisch: p.tisch,
+        isGuest: p.isGuest,
+        round: r,
+        idx
+      });
+    });
+  });
+
+  entries.sort((a, b) => new Date(b.round.createdAt || 0) - new Date(a.round.createdAt || 0));
+
+  if (!entries.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Runden gebucht</div>';
+    return;
+  }
+
+  entries.forEach(entry => {
+    const c = document.createElement('div');
+    c.className = 'spiel-card';
+    c.innerHTML = `
+      <div class="spiel-info">
+        <div class="spiel-verlierer round">🍻 ${entry.person} hat eine Runde gegeben</div>
+        <div class="spiel-detail">${describeRoundDrinks(entry.round.drinks) || 'Keine Getränke'}</div>
+        <div class="spiel-detail">${entry.round.createdAt ? formatDateTime(entry.round.createdAt) : ''}</div>
+      </div>
+      <div>
+        <div class="spiel-betrag round">${(entry.round.total || 0).toFixed(2).replace('.', ',')}€</div>
+      </div>
+      <button class="del-spiel-btn" onclick="deleteRound('${escapeForJs(entry.person)}', ${entry.idx})">✕</button>
+    `;
+    list.appendChild(c);
+  });
+}
+
+function deleteRound(personName, roundIndex) {
+  const p = persons.find(x => x.name === personName);
+  if (!p || !Array.isArray(p.rounds)) return;
+  p.rounds.splice(roundIndex, 1);
+  p.roundExtra = calcRoundsTotal(p);
+  renderAll();
+  persistState();
+  showToast('🗑️ Runde gelöscht', 'success');
 }
 
 // ── TEAMSPIELE ──
@@ -2727,10 +2729,7 @@ function updateTeamInfoBox() {
   const members = getActiveTeamMembers(selectedLoser);
   const teamName = selectedLoser === 'T1' ? '⚫ Wand' : '🔴 TV';
 
-  box.innerHTML = `
-    <strong>${teamName}</strong><br>
-    Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name).join(', ') : 'niemand'}
-  `;
+  box.innerHTML = `<strong>${teamName}</strong><br>Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name).join(', ') : 'niemand'}`;
 }
 
 function renderTeamspiele() {
@@ -2768,10 +2767,7 @@ function renderTeamspiele() {
       .map(d => `${s.drinks[d.key]}x ${d.label}`)
       .join(', ');
 
-    const displayMembers = (s.members || []).map(name => {
-      const p = persons.find(x => x.name === name);
-      return p ? p.name : name;
-    }).join(', ');
+    const displayMembers = (s.members || []).join(', ');
 
     const c = document.createElement('div');
     c.className = 'spiel-card';
@@ -2817,7 +2813,6 @@ function addSpiel() {
   }
 
   const members = getActiveTeamMembers(selectedLoser);
-
   if (!members.length) {
     showToast('Keine aktiven Spieler mehr im Verlierer-Team', 'error');
     return;
@@ -2917,25 +2912,19 @@ function renderAbrechnung() {
   document.getElementById('sum-gesamt').textContent = euros(gesamt);
 
   const members = getPresentMembers().sort((a, b) => {
-    const aLeft = !!a.left;
-    const bLeft = !!b.left;
-    if (aLeft !== bLeft) return aLeft ? 1 : -1;
+    if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
   });
 
   const guests = getPresentGuests().sort((a, b) => {
-    const aLeft = !!a.left;
-    const bLeft = !!b.left;
-    if (aLeft !== bLeft) return aLeft ? 1 : -1;
+    if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
   });
 
   const wrap = document.getElementById('abrech-content');
   wrap.innerHTML = '';
 
-  if (members.length) {
-    wrap.appendChild(createAbrechGrid(members));
-  }
+  if (members.length) wrap.appendChild(createAbrechGrid(members));
 
   if (guests.length) {
     const sep = document.createElement('div');
@@ -2953,8 +2942,6 @@ function renderAbrechnung() {
 // ── PAYMENT MODAL ──
 function renderModalTeamspielBreakdown(p) {
   const el = document.getElementById('modal-teamspiele-breakdown');
-  if (!el) return;
-
   const breakdown = getPersonTeamspielBreakdown(p);
 
   if (!breakdown.length) {
@@ -2979,9 +2966,8 @@ function renderModalTeamspielBreakdown(p) {
 
 function renderModalRoundsBreakdown(p) {
   const el = document.getElementById('modal-runden-breakdown');
-  if (!el) return;
-
   const rounds = p.rounds || [];
+
   if (!rounds.length) {
     el.innerHTML = '';
     return;
@@ -3016,9 +3002,11 @@ function openPaymentModal(p) {
   document.getElementById('modal-leftat-display').textContent = p.leftAt ? formatDateTime(p.leftAt) : '—';
   document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
   document.getElementById('modal-left-check').checked = !!p.left;
+
   renderModalTeamspielBreakdown(p);
   renderModalRoundsBreakdown(p);
   updateModalRest();
+
   document.getElementById('payment-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('modal-paid-input').focus(), 100);
 }
@@ -3030,7 +3018,6 @@ function closeModal() {
 
 function updateModalRest() {
   if (!modalPerson) return;
-
   const total = calcTotal(modalPerson);
   const paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
   const diff = total - paid;
@@ -3057,19 +3044,15 @@ function confirmPayment() {
   modalPerson.paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
   modalPerson.left = nowLeft;
 
-  if (!wasLeft && nowLeft) {
-    modalPerson.leftAt = new Date().toISOString();
-  }
-
-  if (wasLeft && !nowLeft) {
-    modalPerson.leftAt = '';
-  }
+  if (!wasLeft && nowLeft) modalPerson.leftAt = new Date().toISOString();
+  if (wasLeft && !nowLeft) modalPerson.leftAt = '';
 
   closeModal();
   updateStats();
   renderAbrechnung();
   renderAnwesenheit();
   renderTeamspiele();
+  renderRunden();
   renderGetraenke();
   showToast('✅ Zahlung gespeichert', 'success');
   persistState();
@@ -3098,7 +3081,6 @@ function openDrinkModal() {
   document.getElementById('new-drink-name').value = '';
   document.getElementById('new-drink-price').value = '';
   document.getElementById('drink-modal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('new-drink-name').focus(), 100);
 }
 
 function closeDrinkModal() {
@@ -3120,9 +3102,7 @@ function confirmAddDrink() {
   }
 
   let key = makeDrinkKey(name);
-  while (DRINKS.find(d => d.key === key)) {
-    key = key + '_' + Math.floor(Math.random() * 1000);
-  }
+  while (DRINKS.find(d => d.key === key)) key = key + '_' + Math.floor(Math.random() * 1000);
 
   DRINKS.push({ key, label: name });
   prices[key] = price;
@@ -3191,8 +3171,6 @@ function renderSpieltypSelect() {
 
 function renderSpieleKatalog() {
   const el = document.getElementById('spiele-katalog-list');
-  if (!el) return;
-
   el.innerHTML = '';
 
   if (!SPIELE_KATALOG.length) {
@@ -3200,18 +3178,15 @@ function renderSpieleKatalog() {
     return;
   }
 
-  SPIELE_KATALOG
-    .slice()
-    .sort((a, b) => a.localeCompare(b, 'de'))
-    .forEach(name => {
-      const card = document.createElement('div');
-      card.className = 'spiel-edit-card';
-      card.innerHTML = `
-        <label>${name}</label>
-        <button class="delete-drink-btn" onclick="deleteSpielFromKatalog('${escapeForJs(name)}')">✕</button>
-      `;
-      el.appendChild(card);
-    });
+  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const card = document.createElement('div');
+    card.className = 'spiel-edit-card';
+    card.innerHTML = `
+      <label>${name}</label>
+      <button class="delete-drink-btn" onclick="deleteSpielFromKatalog('${escapeForJs(name)}')">✕</button>
+    `;
+    el.appendChild(card);
+  });
 }
 
 function addSpielToKatalog() {
@@ -3290,12 +3265,8 @@ function deletePerson(name) {
   if (!confirm(`${typeLabel} "${p.name}" wirklich löschen?`)) return;
 
   persons = persons.filter(x => x.name !== name);
-
   spiele = spiele
-    .map(s => ({
-      ...s,
-      members: (s.members || []).filter(m => m !== name)
-    }))
+    .map(s => ({ ...s, members: (s.members || []).filter(m => m !== name) }))
     .filter(s => (s.members || []).length > 0);
 
   renderAll();
@@ -3314,27 +3285,25 @@ function showTab(name, el) {
 // ── RESET / UNDO ──
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
+  clearTimeout(toastTimer);
   t.textContent = msg;
   t.className = type ? `show ${type}` : 'show';
 
-  clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     t.className = '';
-  }, 3000);
+    setTimeout(() => { t.textContent = ''; }, 250);
+  }, 2600);
 }
 
 function showUndoToast() {
   const t = document.getElementById('toast');
-  t.innerHTML = `🧨 Alles gelöscht
-    <button onclick="undoReset()"
-      style="margin-left:10px;padding:4px 8px;border-radius:6px;border:none;background:var(--green);font-weight:700;cursor:pointer;pointer-events:auto;">
-      Undo
-    </button>`;
+  clearTimeout(toastTimer);
+  t.innerHTML = `🧨 Alles gelöscht <button onclick="undoReset()" style="margin-left:10px;padding:4px 8px;border-radius:6px;border:none;background:var(--green);font-weight:700;cursor:pointer;">Undo</button>`;
   t.className = 'show success';
 
-  clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     t.className = '';
+    setTimeout(() => { t.innerHTML = ''; }, 250);
   }, 5000);
 }
 
@@ -3370,9 +3339,7 @@ function confirmReset() {
   persistState();
 
   clearTimeout(undoTimer);
-  undoTimer = setTimeout(() => {
-    lastState = null;
-  }, 5000);
+  undoTimer = setTimeout(() => { lastState = null; }, 5000);
 }
 
 function undoReset() {
@@ -3395,40 +3362,29 @@ function undoReset() {
 }
 
 // ── NETWORK EVENTS ──
-window.addEventListener('online', async () => {
+window.addEventListener('online', () => {
   showToast('🌐 Wieder online.', 'success');
-  if (hasPendingSync()) {
-    document.getElementById('login-screen').style.display = 'flex';
-  }
+  if (hasPendingSync()) openLoginModal();
 });
 
 window.addEventListener('offline', () => {
   showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
 });
 
-// ── PWA INSTALL ──
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-});
-
 updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 </script>
 
-<script src="https://apis.google.com/js/api.js?v=20260318-v12" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js?v=20260318-v13" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v12');
-      console.log('Service Worker registered', reg);
+      const reg = await navigator.serviceWorker.register('/sw.js?v=20260318-v13');
 
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
 
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
