@@ -1729,10 +1729,13 @@ function signIn() {
   if (!tokenClient) return;
 
   tokenClient.callback = async (resp) => {
-    if (resp.error) {
-      showToast('❌ Google-Anmeldung fehlgeschlagen', 'error');
-      return;
-    }
+	if (resp.error) {
+	  googleConnected = false;
+	  accessToken = null;
+	  updateGoogleStatusUI();
+	  showToast('❌ Google-Anmeldung fehlgeschlagen', 'error');
+	  return;
+	}
 
     accessToken = resp.access_token;
     closeLoginModal();
@@ -1773,11 +1776,14 @@ function ensureAccessToken(interactive = false) {
       }
     };
 
-    try {
-      tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
-    } catch (e) {
-      resolve(false);
-    }
+		try {
+		  tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+		} catch (e) {
+		  googleConnected = false;
+		  accessToken = null;
+		  updateGoogleStatusUI();
+		  resolve(false);
+		}
   });
 }
 
@@ -1991,7 +1997,7 @@ function getPersonTeamspielBreakdown(p) {
   return result;
 }
   
-  function updateGoogleStatusUI() {
+function updateGoogleStatusUI() {
   const btn = document.getElementById('googleStatusBtn');
   const info = document.getElementById('googleSyncInfo');
   if (!btn || !info) return;
@@ -2000,7 +2006,9 @@ function getPersonTeamspielBreakdown(p) {
 
   btn.classList.remove('connected', 'disconnected');
   btn.classList.add(connected ? 'connected' : 'disconnected');
-  btn.textContent = connected ? '🌍 Mit Google verbunden' : '🛑 Keine Verbindung mit Google';
+  btn.textContent = connected
+    ? '🌍 - mit Google verbunden'
+    : '🛑 - keine Verbindung mit Google';
 
   info.textContent = 'Letzte Synchronisation mit Google: ' + (lastSyncAt ? formatDateTime(lastSyncAt) : '–');
 }
