@@ -175,14 +175,13 @@
       color: var(--google-disconnected-fg);
     }
 
-    .google-sync-info {
-      font-size: 0.68rem;
-      color: var(--muted);
-      text-align: right;
-      line-height: 1.2;
-      margin-top: 2px;
-      white-space: nowrap;
-    }
+.google-sync-info {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 4px;
+  padding-right: 16px;
+}
     
     .tabs {
       display: flex;
@@ -1446,17 +1445,19 @@
       <div class="subtitle">Getränkeabrechnung</div>
       <div class="header-datetime" id="header-datetime"></div>
           </div>
-          <div class="header-btns">
-            <div style="display:flex;flex-direction:column;align-items:flex-end;">
-            <button class="google-status-btn disconnected" onclick="openLoginModal()" id="googleStatusBtn">
-              🛑 Keine Verbindung mit Google
-            </button>
-            <div class="google-sync-info" id="googleSyncInfo">Letzte Synchronisation mit Google: –</div>
-          </div>
-      <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
-      <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
-      <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
-    </div>
+		<div class="header-btns">
+		  <button class="google-status-btn disconnected" onclick="openLoginModal()" id="googleStatusBtn">
+		    🛑 Keine Verbindung mit Google
+		  </button>
+		
+		  <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
+		  <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
+		  <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
+		</div>
+		
+		<div class="google-sync-info" id="googleSyncInfo">
+		  Letzte Synchronisation mit Google: –
+		</div>
   </header>
 
   <div class="tabs">
