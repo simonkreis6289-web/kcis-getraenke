@@ -545,7 +545,42 @@
       border-collapse: separate;
       border-spacing: 0;
     }
+.table-person-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
 
+.table-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.table-avatar .person-avatar-fallback {
+  display: flex !important;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.7rem;
+}
     .drinks-table {
       width: max-content;
       min-width: 100%;
@@ -880,7 +915,47 @@
   position: relative;
   overflow: hidden;
 }
+.abrech-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
 
+.abrech-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.abrech-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.abrech-avatar .person-avatar-fallback {
+  display: flex !important;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+}
+
+.abrech-head-text {
+  min-width: 0;
+  flex: 1;
+}
 .abrech-card.t1 { border-color: var(--t1b); }
 .abrech-card.t2 { border-color: var(--t2b); }
 .abrech-card.guest { border-style: dashed; }
@@ -1757,7 +1832,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.0.2';
+const APPVersionSelf = '1.0.0.35';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -2798,15 +2873,23 @@ function renderDrinkRows(list, body, startIndex = 0) {
     const tl = p.tisch
       ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫ Wand' : '🔴 TV'}</span>`
       : `<span class="ptisch">Kein Team</span>`;
-
+	  
+const avatarHtml = getAvatarHtml(p.name)
+  .replace('class="person-avatar"', 'class="table-avatar"');
+	  
     let html = `
-      <td class="sticky-col">
-        <div class="person-cell ${leftClass}">
-          <span class="pname">${leftEmoji}${p.name}</span>
-          ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
-          ${tl}
-        </div>
-      </td>
+<td class="sticky-col">
+  <div class="person-cell ${leftClass}">
+    <div class="table-person-inline">
+      ${avatarHtml}
+      <div style="min-width:0;">
+        <span class="pname">${leftEmoji}${p.name}</span>
+        ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
+        ${tl}
+      </div>
+    </div>
+  </div>
+</td>
     `;
 
     DRINKS.forEach(d => {
@@ -3199,7 +3282,9 @@ function createAbrechGrid(list) {
     const left = !!p.left;
 
 const c = document.createElement('div');
-
+const abrechAvatarHtml = getAvatarHtml(p.name)
+  .replace('class="person-avatar"', 'class="abrech-avatar"');
+	  
 let statusClass = ' open';
 if (fullyPaid) statusClass = ' paid';
 if (left) statusClass = ' left';
@@ -3226,8 +3311,13 @@ c.className = 'abrech-card '
 	`).join('');
 
     c.innerHTML = `
-      <div class="abrech-name">${p.name}</div>
-      ${p.isGuest ? '<div class="abrech-role">Gastkegler</div>' : ''}
+      <div class="abrech-head">
+  ${abrechAvatarHtml}
+  <div class="abrech-head-text">
+    <div class="abrech-name">${p.name}</div>
+    ${p.isGuest ? '<div class="abrech-role">Gastkegler</div>' : ''}
+  </div>
+</div>
       <div class="abrech-tisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
       <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
       ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
