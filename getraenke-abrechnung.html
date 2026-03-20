@@ -868,12 +868,43 @@
 
     .abrech-card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       border-radius: 12px;
       padding: 14px;
       cursor: pointer;
     }
+	  
+.abrech-card.paid {
+  background: var(--green_bg);
+  border-color: var(--green);
+  position: relative;
+  overflow: hidden;
+}
 
+.abrech-card.paid::after {
+  content: "✔";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--green);
+  opacity: 0.9;
+}
+	  .abrech-card.paid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(0,194,0,0.15) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
     .abrech-card.t1 { border-color: var(--t1b); }
     .abrech-card.t2 { border-color: var(--t2b); }
     .abrech-card.guest { border-style: dashed; }
@@ -1671,7 +1702,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0';
+const APPVersionSelf = '1.0.0.1';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -3113,7 +3144,12 @@ function createAbrechGrid(list) {
     const left = !!p.left;
 
     const c = document.createElement('div');
-    c.className = 'abrech-card ' + (p.tisch || '').toLowerCase() + (p.isGuest ? ' guest' : '');
+    const fullyPaid = isFullyPaid(p);
+
+c.className = 'abrech-card '
+  + (p.tisch || '').toLowerCase()
+  + (p.isGuest ? ' guest' : '')
+  + (fullyPaid ? ' paid' : '');
 
     const items = DRINKS
       .filter(d => (p.drinks[d.key] || 0) > 0)
