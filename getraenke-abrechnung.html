@@ -1863,7 +1863,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.2.05';
+const APPVersionSelf = '1.0.2.10';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1911,7 +1911,8 @@ let lastSyncAt = '';
 	
   const sounds = {
   cash: new Audio('sounds/cash.mp3'),
-  goodbye: new Audio('sounds/goodbye.mp3')
+  goodbye: new Audio('sounds/goodbye.mp3'),
+  welcome: new Audio('sounds/welcome.mp3')
 };
 
 function playSound(sound) {
@@ -2843,16 +2844,24 @@ sorted.forEach(p => {
     <div class="${badgeClass}">${badgeText}</div>
   `;
 
-    c.onclick = () => {
-      p.present = !p.present;
-      if (!p.present) {
-        p.tisch = '';
-        p.left = false;
-        p.leftAt = '';
-      }
-      renderAll();
-      persistState();
-    };
+c.onclick = () => {
+  const wasPresent = !!p.present;
+
+  p.present = !p.present;
+
+  if (!wasPresent && p.present) {
+    playSound(sounds.welcome);
+  }
+
+  if (!p.present) {
+    p.tisch = '';
+    p.left = false;
+    p.leftAt = '';
+  }
+
+  renderAll();
+  persistState();
+};
 
     g.appendChild(c);
   });
