@@ -572,15 +572,7 @@
   display: block;
 }
 
-.table-avatar .person-avatar-fallback {
-  display: flex !important;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 0.7rem;
-}
+
     .drinks-table {
       width: max-content;
       min-width: 100%;
@@ -942,12 +934,26 @@
   display: block;
 }
 
-.abrech-avatar .person-avatar-fallback {
-  display: flex !important;
-  width: 100%;
-  height: 100%;
+.table-avatar,
+.abrech-avatar,
+.person-avatar {
+  position: relative;
+}
+
+.person-avatar-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
   align-items: center;
   justify-content: center;
+}
+
+.table-avatar .person-avatar-fallback {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.7rem;
+}
+
+.abrech-avatar .person-avatar-fallback {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1rem;
 }
