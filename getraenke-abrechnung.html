@@ -191,7 +191,15 @@
   text-align: right;
   margin-top: 4px;
 }
-    
+
+.version-info{
+  font-size: 0.65rem;
+  color: var(--title_fc);
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+	  
     .tabs {
       display: flex;
       background: var(--tabs_bg);
@@ -1490,6 +1498,7 @@
     <div class="google-sync-info" id="googleSyncInfo">
       Letzte Synchronisation mit Google: –
     </div>
+	<div class="version-info" id="versionInfo"> </div>
   </div>
 </header>
 
@@ -1662,6 +1671,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
+const APPVersionSelf = '1.0';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1731,6 +1741,7 @@ function gisLoaded() {
 async function startApp() {
   loadLocal();
   renderAll();
+	updateVersionInfo();
   updateGoogleStatusUI();
   appReady = true;
 
@@ -1949,7 +1960,14 @@ function queueAutoSave() {
 function euros(val) {
   return (val || 0).toFixed(2).replace('.', ',') + ' €';
 }
+	
+function updateVersionInfo() {
+  const el = document.getElementById('versionInfo');
+  if (!el) return;
 
+  el.textContent = 'Version: ' + APPVersionSelf;
+}
+	
 function formatDateTime(dt) {
   if (!dt) return '';
   const d = new Date(dt);
