@@ -1863,7 +1863,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.1.53';
+const APPVersionSelf = '1.0.2.05';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -1908,7 +1908,19 @@ let appReady = false;
   
 let googleConnected = false;
 let lastSyncAt = '';
-  
+	
+  const sounds = {
+  cash: new Audio('sounds/cash.mp3'),
+  goodbye: new Audio('sounds/goodbye.mp3')
+};
+
+function playSound(sound) {
+  if (!sound) return;
+  const s = sound.cloneNode();
+  s.volume = 0.7;
+  s.play().catch(() => {});
+}
+	
 // ── AUTH / START ──
 function gapiLoaded() {
   gapi.load('client', initGapiClient);
@@ -3564,14 +3576,17 @@ function updateModalRest() {
 function confirmPayment() {
   if (!modalPerson) return;
 
-  const wasLeft = !!modalPerson.left;
-  const nowLeft = document.getElementById('modal-left-check').checked;
+  const oldPaid = parseFloat(modalPerson.paid || 0) || 0;
+  const oldLeft = !!modalPerson.left;
 
-  modalPerson.paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
-  modalPerson.left = nowLeft;
+  const newPaid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
+  const newLeft = document.getElementById('modal-left-check').checked;
 
-  if (!wasLeft && nowLeft) modalPerson.leftAt = new Date().toISOString();
-  if (wasLeft && !nowLeft) modalPerson.leftAt = '';
+  modalPerson.paid = newPaid;
+  modalPerson.left = newLeft;
+
+  if (!oldLeft && newLeft) modalPerson.leftAt = new Date().toISOString();
+  if (oldLeft && !newLeft) modalPerson.leftAt = '';
 
   closeModal();
   updateStats();
@@ -3580,6 +3595,15 @@ function confirmPayment() {
   renderTeamspiele();
   renderRunden();
   renderGetraenke();
+
+  if (newPaid !== oldPaid) {
+    playSound(sounds.cash);
+  }
+
+  if (!oldLeft && newLeft) {
+    playSound(sounds.goodbye);
+  }
+
   showToast('✅ Zahlung gespeichert', 'success');
   persistState();
 }
