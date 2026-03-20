@@ -1865,9 +1865,9 @@ function hydrateState() {
   persons.forEach(p => {
     if (!p.drinks) p.drinks = {};
     if (!Array.isArray(p.rounds)) p.rounds = [];
-		(p.rounds || []).forEach(r => {
-		  if (!r.reason) r.reason = '';
-		});
+    (p.rounds || []).forEach(r => {
+      if (!r.reason) r.reason = '';
+    });
     if (p.roundExtra === undefined) p.roundExtra = 0;
 
     DRINKS.forEach(d => {
@@ -1882,8 +1882,6 @@ function hydrateState() {
     p.paid = parseFloat(p.paid || 0) || 0;
     p.left = !!p.left;
     p.leftAt = p.leftAt || '';
-	p.present = false;
-	p.tisch = '';
   });
 }
 
@@ -3554,6 +3552,8 @@ function confirmReset() {
     p.rounds = [];
     p.left = false;
     p.leftAt = '';
+    p.present = false;
+    p.tisch = '';
   });
 
   spiele = [];
