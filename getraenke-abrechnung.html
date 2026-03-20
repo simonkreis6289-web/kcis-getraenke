@@ -3144,12 +3144,11 @@ function createAbrechGrid(list) {
     const left = !!p.left;
 
     const c = document.createElement('div');
-    const fullyPaid = isFullyPaid(p);
 
-c.className = 'abrech-card '
-  + (p.tisch || '').toLowerCase()
-  + (p.isGuest ? ' guest' : '')
-  + (fullyPaid ? ' paid' : '');
+    c.className = 'abrech-card '
+      + (p.tisch || '').toLowerCase()
+      + (p.isGuest ? ' guest' : '')
+      + (fullyPaid ? ' paid' : '');
 
     const items = DRINKS
       .filter(d => (p.drinks[d.key] || 0) > 0)
