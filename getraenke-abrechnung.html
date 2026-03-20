@@ -41,7 +41,6 @@
       --purple: #9b59b6;
       --red: #ff084e;
       --guest: #7f8c8d;
-      --round: #a85ad4;
 
       --table-row-bg: #ffffff;
       --table-row-alt-bg: #f5f5f5;
@@ -53,7 +52,11 @@
       --google-connected-fg: #1f8f45;
       --google-disconnected-bg: #fde3e3;
       --google-disconnected-fg: #c62828;
-      
+
+	      --round: rgba(255, 13, 146, 1);
+		--roundBtn: rgba(255, 13, 146, 0.1);
+		--roundBtn_bg: rgba(255, 13, 146, 0.5);
+		
     }
 
     * {
@@ -134,9 +137,9 @@
     }
 
     .round-btn {
-      background: rgba(168, 90, 212, 0.14);
+      background: var(--roundBtn);
       color: var(--round);
-      border: 1px solid rgba(168, 90, 212, 0.3);
+      border: 1px solid var(--roundBtn_bg);
     }
 
     .sync-btn.loading {
