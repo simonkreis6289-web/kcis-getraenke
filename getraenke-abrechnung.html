@@ -58,6 +58,9 @@
 	      --round: rgba(103, 0, 194, 1);
 		--roundBtn: rgba(103, 0, 194, 0.1);
 		--roundBtn_bg: rgba(103, 0, 194, 0.5);
+
+		--tabs_bg: #e3e3e3;
+		--statusBar_bg: #fffee0;
 		
     }
 
@@ -191,7 +194,7 @@
     
     .tabs {
       display: flex;
-      background: var(--surface);
+      background: var(--tabs_bg);
       border-bottom: 1px solid var(--border);
       padding: 0 8px;
       gap: 2px;
@@ -220,7 +223,7 @@
     }
 
     .status-bar {
-      background: var(--surface);
+      background: var(--statusBar_bg);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px 16px;
