@@ -330,19 +330,37 @@
       justify-content: center;
     }
 
-    .person-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.1rem;
-      background: var(--surface2);
-      border: 2px solid var(--border);
-      margin-top: 6px;
-    }
+.person-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.25rem;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  margin-top: 6px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.person-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.person-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
     .person-card.present .person-avatar {
       border-color: var(--green);
@@ -2048,7 +2066,65 @@ function updateGoogleStatusUI() {
 
   info.textContent = 'Letzte Synchronisation mit Google: ' + (lastSyncAt ? formatDateTime(lastSyncAt) : '–');
 }
+function getAvatarFileCandidates(name) {
+  const clean = String(name || '').trim();
 
+  const normalized = clean
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const base = normalized
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return [
+    `bilder/${base}.jpg`,
+    `bilder/${base}.jpeg`,
+    `bilder/${base}.png`,
+    `bilder/${base}.webp`
+  ];
+}
+
+function getAvatarHtml(name) {
+  const initials = String(name || '')
+    .split(' ')
+    .map(n => n[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const candidates = getAvatarFileCandidates(name);
+  const fallback = `<span class="person-avatar-fallback">${initials}</span>`;
+
+  const imgTag = `
+    <img
+      src="${candidates[0]}"
+      alt="${name}"
+      onerror="
+        if(this.dataset.tryIndex===undefined){this.dataset.tryIndex='0';}
+        var files = ${JSON.stringify(candidates).replace(/"/g, '&quot;')};
+        var next = parseInt(this.dataset.tryIndex,10) + 1;
+        if(next < files.length){
+          this.dataset.tryIndex = String(next);
+          this.src = files[next];
+        } else {
+          this.remove();
+          var fb = this.parentNode.querySelector('.person-avatar-fallback');
+          if(fb) fb.style.display='flex';
+        }
+      "
+    >
+  `;
+
+  return `
+    <div class="person-avatar">
+      ${imgTag}
+      <span class="person-avatar-fallback" style="display:none;">${initials}</span>
+    </div>
+  `;
+}
+	
 // ── SHEET SETUP ──
 async function ensureSheetSetup() {
   const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
