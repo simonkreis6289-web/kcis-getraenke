@@ -62,6 +62,11 @@
 		--tabs_bg: #f5f5f5;
 		--statusBar_bg: #fffee0;
 		
+		--warn: #d62828;
+	--warn_bg: rgba(214, 40, 40, 0.10);
+	
+	--left_card: #d4a017;
+	--left_card_bg: rgba(255, 204, 0, 0.18);
     }
 
     * {
@@ -866,19 +871,41 @@
       font-weight: 700;
     }
 
-    .abrech-card {
-      background: var(--surface);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      cursor: pointer;
-    }
-	  
+.abrech-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.abrech-card.t1 { border-color: var(--t1b); }
+.abrech-card.t2 { border-color: var(--t2b); }
+.abrech-card.guest { border-style: dashed; }
+
+/* OFFEN */
+.abrech-card.open {
+  background: var(--warn_bg);
+  border-color: var(--warn);
+}
+
+.abrech-card.open::after {
+  content: "✖";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--warn);
+  opacity: 0.95;
+}
+
+/* BEZAHLT */
 .abrech-card.paid {
   background: var(--green_bg);
   border-color: var(--green);
-  position: relative;
-  overflow: hidden;
 }
 
 .abrech-card.paid::after {
@@ -891,7 +918,8 @@
   color: var(--green);
   opacity: 0.9;
 }
-	  .abrech-card.paid::before {
+
+.abrech-card.paid::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -905,9 +933,36 @@
   );
   pointer-events: none;
 }
-    .abrech-card.t1 { border-color: var(--t1b); }
-    .abrech-card.t2 { border-color: var(--t2b); }
-    .abrech-card.guest { border-style: dashed; }
+
+/* GEGANGEN */
+.abrech-card.left {
+  background: var(--left_card_bg);
+  border-color: var(--left_card);
+}
+
+.abrech-card.left::after {
+  content: "🚪";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 1.2rem;
+  opacity: 0.95;
+}
+
+.abrech-card.left::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 204, 0, 0.18) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
 
     .abrech-name {
       font-weight: 700;
@@ -1702,7 +1757,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.0.1';
+const APPVersionSelf = '1.0.0.2';
 
 const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
 const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
@@ -3143,12 +3198,16 @@ function createAbrechGrid(list) {
     const fullyPaid = isFullyPaid(p);
     const left = !!p.left;
 
-    const c = document.createElement('div');
+const c = document.createElement('div');
 
-    c.className = 'abrech-card '
-      + (p.tisch || '').toLowerCase()
-      + (p.isGuest ? ' guest' : '')
-      + (fullyPaid ? ' paid' : '');
+let statusClass = ' open';
+if (fullyPaid) statusClass = ' paid';
+if (left) statusClass = ' left';
+
+c.className = 'abrech-card '
+  + (p.tisch || '').toLowerCase()
+  + (p.isGuest ? ' guest' : '')
+  + statusClass;
 
     const items = DRINKS
       .filter(d => (p.drinks[d.key] || 0) > 0)
