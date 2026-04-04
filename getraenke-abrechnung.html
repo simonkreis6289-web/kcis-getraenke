@@ -4020,6 +4020,42 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
+  const firebaseConfig = {
+    apiKey: "AIzaSyClS5Mby1bZ39Olgra0bEvV273_c5FRTck",
+    authDomain: "kegelclub-invaliden-schwadron.firebaseapp.com",
+    projectId: "kegelclub-invaliden-schwadron",
+    storageBucket: "kegelclub-invaliden-schwadron.firebasestorage.app",
+    messagingSenderId: "1013015505267",
+    appId: "1:1013015505267:web:6cc65bae12a4337cd8fd06",
+    measurementId: "G-F4T56N61BF"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  async function testFirestore() {
+    try {
+      await setDoc(doc(db, "events", "testabend"), {
+        date: "2026-03-23",
+        year: 2026,
+        month: 3,
+        status: "open",
+        test: true
+      });
+
+      const snap = await getDoc(doc(db, "events", "testabend"));
+      console.log("Firestore läuft:", snap.data());
+    } catch (err) {
+      console.error("Firestore-Fehler:", err);
+    }
+  }
+
+  testFirestore();
+	
+</script>
 </body>
 </html>
