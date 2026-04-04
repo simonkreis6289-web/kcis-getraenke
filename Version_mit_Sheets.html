@@ -1,0 +1,4061 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#293d6e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KC IS">
+
+  <title>KC IS – Getränkeabrechnung</title>
+
+  <link rel="manifest" href="manifest.json?v=20260318-v13">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
+  <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface2: #ffffff;
+      --border: #2e3350;
+		--header_bg: #4a4a4a;
+      --accent: #f5a623;
+      --accent2: #e8412a;
+		--title_fc: #ffffff;
+
+      --btn-plus-bg: rgba(204, 0, 0, 0.15);
+      --btn-plus-fg: rgba(204, 0, 0, 1);
+      --btn-minus-bg: rgba(7, 148, 0, 0.15);
+      --btn-minus-fg: rgba(7, 148, 0, 1);
+
+      --green: rgba(0,194,0,1);
+		--green_bg: rgba(0,194,0,0.2);
+      --text: #000000;
+      --muted: #121824;
+      --t1b: #292929;
+	--t1b_bg: #d4d4d4;
+      --t2b: #cc0014;
+	--t2b_bg: #ffccd1;
+      --purple: #9b59b6;
+      --red: #ff084e;
+      --guest: #7f8c8d;
+
+      --table-row-bg: #ffffff;
+      --table-row-alt-bg: #f5f5f5;
+      --table-sticky-bg: #ffffff;
+      --table-sticky-alt-bg: #eeeeee;
+      --table-left-fade: 0.42;
+
+      --google-connected-bg: #dff5e3;
+      --google-connected-fg: #1f8f45;
+      --google-disconnected-bg: #fde3e3;
+      --google-disconnected-fg: #c62828;
+
+	      --round: rgba(103, 0, 194, 1);
+		--roundBtn: rgba(103, 0, 194, 0.1);
+		--roundBtn_bg: rgba(103, 0, 194, 0.5);
+
+		--tabs_bg: #f5f5f5;
+		--statusBar_bg: #fffee0;
+		
+		--warn: #d62828;
+	--warn_bg: rgba(214, 40, 40, 0.10);
+	
+	--left_card: #d4a017;
+	--left_card_bg: rgba(255, 204, 0, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--header_bg);
+      border-bottom: 2px solid var(--title_fc);
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.5rem;
+      letter-spacing: 5px;
+      color: var(--title_fc);
+      line-height: 1;
+    }
+
+    header .subtitle {
+      font-size: 1rem;
+      color: var(--title_fc);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .header-datetime {
+      font-size: 0.9rem;
+      color: var(--title_fc);
+      margin-top: 3px;
+    }
+
+    .header-btns {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .sync-btn, .add-btn, .round-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .round-btn {
+      background: var(--roundBtn);
+      color: var(--round);
+      border: 1px solid var(--roundBtn_bg);
+    }
+
+    .sync-btn.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .archive-btn {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    
+    .google-status-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.75rem;
+      cursor: pointer;
+      min-width: 190px;
+    }
+
+    .google-status-btn.connected {
+      background: var(--google-connected-bg);
+      color: var(--google-connected-fg);
+    }
+
+    .google-status-btn.disconnected {
+      background: var(--google-disconnected-bg);
+      color: var(--google-disconnected-fg);
+    }
+
+.google-sync-info {
+  font-size: 0.75rem;
+  color: var(--title_fc);
+  text-align: right;
+  margin-top: 4px;
+}
+
+.version-info{
+  font-size: 0.65rem;
+  color: var(--title_fc);
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+	  
+    .tabs {
+      display: flex;
+      background: var(--tabs_bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 8px;
+      gap: 2px;
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    main {
+      width: 100%;
+      margin: 0;
+      padding: 16px;
+    }
+
+    .status-bar {
+      background: var(--statusBar_bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin: 20px 0 10px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .subsection-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+    }
+
+    .persons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    .person-card {
+      position: relative;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      min-height: 110px;
+    }
+
+    .person-card.present {
+      border-color: var(--green);
+      background: var(--green_bg);
+    }
+
+    .person-card.guest {
+      border-style: dashed;
+    }
+
+    .person-card.absent { opacity: 0.45; }
+
+    .person-delete-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(232, 65, 42, 0.15);
+      color: var(--accent2);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+.person-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.25rem;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  margin-top: 6px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.person-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.person-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+    .person-card.present .person-avatar {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .person-card.guest .person-avatar {
+      border-style: dashed;
+      color: var(--guest);
+    }
+
+    .person-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .person-role {
+      font-size: 0.62rem;
+      color: var(--muted);
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .present-badge,
+    .absent-badge,
+    .left-badge {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .present-badge {
+      background: var(--green_bg);
+      color: var(--green);
+    }
+
+    .absent-badge {
+      background: rgba(107, 114, 128, 0.2);
+      color: var(--muted);
+    }
+
+    .left-badge {
+      background: rgba(155, 89, 182, 0.18);
+      color: var(--purple);
+    }
+
+    .gruppe-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .gruppe-box {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 100px;
+    }
+
+    .gruppe-box.t1 {
+      border-color: var(--t1b);
+      background: rgba(52, 152, 219, 0.06);
+    }
+
+    .gruppe-box.t2 {
+      border-color: var(--t2b);
+      background: rgba(232, 65, 42, 0.06);
+    }
+
+    .gruppe-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gruppe-box.t1 .gruppe-title { color: var(--t1b); }
+    .gruppe-box.t2 .gruppe-title { color: var(--t2b); }
+
+    .gruppe-persons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .gruppe-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .gruppe-chip.guest {
+      border-style: dashed;
+    }
+
+    .gruppe-box.t1 .gruppe-chip { border-color: var(--t1b); color: var(--t1b); }
+    .gruppe-box.t2 .gruppe-chip { border-color: var(--t2b); color: var(--t2b); }
+
+    .unassigned-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .unassigned-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .unassigned-chip.guest {
+      border-style: dashed;
+    }
+
+    #tab-getraenke {
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .getraenke-toolbar,
+    .prices-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .drinks-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .drinks-table-wrap::-webkit-scrollbar { height: 8px; }
+    .drinks-table-wrap::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 10px;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+.table-person-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.table-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
+    .drinks-table {
+      width: max-content;
+      min-width: 100%;
+    }
+
+    thead th {
+      background: var(--surface2);
+      padding: 10px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    thead th:first-child {
+      text-align: left;
+      padding-left: 12px;
+      min-width: 160px;
+      max-width: 160px;
+    }
+
+    thead th.sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: var(--table-sticky-bg);
+      box-shadow: 6px 0 10px rgba(0,0,0,0.04);
+    }
+
+    tbody tr {
+      background: var(--table-row-bg);
+    }
+
+    tbody tr.alt-row {
+      background: var(--table-row-alt-bg);
+    }
+
+    tbody td {
+      padding: 12px 6px;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+      color: #000000;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    tbody td:first-child {
+      text-align: left;
+      padding-left: 12px;
+      min-width: 160px;
+      max-width: 160px;
+    }
+
+    tbody td.sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      background: var(--table-sticky-bg);
+      box-shadow: 6px 0 10px rgba(0,0,0,0.04);
+    }
+
+    tbody tr.alt-row td.sticky-col {
+      background: var(--table-sticky-alt-bg);
+    }
+
+    .guest-separator-row td {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+      background: rgba(0,0,0,0.02) !important;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: left !important;
+      position: static !important;
+      box-shadow: none !important;
+    }
+
+    .person-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .person-cell.left-state .pname,
+    .person-cell.left-state .prole,
+    .person-cell.left-state .ptisch {
+      opacity: var(--table-left-fade);
+    }
+
+    .person-cell .pname {
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: #000000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .person-cell .left-emoji {
+      font-size: 0.9rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .person-cell .prole {
+      font-size: 0.6rem;
+      color: var(--guest);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .person-cell .ptisch {
+      font-size: 0.63rem;
+    }
+
+    .person-cell .ptisch.t1 { color: var(--t1b); }
+    .person-cell .ptisch.t2 { color: var(--t2b); }
+
+    .counter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .counter-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .counter-btn.minus {
+      background: var(--btn-minus-bg);
+      color: var(--btn-minus-fg);
+    }
+
+    .counter-btn.plus {
+      background: var(--btn-plus-bg);
+      color: var(--btn-plus-fg);
+    }
+
+    .counter-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .counter-val {
+      min-width: 22px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #000000;
+    }
+
+    .paid-cell {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      min-width: 80px;
+      color: var(--green);
+    }
+
+    .paid-cell.zero {
+      color: #000000;
+      opacity: 0.55;
+    }
+
+    .round-cell {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      min-width: 80px;
+      color: var(--round);
+    }
+
+    .round-cell.zero {
+      color: #000000;
+      opacity: 0.55;
+    }
+
+    .total-cell {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      color: #000000;
+      min-width: 70px;
+    }
+
+    .prices-editor,
+    .spiele-editor {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+    }
+
+    .price-edit-card,
+    .spiel-edit-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .price-edit-card label,
+    .spiel-edit-card label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .price-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: var(--accent);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      width: 80px;
+      text-align: right;
+      outline: none;
+    }
+
+    .delete-drink-btn {
+      background: rgba(232, 65, 42, 0.15);
+      color: var(--accent2);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .save-prices-btn {
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    .abrech-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .abrech-summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .abrech-summary-card.offen { border-color: var(--accent2); }
+    .abrech-summary-card.bezahlt { border-color: var(--green); }
+    .abrech-summary-card.ueberschuss { border-color: var(--purple); }
+    .abrech-summary-card.gesamt { border-color: var(--red); }
+
+    .abrech-summary-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .abrech-summary-card.offen .abrech-summary-val { color: var(--accent2); }
+    .abrech-summary-card.bezahlt .abrech-summary-val { color: var(--green); }
+    .abrech-summary-card.ueberschuss .abrech-summary-val { color: var(--purple); }
+    .abrech-summary-card.gesamt .abrech-summary-val { color: var(--red); }
+
+    .abrech-summary-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .abrech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .abrech-guest-separator {
+      margin-top: 8px;
+      margin-bottom: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+.abrech-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.abrech-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.abrech-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.abrech-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.table-avatar,
+.abrech-avatar,
+.person-avatar {
+  position: relative;
+}
+
+.person-avatar-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-avatar .person-avatar-fallback {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.7rem;
+}
+
+.abrech-avatar .person-avatar-fallback {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+}
+
+.abrech-head-text {
+  min-width: 0;
+  flex: 1;
+}
+.abrech-card.t1 { border-color: var(--t1b); }
+.abrech-card.t2 { border-color: var(--t2b); }
+.abrech-card.guest { border-style: dashed; }
+
+/* OFFEN */
+.abrech-card.open {
+  background: var(--warn_bg);
+  border-color: var(--warn);
+}
+
+.abrech-card.open::after {
+  content: "✖";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--warn);
+  opacity: 0.95;
+}
+
+/* BEZAHLT */
+.abrech-card.paid {
+  background: var(--green_bg);
+  border-color: var(--green);
+}
+
+.abrech-card.paid::after {
+  content: "✔";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--green);
+  opacity: 0.9;
+}
+
+.abrech-card.paid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(0,194,0,0.15) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* GEGANGEN */
+.abrech-card.left {
+  background: var(--left_card_bg);
+  border-color: var(--left_card);
+}
+
+.abrech-card.left::after {
+  content: "🚪";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 1.2rem;
+  opacity: 0.95;
+}
+
+.abrech-card.left::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 204, 0, 0.18) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+    .abrech-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .abrech-role {
+      font-size: 0.62rem;
+      color: var(--guest);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .abrech-tisch {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .abrech-card.t1 .abrech-tisch { color: var(--t1b); }
+    .abrech-card.t2 .abrech-tisch { color: var(--t2b); }
+
+    .abrech-total {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .abrech-paid-info {
+      font-size: 0.7rem;
+      color: var(--green);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .abrech-left-info {
+      font-size: 0.7rem;
+      color: var(--purple);
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    .abrech-rest {
+      font-size: 0.75rem;
+      color: var(--accent2);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .abrech-ueberschuss {
+      font-size: 0.75rem;
+      color: var(--purple);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .abrech-items { margin-top: 6px; }
+
+    .abrech-item {
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tap-hint {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 8px;
+      text-align: center;
+      opacity: 0.75;
+      line-height: 1.3;
+    }
+
+    .team-spiel-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .team-select-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .team-btn {
+      border: 2px solid var(--border);
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .team-btn.t1.active {
+      border-color: var(--t1b);
+      background: var(--t1b_bg);
+      color: var(--t1b);
+    }
+
+    .team-btn.t2.active {
+      border-color: var(--t2b);
+      background: var(--t2b_bg);
+      color: var(--t2b);
+    }
+
+    .team-drinks-grid,
+    .round-drinks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .team-drink-row,
+    .round-drink-row {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .team-drink-name,
+    .round-drink-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .team-info-box {
+      margin-bottom: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .add-spiel-btn {
+      background: var(--accent2);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .spiele-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .spiel-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .spiel-info { flex: 1; }
+
+    .spiel-verlierer {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .spiel-verlierer.t1 { color: var(--t1b); }
+    .spiel-verlierer.t2 { color: var(--t2b); }
+    .spiel-verlierer.round { color: var(--round); }
+
+    .spiel-detail {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .spiel-betrag {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      color: var(--accent2);
+      text-align: right;
+    }
+
+    .spiel-betrag.round {
+      color: var(--round);
+    }
+
+    .spiel-pro-kopf {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .del-spiel-btn {
+      background: rgba(232, 65, 42, 0.15);
+      border: none;
+      border-radius: 8px;
+      color: var(--accent2);
+      font-size: 1.1rem;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.hidden { display: none; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .modal-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .modal-total-due {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.5rem;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-meta {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .modal-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.02);
+      gap: 12px;
+    }
+
+    .modal-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .modal-input-row label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 100px;
+    }
+
+    .modal-euro-input,
+    .modal-text-input,
+    .modal-select {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .modal-euro-input { text-align: right; }
+
+    .modal-rest {
+      font-size: 0.85rem;
+      text-align: center;
+      margin-bottom: 16px;
+      font-weight: 700;
+      min-height: 20px;
+    }
+
+    .modal-rest.pos { color: var(--green); }
+    .modal-rest.neg { color: var(--accent2); }
+    .modal-rest.over { color: var(--purple); }
+
+    .modal-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .modal-check input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .modal-ok {
+      flex: 1;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .modal-cancel {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .add-person-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .add-person-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 999;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+      max-width: calc(100vw - 40px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.success { border-color: var(--green); color: var(--green); }
+    #toast.error { border-color: var(--accent2); color: var(--accent2); }
+    #toast button { pointer-events: auto; }
+
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      gap: 16px;
+    }
+
+    #loading-screen h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+    }
+
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none !important; }
+    #app { display: none; }
+
+    @media (max-width: 760px) {
+      .abrech-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .gruppe-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .add-person-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <h2>KegelClub Invaliden Schwadron</h2>
+  <div class="loader"></div>
+  <span style="color:var(--muted);font-size:0.8rem">Lade Daten…</span>
+</div>
+
+<div class="modal-overlay hidden" id="login-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>Google-Anmeldung</h3>
+    <div class="modal-sub">Nur nötig, wenn lokale Daten mit Google Sheets synchronisiert werden sollen.</div>
+    <div style="font-size:0.9rem;color:var(--muted);line-height:1.5;margin-bottom:18px;">
+      Offline läuft die App ganz normal weiter. Für den Abgleich mit Google Sheets bitte hier anmelden.
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeLoginModal()">Später</button>
+      <button class="modal-ok" onclick="signIn()">Bei Google anmelden</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="payment-modal">
+  <div class="modal">
+    <h3 id="modal-name">Name</h3>
+    <div class="modal-sub">Zahlung erfassen</div>
+    <div class="modal-total-due" id="modal-due">0,00 €</div>
+
+    <div class="modal-meta">
+      <div class="modal-meta-row"><span>Gesamt</span><strong id="modal-total-display">0,00 €</strong></div>
+      <div class="modal-meta-row"><span>Schon bezahlt</span><strong id="modal-paid-display">0,00 €</strong></div>
+      <div class="modal-meta-row"><span>Noch offen</span><strong id="modal-open-display">0,00 €</strong></div>
+      <div class="modal-meta-row"><span>Weg seit</span><strong id="modal-leftat-display">—</strong></div>
+    </div>
+
+    <div id="modal-teamspiele-breakdown" style="margin-bottom:14px;"></div>
+    <div id="modal-runden-breakdown" style="margin-bottom:14px;"></div>
+
+    <div class="modal-input-row">
+      <label>Bezahlt (€)</label>
+      <input type="number" step="0.01" min="0" class="modal-euro-input" id="modal-paid-input" oninput="updateModalRest()" placeholder="0.00">
+    </div>
+
+    <label class="modal-check">
+      <input type="checkbox" id="modal-left-check">
+      <span>Person ist wirklich weg</span>
+    </label>
+
+    <div class="modal-rest" id="modal-rest-display"></div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmPayment()">✓ Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="drink-modal">
+  <div class="modal">
+    <h3>Getränk hinzufügen</h3>
+    <div class="modal-sub">Neues Getränk mit Preis anlegen</div>
+
+    <div class="modal-input-row">
+      <label>Name</label>
+      <input type="text" id="new-drink-name" class="modal-text-input" placeholder="z. B. Aperol">
+    </div>
+
+    <div class="modal-input-row">
+      <label>Preis (€)</label>
+      <input type="number" step="0.01" min="0" id="new-drink-price" class="modal-euro-input" placeholder="0.00">
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeDrinkModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmAddDrink()">+ Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="round-modal">
+  <div class="modal">
+    <h3>Runde geben</h3>
+    <div class="modal-sub">Wähle die Person aus und dann die Getränke der Runde</div>
+
+    <div class="modal-input-row">
+      <label>Wer zahlt?</label>
+      <select id="round-person-select" class="modal-select" onchange="handleRoundPersonChange()"></select>
+    </div>
+		<div class="modal-input-row">
+		  <label>Grund</label>
+		  <select id="round-reason-select" class="modal-select"></select>
+		</div>
+    <div id="round-drinks-area" class="hidden">
+      <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Getränke der Runde
+      </div>
+      <div class="round-drinks-grid" id="round-drinks-grid"></div>
+      <div class="modal-meta-row" style="margin-bottom:14px;">
+        <span>Preis der Runde</span>
+        <strong id="round-total-display">0,00 €</strong>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeRoundModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmGiveRound()">🍻 Runde geben</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+<header>
+  <div>
+    <h1>KC IS</h1>
+    <div class="subtitle">Getränkeabrechnung</div>
+    <div class="header-datetime" id="header-datetime"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:flex-end;">
+    <div class="header-btns">
+      <button class="google-status-btn disconnected" onclick="openLoginModal()" id="googleStatusBtn">
+        🛑 Keine Verbindung mit Google
+      </button>
+
+      <button class="archive-btn" onclick="archiveSheet()">📁 Archiv</button>
+      <button class="archive-btn" onclick="openResetModal()">🧨 Alles löschen</button>
+      <button class="sync-btn" onclick="saveToSheet(false, true)" id="saveBtn">💾 Speichern</button>
+    </div>
+
+    <div class="google-sync-info" id="googleSyncInfo">
+      Letzte Synchronisation mit Google: –
+    </div>
+	<div class="version-info" id="versionInfo"> </div>
+  </div>
+</header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('anwesenheit',this)">👥 Anwesenheit</div>
+    <div class="tab" onclick="showTab('gruppen',this)">🎯 Gruppen</div>
+    <div class="tab" onclick="showTab('getraenke',this)">🍺 Getränke</div>
+    <div class="tab" onclick="showTab('teamspiele',this)">⚽ Teamspiele</div>
+    <div class="tab" onclick="showTab('runden',this)">🍻 Runden</div>
+    <div class="tab" onclick="showTab('abrechnung',this)">💶 Abrechnung</div>
+    <div class="tab" onclick="showTab('spiele',this)">🎲 Spiele</div>
+    <div class="tab" onclick="showTab('preise',this)">🏷️ Preise</div>
+  </div>
+
+  <main>
+    <div class="status-bar">
+      <div class="stat"><span class="stat-val" id="stat-anwesend">0</span><span class="stat-label">Anwesend</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t1">0</span><span class="stat-label">Wand</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t2">0</span><span class="stat-label">TV</span></div>
+      <div class="stat"><span class="stat-val" id="stat-offen">0,00 €</span><span class="stat-label">Offen</span></div>
+      <div class="stat"><span class="stat-val" id="stat-bezahlt" style="color:var(--green)">0,00 €</span><span class="stat-label">Bezahlt</span></div>
+      <div class="stat"><span class="stat-val" id="stat-ueberschuss" style="color:var(--purple)">0,00 €</span><span class="stat-label">Überschuss</span></div>
+      <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
+    </div>
+
+    <div id="tab-anwesenheit">
+      <div class="section-title">Wer ist heute da?</div>
+
+      <div class="subsection-title">Kegelclub</div>
+      <div class="persons-grid" id="persons-grid-members"></div>
+      <div class="add-person-row">
+        <input type="text" id="new-person-input" placeholder="Neues Mitglied hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(false)">
+        <button class="add-btn" onclick="addPerson(false)">+ Mitglied hinzufügen</button>
+      </div>
+
+      <div class="subsection-title">Gastkegler</div>
+      <div class="persons-grid" id="persons-grid-guests"></div>
+      <div class="add-person-row">
+        <input type="text" id="new-guest-input" placeholder="Gastkegler hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(true)">
+        <button class="add-btn" onclick="addPerson(true)">+ Gastkegler hinzufügen</button>
+      </div>
+    </div>
+
+    <div id="tab-gruppen" class="hidden">
+      <div class="section-title">Seiten-Zuweisung</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Nicht zugewiesen – antippen zum Zuweisen:</div>
+      <div class="unassigned-list" id="unassigned-list"></div>
+      <div class="gruppe-grid">
+        <div class="gruppe-box t1">
+          <div class="gruppe-title">⚫ Wand</div>
+          <div class="gruppe-persons" id="gruppe-t1"></div>
+        </div>
+        <div class="gruppe-box t2">
+          <div class="gruppe-title">🔴 TV</div>
+          <div class="gruppe-persons" id="gruppe-t2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-getraenke" class="hidden">
+      <div class="section-title">Getränke erfassen</div>
+      <div class="getraenke-toolbar">
+        <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
+      </div>
+      <div class="drinks-table-wrap">
+        <table class="drinks-table">
+          <thead><tr id="drinks-header"></tr></thead>
+          <tbody id="drinks-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-teamspiele" class="hidden">
+      <div class="section-title">Neues Teamspiel</div>
+      <div class="team-spiel-form">
+        <div class="team-info-box" id="team-info-box">
+          Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.
+        </div>
+
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Spiel auswählen:</div>
+        <div style="margin-bottom:14px;">
+          <select id="spieltyp-select" class="modal-select" style="width:100%;"></select>
+        </div>
+
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
+        <div class="team-select-row">
+          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">⚫ Wand verloren</button>
+          <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
+        </div>
+
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Getränke die das Verlierer-Team zahlt:</div>
+        <div class="team-drinks-grid" id="team-drinks-grid"></div>
+        <button class="add-spiel-btn" onclick="addSpiel()">⚽ Spiel hinzufügen & aufteilen</button>
+      </div>
+
+      <div class="section-title">Gebuchte Spiele</div>
+      <div class="spiele-list" id="spiele-list"></div>
+    </div>
+
+    <div id="tab-runden" class="hidden">
+      <div class="section-title">Gegebene Runden</div>
+      <div class="spiele-list" id="runden-list"></div>
+    </div>
+
+    <div id="tab-abrechnung" class="hidden">
+      <div class="section-title">Übersicht</div>
+      <div class="abrech-summary">
+        <div class="abrech-summary-card offen">
+          <div class="abrech-summary-val" id="sum-offen">0,00 €</div>
+          <div class="abrech-summary-label">Gesamt offen</div>
+        </div>
+        <div class="abrech-summary-card bezahlt">
+          <div class="abrech-summary-val" id="sum-bezahlt">0,00 €</div>
+          <div class="abrech-summary-label">Gesamt bezahlt</div>
+        </div>
+        <div class="abrech-summary-card ueberschuss">
+          <div class="abrech-summary-val" id="sum-ueberschuss">0,00 €</div>
+          <div class="abrech-summary-label">Überschuss</div>
+        </div>
+        <div class="abrech-summary-card gesamt">
+          <div class="abrech-summary-val" id="sum-gesamt">0,00 €</div>
+          <div class="abrech-summary-label">Gesamt</div>
+        </div>
+      </div>
+      <div class="section-title">Pro Person <span style="font-size:0.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted);letter-spacing:0;text-transform:none">– antippen zum Zahlung eintragen</span></div>
+      <div id="abrech-content"></div>
+    </div>
+
+    <div id="tab-spiele" class="hidden">
+      <div class="section-title">Spiele anlegen</div>
+      <div class="add-person-row">
+        <input type="text" id="new-spiel-input" placeholder="Neues Teamspiel hinzufügen…" onkeydown="if(event.key==='Enter') addSpielToKatalog()">
+        <button class="add-btn" onclick="addSpielToKatalog()">+ Spiel hinzufügen</button>
+      </div>
+      <div class="spiele-editor" id="spiele-katalog-list" style="margin-top:14px;"></div>
+	  <div class="section-title">Rundengründe anlegen</div>
+		<div class="add-person-row">
+		  <input type="text" id="new-rundengrund-input" placeholder="Neuen Rundengrund hinzufügen…" onkeydown="if(event.key==='Enter') addRoundReasonToKatalog()">
+		  <button class="add-btn" onclick="addRoundReasonToKatalog()">+ Rundengrund hinzufügen</button>
+		</div>
+<div class="spiele-editor" id="rundengruende-katalog-list" style="margin-top:14px;"></div>
+    </div>
+
+    <div id="tab-preise" class="hidden">
+      <div class="section-title">Preise bearbeiten</div>
+      <div class="prices-toolbar">
+        <button class="add-btn" onclick="openDrinkModal()">+ Getränk hinzufügen</button>
+      </div>
+      <div class="prices-editor" id="prices-editor"></div>
+      <button class="save-prices-btn" onclick="savePrices()">💾 Preise speichern & ins Sheet</button>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay hidden" id="reset-modal">
+  <div class="modal">
+    <h3>Alles löschen?</h3>
+    <div class="modal-sub">Dieser Vorgang kann rückgängig gemacht werden (5 Sekunden)</div>
+    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
+      Getränke, Teamspiele, Runden und Zahlungen werden komplett zurückgesetzt.
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeResetModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmReset()">JA, ALLES LÖSCHEN</button>
+    </div>
+  </div>
+</div>
+	
+<div class="modal-overlay hidden" id="assign-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>Seite zuweisen</h3>
+    <div class="modal-sub" id="assign-modal-sub">Person auswählen</div>
+
+    <div class="modal-btns" style="display:grid;grid-template-columns:1fr;gap:10px;">
+      <button class="modal-ok" style="background:var(--t1b_bg);color:var(--t1b);border:1px solid var(--t1b);" onclick="setAssignTarget('T1')">
+        ⚫ Wand
+      </button>
+
+      <button class="modal-ok" style="background:var(--t2b_bg);color:var(--t2b);border:1px solid var(--t2b);" onclick="setAssignTarget('T2')">
+        🔴 TV
+      </button>
+
+      <button class="modal-cancel" onclick="setAssignTarget('')">
+        ↩ Nicht zugewiesen
+      </button>
+
+      <button class="modal-cancel" onclick="closeAssignModal()">
+        Abbrechen
+      </button>
+    </div>
+  </div>
+</div>
+	
+<div id="toast"></div>
+
+<script>
+const APP_VERSION = '20260318-13';
+const APPVersionSelf = '1.0.2.10';
+
+const CLIENT_ID = '1029298059107-pof7pth7mci83hqs369slr8tk60026dj.apps.googleusercontent.com';
+const SHEET_ID  = '1JUCRBvZdmaHjnfF8LUolx5TSSjgwRJHZSoVbJeGpmRk';
+const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
+
+const LOCAL_STATE_KEY = 'kcis_local_state_v6';
+const LOCAL_PENDING_SYNC_KEY = 'kcis_pending_sync_v6';
+const LOCAL_LAST_SYNC_KEY = 'kcis_last_sync_v6';
+
+let DRINKS = [
+  { key: 'kl_bier',  label: 'Kl. Bier' },
+  { key: 'gr_bier',  label: 'Gr. Bier' },
+  { key: 'kl_softd', label: 'Kl. Fanta/Cola' },
+  { key: 'gr_softd', label: 'Gr. Fanta/Cola' },
+  { key: 'malz',     label: 'Malzbier' },
+  { key: 'wasser',   label: 'Wasser' },
+  { key: 'schnaps',  label: 'Schnaps' },
+  { key: 'weizen',   label: 'Weizen' },
+  { key: 'wein',     label: 'Wein/Sekt' }
+];
+
+let SPIELE_KATALOG = ['Tannenbaum','Darts'];
+let RUNDEN_GRUENDE = ['1000er-Runde', '2000er-Runde', 'Geburtstag'];
+
+let persons = [];
+let prices  = {};
+let spiele  = [];
+let tokenClient = null;
+let accessToken = null;
+let modalPerson = null;
+let selectedLoser = null;
+let teamDrinks = {};
+let roundDraftDrinks = {};
+let lastState = null;
+let undoTimer = null;
+let toastTimer = null;
+let assignPerson = null;
+let autoSaveTimer = null;
+let autoSaveRunning = false;
+let autoSaveQueued = false;
+let appReady = false;
+  
+let googleConnected = false;
+let lastSyncAt = '';
+	
+  const sounds = {
+  cash: new Audio('sounds/cash.mp3'),
+  goodbye: new Audio('sounds/goodbye.mp3'),
+  welcome: new Audio('sounds/welcome.mp3')
+};
+
+function playSound(sound) {
+  if (!sound) return;
+  const s = sound.cloneNode();
+  s.volume = 0.7;
+  s.play().catch(() => {});
+}
+	
+// ── AUTH / START ──
+function gapiLoaded() {
+  gapi.load('client', initGapiClient);
+}
+
+async function initGapiClient() {
+  await gapi.client.init({
+    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+  });
+  gisLoaded();
+}
+
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: () => {}
+  });
+  startApp();
+}
+
+async function startApp() {
+  loadLocal();
+  renderAll();
+	updateVersionInfo();
+  updateGoogleStatusUI();
+  appReady = true;
+
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  if (!navigator.onLine) {
+    showToast('📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', 'success');
+    return;
+  }
+
+  if (hasPendingSync()) {
+    showToast('📌 Lokale Änderungen gefunden. Sie werden später synchronisiert.', 'success');
+    return;
+  }
+
+	try {
+	  const ok = await ensureAccessToken(false);
+	  if (ok) {
+		await loadFromSheet();
+		saveLocal(false);
+	  }
+	} catch (e) {
+	  console.error(e);
+	}
+}
+
+function openLoginModal() {
+  document.getElementById('login-modal').classList.remove('hidden');
+}
+
+function closeLoginModal() {
+  document.getElementById('login-modal').classList.add('hidden');
+}
+
+function signIn() {
+  if (!tokenClient) return;
+
+  tokenClient.callback = async (resp) => {
+	if (resp.error) {
+	  googleConnected = false;
+	  accessToken = null;
+	  updateGoogleStatusUI();
+	  showToast('❌ Google-Anmeldung fehlgeschlagen', 'error');
+	  return;
+	}
+
+    accessToken = resp.access_token;
+    closeLoginModal();
+    googleConnected = true;
+    updateGoogleStatusUI();
+	
+    try {
+      if (hasPendingSync()) {
+        await saveToSheet(false, true);
+      } else {
+        await loadFromSheet();
+        saveLocal(false);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('⚠️ Anmeldung ok, aber Sync fehlgeschlagen', 'error');
+    }
+  };
+
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function ensureAccessToken(interactive = false) {
+  return new Promise((resolve) => {
+    if (accessToken) return resolve(true);
+    if (!navigator.onLine || !tokenClient) return resolve(false);
+
+    tokenClient.callback = (resp) => {
+      if (resp && !resp.error && resp.access_token) {
+        accessToken = resp.access_token;
+        googleConnected = true;
+        updateGoogleStatusUI();
+        resolve(true);
+      } else {
+        googleConnected = false;
+        accessToken = null;
+        updateGoogleStatusUI();
+        resolve(false);
+      }
+    };
+
+		try {
+		  tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+		} catch (e) {
+		  googleConnected = false;
+		  accessToken = null;
+		  updateGoogleStatusUI();
+		  resolve(false);
+		}
+  });
+}
+
+function refreshToken() {
+  return new Promise((resolve, reject) => {
+    if (!tokenClient) return reject(new Error('Token client nicht bereit'));
+    tokenClient.callback = (resp) => {
+      if (resp.error) {
+        googleConnected = false;
+        accessToken = null;
+        updateGoogleStatusUI();
+        return reject(resp);
+      }
+      accessToken = resp.access_token;
+      googleConnected = true;
+      updateGoogleStatusUI();
+      resolve(accessToken);
+    };
+    tokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+// ── LOCAL STORAGE ──
+function getSerializableState() {
+  return { persons, spiele, DRINKS, prices, SPIELE_KATALOG, RUNDEN_GRUENDE, selectedLoser, teamDrinks };
+}
+
+function saveLocal(markPending = true) {
+  try {
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(getSerializableState()));
+    if (markPending) localStorage.setItem(LOCAL_PENDING_SYNC_KEY, '1');
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LOCAL_STATE_KEY);
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+
+    persons = Array.isArray(state.persons) ? state.persons : [];
+    spiele = Array.isArray(state.spiele) ? state.spiele : [];
+    DRINKS = Array.isArray(state.DRINKS) && state.DRINKS.length ? state.DRINKS : DRINKS;
+    prices = state.prices || prices;
+    SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
+    RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
+	selectedLoser = state.selectedLoser || null;
+    teamDrinks = state.teamDrinks || {};
+    lastSyncAt = localStorage.getItem(LOCAL_LAST_SYNC_KEY) || '';
+    hydrateState();
+    googleConnected = false;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function hydrateState() {
+  DRINKS.forEach(d => {
+    if (prices[d.key] === undefined) prices[d.key] = 0;
+  });
+
+  persons.forEach(p => {
+    if (!p.drinks) p.drinks = {};
+    if (!Array.isArray(p.rounds)) p.rounds = [];
+    (p.rounds || []).forEach(r => {
+      if (!r.reason) r.reason = '';
+    });
+    if (p.roundExtra === undefined) p.roundExtra = 0;
+
+    DRINKS.forEach(d => {
+      if (p.drinks[d.key] === undefined) p.drinks[d.key] = 0;
+    });
+
+    p.present = !!p.present;
+    p.isGuest = !!p.isGuest;
+    p.tisch = normalizeTisch(p.tisch);
+    p.teamExtra = parseFloat(p.teamExtra || 0) || 0;
+    p.roundExtra = parseFloat(p.roundExtra || 0) || 0;
+    p.paid = parseFloat(p.paid || 0) || 0;
+    p.left = !!p.left;
+    p.leftAt = p.leftAt || '';
+  });
+}
+
+function hasPendingSync() {
+  return localStorage.getItem(LOCAL_PENDING_SYNC_KEY) === '1';
+}
+
+function clearPendingSync() {
+  localStorage.removeItem(LOCAL_PENDING_SYNC_KEY);
+}
+
+function persistState() {
+  if (!appReady) return;
+  saveLocal(true);
+  queueAutoSave();
+}
+
+function queueAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async () => {
+    if (autoSaveRunning) {
+      autoSaveQueued = true;
+      return;
+    }
+
+    // Immer lokal speichern
+    saveLocal(true);
+
+    // Nur direkt ins Sheet schreiben, wenn Google wirklich verbunden ist
+    if (navigator.onLine && accessToken && googleConnected) {
+      await saveToSheet(true, false);
+    }
+  }, 800);
+}
+
+// ── HELPERS ──
+function euros(val) {
+  return (val || 0).toFixed(2).replace('.', ',') + ' €';
+}
+	
+function openAssignModal(personName) {
+  const p = persons.find(x => x.name === personName);
+  if (!p) return;
+
+  assignPerson = p;
+
+  let current = 'aktuell nicht zugewiesen';
+  if (p.tisch === 'T1') current = 'aktuell bei ⚫ Wand';
+  if (p.tisch === 'T2') current = 'aktuell bei 🔴 TV';
+
+  document.getElementById('assign-modal-sub').textContent = `${p.name} ist ${current}`;
+  document.getElementById('assign-modal').classList.remove('hidden');
+}
+
+function closeAssignModal() {
+  document.getElementById('assign-modal').classList.add('hidden');
+  assignPerson = null;
+}
+
+function setAssignTarget(target) {
+  if (!assignPerson) return;
+
+  assignPerson.tisch = normalizeTisch(target);
+  closeAssignModal();
+  renderAll();
+  persistState();
+}	
+	
+function updateVersionInfo() {
+  const el = document.getElementById('versionInfo');
+  if (!el) return;
+
+  el.textContent = 'Version: ' + APPVersionSelf;
+}
+	
+function formatDateTime(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('de-DE', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
+function formatTime(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return '';
+  return d.toLocaleTimeString('de-DE', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
+function updateHeaderDateTime() {
+  const el = document.getElementById('header-datetime');
+  if (!el) return;
+  el.textContent = new Date().toLocaleString('de-DE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+function makeDrinkKey(label) {
+  const key = label.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return key || ('drink_' + Date.now());
+}
+
+function normalizeTisch(value) {
+  return value === 'T1' || value === 'T2' ? value : '';
+}
+
+function getMembers() { return persons.filter(p => !p.isGuest); }
+function getGuests() { return persons.filter(p => p.isGuest); }
+function getPresentMembers() { return persons.filter(p => p.present && !p.isGuest); }
+function getPresentGuests() { return persons.filter(p => p.present && p.isGuest); }
+function getPresentNotLeftPeople() { return persons.filter(p => p.present && !p.left); }
+function getSpielDisplayName(spiel) { return spiel.spieltyp || 'Teamspiel'; }
+
+function getPersonOpenAmount(p) {
+  return Math.max(0, calcTotal(p) - (p.paid || 0));
+}
+
+function getPersonOverpayAmount(p) {
+  return Math.max(0, (p.paid || 0) - calcTotal(p));
+}
+
+function isFullyPaid(p) {
+  return getPersonOpenAmount(p) <= 0.01;
+}
+
+function columnLetter(colNum) {
+  let temp = '';
+  let n = colNum;
+  while (n > 0) {
+    let rem = (n - 1) % 26;
+    temp = String.fromCharCode(65 + rem) + temp;
+    n = Math.floor((n - 1) / 26);
+  }
+  return temp;
+}
+
+function escapeForJs(str) {
+  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function describeRoundDrinks(drinksObj) {
+  return DRINKS
+    .filter(d => (drinksObj[d.key] || 0) > 0)
+    .map(d => `${drinksObj[d.key]}x ${d.label}`)
+    .join(', ');
+}
+
+function calcRoundTotal(drinksObj) {
+  return DRINKS.reduce((sum, d) => sum + ((drinksObj[d.key] || 0) * (prices[d.key] || 0)), 0);
+}
+
+function getPersonTeamspielBreakdown(p) {
+  const result = [];
+  spiele.forEach(s => {
+    if ((s.members || []).includes(p.name)) {
+      result.push({ spieltyp: getSpielDisplayName(s), betrag: s.proKopf || 0 });
+    }
+  });
+  return result;
+}
+  
+function updateGoogleStatusUI() {
+  const btn = document.getElementById('googleStatusBtn');
+  const info = document.getElementById('googleSyncInfo');
+  if (!btn || !info) return;
+
+  const connected = !!accessToken && navigator.onLine && googleConnected;
+
+  btn.classList.remove('connected', 'disconnected');
+  btn.classList.add(connected ? 'connected' : 'disconnected');
+  btn.textContent = connected
+    ? '🌍 - mit Google verbunden'
+    : '🛑 - keine Verbindung mit Google';
+
+  info.textContent = 'Letzte Synchronisation mit Google: ' + (lastSyncAt ? formatDateTime(lastSyncAt) : '–');
+}
+function getAvatarFileCandidates(name) {
+  const clean = String(name || '').trim();
+
+  const normalized = clean
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const base = normalized
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return [
+    `bilder/${base}.jpg`,
+    `bilder/${base}.jpeg`,
+    `bilder/${base}.png`,
+    `bilder/${base}.webp`
+  ];
+}
+
+function getAvatarHtml(name) {
+  const initials = String(name || '')
+    .split(' ')
+    .map(n => n[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const candidates = getAvatarFileCandidates(name);
+  const fallback = `<span class="person-avatar-fallback">${initials}</span>`;
+
+  const imgTag = `
+    <img
+      src="${candidates[0]}"
+      alt="${name}"
+      onerror="
+        if(this.dataset.tryIndex===undefined){this.dataset.tryIndex='0';}
+        var files = ${JSON.stringify(candidates).replace(/"/g, '&quot;')};
+        var next = parseInt(this.dataset.tryIndex,10) + 1;
+        if(next < files.length){
+          this.dataset.tryIndex = String(next);
+          this.src = files[next];
+        } else {
+          this.remove();
+          var fb = this.parentNode.querySelector('.person-avatar-fallback');
+          if(fb) fb.style.display='flex';
+        }
+      "
+    >
+  `;
+
+  return `
+    <div class="person-avatar">
+      ${imgTag}
+      <span class="person-avatar-fallback" style="display:none;">${initials}</span>
+    </div>
+  `;
+}
+	
+// ── SHEET SETUP ──
+async function ensureSheetSetup() {
+  const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const sheets = meta.result.sheets.map(s => s.properties.title);
+  const reqs = [];
+
+  if (!sheets.includes('Abrechnung')) reqs.push({ addSheet: { properties: { title: 'Abrechnung' } } });
+  if (!sheets.includes('Preise')) reqs.push({ addSheet: { properties: { title: 'Preise' } } });
+  if (!sheets.includes('Teamspiele')) reqs.push({ addSheet: { properties: { title: 'Teamspiele' } } });
+  if (!sheets.includes('Spiele')) reqs.push({ addSheet: { properties: { title: 'Spiele' } } });
+
+  if (reqs.length) {
+    await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      resource: { requests: reqs }
+    });
+  }
+}
+
+async function writeSpielKatalogToSheet() {
+  const maxLen = Math.max(SPIELE_KATALOG.length, RUNDEN_GRUENDE.length);
+
+  const rows = [['Spielname', 'Rundengrund']];
+  for (let i = 0; i < maxLen; i++) {
+    rows.push([
+      SPIELE_KATALOG[i] || '',
+      RUNDEN_GRUENDE[i] || ''
+    ]);
+  }
+
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: 'Spiele!A1:B300',
+    valueInputOption: 'RAW',
+    resource: { values: rows }
+  });
+}
+
+async function writeHeadersToSheet() {
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: 'Abrechnung!A1:ZZ1',
+    valueInputOption: 'RAW',
+    resource: {
+      values: [[
+        'Name','Typ','Anwesend','Tisch',
+        ...DRINKS.map(d => d.label),
+        'Team-Extra','Runde-Extra','Gesamt','Bezahlt','Weg','Weg seit','Runden-Details'
+      ]]
+    }
+  });
+
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: 'Preise!A1:C300',
+    valueInputOption: 'RAW',
+    resource: { values: [['Key', 'Getränk', 'Preis'], ...DRINKS.map(d => [d.key, d.label, (prices[d.key] || 0).toFixed(2)])] }
+  });
+
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: 'Teamspiele!A1:E300',
+    valueInputOption: 'RAW',
+    resource: { values: [['Nr', 'Spieltyp', 'Verlierer', 'Gesamt', 'Daten']] }
+  });
+
+  await writeSpielKatalogToSheet();
+}
+
+// ── LOAD ──
+async function loadFromSheet() {
+  try { await ensureSheetSetup(); } catch (e) { console.error(e); }
+
+  try {
+    const pr = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'Preise!A2:C300'
+    });
+
+    const rows = pr.result.values || [];
+    if (rows.length) {
+      const loadedDrinks = [];
+      const loadedPrices = {};
+
+      rows.forEach(r => {
+        const key = (r[0] || '').trim();
+        const label = (r[1] || '').trim();
+        const price = parseFloat((r[2] || '0').toString().replace(',', '.')) || 0;
+        if (!key || !label) return;
+        loadedDrinks.push({ key, label });
+        loadedPrices[key] = price;
+      });
+
+      if (loadedDrinks.length) {
+        DRINKS = loadedDrinks;
+        prices = loadedPrices;
+      }
+    }
+
+    DRINKS.forEach(d => {
+      if (prices[d.key] === undefined) prices[d.key] = 0;
+    });
+  } catch (e) { console.error(e); }
+
+  try {
+		const sk = await gapi.client.sheets.spreadsheets.values.get({
+		  spreadsheetId: SHEET_ID,
+		  range: 'Spiele!A2:B300'
+		});
+		const rows = sk.result.values || [];
+
+		const loadedSpiele = rows.map(r => (r[0] || '').trim()).filter(Boolean);
+		const loadedGruende = rows.map(r => (r[1] || '').trim()).filter(Boolean);
+
+		if (loadedSpiele.length) SPIELE_KATALOG = loadedSpiele;
+		if (loadedGruende.length) RUNDEN_GRUENDE = loadedGruende;
+  } catch (e) { console.error(e); }
+
+  try { await writeHeadersToSheet(); } catch (e) { console.error(e); }
+
+  try {
+    const ab = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'Abrechnung!A2:ZZ300'
+    });
+
+    persons = [];
+
+    (ab.result.values || []).forEach(r => {
+      if (!r[0]) return;
+
+      const name = r[0] || '';
+      const isGuest = (r[1] || '').toUpperCase() === 'GAST';
+      const present = r[2] === 'TRUE';
+      const tisch = normalizeTisch(r[3] || '');
+      const drinks = {};
+
+      DRINKS.forEach((d, i) => {
+        drinks[d.key] = parseInt(r[4 + i] || '0') || 0;
+      });
+
+      const teamExtraIndex = 4 + DRINKS.length;
+      const roundExtraIndex = teamExtraIndex + 1;
+      const paidIndex = teamExtraIndex + 3;
+      const leftIndex = teamExtraIndex + 4;
+      const leftAtIndex = teamExtraIndex + 5;
+      const roundsDetailsIndex = teamExtraIndex + 6;
+
+      let rounds = [];
+      if (r[roundsDetailsIndex]) {
+        try { rounds = JSON.parse(r[roundsDetailsIndex]); } catch (e) { rounds = []; }
+      }
+
+      persons.push({
+        name,
+        isGuest,
+        present,
+        tisch,
+        drinks,
+        teamExtra: parseFloat(r[teamExtraIndex] || '0') || 0,
+        roundExtra: parseFloat(r[roundExtraIndex] || '0') || 0,
+        paid: parseFloat(r[paidIndex] || '0') || 0,
+        left: r[leftIndex] === 'TRUE',
+        leftAt: r[leftAtIndex] || '',
+        rounds
+      });
+    });
+  } catch (e) { console.error(e); }
+
+  try {
+    const sp = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'Teamspiele!A2:E300'
+    });
+
+    spiele = [];
+    (sp.result.values || []).forEach(r => {
+      if (!r[4]) return;
+      try { spiele.push(JSON.parse(r[4])); } catch (e) {}
+    });
+  } catch (e) { console.error(e); }
+  
+  googleConnected = true;
+  lastSyncAt = new Date().toISOString();
+  localStorage.setItem(LOCAL_LAST_SYNC_KEY, lastSyncAt);
+  hydrateState();
+  renderAll();
+  updateGoogleStatusUI();
+}
+
+// ── SAVE ──
+async function saveToSheet(isAutoSave = false, showSuccessToast = true) {
+  saveLocal(true);
+
+  if (!navigator.onLine) {
+    if (showSuccessToast) showToast('📴 Offline gespeichert. Sync folgt später.', 'success');
+    return;
+  }
+
+  if (autoSaveRunning) {
+    autoSaveQueued = true;
+    return;
+  }
+
+  let ok = !!(navigator.onLine && accessToken && googleConnected);
+
+  if (!ok && !isAutoSave) {
+    ok = await ensureAccessToken(true);
+  }
+
+  if (!ok) {
+    if (!isAutoSave && showSuccessToast) {
+      showToast('📌 Lokal gespeichert. Nicht mit Google verbunden.', 'success');
+    }
+    return;
+  }
+
+  autoSaveRunning = true;
+
+  const btn = document.getElementById('saveBtn');
+  if (btn) {
+    btn.classList.add('loading');
+    btn.textContent = isAutoSave ? '⏳ AutoSave…' : '⏳ Speichern…';
+  }
+
+  try {
+    recalcTeamExtras();
+    await writeHeadersToSheet();
+
+    const rows = persons.map(p => {
+      const total = calcTotal(p);
+      return [
+        p.name,
+        p.isGuest ? 'GAST' : 'MITGLIED',
+        p.present ? 'TRUE' : 'FALSE',
+        p.tisch,
+        ...DRINKS.map(d => p.drinks[d.key] || 0),
+        (p.teamExtra || 0).toFixed(2),
+        (p.roundExtra || 0).toFixed(2),
+        total.toFixed(2),
+        (p.paid || 0).toFixed(2),
+        p.left ? 'TRUE' : 'FALSE',
+        p.leftAt || '',
+        JSON.stringify(p.rounds || [])
+      ];
+    });
+
+    await gapi.client.sheets.spreadsheets.values.clear({
+      spreadsheetId: SHEET_ID,
+      range: 'Abrechnung!A2:ZZ300'
+    });
+
+    if (rows.length) {
+      const lastCol = columnLetter(4 + DRINKS.length + 7);
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `Abrechnung!A2:${lastCol}${rows.length + 1}`,
+        valueInputOption: 'RAW',
+        resource: { values: rows }
+      });
+    }
+
+    await gapi.client.sheets.spreadsheets.values.clear({
+      spreadsheetId: SHEET_ID,
+      range: 'Teamspiele!A2:E300'
+    });
+
+    if (spiele.length) {
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `Teamspiele!A2:E${spiele.length + 1}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: spiele.map((s, i) => [
+            i + 1,
+            s.spieltyp || '',
+            s.loser,
+            (s.total || 0).toFixed(2),
+            JSON.stringify(s)
+          ])
+        }
+      });
+    }
+
+    clearPendingSync();    
+	googleConnected = true;
+    lastSyncAt = new Date().toISOString();
+    localStorage.setItem(LOCAL_LAST_SYNC_KEY, lastSyncAt);
+    updateGoogleStatusUI();
+    saveLocal(false);
+    closeLoginModal();
+
+    if (showSuccessToast) {
+      showToast(isAutoSave ? '✅ Automatisch synchronisiert' : '✅ Gespeichert!', 'success');
+    }
+  } catch (e) {
+    console.error(e);
+    googleConnected = false;
+    updateGoogleStatusUI();
+    showToast(isAutoSave ? '❌ AutoSync fehlgeschlagen' : '❌ Fehler beim Speichern', 'error');
+  } finally {
+    autoSaveRunning = false;
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.textContent = '💾 Speichern';
+    }
+
+    if (autoSaveQueued) {
+      autoSaveQueued = false;
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(async () => {
+        await saveToSheet(true, false);
+      }, 400);
+    }
+  }
+}
+
+async function savePrices() {
+  DRINKS.forEach(d => {
+    const el = document.getElementById('price-input-' + d.key);
+    if (el) prices[d.key] = parseFloat(String(el.value).replace(',', '.')) || 0;
+  });
+
+  recalcTeamExtras();
+  renderAll();
+  persistState();
+  showToast('✅ Preise gespeichert!', 'success');
+}
+
+// ── ARCHIVE ──
+async function archiveSheet() {
+  if (!confirm('Abend abschließen?\nEine Kopie wird mit dem heutigen Datum erstellt.')) return;
+
+  try {
+    await saveToSheet(false, true);
+
+    const ok = await ensureAccessToken(true);
+    if (!ok) {
+      showToast('❌ Für Archiv bitte mit Google anmelden', 'error');
+      return;
+    }
+
+    await refreshToken();
+
+    const now = new Date();
+    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${SHEET_ID}/copy?supportsAllDrives=true`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: `${d}_Getränke KC IS` })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert('Google Drive Fehler:\n' + (result.error?.message || 'Unbekannter Fehler'));
+      showToast('❌ Fehler beim Archivieren', 'error');
+      return;
+    }
+
+    showToast(`📁 Archiv erstellt: ${d}_Getränke KC IS`, 'success');
+  } catch (e) {
+    alert('Archivieren fehlgeschlagen:\n' + e.message);
+    showToast('❌ Fehler beim Archivieren', 'error');
+  }
+}
+
+// ── CALC ──
+function calcDrinksTotal(p) {
+  return DRINKS.reduce((s, d) => s + (p.drinks[d.key] || 0) * (prices[d.key] || 0), 0);
+}
+
+function calcRoundsTotal(p) {
+  return (p.rounds || []).reduce((sum, r) => sum + (r.total || 0), 0);
+}
+
+function calcTotal(p) {
+  return calcDrinksTotal(p) + (p.teamExtra || 0) + (p.roundExtra || 0);
+}
+
+function recalcTeamExtras() {
+  persons.forEach(p => {
+    p.teamExtra = 0;
+    p.roundExtra = calcRoundsTotal(p);
+  });
+
+  spiele.forEach(s => {
+    const total = DRINKS.reduce((sum, d) => sum + (s.drinks[d.key] || 0) * (prices[d.key] || 0), 0);
+    s.total = total;
+    s.proKopf = (s.members && s.members.length) ? total / s.members.length : 0;
+
+    (s.members || []).forEach(name => {
+      const p = persons.find(x => x.name === name);
+      if (p) p.teamExtra = (p.teamExtra || 0) + s.proKopf;
+    });
+  });
+}
+
+// ── RENDER ──
+function renderAll() {
+  recalcTeamExtras();
+  updateHeaderDateTime();
+  updateStats();
+  renderAnwesenheit();
+  renderGruppen();
+  renderGetraenke();
+  renderTeamspiele();
+  renderRunden();
+  renderAbrechnung();
+  renderPreisEditor();
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  renderRoundReasonSelect();
+  renderRoundReasonsKatalog();
+}
+
+function updateStats() {
+  const present = persons.filter(p => p.present);
+  const bezahlt = present.reduce((s, p) => s + (p.paid || 0), 0);
+  const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
+  const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
+  const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
+
+  document.getElementById('stat-anwesend').textContent = present.length;
+  document.getElementById('stat-t1').textContent = present.filter(p => p.tisch === 'T1').length;
+  document.getElementById('stat-t2').textContent = present.filter(p => p.tisch === 'T2').length;
+  document.getElementById('stat-offen').textContent = euros(offen);
+  document.getElementById('stat-bezahlt').textContent = euros(bezahlt);
+  document.getElementById('stat-ueberschuss').textContent = euros(ueberschuss);
+  document.getElementById('stat-gesamt').textContent = euros(gesamt);
+}
+
+function renderPersonCards(targetId, list) {
+  const g = document.getElementById(targetId);
+  g.innerHTML = '';
+
+  const sorted = list.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  if (!sorted.length) {
+    g.innerHTML = `<div style="font-size:0.8rem;color:var(--muted);padding:8px 0;">Noch niemand vorhanden</div>`;
+    return;
+  }
+
+sorted.forEach(p => {
+  const c = document.createElement('div');
+  c.className = 'person-card' + (p.present ? ' present' : ' absent') + (p.isGuest ? ' guest' : '');
+  const avatarHtml = getAvatarHtml(p.name);
+
+  let badgeClass = p.present ? 'present-badge' : 'absent-badge';
+  let badgeText = p.present ? 'DA' : 'FEHLT';
+
+  if (p.present && p.left) {
+    badgeClass = 'left-badge';
+    badgeText = 'RAUS';
+  }
+
+  c.innerHTML = `
+    <button class="person-delete-btn" onclick="deletePerson('${escapeForJs(p.name)}'); event.stopPropagation();">✕</button>
+    ${avatarHtml}
+    <div class="person-name">${p.name}</div>
+    <div class="person-role">${p.isGuest ? 'Gastkegler' : 'Mitglied'}</div>
+    <div class="${badgeClass}">${badgeText}</div>
+  `;
+
+c.onclick = () => {
+  const wasPresent = !!p.present;
+
+  p.present = !p.present;
+
+  if (!wasPresent && p.present) {
+    playSound(sounds.welcome);
+  }
+
+  if (!p.present) {
+    p.tisch = '';
+    p.left = false;
+    p.leftAt = '';
+  }
+
+  renderAll();
+  persistState();
+};
+
+    g.appendChild(c);
+  });
+}
+
+function renderAnwesenheit() {
+  renderPersonCards('persons-grid-members', getMembers());
+  renderPersonCards('persons-grid-guests', getGuests());
+}
+
+function renderGruppen() {
+  const present = persons.filter(p => p.present).map(p => {
+    p.tisch = normalizeTisch(p.tisch);
+    return p;
+  });
+
+  const unEl = document.getElementById('unassigned-list');
+  unEl.innerHTML = '';
+
+  const un = present.filter(p => !p.tisch).sort((a, b) => {
+    if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+
+  if (!un.length) {
+    unEl.innerHTML = '<span style="font-size:0.75rem;color:var(--green)">✅ Alle zugewiesen</span>';
+  }
+
+un.forEach(p => {
+  const c = document.createElement('div');
+  c.className = 'unassigned-chip' + (p.isGuest ? ' guest' : '');
+  c.textContent = p.name;
+  c.onclick = () => openAssignModal(p.name);
+  unEl.appendChild(c);
+});
+
+  const t1El = document.getElementById('gruppe-t1');
+  t1El.innerHTML = '';
+present.filter(p => p.tisch === 'T1').sort((a, b) => {
+  if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+  return a.name.localeCompare(b.name, 'de');
+}).forEach(p => {
+  const c = document.createElement('div');
+  c.className = 'gruppe-chip' + (p.isGuest ? ' guest' : '');
+  c.innerHTML = `${p.name} <span style="opacity:0.5;font-size:0.7rem">⚙ ändern</span>`;
+  c.onclick = () => openAssignModal(p.name);
+  t1El.appendChild(c);
+});
+  if (!present.find(p => p.tisch === 'T1')) t1El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
+
+  const t2El = document.getElementById('gruppe-t2');
+  t2El.innerHTML = '';
+present.filter(p => p.tisch === 'T2').sort((a, b) => {
+  if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+  return a.name.localeCompare(b.name, 'de');
+}).forEach(p => {
+  const c = document.createElement('div');
+  c.className = 'gruppe-chip' + (p.isGuest ? ' guest' : '');
+  c.innerHTML = `${p.name} <span style="opacity:0.5;font-size:0.7rem">⚙ ändern</span>`;
+  c.onclick = () => openAssignModal(p.name);
+  t2El.appendChild(c);
+});
+  if (!present.find(p => p.tisch === 'T2')) t2El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
+}
+
+function renderDrinkRows(list, body, startIndex = 0) {
+  let rowIndex = startIndex;
+
+  list.forEach(p => {
+    const tr = document.createElement('tr');
+    const isAlt = rowIndex % 2 === 1;
+    tr.className = isAlt ? 'alt-row' : '';
+
+    const leftClass = p.left ? 'left-state' : '';
+    const leftEmoji = p.left ? '<span class="left-emoji">​🏡​</span>' : '';
+
+    const tl = p.tisch
+      ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫ Wand' : '🔴 TV'}</span>`
+      : `<span class="ptisch">Kein Team</span>`;
+	  
+const avatarHtml = getAvatarHtml(p.name)
+  .replace('class="person-avatar"', 'class="table-avatar"');
+	  
+    let html = `
+<td class="sticky-col">
+  <div class="person-cell ${leftClass}">
+    <div class="table-person-inline">
+      ${avatarHtml}
+      <div style="min-width:0;">
+        <span class="pname">${leftEmoji}${p.name}</span>
+        ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
+        ${tl}
+      </div>
+    </div>
+  </div>
+</td>
+    `;
+
+    DRINKS.forEach(d => {
+      const v = p.drinks[d.key] || 0;
+      const disabled = p.left ? 'disabled' : '';
+      html += `
+        <td>
+          <div class="counter">
+            <button class="counter-btn minus" ${disabled} onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
+            <span class="counter-val">${v}</span>
+            <button class="counter-btn plus" ${disabled} onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
+          </div>
+        </td>
+      `;
+    });
+
+    const te = p.teamExtra || 0;
+    const re = p.roundExtra || 0;
+    const paid = p.paid || 0;
+
+    html += `<td style="color:${te > 0 ? 'var(--accent2)' : '#000'};font-weight:700;font-size:0.85rem">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    html += `<td class="round-cell ${re > 0 ? '' : 'zero'}">${re > 0 ? '+' + re.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    html += `<td class="total-cell">${calcTotal(p).toFixed(2).replace('.', ',')}€</td>`;
+    html += `<td class="paid-cell ${paid > 0 ? '' : 'zero'}">${paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+
+    tr.innerHTML = html;
+    body.appendChild(tr);
+    rowIndex++;
+  });
+
+  return rowIndex;
+}
+
+function renderGetraenke() {
+  const members = getPresentMembers().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const guests = getPresentGuests().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  document.getElementById('drinks-header').innerHTML =
+    '<th class="sticky-col">Name</th>' +
+    DRINKS.map(d => `<th>${d.label}</th>`).join('') +
+    '<th>Strafen+</th><th>Runde+</th><th>Gesamt</th><th>Bezahlt</th>';
+
+  const body = document.getElementById('drinks-body');
+  body.innerHTML = '';
+
+  let rowIndex = 0;
+  rowIndex = renderDrinkRows(members, body, rowIndex);
+
+  if (members.length && guests.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'guest-separator-row';
+    sep.innerHTML = `<td colspan="${DRINKS.length + 5}">Gastkegler</td>`;
+    body.appendChild(sep);
+  }
+
+  rowIndex = renderDrinkRows(guests, body, rowIndex);
+
+  if (!members.length && !guests.length) {
+    body.innerHTML = `<tr><td colspan="${DRINKS.length + 5}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+  }
+}
+
+function changeDrink(name, key, delta) {
+  const p = persons.find(x => x.name === name);
+  if (!p || p.left) return;
+  if (!p.drinks) p.drinks = {};
+
+  p.drinks[key] = Math.max(0, (p.drinks[key] || 0) + delta);
+  renderGetraenke();
+  updateStats();
+  renderAbrechnung();
+  persistState();
+}
+
+// ── RUNDE GEBEN ──
+function openRoundModal() {
+  const select = document.getElementById('round-person-select');
+  const list = getPresentNotLeftPeople().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+	renderRoundReasonSelect();
+
+  roundDraftDrinks = {};
+  DRINKS.forEach(d => roundDraftDrinks[d.key] = 0);
+
+  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+  list.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+
+  document.getElementById('round-drinks-area').classList.add('hidden');
+  document.getElementById('round-total-display').textContent = '0,00 €';
+  document.getElementById('round-modal').classList.remove('hidden');
+}
+
+function closeRoundModal() {
+  document.getElementById('round-modal').classList.add('hidden');
+}
+
+function handleRoundPersonChange() {
+  const selected = document.getElementById('round-person-select').value;
+  const area = document.getElementById('round-drinks-area');
+  const grid = document.getElementById('round-drinks-grid');
+
+  if (!selected) {
+    area.classList.add('hidden');
+    grid.innerHTML = '';
+    return;
+  }
+
+  area.classList.remove('hidden');
+  grid.innerHTML = '';
+
+  DRINKS.forEach(d => {
+    const v = roundDraftDrinks[d.key] || 0;
+    const row = document.createElement('div');
+    row.className = 'round-drink-row';
+    row.innerHTML = `
+      <span class="round-drink-name">${d.label}</span>
+      <div class="counter">
+        <button class="counter-btn minus" onclick="changeRoundDrink('${escapeForJs(d.key)}',-1)">−</button>
+        <span class="counter-val" id="round-count-${d.key}">${v}</span>
+        <button class="counter-btn plus" onclick="changeRoundDrink('${escapeForJs(d.key)}',1)">+</button>
+      </div>
+    `;
+    grid.appendChild(row);
+  });
+
+  updateRoundTotalDisplay();
+}
+
+function changeRoundDrink(key, delta) {
+  roundDraftDrinks[key] = Math.max(0, (roundDraftDrinks[key] || 0) + delta);
+  const el = document.getElementById('round-count-' + key);
+  if (el) el.textContent = roundDraftDrinks[key];
+  updateRoundTotalDisplay();
+}
+
+function updateRoundTotalDisplay() {
+  document.getElementById('round-total-display').textContent = euros(calcRoundTotal(roundDraftDrinks));
+}
+
+function confirmGiveRound() {
+  const personName = document.getElementById('round-person-select').value.trim();
+  const roundReason = (document.getElementById('round-reason-select')?.value || '').trim();
+  if (!personName) {
+    showToast('Bitte erst auswählen, wer die Runde gibt', 'error');
+    return;
+  }
+
+  if (!DRINKS.some(d => (roundDraftDrinks[d.key] || 0) > 0)) {
+    showToast('Bitte mindestens ein Getränk eintragen', 'error');
+    return;
+  }
+
+  const p = persons.find(x => x.name === personName);
+  if (!p) {
+    showToast('Person nicht gefunden', 'error');
+    return;
+  }
+
+  if (!Array.isArray(p.rounds)) p.rounds = [];
+
+	if (!roundReason) {
+	  showToast('Bitte einen Grund auswählen', 'error');
+	  return;
+	}
+
+  const roundTotal = calcRoundTotal(roundDraftDrinks);
+  p.rounds.push({
+	reason: roundReason,
+    drinks: { ...roundDraftDrinks },
+    total: roundTotal,
+    createdAt: new Date().toISOString()
+  });
+
+  p.roundExtra = calcRoundsTotal(p);
+
+  closeRoundModal();
+  renderAll();
+  showToast(`🍻 Runde auf ${p.name} gebucht`, 'success');
+  persistState();
+}
+
+function renderRunden() {
+  const list = document.getElementById('runden-list');
+  list.innerHTML = '';
+
+  const entries = [];
+  persons.forEach(p => {
+    (p.rounds || []).forEach((r, idx) => {
+      entries.push({
+        person: p.name,
+        tisch: p.tisch,
+        isGuest: p.isGuest,
+        round: r,
+        idx
+      });
+    });
+  });
+
+  entries.sort((a, b) => new Date(b.round.createdAt || 0) - new Date(a.round.createdAt || 0));
+
+  if (!entries.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Runden gebucht</div>';
+    return;
+  }
+
+  entries.forEach(entry => {
+    const c = document.createElement('div');
+    c.className = 'spiel-card';
+    c.innerHTML = `
+      <div class="spiel-info">
+        <div class="spiel-verlierer round">🍻 ${entry.person} hat eine Runde gegeben</div>
+		<div class="spiel-detail"><strong>${entry.round.reason || 'Ohne Grund'}</strong></div>
+        <div class="spiel-detail">${describeRoundDrinks(entry.round.drinks) || 'Keine Getränke'}</div>
+        <div class="spiel-detail">${entry.round.createdAt ? formatDateTime(entry.round.createdAt) : ''}</div>
+      </div>
+      <div>
+        <div class="spiel-betrag round">${(entry.round.total || 0).toFixed(2).replace('.', ',')}€</div>
+      </div>
+      <button class="del-spiel-btn" onclick="deleteRound('${escapeForJs(entry.person)}', ${entry.idx})">✕</button>
+    `;
+    list.appendChild(c);
+  });
+}
+
+function deleteRound(personName, roundIndex) {
+  const p = persons.find(x => x.name === personName);
+  if (!p || !Array.isArray(p.rounds)) return;
+  p.rounds.splice(roundIndex, 1);
+  p.roundExtra = calcRoundsTotal(p);
+  renderAll();
+  persistState();
+  showToast('🗑️ Runde gelöscht', 'success');
+}
+
+// ── TEAMSPIELE ──
+function selectLoser(t) {
+  selectedLoser = t;
+  document.getElementById('team-btn-t1').classList.toggle('active', t === 'T1');
+  document.getElementById('team-btn-t2').classList.toggle('active', t === 'T2');
+  updateTeamInfoBox();
+  saveLocal(true);
+}
+
+function getActiveTeamMembers(teamKey) {
+  return persons.filter(p => p.present && p.tisch === teamKey && !p.left);
+}
+
+function updateTeamInfoBox() {
+  const box = document.getElementById('team-info-box');
+  if (!selectedLoser) {
+    box.innerHTML = 'Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.';
+    return;
+  }
+
+  const members = getActiveTeamMembers(selectedLoser);
+  const teamName = selectedLoser === 'T1' ? '⚫ Wand' : '🔴 TV';
+
+  box.innerHTML = `<strong>${teamName}</strong><br>Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name).join(', ') : 'niemand'}`;
+}
+
+function renderTeamspiele() {
+  const g = document.getElementById('team-drinks-grid');
+  g.innerHTML = '';
+
+  updateTeamInfoBox();
+
+  DRINKS.forEach(d => {
+    const v = teamDrinks[d.key] || 0;
+    const r = document.createElement('div');
+    r.className = 'team-drink-row';
+    r.innerHTML = `
+      <span class="team-drink-name">${d.label}</span>
+      <div class="counter">
+        <button class="counter-btn minus" onclick="changeTeamDrink('${escapeForJs(d.key)}',-1)">−</button>
+        <span class="counter-val" id="td-${d.key}">${v}</span>
+        <button class="counter-btn plus" onclick="changeTeamDrink('${escapeForJs(d.key)}',1)">+</button>
+      </div>
+    `;
+    g.appendChild(r);
+  });
+
+  const list = document.getElementById('spiele-list');
+  list.innerHTML = '';
+
+  if (!spiele.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Spiele eingetragen</div>';
+    return;
+  }
+
+  spiele.forEach((s, i) => {
+    const di = DRINKS
+      .filter(d => (s.drinks[d.key] || 0) > 0)
+      .map(d => `${s.drinks[d.key]}x ${d.label}`)
+      .join(', ');
+
+    const displayMembers = (s.members || []).join(', ');
+
+    const c = document.createElement('div');
+    c.className = 'spiel-card';
+    c.innerHTML = `
+      <div class="spiel-info">
+        <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? '⚫ Wand' : '🔴 TV'} hat verloren</div>
+        <div class="spiel-detail"><strong>${getSpielDisplayName(s)}</strong></div>
+        <div class="spiel-detail">${di || 'Keine Getränke'}</div>
+        <div class="spiel-detail">Aufgeteilt auf: ${displayMembers || '?'}</div>
+      </div>
+      <div>
+        <div class="spiel-betrag">${(s.total || 0).toFixed(2).replace('.', ',')}€</div>
+        <div class="spiel-pro-kopf">${(s.proKopf || 0).toFixed(2).replace('.', ',')}€/Person</div>
+      </div>
+      <button class="del-spiel-btn" onclick="deleteSpiel(${i})">✕</button>
+    `;
+    list.appendChild(c);
+  });
+}
+
+function changeTeamDrink(key, delta) {
+  teamDrinks[key] = Math.max(0, (teamDrinks[key] || 0) + delta);
+  const el = document.getElementById('td-' + key);
+  if (el) el.textContent = teamDrinks[key];
+  saveLocal(true);
+}
+
+function addSpiel() {
+  if (!selectedLoser) {
+    showToast('Bitte zuerst Verlierer-Team wählen!', 'error');
+    return;
+  }
+
+  const spieltyp = (document.getElementById('spieltyp-select')?.value || '').trim();
+  if (!spieltyp) {
+    showToast('Bitte zuerst ein Spiel auswählen!', 'error');
+    return;
+  }
+
+  if (!DRINKS.some(d => (teamDrinks[d.key] || 0) > 0)) {
+    showToast('Bitte mindestens ein Getränk eintragen!', 'error');
+    return;
+  }
+
+  const members = getActiveTeamMembers(selectedLoser);
+  if (!members.length) {
+    showToast('Keine aktiven Spieler mehr im Verlierer-Team', 'error');
+    return;
+  }
+
+  const total = DRINKS.reduce((s, d) => s + (teamDrinks[d.key] || 0) * (prices[d.key] || 0), 0);
+
+  spiele.push({
+    spieltyp,
+    loser: selectedLoser,
+    drinks: { ...teamDrinks },
+    total,
+    proKopf: members.length ? total / members.length : 0,
+    members: members.map(m => m.name)
+  });
+
+  teamDrinks = {};
+  selectedLoser = null;
+  document.getElementById('team-btn-t1').classList.remove('active');
+  document.getElementById('team-btn-t2').classList.remove('active');
+
+  renderAll();
+  showToast('⚽ Spiel hinzugefügt!', 'success');
+  persistState();
+}
+
+function deleteSpiel(i) {
+  spiele.splice(i, 1);
+  renderAll();
+  persistState();
+}
+
+// ── ABRECHNUNG ──
+function createAbrechGrid(list) {
+  const grid = document.createElement('div');
+  grid.className = 'abrech-grid';
+
+  list.forEach(p => {
+    const total = calcTotal(p);
+    const pd = p.paid || 0;
+    const rest = getPersonOpenAmount(p);
+    const over = getPersonOverpayAmount(p);
+    const fullyPaid = isFullyPaid(p);
+    const left = !!p.left;
+
+const c = document.createElement('div');
+const abrechAvatarHtml = getAvatarHtml(p.name)
+  .replace('class="person-avatar"', 'class="abrech-avatar"');
+	  
+let statusClass = ' open';
+if (fullyPaid) statusClass = ' paid';
+if (left) statusClass = ' left';
+
+c.className = 'abrech-card '
+  + (p.tisch || '').toLowerCase()
+  + (p.isGuest ? ' guest' : '')
+  + statusClass;
+
+    const items = DRINKS
+      .filter(d => (p.drinks[d.key] || 0) > 0)
+      .map(d => `<div class="abrech-item"><span>${p.drinks[d.key]}x ${d.label}</span><span>${((p.drinks[d.key] || 0) * (prices[d.key] || 0)).toFixed(2).replace('.', ',')}€</span></div>`)
+      .join('');
+
+    const teamLine = (p.teamExtra || 0) > 0
+      ? `<div class="abrech-item"><span>⚽ Strafen</span><span style="color:var(--accent2)">+${(p.teamExtra || 0).toFixed(2).replace('.', ',')}€</span></div>`
+      : '';
+
+	const roundLines = (p.rounds || []).map(r => `
+	  <div class="abrech-item">
+		<span>🍻 ${r.reason || 'Ohne Grund'}: ${describeRoundDrinks(r.drinks)}</span>
+		<span style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')}€</span>
+	  </div>
+	`).join('');
+
+    c.innerHTML = `
+      <div class="abrech-head">
+  ${abrechAvatarHtml}
+  <div class="abrech-head-text">
+    <div class="abrech-name">${p.name}</div>
+    ${p.isGuest ? '<div class="abrech-role">Gastkegler</div>' : ''}
+  </div>
+</div>
+      <div class="abrech-tisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
+      <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
+      ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
+      ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
+      ${over > 0.01 ? `<div class="abrech-ueberschuss">Überschuss: ${over.toFixed(2).replace('.', ',')}€</div>` : ''}
+      ${fullyPaid ? '<div class="abrech-paid-info">✅ Komplett bezahlt</div>' : ''}
+      ${left ? `<div class="abrech-left-info">🚪 Weg seit ${formatTime(p.leftAt)}</div>` : ''}
+      <div class="abrech-items">${items}${teamLine}${roundLines}${!items && !teamLine && !roundLines ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
+      <div class="tap-hint">${left && p.leftAt ? `Weg markiert: ${formatDateTime(p.leftAt)}` : 'Antippen → Zahlung eintragen'}</div>
+    `;
+
+    c.onclick = () => openPaymentModal(p);
+    grid.appendChild(c);
+  });
+
+  return grid;
+}
+
+function renderRoundReasonSelect() {
+  const sel = document.getElementById('round-reason-select');
+  if (!sel) return;
+
+  sel.innerHTML = '<option value="">Bitte Grund wählen</option>';
+
+  if (!RUNDEN_GRUENDE.length) {
+    sel.innerHTML = '<option value="">Kein Grund angelegt</option>';
+    return;
+  }
+
+  RUNDEN_GRUENDE.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderRoundReasonsKatalog() {
+  const el = document.getElementById('rundengruende-katalog-list');
+  if (!el) return;
+
+  el.innerHTML = '';
+
+  if (!RUNDEN_GRUENDE.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch keine Rundengründe angelegt</div>';
+    return;
+  }
+
+  RUNDEN_GRUENDE.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const card = document.createElement('div');
+    card.className = 'spiel-edit-card';
+    card.innerHTML = `
+      <label>${name}</label>
+      <button class="delete-drink-btn" onclick="deleteRoundReasonFromKatalog('${escapeForJs(name)}')">✕</button>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function renderAbrechnung() {
+  const present = persons.filter(p => p.present);
+
+  const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
+  const bezahlt = present.reduce((s, p) => s + (p.paid || 0), 0);
+  const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
+  const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
+
+  document.getElementById('sum-offen').textContent = euros(offen);
+  document.getElementById('sum-bezahlt').textContent = euros(bezahlt);
+  document.getElementById('sum-ueberschuss').textContent = euros(ueberschuss);
+  document.getElementById('sum-gesamt').textContent = euros(gesamt);
+
+  const members = getPresentMembers().sort((a, b) => {
+    if (!!a.left !== !!b.left) return a.left ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+
+  const guests = getPresentGuests().sort((a, b) => {
+    if (!!a.left !== !!b.left) return a.left ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+
+  const wrap = document.getElementById('abrech-content');
+  wrap.innerHTML = '';
+
+  if (members.length) wrap.appendChild(createAbrechGrid(members));
+
+  if (guests.length) {
+    const sep = document.createElement('div');
+    sep.className = 'abrech-guest-separator';
+    sep.textContent = 'Gastkegler';
+    wrap.appendChild(sep);
+    wrap.appendChild(createAbrechGrid(guests));
+  }
+
+  if (!members.length && !guests.length) {
+    wrap.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Niemand anwesend</div>';
+  }
+}
+
+// ── PAYMENT MODAL ──
+function renderModalTeamspielBreakdown(p) {
+  const el = document.getElementById('modal-teamspiele-breakdown');
+  const breakdown = getPersonTeamspielBreakdown(p);
+
+  if (!breakdown.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+      Verlorene Teamspiele
+    </div>
+    <div style="display:grid;gap:6px;">
+      ${breakdown.map(item => `
+        <div class="modal-meta-row">
+          <span>${item.spieltyp}</span>
+          <strong style="color:var(--accent2)">+${item.betrag.toFixed(2).replace('.', ',')} €</strong>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderModalRoundsBreakdown(p) {
+  const el = document.getElementById('modal-runden-breakdown');
+  const rounds = p.rounds || [];
+
+  if (!rounds.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+      Runde gegeben
+    </div>
+    <div style="display:grid;gap:6px;">
+      ${rounds.map(r => `
+        <div class="modal-meta-row" style="align-items:flex-start;">
+			<span style="max-width:70%;">${r.reason ? r.reason + ': ' : ''}${describeRoundDrinks(r.drinks)}</span>
+          <strong style="color:var(--round)">+${(r.total || 0).toFixed(2).replace('.', ',')} €</strong>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function openPaymentModal(p) {
+  modalPerson = p;
+  const total = calcTotal(p);
+  const paid = p.paid || 0;
+  const open = getPersonOpenAmount(p);
+
+  document.getElementById('modal-name').textContent = p.name;
+  document.getElementById('modal-due').textContent = total.toFixed(2).replace('.', ',') + ' €';
+  document.getElementById('modal-total-display').textContent = euros(total);
+  document.getElementById('modal-paid-display').textContent = euros(paid);
+  document.getElementById('modal-open-display').textContent = euros(open);
+  document.getElementById('modal-leftat-display').textContent = p.leftAt ? formatDateTime(p.leftAt) : '—';
+  document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
+  document.getElementById('modal-left-check').checked = !!p.left;
+
+  renderModalTeamspielBreakdown(p);
+  renderModalRoundsBreakdown(p);
+  updateModalRest();
+
+  document.getElementById('payment-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modal-paid-input').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('payment-modal').classList.add('hidden');
+  modalPerson = null;
+}
+
+function updateModalRest() {
+  if (!modalPerson) return;
+  const total = calcTotal(modalPerson);
+  const paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
+  const diff = total - paid;
+  const el = document.getElementById('modal-rest-display');
+
+  if (Math.abs(diff) <= 0.005) {
+    el.textContent = '✅ Exakt bezahlt';
+    el.className = 'modal-rest pos';
+  } else if (diff > 0) {
+    el.textContent = `Noch offen: ${diff.toFixed(2).replace('.', ',')} €`;
+    el.className = 'modal-rest neg';
+  } else {
+    el.textContent = `Überschuss: ${Math.abs(diff).toFixed(2).replace('.', ',')} €`;
+    el.className = 'modal-rest over';
+  }
+}
+
+function confirmPayment() {
+  if (!modalPerson) return;
+
+  const oldPaid = parseFloat(modalPerson.paid || 0) || 0;
+  const oldLeft = !!modalPerson.left;
+
+  const newPaid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
+  const newLeft = document.getElementById('modal-left-check').checked;
+
+  modalPerson.paid = newPaid;
+  modalPerson.left = newLeft;
+
+  if (!oldLeft && newLeft) modalPerson.leftAt = new Date().toISOString();
+  if (oldLeft && !newLeft) modalPerson.leftAt = '';
+
+  closeModal();
+  updateStats();
+  renderAbrechnung();
+  renderAnwesenheit();
+  renderTeamspiele();
+  renderRunden();
+  renderGetraenke();
+
+  if (newPaid !== oldPaid) {
+    playSound(sounds.cash);
+  }
+
+  if (!oldLeft && newLeft) {
+    playSound(sounds.goodbye);
+  }
+
+  showToast('✅ Zahlung gespeichert', 'success');
+  persistState();
+}
+
+// ── RUNDENGRUENDE ──
+function addRoundReasonToKatalog() {
+  const input = document.getElementById('new-rundengrund-input');
+  const name = (input.value || '').trim();
+  if (!name) return;
+
+  if (RUNDEN_GRUENDE.find(s => s.toLowerCase() === name.toLowerCase())) {
+    showToast('Grund existiert bereits', 'error');
+    return;
+  }
+
+  RUNDEN_GRUENDE.push(name);
+  input.value = '';
+  renderRoundReasonSelect();
+  renderRoundReasonsKatalog();
+  showToast('✅ Rundengrund hinzugefügt', 'success');
+  persistState();
+}
+
+function deleteRoundReasonFromKatalog(name) {
+  const used = persons.some(p => (p.rounds || []).some(r => (r.reason || '') === name));
+  if (used) {
+    showToast('Grund kann nicht gelöscht werden, da er bereits verwendet wurde', 'error');
+    return;
+  }
+
+  if (!confirm(`Rundengrund "${name}" wirklich löschen?`)) return;
+
+  RUNDEN_GRUENDE = RUNDEN_GRUENDE.filter(s => s !== name);
+  renderRoundReasonSelect();
+  renderRoundReasonsKatalog();
+  showToast('🗑️ Rundengrund gelöscht', 'success');
+  persistState();
+}
+
+// ── PREISE ──
+function renderPreisEditor() {
+  const ed = document.getElementById('prices-editor');
+  ed.innerHTML = '';
+
+  DRINKS.forEach(d => {
+    const c = document.createElement('div');
+    c.className = 'price-edit-card';
+    c.innerHTML = `
+      <label>${d.label}</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" step="0.10" min="0" class="price-input" id="price-input-${d.key}" value="${(prices[d.key] || 0).toFixed(2)}" placeholder="0.00">
+        <button class="delete-drink-btn" onclick="deleteDrink('${escapeForJs(d.key)}')" title="Getränk löschen">✕</button>
+      </div>
+    `;
+    ed.appendChild(c);
+  });
+}
+
+function openDrinkModal() {
+  document.getElementById('new-drink-name').value = '';
+  document.getElementById('new-drink-price').value = '';
+  document.getElementById('drink-modal').classList.remove('hidden');
+}
+
+function closeDrinkModal() {
+  document.getElementById('drink-modal').classList.add('hidden');
+}
+
+function confirmAddDrink() {
+  const name = document.getElementById('new-drink-name').value.trim();
+  const price = parseFloat(String(document.getElementById('new-drink-price').value).replace(',', '.')) || 0;
+
+  if (!name) {
+    showToast('Bitte Getränkenamen eingeben', 'error');
+    return;
+  }
+
+  if (DRINKS.find(d => d.label.toLowerCase() === name.toLowerCase())) {
+    showToast('Getränk existiert bereits', 'error');
+    return;
+  }
+
+  let key = makeDrinkKey(name);
+  while (DRINKS.find(d => d.key === key)) key = key + '_' + Math.floor(Math.random() * 1000);
+
+  DRINKS.push({ key, label: name });
+  prices[key] = price;
+
+  persons.forEach(p => {
+    if (!p.drinks) p.drinks = {};
+    p.drinks[key] = 0;
+  });
+
+  closeDrinkModal();
+  renderAll();
+  showToast('✅ Getränk hinzugefügt', 'success');
+  persistState();
+}
+
+function deleteDrink(key) {
+  const drink = DRINKS.find(d => d.key === key);
+  if (!drink) return;
+
+  const used = persons.some(p => (p.drinks && (p.drinks[key] || 0) > 0));
+  const usedInTeam = spiele.some(s => (s.drinks && (s.drinks[key] || 0) > 0));
+  const usedInRounds = persons.some(p => (p.rounds || []).some(r => (r.drinks && (r.drinks[key] || 0) > 0)));
+
+  if (used || usedInTeam || usedInRounds) {
+    showToast('Getränk kann nicht gelöscht werden, weil bereits Buchungen existieren', 'error');
+    return;
+  }
+
+  if (!confirm(`Getränk "${drink.label}" wirklich löschen?`)) return;
+
+  DRINKS = DRINKS.filter(d => d.key !== key);
+  delete prices[key];
+
+  persons.forEach(p => {
+    if (p.drinks && key in p.drinks) delete p.drinks[key];
+  });
+
+  Object.keys(teamDrinks).forEach(k => {
+    if (k === key) delete teamDrinks[k];
+  });
+
+  renderAll();
+  showToast('🗑️ Getränk gelöscht', 'success');
+  persistState();
+}
+
+// ── SPIELE KATALOG ──
+function renderSpieltypSelect() {
+  const sel = document.getElementById('spieltyp-select');
+  if (!sel) return;
+
+  sel.innerHTML = '';
+
+  if (!SPIELE_KATALOG.length) {
+    sel.innerHTML = '<option value="">Kein Spiel angelegt</option>';
+    return;
+  }
+
+  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderSpieleKatalog() {
+  const el = document.getElementById('spiele-katalog-list');
+  el.innerHTML = '';
+
+  if (!SPIELE_KATALOG.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch keine Spiele angelegt</div>';
+    return;
+  }
+
+  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
+    const card = document.createElement('div');
+    card.className = 'spiel-edit-card';
+    card.innerHTML = `
+      <label>${name}</label>
+      <button class="delete-drink-btn" onclick="deleteSpielFromKatalog('${escapeForJs(name)}')">✕</button>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function addSpielToKatalog() {
+  const input = document.getElementById('new-spiel-input');
+  const name = (input.value || '').trim();
+  if (!name) return;
+
+  if (SPIELE_KATALOG.find(s => s.toLowerCase() === name.toLowerCase())) {
+    showToast('Spiel existiert bereits', 'error');
+    return;
+  }
+
+  SPIELE_KATALOG.push(name);
+  input.value = '';
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  showToast('✅ Spiel hinzugefügt', 'success');
+  persistState();
+}
+
+function deleteSpielFromKatalog(name) {
+  const used = spiele.some(s => (s.spieltyp || '') === name);
+  if (used) {
+    showToast('Spiel kann nicht gelöscht werden, da es bereits verwendet wurde', 'error');
+    return;
+  }
+
+  if (!confirm(`Spiel "${name}" wirklich löschen?`)) return;
+
+  SPIELE_KATALOG = SPIELE_KATALOG.filter(s => s !== name);
+  renderSpieltypSelect();
+  renderSpieleKatalog();
+  showToast('🗑️ Spiel gelöscht', 'success');
+  persistState();
+}
+
+// ── PERSONEN ──
+function addPerson(isGuest) {
+  const input = document.getElementById(isGuest ? 'new-guest-input' : 'new-person-input');
+  const name = input.value.trim();
+  if (!name) return;
+
+  if (persons.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+    showToast('Name existiert bereits', 'error');
+    return;
+  }
+
+  const drinks = {};
+  DRINKS.forEach(d => drinks[d.key] = 0);
+
+  persons.push({
+    name,
+    isGuest: !!isGuest,
+    present: true,
+    tisch: '',
+    drinks,
+    paid: 0,
+    teamExtra: 0,
+    roundExtra: 0,
+    rounds: [],
+    left: false,
+    leftAt: ''
+  });
+
+  input.value = '';
+  renderAll();
+  showToast(`✅ ${name} hinzugefügt`, 'success');
+  persistState();
+}
+
+function deletePerson(name) {
+  const p = persons.find(x => x.name === name);
+  if (!p) return;
+
+  const typeLabel = p.isGuest ? 'Gastkegler' : 'Mitglied';
+  if (!confirm(`${typeLabel} "${p.name}" wirklich löschen?`)) return;
+
+  persons = persons.filter(x => x.name !== name);
+  spiele = spiele
+    .map(s => ({ ...s, members: (s.members || []).filter(m => m !== name) }))
+    .filter(s => (s.members || []).length > 0);
+
+  renderAll();
+  showToast('🗑️ Person gelöscht', 'success');
+  persistState();
+}
+
+// ── TABS ──
+function showTab(name, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  el.classList.add('active');
+}
+
+// ── RESET / UNDO ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+
+  toastTimer = setTimeout(() => {
+    t.className = '';
+    setTimeout(() => { t.textContent = ''; }, 250);
+  }, 2600);
+}
+
+function showUndoToast() {
+  const t = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  t.innerHTML = `🧨 Alles gelöscht <button onclick="undoReset()" style="margin-left:10px;padding:4px 8px;border-radius:6px;border:none;background:var(--green);font-weight:700;cursor:pointer;">Undo</button>`;
+  t.className = 'show success';
+
+  toastTimer = setTimeout(() => {
+    t.className = '';
+    setTimeout(() => { t.innerHTML = ''; }, 250);
+  }, 5000);
+}
+
+function openResetModal() {
+  document.getElementById('reset-modal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.add('hidden');
+}
+
+function confirmReset() {
+  lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG, RUNDEN_GRUENDE, selectedLoser, teamDrinks });
+
+  persons.forEach(p => {
+    Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
+    p.paid = 0;
+    p.teamExtra = 0;
+    p.roundExtra = 0;
+    p.rounds = [];
+    p.left = false;
+    p.leftAt = '';
+    p.present = false;
+    p.tisch = '';
+  });
+
+  spiele = [];
+  teamDrinks = {};
+  selectedLoser = null;
+  roundDraftDrinks = {};
+
+  closeResetModal();
+  renderAll();
+  showUndoToast();
+  persistState();
+
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => { lastState = null; }, 5000);
+}
+
+function undoReset() {
+  if (!lastState) return;
+
+  const state = JSON.parse(lastState);
+  persons = state.persons || [];
+  spiele = state.spiele || [];
+  DRINKS = state.DRINKS || DRINKS;
+  prices = state.prices || prices;
+  SPIELE_KATALOG = state.SPIELE_KATALOG || SPIELE_KATALOG;
+  RUNDEN_GRUENDE = state.RUNDEN_GRUENDE || RUNDEN_GRUENDE;
+  selectedLoser = state.selectedLoser || null;
+  teamDrinks = state.teamDrinks || {};
+
+  hydrateState();
+  renderAll();
+  showToast('↩️ Wiederhergestellt!', 'success');
+  lastState = null;
+  persistState();
+}
+
+// ── NETWORK EVENTS ──
+window.addEventListener('online', async () => {
+  try {
+    showToast('🌐 Wieder online. Prüfe Google-Verbindung…', 'success');
+
+    const ok = await ensureAccessToken(false);
+    updateGoogleStatusUI();
+
+    if (ok && hasPendingSync()) {
+      await saveToSheet(true, false);
+      showToast('✅ Lokale Änderungen wurden synchronisiert', 'success');
+    } else if (hasPendingSync()) {
+      showToast('📌 Lokale Änderungen bleiben gespeichert, bis Google wieder verbunden ist.', 'success');
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Online, aber Synchronisierung gerade nicht möglich', 'error');
+  }
+});
+
+window.addEventListener('offline', () => {
+  googleConnected = false;
+  updateGoogleStatusUI();
+  showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
+});
+
+updateHeaderDateTime();
+updateGoogleStatusUI();
+setInterval(updateHeaderDateTime, 1000);
+</script>
+
+<script src="https://apis.google.com/js/api.js?v=20260318-v13" onload="gapiLoaded()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js?v=20260318-v13');
+
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    } catch (err) {
+      console.log('SW registration failed:', err);
+    }
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyClS5Mby1bZ39Olgra0bEvV273_c5FRTck",
+    authDomain: "kegelclub-invaliden-schwadron.firebaseapp.com",
+    projectId: "kegelclub-invaliden-schwadron",
+    storageBucket: "kegelclub-invaliden-schwadron.firebasestorage.app",
+    messagingSenderId: "1013015505267",
+    appId: "1:1013015505267:web:6cc65bae12a4337cd8fd06",
+    measurementId: "G-F4T56N61BF"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  async function testFirestore() {
+    try {
+      await setDoc(doc(db, "events", "testabend"), {
+        date: "2026-03-23",
+        year: 2026,
+        month: 3,
+        status: "open",
+        test: true
+      });
+
+      const snap = await getDoc(doc(db, "events", "testabend"));
+      console.log("Firestore läuft:", snap.data());
+    } catch (err) {
+      console.error("Firestore-Fehler:", err);
+    }
+  }
+
+  testFirestore();
+	
+</script>
+</body>
+</html>
