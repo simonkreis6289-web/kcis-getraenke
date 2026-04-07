@@ -2274,7 +2274,7 @@ function getAvatarHtml(name) {
   `;
 }
 	
-// ── SHEET SETUP ──
+// ── PREISE SPEICHERN ──
 async function savePrices() {
   DRINKS.forEach(d => {
     const el = document.getElementById('price-input-' + d.key);
@@ -2743,7 +2743,7 @@ function selectLoser(t) {
   document.getElementById('team-btn-t1').classList.toggle('active', t === 'T1');
   document.getElementById('team-btn-t2').classList.toggle('active', t === 'T2');
   updateTeamInfoBox();
-  saveLocal();
+  persistState();
 }
 
 function getActiveTeamMembers(teamKey) {
@@ -2823,7 +2823,7 @@ function changeTeamDrink(key, delta) {
   teamDrinks[key] = Math.max(0, (teamDrinks[key] || 0) + delta);
   const el = document.getElementById('td-' + key);
   if (el) el.textContent = teamDrinks[key];
-  saveLocal();
+  persistState();
 }
 
 function addSpiel() {
