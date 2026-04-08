@@ -747,6 +747,22 @@
       font-size: 0.95rem;
       color: #000000;
     }
+      
+    .drink-edit-row .counter-btn {
+      width: 44px;
+      height: 44px;
+      font-size: 1.4rem;
+      border-radius: 12px;
+    }
+
+    .drink-edit-row .counter-val {
+      min-width: 30px;
+      font-size: 1.2rem;
+    }
+
+    .drink-edit-row {
+      padding: 12px 14px;
+    }
 
     .paid-cell {
       font-family: 'Bebas Neue', sans-serif;
@@ -1859,7 +1875,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.2.10';
+const APPVersionSelf = '1.0.2.20';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -2811,7 +2827,6 @@ const avatarHtml = getAvatarHtml(p.name)
 
     DRINKS.forEach(d => {
       const v = p.drinks[d.key] || 0;
-      const disabled = p.left ? 'disabled' : '';
         html += `
           <td>
             <span class="counter-val">${v}</span>
@@ -2835,7 +2850,14 @@ const avatarHtml = getAvatarHtml(p.name)
 
   return rowIndex;
 }
-
+    
+function closeDrinkEditModal() {
+  document.getElementById('drink-edit-modal').classList.add('hidden');
+  document.getElementById('drink-edit-list').innerHTML = '';
+  drinkEditPerson = null;
+  drinkEditDraft = {};
+}
+    
 function renderGetraenke() {
   const members = getPresentMembers().sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const guests = getPresentGuests().sort((a, b) => a.name.localeCompare(b.name, 'de'));
@@ -2878,8 +2900,9 @@ function changeDrink(name, key, delta) {
 }
     
 function openDrinkEditModal(name) {
-  const p = persons.find(x => x.name === name);
-  if (!p) return;
+    const p = persons.find(x => x.name === name);
+    if (!p) return;
+    if (p.left) return;
 
   drinkEditPerson = p;
 
@@ -2896,7 +2919,7 @@ function openDrinkEditModal(name) {
 
   DRINKS.forEach(d => {
     const row = document.createElement('div');
-    row.className = 'round-drink-row';
+    row.className = 'round-drink-row drink-edit-row';
 
     row.innerHTML = `
       <span class="round-drink-name">${d.label}</span>
