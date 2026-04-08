@@ -2296,16 +2296,74 @@ async function closeDrinksAndExportPDF() {
     const doc = await generateDrinksPDF(snapshot);
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = `KCIS_${ACTIVE_CLUB.replace(/\s+/g, '_')}_Getraenkeabrechnung_${dateStr}.pdf`;
+    const filename = `KCIS_Getraenkeabrechnung_${dateStr}.pdf`;
 
-    // lokal speichern
+    // PDF speichern
     doc.save(filename);
 
-    showToast('✅ PDF wurde erstellt', 'success');
+    // 🔥 Abend in Firestore archivieren
+    await archiveEvent(snapshot);
+
+    // 🧼 Daten zurücksetzen
+    resetAfterClosing();
+
+    showToast('✅ Abend abgeschlossen & gespeichert', 'success');
+
   } catch (err) {
     console.error(err);
-    showToast('❌ PDF-Erstellung fehlgeschlagen', 'error');
+    showToast('❌ Fehler beim Abschließen', 'error');
   }
+}
+    
+async function archiveEvent(snapshot) {
+  if (!window.firestoreApi) return;
+
+  const dateId = new Date().toISOString().replace(/[:.]/g, '-');
+
+  try {
+    await window.firestoreApi.saveCurrentEvent(
+      'archive_' + dateId,
+      {
+        ...snapshot,
+        status: 'closed',
+        closedAt: new Date().toISOString(),
+        club: ACTIVE_CLUB,
+        category: 'getraenke'
+      }
+    );
+  } catch (e) {
+    console.error('Archivieren fehlgeschlagen:', e);
+    throw e;
+  }
+}
+
+function resetAfterClosing() {
+  persons.forEach(p => {
+    Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
+
+    // Nur Getränke-Zahlung zurücksetzen
+    // Falls Zahlungen später getrennt sein sollen, paid erstmal NICHT löschen
+    // p.paid bleibt bestehen
+
+    // Strafen / Runden bleiben bestehen
+    // p.teamExtra bleibt
+    // p.roundExtra bleibt
+    // p.rounds bleiben
+
+    // Anwesenheit ruhig zurücksetzen für neuen Abend
+    p.left = false;
+    p.leftAt = '';
+    p.present = false;
+    p.tisch = '';
+  });
+
+  // Teamspiel-Entwurf und Rundeneingabe zurücksetzen
+  teamDrinks = {};
+  selectedLoser = null;
+  roundDraftDrinks = {};
+
+  renderAll();
+  persistState();
 }
     
 // ── HELPERS ──
