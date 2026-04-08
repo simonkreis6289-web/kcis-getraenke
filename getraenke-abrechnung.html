@@ -1840,12 +1840,26 @@
     </div>
   </div>
 </div>
-	
+    
+	<div class="modal-overlay hidden" id="drink-edit-modal">
+  <div class="modal">
+    <h3 id="drink-edit-name">Name</h3>
+    <div class="modal-sub">Getränke bearbeiten</div>
+
+    <div id="drink-edit-list" class="round-drinks-grid"></div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeDrinkEditModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmDrinkEdit()">✓ Übernehmen</button>
+    </div>
+  </div>
+</div>
+    
 <div id="toast"></div>
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.2.0.0';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -1865,7 +1879,8 @@ let DRINKS = [
 
 let SPIELE_KATALOG = ['Tannenbaum','Darts'];
 let RUNDEN_GRUENDE = ['1000er-Runde', '2000er-Runde', 'Geburtstag'];
-
+let drinkEditPerson = null;
+let drinkEditDraft = {};
 let persons = [];
 let prices  = {};
 let spiele  = [];
@@ -2764,6 +2779,8 @@ function renderDrinkRows(list, body, startIndex = 0) {
 
   list.forEach(p => {
     const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.onclick = () => openDrinkEditModal(p.name);
     const isAlt = rowIndex % 2 === 1;
     tr.className = isAlt ? 'alt-row' : '';
 
@@ -2795,15 +2812,11 @@ const avatarHtml = getAvatarHtml(p.name)
     DRINKS.forEach(d => {
       const v = p.drinks[d.key] || 0;
       const disabled = p.left ? 'disabled' : '';
-      html += `
-        <td>
-          <div class="counter">
-            <button class="counter-btn minus" ${disabled} onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
+        html += `
+          <td>
             <span class="counter-val">${v}</span>
-            <button class="counter-btn plus" ${disabled} onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
-          </div>
-        </td>
-      `;
+          </td>
+        `;
     });
 
     const te = p.teamExtra || 0;
@@ -2863,7 +2876,71 @@ function changeDrink(name, key, delta) {
   renderAbrechnung();
   persistState();
 }
+    
+function openDrinkEditModal(name) {
+  const p = persons.find(x => x.name === name);
+  if (!p) return;
 
+  drinkEditPerson = p;
+
+  // Kopie der aktuellen Getränke
+  drinkEditDraft = {};
+  DRINKS.forEach(d => {
+    drinkEditDraft[d.key] = p.drinks[d.key] || 0;
+  });
+
+  document.getElementById('drink-edit-name').textContent = p.name;
+
+  const list = document.getElementById('drink-edit-list');
+  list.innerHTML = '';
+
+  DRINKS.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'round-drink-row';
+
+    row.innerHTML = `
+      <span class="round-drink-name">${d.label}</span>
+      <div class="counter">
+        <button class="counter-btn minus" onclick="changeDrinkEdit('${d.key}', -1)">−</button>
+        <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
+        <button class="counter-btn plus" onclick="changeDrinkEdit('${d.key}', 1)">+</button>
+      </div>
+    `;
+
+    list.appendChild(row);
+  });
+
+  document.getElementById('drink-edit-modal').classList.remove('hidden');
+}
+    
+function changeDrinkEdit(key, delta) {
+  drinkEditDraft[key] = Math.max(0, (drinkEditDraft[key] || 0) + delta);
+
+  const el = document.getElementById('drink-edit-' + key);
+  if (el) el.textContent = drinkEditDraft[key];
+}
+    
+function confirmDrinkEdit() {
+  if (!drinkEditPerson) return;
+
+  DRINKS.forEach(d => {
+    drinkEditPerson.drinks[d.key] = drinkEditDraft[d.key] || 0;
+  });
+
+  closeDrinkEditModal();
+
+  renderGetraenke();
+  updateStats();
+  renderAbrechnung();
+  persistState();
+
+  showToast('🍺 Getränke aktualisiert', 'success');
+}  
+    
+function closeDrinkEditModal() {
+  document.getElementById('drink-edit-modal').classList.add('hidden');
+  drinkEditPerson = null;
+}
 // ── RUNDE GEBEN ──
 function openRoundModal() {
   const select = document.getElementById('round-person-select');
