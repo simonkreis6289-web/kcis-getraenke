@@ -1875,7 +1875,7 @@
 
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.2.20';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -2900,16 +2900,15 @@ function changeDrink(name, key, delta) {
 }
     
 function openDrinkEditModal(name) {
-    const p = persons.find(x => x.name === name);
-    if (!p) return;
-    if (p.left) return;
+  const p = persons.find(x => x.name === name);
+  if (!p) return;
+  if (p.left) return;
 
   drinkEditPerson = p;
 
-  // Kopie der aktuellen Getränke
   drinkEditDraft = {};
   DRINKS.forEach(d => {
-    drinkEditDraft[d.key] = p.drinks[d.key] || 0;
+    drinkEditDraft[d.key] = 0;
   });
 
   document.getElementById('drink-edit-name').textContent = p.name;
@@ -2925,7 +2924,7 @@ function openDrinkEditModal(name) {
       <span class="round-drink-name">${d.label}</span>
       <div class="counter">
         <button class="counter-btn minus" onclick="changeDrinkEdit('${d.key}', -1)">−</button>
-        <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
+        <span class="counter-val" id="drink-edit-${d.key}">0</span>
         <button class="counter-btn plus" onclick="changeDrinkEdit('${d.key}', 1)">+</button>
       </div>
     `;
@@ -2935,7 +2934,8 @@ function openDrinkEditModal(name) {
 
   document.getElementById('drink-edit-modal').classList.remove('hidden');
 }
-    
+
+
 function changeDrinkEdit(key, delta) {
   drinkEditDraft[key] = Math.max(0, (drinkEditDraft[key] || 0) + delta);
 
@@ -2946,8 +2946,13 @@ function changeDrinkEdit(key, delta) {
 function confirmDrinkEdit() {
   if (!drinkEditPerson) return;
 
+  let hasChanges = false;
+
   DRINKS.forEach(d => {
-    drinkEditPerson.drinks[d.key] = drinkEditDraft[d.key] || 0;
+    const addValue = drinkEditDraft[d.key] || 0;
+    if (addValue > 0) hasChanges = true;
+
+    drinkEditPerson.drinks[d.key] = (drinkEditPerson.drinks[d.key] || 0) + addValue;
   });
 
   closeDrinkEditModal();
@@ -2957,13 +2962,16 @@ function confirmDrinkEdit() {
   renderAbrechnung();
   persistState();
 
-  showToast('🍺 Getränke aktualisiert', 'success');
-}  
-    
+  showToast(hasChanges ? '🍺 Getränke hinzugefügt' : 'Keine Getränke hinzugefügt', 'success');
+}
+
 function closeDrinkEditModal() {
   document.getElementById('drink-edit-modal').classList.add('hidden');
+  document.getElementById('drink-edit-list').innerHTML = '';
   drinkEditPerson = null;
+  drinkEditDraft = {};
 }
+    
 // ── RUNDE GEBEN ──
 function openRoundModal() {
   const select = document.getElementById('round-person-select');
