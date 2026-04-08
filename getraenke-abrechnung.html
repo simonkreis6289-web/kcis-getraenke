@@ -2304,13 +2304,19 @@ async function closeDrinksAndExportPDF() {
 
   const dateStr = new Date().toISOString().slice(0, 10);
   const filename = `KCIS_Getraenkeabrechnung_${dateStr}.pdf`;
-
   const blob = doc.output('blob');
 
-  // lokal speichern
+  const folderPath = getDropboxFolderPath(ACTIVE_CLUB, 'Getränke');
+  const folderOk = await ensureDropboxFolder(folderPath);
+
+  if (!folderOk) {
+    showToast('❌ Dropbox-Ordner konnte nicht erstellt werden', 'error');
+    return;
+  }
+
+  // optional lokal speichern
   doc.save(filename);
 
-  // in Dropbox ablegen
   await uploadPDFToDropbox(blob, filename, ACTIVE_CLUB, 'Getränke');
 }
     
@@ -2352,7 +2358,10 @@ async function closeDrinksAndExportPDF() {
 async function uploadPDFToDropbox(blob, filename, clubName = 'Kegelclub 1', type = 'Getränke') {
   const ACCESS_TOKEN = 'sl.u.AGYF2e803yhlOZwJUnoG6_bMcm8rh2vGuXBNnFxToIUvkn1TIVhZhFC7t7Bxas3XNMr__wP3YcD_bS2DXi97I3_h6kB_sJzXKRBX9oE__2DN8yb8AH2FPTpOXBVpVhRNIGc1OMtVCosfp_PDYAAuRHbcZYQ1LpRsx1cZm9FsTLZtCSwaDwmvqaPhMdzAiB3PT40PxbIBeKyLenS7NfZIL4ULiyMxyeEAj-VKXUvtdRooUnp2ZM2LpxZuKZAvdij7mpDLsv0HB1MtkmyNmJW634l58j978eZe-DzGckABV-7Jyp1Bymm4qFxQf1FaztqFmucyCGL2pVt_pj1sBSjTr6xSyZUcthfgNy0zNx7dOuiNaJ1dGGMrIGTlxjS-K6gM_AtkKRp7V8Rc7qujScp5PSZA2zPEQfiILmIaBQLhq89kMuFyvrtJrenfS4Hb51w5gwWvMIqKmIrcTAIlRXa4W-2EsYGVHbJI1wzxn6QvRR1I8Z36nFepSdNjzHCqKhH51cET-8NY4qXgxP0vbkbn5oop2Hn9A3Lz2RTD20RaQnzZ4g-g7UuATV_Rf2P4HLbBdw45ehOrpKp_R4VMwwAaVkSH1hmFZKPWLOelDgV4fDsUQ9b8T5G7lX_4JLhpL1HYXcq1k8_NayRBIwMDGfReoXX-mwGtElA0u0YbPIZId8kkk5gvKZv5vFUU1ozZv17goCv0wJpb_9l8r5TcgW3Dfaz3Wj5rc40M_asoR4Rev_8mEgGmxCtF8Up-KYO7P87YKoXSju-KgffKyNhROD74h5vK3cNvRHjGMCgDd7iDS9R84L2iGEFjL_2A-ZmaDxKAQXMgflndyiHW8fs8RkrXm0u916hJbaizBzU8MKXqooJ4MrUlI_pvqJPQjndWKjdeQ4644FQ2K_K5PbA7vLCNkDise_rCxACTDIAEDQeusPEXfCtei0Er5WDoEObqhpyoSwvqHILJ7H4eQtIXltVhcFA-TqlP9ruI0zb0q2ov6cFnPw1UngOX462Ls9eEIublcGqwzEuPHpe38ewyHLvM5D35op71WrKXS6TvFCj4tQvBh0DjXY7WBLwvqXNT5zQqGBo7cdfOE2_-6Q7uOJB-KicsCyRkENzKcgWdZSpCd2YaBEKbfP-d_hkGo7_EpbvXEnG_ZLi_jW_lgJsMWiIyiFlZFpHZGUVkWhvtA-0P94hXTdw9Oz1r54PDRFPm7SZCiCOeQ18OX1qxiryb4o0K7L71tIh6DApJ0p4uI5YE7TaL3XmdltVhqqv5flhmas_V2xCVgE5X0jtKVBMBs4zy_s9M';
 
-try {
+async function uploadPDFToDropbox(blob, filename, clubName = 'Kegelclub 1', type = 'Getränke') {
+  const ACCESS_TOKEN = 'DEIN_ECHTER_TOKEN';
+
+  try {
     const filePath = getDropboxFilePath(clubName, type, filename);
 
     const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
@@ -2373,7 +2382,7 @@ try {
     if (!response.ok) {
       const errText = await response.text();
       console.error('Dropbox Upload Fehler:', errText);
-      throw new Error('Upload fehlgeschlagen');
+      throw new Error(errText);
     }
 
     showToast(`☁️ PDF in Dropbox gespeichert: ${clubName} > ${type}`, 'success');
