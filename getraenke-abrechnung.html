@@ -1533,6 +1533,9 @@
     }
   </style>
 </head>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
 <body>
 
 <div id="loading-screen">
@@ -1640,7 +1643,7 @@
   <div style="display:flex;flex-direction:column;align-items:flex-end;">
     <div class="header-btns">
 
-        <button class="archive-btn" onclick="showToast('PDF-Export kommt als Nächstes', 'success')">📄 PDF-Export</button>
+        <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
       <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
     </div>
 
@@ -1847,6 +1850,7 @@ const APPVersionSelf = '1.0.2.10';
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
     
+    
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
   { key: 'gr_bier',  label: 'Gr. Bier' },
@@ -1875,7 +1879,8 @@ let toastTimer = null;
 let assignPerson = null;
 let autoSaveTimer = null;
 let appReady = false;
-
+    
+let ACTIVE_CLUB = 'Kegelclub 1'; // später per Auswahl in der App änderbar
 	
   const sounds = {
   cash: new Audio('sounds/cash.mp3'),
@@ -2072,6 +2077,311 @@ function queueAutoSave() {
     saveLocal();
     await saveToFirestore(false);
   }, 800);
+}
+    
+function getDropboxFolderPath(clubName, type) {
+  return `/Kegelclub/${clubName}/${type}`;
+}
+
+function getDropboxFilePath(clubName, type, filename) {
+  return `${getDropboxFolderPath(clubName, type)}/${filename}`;
+}
+    
+function getDrinksSnapshot() {
+  recalcTeamExtras();
+
+  const relevantPersons = persons.filter(p =>
+    p.present ||
+    p.left ||
+    calcDrinksTotal(p) > 0 ||
+    (p.teamExtra || 0) > 0 ||
+    (p.roundExtra || 0) > 0 ||
+    (p.rounds || []).length > 0
+  );
+
+  return {
+    date: new Date().toISOString(),
+    drinks: DRINKS.map(d => ({
+      key: d.key,
+      label: d.label,
+      price: prices[d.key] || 0
+    })),
+    persons: relevantPersons.map(p => ({
+      name: p.name,
+      isGuest: !!p.isGuest,
+      tisch: p.tisch || '',
+      drinks: { ...p.drinks },
+      drinksTotal: calcDrinksTotal(p),
+      teamExtra: p.teamExtra || 0,
+      roundExtra: p.roundExtra || 0,
+      total: calcTotal(p),
+      paid: p.paid || 0,
+      left: !!p.left,
+      leftAt: p.leftAt || '',
+      rounds: Array.isArray(p.rounds) ? [...p.rounds] : []
+    })),
+    spiele: spiele.map(s => ({
+      spieltyp: s.spieltyp || '',
+      loser: s.loser || '',
+      drinks: { ...(s.drinks || {}) },
+      total: s.total || 0,
+      proKopf: s.proKopf || 0,
+      members: Array.isArray(s.members) ? [...s.members] : []
+    }))
+  };
+}
+    
+async function generateDrinksPDF(snapshot) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape" });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 12;
+  let y = 15;
+
+  const formatEuro = (v) => (v || 0).toFixed(2).replace('.', ',') + ' €';
+
+  const ensurePageSpace = (needed = 10) => {
+    if (y + needed > pageHeight - 12) {
+      doc.addPage();
+      y = 15;
+    }
+  };
+
+  doc.setFontSize(18);
+  doc.text("KC IS – Getränkeabrechnung", margin, y);
+
+  y += 8;
+  doc.setFontSize(10);
+  doc.text(new Date(snapshot.date).toLocaleString('de-DE'), margin, y);
+
+  y += 10;
+
+  // Tabellenkopf
+  doc.setFontSize(9);
+    let x = margin;
+    const nameWidth = 34;
+    const drinkWidth = 16;
+    const sumWidth = 18;
+
+    doc.text("Name", x, y);
+    x += nameWidth;
+
+    snapshot.drinks.forEach(d => {
+      doc.text(d.label, x, y);
+      x += drinkWidth;
+    });
+
+    doc.text("Getränke", x, y); x += sumWidth;
+    doc.text("Strafen", x, y);  x += sumWidth;
+    doc.text("Runden", x, y);   x += sumWidth;
+    doc.text("Gesamt", x, y);   x += sumWidth;
+    doc.text("Bezahlt", x, y);
+
+  y += 4;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
+
+  snapshot.persons.forEach(p => {
+    ensurePageSpace(8);
+
+let rowX = margin;
+doc.text(p.name, rowX, y);
+rowX += nameWidth;
+
+snapshot.drinks.forEach(d => {
+  doc.text(String((p.drinks && p.drinks[d.key]) || 0), rowX, y);
+  rowX += drinkWidth;
+});
+
+doc.text(formatEuro(p.drinksTotal), rowX, y); rowX += sumWidth;
+doc.text(formatEuro(p.teamExtra), rowX, y);   rowX += sumWidth;
+doc.text(formatEuro(p.roundExtra), rowX, y);  rowX += sumWidth;
+doc.text(formatEuro(p.total), rowX, y);       rowX += sumWidth;
+doc.text(formatEuro(p.paid), rowX, y);
+
+    y += 7;
+  });
+
+  y += 2;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  const totalDrinks = snapshot.persons.reduce((s, p) => s + (p.drinksTotal || 0), 0);
+  const totalStrafen = snapshot.persons.reduce((s, p) => s + (p.teamExtra || 0), 0);
+  const totalRunden = snapshot.persons.reduce((s, p) => s + (p.roundExtra || 0), 0);
+  const totalGesamt = snapshot.persons.reduce((s, p) => s + (p.total || 0), 0);
+  const totalBezahlt = snapshot.persons.reduce((s, p) => s + (p.paid || 0), 0);
+
+  doc.setFontSize(11);
+  doc.text(`Getränke gesamt: ${formatEuro(totalDrinks)}`, margin, y);
+  y += 6;
+  doc.text(`Strafen gesamt: ${formatEuro(totalStrafen)}`, margin, y);
+  y += 6;
+  doc.text(`Runden gesamt: ${formatEuro(totalRunden)}`, margin, y);
+  y += 6;
+  doc.text(`Abrechnung gesamt: ${formatEuro(totalGesamt)}`, margin, y);
+  y += 6;
+  doc.text(`Bezahlt gesamt: ${formatEuro(totalBezahlt)}`, margin, y);
+
+  // Teamstrafen / Spiele
+  if (snapshot.spiele.length) {
+    y += 10;
+    ensurePageSpace(20);
+
+    doc.setFontSize(13);
+    doc.text("Teamstrafen / Spiele", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    snapshot.spiele.forEach((s, idx) => {
+      ensurePageSpace(14);
+
+      const loserLabel = s.loser === 'T1' ? 'Wand' : s.loser === 'T2' ? 'TV' : s.loser;
+      const drinkText = snapshot.drinks
+        .filter(d => (s.drinks[d.key] || 0) > 0)
+        .map(d => `${s.drinks[d.key]}x ${d.label}`)
+        .join(', ');
+
+      doc.text(`${idx + 1}. ${s.spieltyp || 'Spiel'} | Verlierer: ${loserLabel} | Gesamt: ${formatEuro(s.total)}`, margin, y);
+      y += 5;
+      doc.text(`Getränke: ${drinkText || '—'}`, margin + 6, y);
+      y += 5;
+      doc.text(`Aufgeteilt auf: ${(s.members || []).join(', ') || '—'} | Pro Kopf: ${formatEuro(s.proKopf)}`, margin + 6, y);
+      y += 6;
+    });
+  }
+
+  // Runden
+  const allRounds = [];
+  snapshot.persons.forEach(p => {
+    (p.rounds || []).forEach(r => {
+      allRounds.push({
+        person: p.name,
+        reason: r.reason || '',
+        drinks: r.drinks || {},
+        total: r.total || 0,
+        createdAt: r.createdAt || ''
+      });
+    });
+  });
+
+  if (allRounds.length) {
+    y += 6;
+    ensurePageSpace(20);
+
+    doc.setFontSize(13);
+    doc.text("Runden", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    allRounds.forEach((r, idx) => {
+      ensurePageSpace(12);
+
+      const drinkText = snapshot.drinks
+        .filter(d => (r.drinks[d.key] || 0) > 0)
+        .map(d => `${r.drinks[d.key]}x ${d.label}`)
+        .join(', ');
+
+      const dateText = r.createdAt
+        ? new Date(r.createdAt).toLocaleString('de-DE')
+        : '—';
+
+      doc.text(`${idx + 1}. ${r.person} | Grund: ${r.reason || '—'} | Gesamt: ${formatEuro(r.total)}`, margin, y);
+      y += 5;
+      doc.text(`Getränke: ${drinkText || '—'} | Zeit: ${dateText}`, margin + 6, y);
+      y += 6;
+    });
+  }
+
+  return doc;
+}
+    
+async function closeDrinksAndExportPDF() {
+  const snapshot = getDrinksSnapshot();
+  const doc = await generateDrinksPDF(snapshot);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `KCIS_Getraenkeabrechnung_${dateStr}.pdf`;
+
+  const blob = doc.output('blob');
+
+  // lokal speichern
+  doc.save(filename);
+
+  // in Dropbox ablegen
+  await uploadPDFToDropbox(blob, filename, ACTIVE_CLUB, 'Getränke');
+}
+    
+ async function ensureDropboxFolder(folderPath) {
+  const ACCESS_TOKEN = 'sl.u.AGYF2e803yhlOZwJUnoG6_bMcm8rh2vGuXBNnFxToIUvkn1TIVhZhFC7t7Bxas3XNMr__wP3YcD_bS2DXi97I3_h6kB_sJzXKRBX9oE__2DN8yb8AH2FPTpOXBVpVhRNIGc1OMtVCosfp_PDYAAuRHbcZYQ1LpRsx1cZm9FsTLZtCSwaDwmvqaPhMdzAiB3PT40PxbIBeKyLenS7NfZIL4ULiyMxyeEAj-VKXUvtdRooUnp2ZM2LpxZuKZAvdij7mpDLsv0HB1MtkmyNmJW634l58j978eZe-DzGckABV-7Jyp1Bymm4qFxQf1FaztqFmucyCGL2pVt_pj1sBSjTr6xSyZUcthfgNy0zNx7dOuiNaJ1dGGMrIGTlxjS-K6gM_AtkKRp7V8Rc7qujScp5PSZA2zPEQfiILmIaBQLhq89kMuFyvrtJrenfS4Hb51w5gwWvMIqKmIrcTAIlRXa4W-2EsYGVHbJI1wzxn6QvRR1I8Z36nFepSdNjzHCqKhH51cET-8NY4qXgxP0vbkbn5oop2Hn9A3Lz2RTD20RaQnzZ4g-g7UuATV_Rf2P4HLbBdw45ehOrpKp_R4VMwwAaVkSH1hmFZKPWLOelDgV4fDsUQ9b8T5G7lX_4JLhpL1HYXcq1k8_NayRBIwMDGfReoXX-mwGtElA0u0YbPIZId8kkk5gvKZv5vFUU1ozZv17goCv0wJpb_9l8r5TcgW3Dfaz3Wj5rc40M_asoR4Rev_8mEgGmxCtF8Up-KYO7P87YKoXSju-KgffKyNhROD74h5vK3cNvRHjGMCgDd7iDS9R84L2iGEFjL_2A-ZmaDxKAQXMgflndyiHW8fs8RkrXm0u916hJbaizBzU8MKXqooJ4MrUlI_pvqJPQjndWKjdeQ4644FQ2K_K5PbA7vLCNkDise_rCxACTDIAEDQeusPEXfCtei0Er5WDoEObqhpyoSwvqHILJ7H4eQtIXltVhcFA-TqlP9ruI0zb0q2ov6cFnPw1UngOX462Ls9eEIublcGqwzEuPHpe38ewyHLvM5D35op71WrKXS6TvFCj4tQvBh0DjXY7WBLwvqXNT5zQqGBo7cdfOE2_-6Q7uOJB-KicsCyRkENzKcgWdZSpCd2YaBEKbfP-d_hkGo7_EpbvXEnG_ZLi_jW_lgJsMWiIyiFlZFpHZGUVkWhvtA-0P94hXTdw9Oz1r54PDRFPm7SZCiCOeQ18OX1qxiryb4o0K7L71tIh6DApJ0p4uI5YE7TaL3XmdltVhqqv5flhmas_V2xCVgE5X0jtKVBMBs4zy_s9M';
+
+  try {
+    const response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + ACCESS_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        path: folderPath,
+        autorename: false
+      })
+    });
+
+    if (response.ok) return true;
+
+    const errorData = await response.json().catch(() => ({}));
+    const errorText = JSON.stringify(errorData);
+
+    // Wenn Ordner schon existiert, ist das okay
+    if (errorText.includes('conflict')) {
+      return true;
+    }
+
+    console.error('Dropbox Ordnerfehler:', errorData);
+    return false;
+
+  } catch (err) {
+    console.error('Dropbox create_folder Fehler:', err);
+    return false;
+  }
+}
+
+async function uploadPDFToDropbox(blob, filename, clubName = 'Kegelclub 1', type = 'Getränke') {
+  const ACCESS_TOKEN = 'sl.u.AGYF2e803yhlOZwJUnoG6_bMcm8rh2vGuXBNnFxToIUvkn1TIVhZhFC7t7Bxas3XNMr__wP3YcD_bS2DXi97I3_h6kB_sJzXKRBX9oE__2DN8yb8AH2FPTpOXBVpVhRNIGc1OMtVCosfp_PDYAAuRHbcZYQ1LpRsx1cZm9FsTLZtCSwaDwmvqaPhMdzAiB3PT40PxbIBeKyLenS7NfZIL4ULiyMxyeEAj-VKXUvtdRooUnp2ZM2LpxZuKZAvdij7mpDLsv0HB1MtkmyNmJW634l58j978eZe-DzGckABV-7Jyp1Bymm4qFxQf1FaztqFmucyCGL2pVt_pj1sBSjTr6xSyZUcthfgNy0zNx7dOuiNaJ1dGGMrIGTlxjS-K6gM_AtkKRp7V8Rc7qujScp5PSZA2zPEQfiILmIaBQLhq89kMuFyvrtJrenfS4Hb51w5gwWvMIqKmIrcTAIlRXa4W-2EsYGVHbJI1wzxn6QvRR1I8Z36nFepSdNjzHCqKhH51cET-8NY4qXgxP0vbkbn5oop2Hn9A3Lz2RTD20RaQnzZ4g-g7UuATV_Rf2P4HLbBdw45ehOrpKp_R4VMwwAaVkSH1hmFZKPWLOelDgV4fDsUQ9b8T5G7lX_4JLhpL1HYXcq1k8_NayRBIwMDGfReoXX-mwGtElA0u0YbPIZId8kkk5gvKZv5vFUU1ozZv17goCv0wJpb_9l8r5TcgW3Dfaz3Wj5rc40M_asoR4Rev_8mEgGmxCtF8Up-KYO7P87YKoXSju-KgffKyNhROD74h5vK3cNvRHjGMCgDd7iDS9R84L2iGEFjL_2A-ZmaDxKAQXMgflndyiHW8fs8RkrXm0u916hJbaizBzU8MKXqooJ4MrUlI_pvqJPQjndWKjdeQ4644FQ2K_K5PbA7vLCNkDise_rCxACTDIAEDQeusPEXfCtei0Er5WDoEObqhpyoSwvqHILJ7H4eQtIXltVhcFA-TqlP9ruI0zb0q2ov6cFnPw1UngOX462Ls9eEIublcGqwzEuPHpe38ewyHLvM5D35op71WrKXS6TvFCj4tQvBh0DjXY7WBLwvqXNT5zQqGBo7cdfOE2_-6Q7uOJB-KicsCyRkENzKcgWdZSpCd2YaBEKbfP-d_hkGo7_EpbvXEnG_ZLi_jW_lgJsMWiIyiFlZFpHZGUVkWhvtA-0P94hXTdw9Oz1r54PDRFPm7SZCiCOeQ18OX1qxiryb4o0K7L71tIh6DApJ0p4uI5YE7TaL3XmdltVhqqv5flhmas_V2xCVgE5X0jtKVBMBs4zy_s9M';
+
+try {
+    const filePath = getDropboxFilePath(clubName, type, filename);
+
+    const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + ACCESS_TOKEN,
+        'Dropbox-API-Arg': JSON.stringify({
+          path: filePath,
+          mode: 'add',
+          autorename: true,
+          mute: false
+        }),
+        'Content-Type': 'application/octet-stream'
+      },
+      body: blob
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Dropbox Upload Fehler:', errText);
+      throw new Error('Upload fehlgeschlagen');
+    }
+
+    showToast(`☁️ PDF in Dropbox gespeichert: ${clubName} > ${type}`, 'success');
+
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Dropbox Upload fehlgeschlagen', 'error');
+  }
 }
     
 // ── HELPERS ──
