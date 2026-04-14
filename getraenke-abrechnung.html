@@ -1199,22 +1199,45 @@
       gap: 8px;
     }
       
-.fast-edit-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
+#drink-edit-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
-.fast-edit-actions {
+.drink-popup-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drink-popup-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.drink-popup-actions {
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  gap: 8px;
+  align-items: center;
+}
+
+.drink-popup-counter {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .fast-btn {
-  min-width: 52px;
   height: 42px;
   border: none;
   border-radius: 10px;
@@ -1227,13 +1250,31 @@
 }
 
 .fast-btn.minus {
-  background: var(--btn-minus-bg);
-  color: var(--btn-minus-fg);
+  background: rgba(0, 194, 0, 0.18);
+  color: rgba(0, 148, 0, 1);
 }
 
 .fast-btn.plus {
-  background: var(--btn-plus-bg);
-  color: var(--btn-plus-fg);
+  background: rgba(204, 0, 0, 0.15);
+  color: rgba(204, 0, 0, 1);
+}
+
+#drink-edit-modal .counter-btn {
+  width: 36px;
+  height: 36px;
+}
+
+#drink-edit-modal .counter-val {
+  min-width: 26px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  #drink-edit-list {
+    grid-template-columns: 1fr;
+  }
 }
       
     .team-drink-name,
@@ -2962,18 +3003,19 @@ function openDrinkEditModal(name) {
     row.className = 'round-drink-row drink-edit-row';
 
 row.innerHTML = `
-  <div class="fast-edit-row">
-    <span class="round-drink-name">${d.label}</span>
+  <div class="drink-popup-card">
+    <div class="drink-popup-title">${d.label}</div>
 
-    <div class="fast-edit-actions">
+    <div class="drink-popup-actions">
       <button class="fast-btn minus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', -1)">-1</button>
-      <button class="fast-btn plus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', 1)">+1</button>
 
-      <div class="counter" style="margin-left:8px;">
+      <div class="drink-popup-counter">
         <button class="counter-btn minus" onclick="event.stopPropagation(); changeDrinkEdit('${d.key}', -1)">−</button>
         <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
         <button class="counter-btn plus" onclick="event.stopPropagation(); changeDrinkEdit('${d.key}', 1)">+</button>
       </div>
+
+      <button class="fast-btn plus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', 1)">+1</button>
     </div>
   </div>
 `;
