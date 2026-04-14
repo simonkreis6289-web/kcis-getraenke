@@ -545,6 +545,7 @@
       border-collapse: separate;
       border-spacing: 0;
     }
+      
 .table-person-inline {
   display: flex;
   align-items: center;
@@ -1197,7 +1198,44 @@
       justify-content: space-between;
       gap: 8px;
     }
+      
+.fast-edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
 
+.fast-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fast-btn {
+  min-width: 52px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fast-btn.minus {
+  background: var(--btn-minus-bg);
+  color: var(--btn-minus-fg);
+}
+
+.fast-btn.plus {
+  background: var(--btn-plus-bg);
+  color: var(--btn-plus-fg);
+}
+      
     .team-drink-name,
     .round-drink-name {
       font-size: 0.8rem;
@@ -1676,6 +1714,9 @@
     <div class="tab" onclick="showTab('abrechnung',this)">💶 Abrechnung</div>
     <div class="tab" onclick="showTab('spiele',this)">🎲 Spiele</div>
     <div class="tab" onclick="showTab('preise',this)">🏷️ Preise</div>
+    <div class="tab" onclick="showTab('preise',this)">🏷️ Strafen</div>
+    <div class="tab" onclick="showTab('preise',this)">📅 Termine</div>
+    <div class="tab" onclick="showTab('preise',this)">🏷️ Einstellungen</div>
   </div>
 
   <main>
@@ -2920,14 +2961,22 @@ function openDrinkEditModal(name) {
     const row = document.createElement('div');
     row.className = 'round-drink-row drink-edit-row';
 
-    row.innerHTML = `
-      <span class="round-drink-name">${d.label}</span>
-      <div class="counter">
-        <button class="counter-btn minus" onclick="changeDrinkEdit('${d.key}', -1)">−</button>
-        <span class="counter-val" id="drink-edit-${d.key}">0</span>
-        <button class="counter-btn plus" onclick="changeDrinkEdit('${d.key}', 1)">+</button>
+row.innerHTML = `
+  <div class="fast-edit-row">
+    <span class="round-drink-name">${d.label}</span>
+
+    <div class="fast-edit-actions">
+      <button class="fast-btn minus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', -1)">-1</button>
+      <button class="fast-btn plus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', 1)">+1</button>
+
+      <div class="counter" style="margin-left:8px;">
+        <button class="counter-btn minus" onclick="event.stopPropagation(); changeDrinkEdit('${d.key}', -1)">−</button>
+        <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
+        <button class="counter-btn plus" onclick="event.stopPropagation(); changeDrinkEdit('${d.key}', 1)">+</button>
       </div>
-    `;
+    </div>
+  </div>
+`;
 
     list.appendChild(row);
   });
@@ -2941,6 +2990,25 @@ function changeDrinkEdit(key, delta) {
 
   const el = document.getElementById('drink-edit-' + key);
   if (el) el.textContent = drinkEditDraft[key];
+}
+    
+function applyDrinkFast(key, delta) {
+  if (!drinkEditPerson) return;
+
+  if (!drinkEditPerson.drinks) drinkEditPerson.drinks = {};
+
+  drinkEditPerson.drinks[key] = Math.max(
+    0,
+    (drinkEditPerson.drinks[key] || 0) + delta
+  );
+
+  closeDrinkEditModal();
+  renderGetraenke();
+  updateStats();
+  renderAbrechnung();
+  persistState();
+
+  showToast('🍺 Getränk direkt gebucht', 'success');
 }
     
 function confirmDrinkEdit() {
