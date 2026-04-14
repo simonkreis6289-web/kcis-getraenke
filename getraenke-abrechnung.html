@@ -1796,6 +1796,7 @@
     <div style="display:flex;flex-direction:column;align-items:flex-end;">
       <div class="header-btns">
         <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
+        <button class="archive-btn" onclick="startNewKegelabend()">🆕 Neuer Kegelabend</button>
         <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
       </div>
       <div class="version-info" id="versionInfo"></div>
@@ -2554,13 +2555,10 @@ async function closeDrinksAndExportPDF() {
     // PDF speichern
     doc.save(filename);
 
-    // 🔥 Abend in Firestore archivieren
+    // Abend archivieren
     await archiveEvent(snapshot);
 
-    // 🧼 Daten zurücksetzen
-    resetAfterClosing();
-
-    showToast('✅ Abend abgeschlossen & gespeichert', 'success');
+    showToast('✅ PDF erstellt und Abend archiviert', 'success');
 
   } catch (err) {
     console.error(err);
@@ -2590,33 +2588,38 @@ async function archiveEvent(snapshot) {
   }
 }
 
-function resetAfterClosing() {
+function startNewKegelabend() {
+  const ok = confirm('Wirklich einen neuen Kegelabend starten? Alle aktuellen Daten werden gelöscht.');
+  if (!ok) return;
+
   persons.forEach(p => {
-    Object.keys(p.drinks).forEach(k => p.drinks[k] = 0);
+    if (!p.drinks) p.drinks = {};
 
-    // Nur Getränke-Zahlung zurücksetzen
-    // Falls Zahlungen später getrennt sein sollen, paid erstmal NICHT löschen
-    // p.paid bleibt bestehen
+    Object.keys(p.drinks).forEach(k => {
+      p.drinks[k] = 0;
+    });
 
-    // Strafen / Runden bleiben bestehen
-    // p.teamExtra bleibt
-    // p.roundExtra bleibt
-    // p.rounds bleiben
-
-    // Anwesenheit ruhig zurücksetzen für neuen Abend
-    p.left = false;
-    p.leftAt = '';
+    p.paid = 0;
+    p.teamExtra = 0;
+    p.roundExtra = 0;
+    p.rounds = [];
     p.present = false;
     p.tisch = '';
+    p.left = false;
+    p.leftAt = '';
   });
 
-  // Teamspiel-Entwurf und Rundeneingabe zurücksetzen
+  spiele = [];
   teamDrinks = {};
   selectedLoser = null;
   roundDraftDrinks = {};
+  drinkEditPerson = null;
+  drinkEditDraft = {};
 
   renderAll();
   persistState();
+
+  showToast('🆕 Neuer Kegelabend gestartet', 'success');
 }
     
 // ── HELPERS ──
