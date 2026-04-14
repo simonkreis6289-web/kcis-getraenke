@@ -1253,84 +1253,85 @@
     }
       
 #drink-edit-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.drink-popup-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-.drink-popup-title {
-  font-size: 1rem;
+.drink-edit-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+}
+
+.drink-edit-label {
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
 }
 
-.drink-popup-actions {
-  display: grid;
-  grid-template-columns: 72px 1fr 72px;
-  gap: 12px;
-  align-items: center;
-}
-
-.drink-popup-counter {
+.drink-edit-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .fast-btn {
-  height: 44px;
+  min-width: 54px;
+  height: 42px;
   border: none;
   border-radius: 10px;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
 }
 
 .fast-btn.minus {
-  background: rgba(220, 40, 40, 0.14);
-  color: rgb(190, 25, 25);
+  background: rgba(7, 148, 0, 0.15);
+  color: rgba(7, 148, 0, 1);
 }
 
 .fast-btn.plus {
-  background: rgba(0, 180, 0, 0.16);
-  color: rgb(0, 140, 0);
+  background: rgba(204, 0, 0, 0.15);
+  color: rgba(204, 0, 0, 1);
+}
+
+#drink-edit-modal .drink-edit-actions .counter {
+  gap: 6px;
 }
 
 #drink-edit-modal .counter-btn {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
-}
-
-#drink-edit-modal .counter-btn.minus {
-  background: rgba(220, 40, 40, 0.14);
-  color: rgb(190, 25, 25);
-}
-
-#drink-edit-modal .counter-btn.plus {
-  background: rgba(0, 180, 0, 0.16);
-  color: rgb(0, 140, 0);
 }
 
 #drink-edit-modal .counter-val {
   min-width: 28px;
   text-align: center;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
 }
 
+@media (max-width: 760px) {
+  .drink-edit-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .drink-edit-actions {
+    justify-content: space-between;
+  }
+}
+      
 .team-drink-name,
     .round-drink-name {
       font-size: 0.8rem;
@@ -3141,21 +3142,21 @@ function openDrinkEditModal(name) {
     const row = document.createElement('div');
     row.className = 'round-drink-row drink-edit-row';
 
+row.className = 'drink-edit-row';
+
 row.innerHTML = `
-  <div class="drink-popup-card">
-    <div class="drink-popup-title">${d.label}</div>
+  <div class="drink-edit-label">${d.label}</div>
 
-    <div class="drink-popup-actions">
-      <button class="fast-btn minus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', -1)">-1</button>
+  <div class="drink-edit-actions">
+    <button class="fast-btn minus" onclick="event.stopPropagation(); applyDrinkFast('${escapeForJs(d.key)}', -1)">-1</button>
 
-      <div class="drink-popup-counter">
-        <button class="counter-btn minus" onclick="event.stopPropagation(); changeDrinkEdit('${d.key}', -1)">−</button>
-        <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
-        <button class="counter-btn plus" onclick="event.stopPropagation(); changeDrinkEdit('${d.key}', 1)">+</button>
-      </div>
-
-      <button class="fast-btn plus" onclick="event.stopPropagation(); applyDrinkFast('${d.key}', 1)">+1</button>
+    <div class="counter">
+      <button class="counter-btn minus" onclick="event.stopPropagation(); changeDrinkEdit('${escapeForJs(d.key)}', -1)">−</button>
+      <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
+      <button class="counter-btn plus" onclick="event.stopPropagation(); changeDrinkEdit('${escapeForJs(d.key)}', 1)">+</button>
     </div>
+
+    <button class="fast-btn plus" onclick="event.stopPropagation(); applyDrinkFast('${escapeForJs(d.key)}', 1)">+1</button>
   </div>
 `;
 
