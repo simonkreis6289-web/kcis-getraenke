@@ -574,8 +574,8 @@
 
 
     .drinks-table {
-      width: max-content;
-      min-width: 100%;
+      width: 100%;
+      table-layout: fixed;
     }
 
     thead th {
@@ -591,13 +591,13 @@
       white-space: nowrap;
       position: relative;
       z-index: 1;
+      width: 70px;
     }
 
     thead th:first-child {
       text-align: left;
       padding-left: 12px;
-      min-width: 160px;
-      max-width: 160px;
+      width: 180px;
     }
 
     thead th.sticky-col {
@@ -2184,15 +2184,15 @@ async function generateDrinksPDF(snapshot) {
   // Tabellenkopf
   doc.setFontSize(9);
     let x = margin;
-    const nameWidth = 34;
-    const drinkWidth = 16;
-    const sumWidth = 18;
+    const nameWidth = 50;
+    const drinkWidth = 28;
+    const sumWidth = 22;
 
     doc.text("Name", x, y);
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      doc.text(d.label, x, y);
+      doc.text(d.label, x, y, { maxWidth: drinkWidth });
       x += drinkWidth;
     });
 
