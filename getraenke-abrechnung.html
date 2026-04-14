@@ -245,7 +245,59 @@
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
+      
+.main-tabs {
+  display: flex;
+  background: var(--header_bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  gap: 4px;
+  overflow-x: auto;
+}
 
+.main-tab {
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.72);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.main-tab.active {
+  color: var(--title_fc);
+  border-bottom-color: var(--accent);
+}
+
+.sub-tabs {
+  display: flex;
+  background: var(--tabs_bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.sub-tab {
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.sub-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.main-panel {
+  width: 100%;
+}
+      
     .stat {
       display: flex;
       flex-direction: column;
@@ -1627,10 +1679,11 @@
       }
     }
   </style>
+    
 </head>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <body>
 
 <div id="loading-screen">
@@ -1705,10 +1758,12 @@
       <label>Wer zahlt?</label>
       <select id="round-person-select" class="modal-select" onchange="handleRoundPersonChange()"></select>
     </div>
-		<div class="modal-input-row">
-		  <label>Grund</label>
-		  <select id="round-reason-select" class="modal-select"></select>
-		</div>
+
+    <div class="modal-input-row">
+      <label>Grund</label>
+      <select id="round-reason-select" class="modal-select"></select>
+    </div>
+
     <div id="round-drinks-area" class="hidden">
       <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
         Getränke der Runde
@@ -1728,36 +1783,57 @@
 </div>
 
 <div id="app">
-<header>
-  <div>
-    <h1>KC IS</h1>
-    <div class="subtitle">Getränkeabrechnung</div>
-    <div class="header-datetime" id="header-datetime"></div>
-  </div>
-
-  <div style="display:flex;flex-direction:column;align-items:flex-end;">
-    <div class="header-btns">
-
-        <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
-      <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
+  <header>
+    <div>
+      <h1>KC IS</h1>
+      <div class="subtitle">Getränkeabrechnung</div>
+      <div class="header-datetime" id="header-datetime"></div>
     </div>
 
-	<div class="version-info" id="versionInfo"> </div>
-  </div>
-</header>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;">
+      <div class="header-btns">
+        <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
+        <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
+      </div>
+      <div class="version-info" id="versionInfo"></div>
+    </div>
+  </header>
 
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('anwesenheit',this)">👥 Anwesenheit</div>
-    <div class="tab" onclick="showTab('gruppen',this)">🎯 Gruppen</div>
-    <div class="tab" onclick="showTab('getraenke',this)">🍺 Getränke</div>
-    <div class="tab" onclick="showTab('teamspiele',this)">⚽ Teamspiele</div>
-    <div class="tab" onclick="showTab('runden',this)">🍻 Runden</div>
-    <div class="tab" onclick="showTab('abrechnung',this)">💶 Abrechnung</div>
-    <div class="tab" onclick="showTab('spiele',this)">🎲 Spiele</div>
-    <div class="tab" onclick="showTab('preise',this)">🏷️ Preise</div>
-    <div class="tab" onclick="showTab('preise',this)">🏷️ Strafen</div>
-    <div class="tab" onclick="showTab('preise',this)">📅 Termine</div>
-    <div class="tab" onclick="showTab('preise',this)">🏷️ Einstellungen</div>
+  <!-- Hauptnavigation -->
+  <div class="main-tabs">
+    <div class="main-tab active" onclick="showMainTab('organisation', this)">👥 Organisation</div>
+    <div class="main-tab" onclick="showMainTab('getraenke', this)">🍺 Getränke</div>
+    <div class="main-tab" onclick="showMainTab('strafen', this)">🚨 Strafen</div>
+    <div class="main-tab" onclick="showMainTab('verwaltung', this)">⚙️ Verwaltung</div>
+  </div>
+
+  <!-- Untertabs Organisation -->
+  <div class="sub-tabs" id="subtabs-organisation">
+    <div class="sub-tab active" data-sub="anwesenheit" onclick="showSubTab('organisation','anwesenheit',this)">Anwesenheit</div>
+    <div class="sub-tab" data-sub="gruppen" onclick="showSubTab('organisation','gruppen',this)">Gruppen</div>
+  </div>
+
+  <!-- Untertabs Getränke -->
+  <div class="sub-tabs hidden" id="subtabs-getraenke">
+    <div class="sub-tab active" data-sub="getraenke-uebersicht" onclick="showSubTab('getraenke','getraenke-uebersicht',this)">Übersicht</div>
+    <div class="sub-tab" data-sub="teamspiele" onclick="showSubTab('getraenke','teamspiele',this)">Teamspiele</div>
+    <div class="sub-tab" data-sub="runden" onclick="showSubTab('getraenke','runden',this)">Runden</div>
+    <div class="sub-tab" data-sub="getraenke-abrechnung" onclick="showSubTab('getraenke','getraenke-abrechnung',this)">Abrechnung</div>
+  </div>
+
+  <!-- Untertabs Strafen -->
+  <div class="sub-tabs hidden" id="subtabs-strafen">
+    <div class="sub-tab active" data-sub="strafen-uebersicht" onclick="showSubTab('strafen','strafen-uebersicht',this)">Übersicht</div>
+    <div class="sub-tab" data-sub="strafen-abrechnung" onclick="showSubTab('strafen','strafen-abrechnung',this)">Abrechnung</div>
+  </div>
+
+  <!-- Untertabs Verwaltung -->
+  <div class="sub-tabs hidden" id="subtabs-verwaltung">
+    <div class="sub-tab active" data-sub="spiele" onclick="showSubTab('verwaltung','spiele',this)">Spiele</div>
+    <div class="sub-tab" data-sub="getraenkepreise" onclick="showSubTab('verwaltung','getraenkepreise',this)">Getränkepreise</div>
+    <div class="sub-tab" data-sub="strafpreise" onclick="showSubTab('verwaltung','strafpreise',this)">Strafpreise</div>
+    <div class="sub-tab" data-sub="termine" onclick="showSubTab('verwaltung','termine',this)">Termine</div>
+    <div class="sub-tab" data-sub="einstellungen" onclick="showSubTab('verwaltung','einstellungen',this)">Einstellungen</div>
   </div>
 
   <main>
@@ -1771,131 +1847,191 @@
       <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
     </div>
 
-    <div id="tab-anwesenheit">
-      <div class="section-title">Wer ist heute da?</div>
+    <!-- ORGANISATION -->
+    <div id="main-organisation" class="main-panel">
+      <div id="tab-anwesenheit">
+        <div class="section-title">Wer ist heute da?</div>
 
-      <div class="subsection-title">Kegelclub</div>
-      <div class="persons-grid" id="persons-grid-members"></div>
-      <div class="add-person-row">
-        <input type="text" id="new-person-input" placeholder="Neues Mitglied hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(false)">
-        <button class="add-btn" onclick="addPerson(false)">+ Mitglied hinzufügen</button>
+        <div class="subsection-title">Kegelclub</div>
+        <div class="persons-grid" id="persons-grid-members"></div>
+        <div class="add-person-row">
+          <input type="text" id="new-person-input" placeholder="Neues Mitglied hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(false)">
+          <button class="add-btn" onclick="addPerson(false)">+ Mitglied hinzufügen</button>
+        </div>
+
+        <div class="subsection-title">Gastkegler</div>
+        <div class="persons-grid" id="persons-grid-guests"></div>
+        <div class="add-person-row">
+          <input type="text" id="new-guest-input" placeholder="Gastkegler hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(true)">
+          <button class="add-btn" onclick="addPerson(true)">+ Gastkegler hinzufügen</button>
+        </div>
       </div>
 
-      <div class="subsection-title">Gastkegler</div>
-      <div class="persons-grid" id="persons-grid-guests"></div>
-      <div class="add-person-row">
-        <input type="text" id="new-guest-input" placeholder="Gastkegler hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(true)">
-        <button class="add-btn" onclick="addPerson(true)">+ Gastkegler hinzufügen</button>
+      <div id="tab-gruppen" class="hidden">
+        <div class="section-title">Seiten-Zuweisung</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">
+          Nicht zugewiesen – antippen zum Zuweisen:
+        </div>
+        <div class="unassigned-list" id="unassigned-list"></div>
+        <div class="gruppe-grid">
+          <div class="gruppe-box t1">
+            <div class="gruppe-title">⚫ Wand</div>
+            <div class="gruppe-persons" id="gruppe-t1"></div>
+          </div>
+          <div class="gruppe-box t2">
+            <div class="gruppe-title">🔴 TV</div>
+            <div class="gruppe-persons" id="gruppe-t2"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="tab-gruppen" class="hidden">
-      <div class="section-title">Seiten-Zuweisung</div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Nicht zugewiesen – antippen zum Zuweisen:</div>
-      <div class="unassigned-list" id="unassigned-list"></div>
-      <div class="gruppe-grid">
-        <div class="gruppe-box t1">
-          <div class="gruppe-title">⚫ Wand</div>
-          <div class="gruppe-persons" id="gruppe-t1"></div>
+    <!-- GETRÄNKE -->
+    <div id="main-getraenke" class="main-panel hidden">
+      <div id="tab-getraenke-uebersicht">
+        <div class="section-title">Getränke erfassen</div>
+        <div class="getraenke-toolbar">
+          <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
         </div>
-        <div class="gruppe-box t2">
-          <div class="gruppe-title">🔴 TV</div>
-          <div class="gruppe-persons" id="gruppe-t2"></div>
+        <div class="drinks-table-wrap">
+          <table class="drinks-table">
+            <thead>
+              <tr id="drinks-header"></tr>
+            </thead>
+            <tbody id="drinks-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-teamspiele" class="hidden">
+        <div class="section-title">Neues Teamspiel</div>
+        <div class="team-spiel-form">
+          <div class="team-info-box" id="team-info-box">
+            Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.
+          </div>
+
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Spiel auswählen:</div>
+          <div style="margin-bottom:14px;">
+            <select id="spieltyp-select" class="modal-select" style="width:100%;"></select>
+          </div>
+
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
+          <div class="team-select-row">
+            <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">⚫ Wand verloren</button>
+            <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
+          </div>
+
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Getränke die das Verlierer-Team zahlt:</div>
+          <div class="team-drinks-grid" id="team-drinks-grid"></div>
+          <button class="add-spiel-btn" onclick="addSpiel()">⚽ Spiel hinzufügen & aufteilen</button>
+        </div>
+
+        <div class="section-title">Gebuchte Spiele</div>
+        <div class="spiele-list" id="spiele-list"></div>
+      </div>
+
+      <div id="tab-runden" class="hidden">
+        <div class="section-title">Gegebene Runden</div>
+        <div class="spiele-list" id="runden-list"></div>
+      </div>
+
+      <div id="tab-getraenke-abrechnung" class="hidden">
+        <div class="section-title">Übersicht</div>
+        <div class="abrech-summary">
+          <div class="abrech-summary-card offen">
+            <div class="abrech-summary-val" id="sum-offen">0,00 €</div>
+            <div class="abrech-summary-label">Gesamt offen</div>
+          </div>
+          <div class="abrech-summary-card bezahlt">
+            <div class="abrech-summary-val" id="sum-bezahlt">0,00 €</div>
+            <div class="abrech-summary-label">Gesamt bezahlt</div>
+          </div>
+          <div class="abrech-summary-card ueberschuss">
+            <div class="abrech-summary-val" id="sum-ueberschuss">0,00 €</div>
+            <div class="abrech-summary-label">Überschuss</div>
+          </div>
+          <div class="abrech-summary-card gesamt">
+            <div class="abrech-summary-val" id="sum-gesamt">0,00 €</div>
+            <div class="abrech-summary-label">Gesamt</div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          Pro Person
+          <span style="font-size:0.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted);letter-spacing:0;text-transform:none">
+            – antippen zum Zahlung eintragen
+          </span>
+        </div>
+        <div id="abrech-content"></div>
+      </div>
+    </div>
+
+    <!-- STRAFEN -->
+    <div id="main-strafen" class="main-panel hidden">
+      <div id="tab-strafen-uebersicht">
+        <div class="section-title">Strafen Übersicht</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
+          Hier kommt später die Übersicht der Kegelstrafen rein.
+        </div>
+      </div>
+
+      <div id="tab-strafen-abrechnung" class="hidden">
+        <div class="section-title">Strafen Abrechnung</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
+          Hier kommt später die Straf-Abrechnung rein.
         </div>
       </div>
     </div>
 
-    <div id="tab-getraenke" class="hidden">
-      <div class="section-title">Getränke erfassen</div>
-      <div class="getraenke-toolbar">
-        <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
-      </div>
-      <div class="drinks-table-wrap">
-        <table class="drinks-table">
-          <thead><tr id="drinks-header"></tr></thead>
-          <tbody id="drinks-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="tab-teamspiele" class="hidden">
-      <div class="section-title">Neues Teamspiel</div>
-      <div class="team-spiel-form">
-        <div class="team-info-box" id="team-info-box">
-          Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.
+    <!-- VERWALTUNG -->
+    <div id="main-verwaltung" class="main-panel hidden">
+      <div id="tab-spiele">
+        <div class="section-title">Spiele anlegen</div>
+        <div class="add-person-row">
+          <input type="text" id="new-spiel-input" placeholder="Neues Teamspiel hinzufügen…" onkeydown="if(event.key==='Enter') addSpielToKatalog()">
+          <button class="add-btn" onclick="addSpielToKatalog()">+ Spiel hinzufügen</button>
         </div>
 
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Spiel auswählen:</div>
-        <div style="margin-bottom:14px;">
-          <select id="spieltyp-select" class="modal-select" style="width:100%;"></select>
+        <div class="spiele-editor" id="spiele-katalog-list" style="margin-top:14px;"></div>
+
+        <div class="section-title">Rundengründe anlegen</div>
+        <div class="add-person-row">
+          <input type="text" id="new-rundengrund-input" placeholder="Neuen Rundengrund hinzufügen…" onkeydown="if(event.key==='Enter') addRoundReasonToKatalog()">
+          <button class="add-btn" onclick="addRoundReasonToKatalog()">+ Rundengrund hinzufügen</button>
         </div>
 
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Verlierer-Team wählen:</div>
-        <div class="team-select-row">
-          <button class="team-btn t1" id="team-btn-t1" onclick="selectLoser('T1')">⚫ Wand verloren</button>
-          <button class="team-btn t2" id="team-btn-t2" onclick="selectLoser('T2')">🔴 TV verloren</button>
-        </div>
-
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Getränke die das Verlierer-Team zahlt:</div>
-        <div class="team-drinks-grid" id="team-drinks-grid"></div>
-        <button class="add-spiel-btn" onclick="addSpiel()">⚽ Spiel hinzufügen & aufteilen</button>
+        <div class="spiele-editor" id="rundengruende-katalog-list" style="margin-top:14px;"></div>
       </div>
 
-      <div class="section-title">Gebuchte Spiele</div>
-      <div class="spiele-list" id="spiele-list"></div>
-    </div>
+      <div id="tab-getraenkepreise" class="hidden">
+        <div class="section-title">Getränkepreise bearbeiten</div>
+        <div class="prices-toolbar">
+          <button class="add-btn" onclick="openDrinkModal()">+ Getränk hinzufügen</button>
+        </div>
+        <div class="prices-editor" id="prices-editor"></div>
+        <button class="save-prices-btn" onclick="savePrices()">💾 Preise speichern</button>
+      </div>
 
-    <div id="tab-runden" class="hidden">
-      <div class="section-title">Gegebene Runden</div>
-      <div class="spiele-list" id="runden-list"></div>
-    </div>
-
-    <div id="tab-abrechnung" class="hidden">
-      <div class="section-title">Übersicht</div>
-      <div class="abrech-summary">
-        <div class="abrech-summary-card offen">
-          <div class="abrech-summary-val" id="sum-offen">0,00 €</div>
-          <div class="abrech-summary-label">Gesamt offen</div>
-        </div>
-        <div class="abrech-summary-card bezahlt">
-          <div class="abrech-summary-val" id="sum-bezahlt">0,00 €</div>
-          <div class="abrech-summary-label">Gesamt bezahlt</div>
-        </div>
-        <div class="abrech-summary-card ueberschuss">
-          <div class="abrech-summary-val" id="sum-ueberschuss">0,00 €</div>
-          <div class="abrech-summary-label">Überschuss</div>
-        </div>
-        <div class="abrech-summary-card gesamt">
-          <div class="abrech-summary-val" id="sum-gesamt">0,00 €</div>
-          <div class="abrech-summary-label">Gesamt</div>
+      <div id="tab-strafpreise" class="hidden">
+        <div class="section-title">Strafpreise bearbeiten</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
+          Hier kommen später die Strafpreise rein.
         </div>
       </div>
-      <div class="section-title">Pro Person <span style="font-size:0.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted);letter-spacing:0;text-transform:none">– antippen zum Zahlung eintragen</span></div>
-      <div id="abrech-content"></div>
-    </div>
 
-    <div id="tab-spiele" class="hidden">
-      <div class="section-title">Spiele anlegen</div>
-      <div class="add-person-row">
-        <input type="text" id="new-spiel-input" placeholder="Neues Teamspiel hinzufügen…" onkeydown="if(event.key==='Enter') addSpielToKatalog()">
-        <button class="add-btn" onclick="addSpielToKatalog()">+ Spiel hinzufügen</button>
+      <div id="tab-termine" class="hidden">
+        <div class="section-title">Termine</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
+          Hier kommt später die Terminverwaltung rein.
+        </div>
       </div>
-      <div class="spiele-editor" id="spiele-katalog-list" style="margin-top:14px;"></div>
-	  <div class="section-title">Rundengründe anlegen</div>
-		<div class="add-person-row">
-		  <input type="text" id="new-rundengrund-input" placeholder="Neuen Rundengrund hinzufügen…" onkeydown="if(event.key==='Enter') addRoundReasonToKatalog()">
-		  <button class="add-btn" onclick="addRoundReasonToKatalog()">+ Rundengrund hinzufügen</button>
-		</div>
-<div class="spiele-editor" id="rundengruende-katalog-list" style="margin-top:14px;"></div>
-    </div>
 
-    <div id="tab-preise" class="hidden">
-      <div class="section-title">Preise bearbeiten</div>
-      <div class="prices-toolbar">
-        <button class="add-btn" onclick="openDrinkModal()">+ Getränk hinzufügen</button>
+      <div id="tab-einstellungen" class="hidden">
+        <div class="section-title">Einstellungen</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
+          Hier kommen später die Einstellungen rein.
+        </div>
       </div>
-      <div class="prices-editor" id="prices-editor"></div>
-      <button class="save-prices-btn" onclick="savePrices()">💾 Preise speichern</button>
     </div>
   </main>
 </div>
@@ -1913,7 +2049,7 @@
     </div>
   </div>
 </div>
-	
+
 <div class="modal-overlay hidden" id="assign-modal">
   <div class="modal" style="max-width:420px;">
     <h3>Seite zuweisen</h3>
@@ -1938,8 +2074,8 @@
     </div>
   </div>
 </div>
-    
-	<div class="modal-overlay hidden" id="drink-edit-modal">
+
+<div class="modal-overlay hidden" id="drink-edit-modal">
   <div class="modal">
     <h3 id="drink-edit-name">Name</h3>
     <div class="modal-sub">Getränke bearbeiten</div>
@@ -1952,9 +2088,10 @@
     </div>
   </div>
 </div>
-    
-<div id="toast"></div>
 
+<div id="toast"></div>
+    
+    
 <script>
 const APP_VERSION = '20260318-13';
 const APPVersionSelf = '1.0.2.10';
@@ -3919,13 +4056,55 @@ function deletePerson(name) {
 }
 
 // ── TABS ──
-function showTab(name, el) {
-  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.remove('hidden');
-  el.classList.add('active');
-}
+  const subTabMap = {
+    organisation: ['anwesenheit', 'gruppen'],
+    getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
+    strafen: ['strafen-uebersicht', 'strafen-abrechnung'],
+    verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
+  };
 
+  const defaultSubTab = {
+    organisation: 'anwesenheit',
+    getraenke: 'getraenke-uebersicht',
+    strafen: 'strafen-uebersicht',
+    verwaltung: 'spiele'
+  };
+
+  function showMainTab(mainKey, el) {
+    document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
+    if (el) el.classList.add('active');
+
+    document.querySelectorAll('.main-panel').forEach(panel => panel.classList.add('hidden'));
+    document.querySelectorAll('.sub-tabs').forEach(panel => panel.classList.add('hidden'));
+
+    const mainPanel = document.getElementById('main-' + mainKey);
+    const subTabs = document.getElementById('subtabs-' + mainKey);
+
+    if (mainPanel) mainPanel.classList.remove('hidden');
+    if (subTabs) subTabs.classList.remove('hidden');
+
+    const targetSubKey = defaultSubTab[mainKey];
+    const targetBtn = document.querySelector('#subtabs-' + mainKey + ' .sub-tab[data-sub="' + targetSubKey + '"]');
+
+    showSubTab(mainKey, targetSubKey, targetBtn);
+  }
+
+  function showSubTab(mainKey, subKey, el) {
+    document.querySelectorAll('#subtabs-' + mainKey + ' .sub-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+
+    if (el) el.classList.add('active');
+
+    subTabMap[mainKey].forEach(id => {
+      const node = document.getElementById('tab-' + id);
+      if (node) node.classList.add('hidden');
+    });
+
+    const activeNode = document.getElementById('tab-' + subKey);
+    if (activeNode) activeNode.classList.remove('hidden');
+  }
+    
 // ── RESET / UNDO ──
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
