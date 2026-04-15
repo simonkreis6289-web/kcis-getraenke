@@ -1690,11 +1690,39 @@
 <body>
 
 <div id="loading-screen">
-  <h2>KegelClub Invaliden Schwadron</h2>
+  <h2>Kegelclub Manager</h2>
   <div class="loader"></div>
   <span style="color:var(--muted);font-size:0.8rem">Lade Daten…</span>
 </div>
+    
+    <div id="club-start-screen" class="hidden">
+  <main>
+    <div class="section-title">Kegelclub auswählen</div>
 
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+        Neuen Kegelclub anlegen
+      </div>
+      <div class="add-person-row">
+        <input
+          type="text"
+          id="new-club-input"
+          placeholder="Neuen Kegelclub eingeben…"
+          onkeydown="if(event.key==='Enter') createClub()"
+        >
+        <button class="add-btn" onclick="createClub()">+ Kegelclub anlegen</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+        Vorhandene Kegelclubs
+      </div>
+      <div id="club-list"></div>
+    </div>
+  </main>
+</div>
+    
 <div class="modal-overlay hidden" id="payment-modal">
   <div class="modal">
     <h3 id="modal-name">Name</h3>
@@ -2134,8 +2162,9 @@ let assignPerson = null;
 let autoSaveTimer = null;
 let appReady = false;
     
-let ACTIVE_CLUB = 'Kegelclub 1'; // später per Auswahl in der App änderbar
-	
+let ACTIVE_CLUB = null;
+let CLUBS = {};
+    
   const sounds = {
   cash: new Audio('sounds/cash.mp3'),
   goodbye: new Audio('sounds/goodbye.mp3'),
@@ -2151,30 +2180,15 @@ function playSound(sound) {
 	
 // ── AUTH / START ──
 async function startApp() {
-  loadLocal();
-
-  const firestoreLoaded = await loadFromFirestore();
-  if (firestoreLoaded) {
-    saveLocal();
-  }
-
-  renderAll();
+  loadClubSystem();
+  renderClubList();
   updateVersionInfo();
+
   appReady = true;
 
   document.getElementById('loading-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-
-  if (!navigator.onLine) {
-    showToast('📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', 'success');
-    return;
-  }
-
-  if (firestoreLoaded) {
-    showToast('☁️ Daten aus Firestore geladen', 'success');
-  } else {
-    await saveToFirestore(false);
-  }
+  document.getElementById('club-start-screen').classList.remove('hidden');
+  document.getElementById('app').style.display = 'none';
 }
 
 // ── LOCAL STORAGE ──
@@ -2322,6 +2336,7 @@ function hydrateState() {
 function persistState() {
   if (!appReady) return;
   saveLocal();
+  saveClubSystem();
   queueAutoSave();
 }
 
@@ -2626,7 +2641,159 @@ function startNewKegelabend() {
 function euros(val) {
   return (val || 0).toFixed(2).replace('.', ',') + ' €';
 }
-	
+
+function createEmptyClubData() {
+  return {
+    persons: [],
+    prices: {
+      kl_bier: 0,
+      gr_bier: 0,
+      kl_softd: 0,
+      gr_softd: 0,
+      malz: 0,
+      wasser: 0,
+      schnaps: 0,
+      weizen: 0,
+      wein: 0
+    },
+    DRINKS: [
+      { key: 'kl_bier',  label: 'Kl. Bier' },
+      { key: 'gr_bier',  label: 'Gr. Bier' },
+      { key: 'kl_softd', label: 'Kl. Fanta/Cola' },
+      { key: 'gr_softd', label: 'Gr. Fanta/Cola' },
+      { key: 'malz',     label: 'Malzbier' },
+      { key: 'wasser',   label: 'Wasser' },
+      { key: 'schnaps',  label: 'Schnaps' },
+      { key: 'weizen',   label: 'Weizen' },
+      { key: 'wein',     label: 'Wein/Sekt' }
+    ],
+    SPIELE_KATALOG: ['Tannenbaum', 'Darts'],
+    RUNDEN_GRUENDE: ['1000er-Runde', '2000er-Runde', 'Geburtstag'],
+    spiele: [],
+    selectedLoser: null,
+    teamDrinks: {}
+  };
+}
+
+function syncCurrentClubToStore() {
+  if (!ACTIVE_CLUB) return;
+
+  CLUBS[ACTIVE_CLUB] = {
+    persons: JSON.parse(JSON.stringify(persons)),
+    prices: JSON.parse(JSON.stringify(prices)),
+    DRINKS: JSON.parse(JSON.stringify(DRINKS)),
+    SPIELE_KATALOG: JSON.parse(JSON.stringify(SPIELE_KATALOG)),
+    RUNDEN_GRUENDE: JSON.parse(JSON.stringify(RUNDEN_GRUENDE)),
+    spiele: JSON.parse(JSON.stringify(spiele)),
+    selectedLoser,
+    teamDrinks: JSON.parse(JSON.stringify(teamDrinks))
+  };
+}
+
+function saveClubSystem() {
+  syncCurrentClubToStore();
+
+  const payload = {
+    activeClub: ACTIVE_CLUB,
+    clubs: CLUBS
+  };
+
+  localStorage.setItem('kcis_club_system_v1', JSON.stringify(payload));
+}
+
+function loadClubSystem() {
+  try {
+    const raw = localStorage.getItem('kcis_club_system_v1');
+    if (!raw) return false;
+
+    const data = JSON.parse(raw);
+    CLUBS = data.clubs || {};
+    ACTIVE_CLUB = data.activeClub || null;
+    return true;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+function renderClubList() {
+  const el = document.getElementById('club-list');
+  if (!el) return;
+
+  const clubNames = Object.keys(CLUBS).sort((a, b) => a.localeCompare(b, 'de'));
+  el.innerHTML = '';
+
+  if (!clubNames.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch kein Kegelclub angelegt</div>';
+    return;
+  }
+
+  clubNames.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'add-btn';
+    btn.style.width = '100%';
+    btn.style.marginBottom = '8px';
+    btn.textContent = name;
+    btn.onclick = () => selectClub(name);
+    el.appendChild(btn);
+  });
+}
+
+function createClub() {
+  const input = document.getElementById('new-club-input');
+  const name = (input.value || '').trim();
+
+  if (!name) {
+    showToast('Bitte Namen für den Kegelclub eingeben', 'error');
+    return;
+  }
+
+  if (CLUBS[name]) {
+    showToast('Kegelclub existiert bereits', 'error');
+    return;
+  }
+
+  CLUBS[name] = createEmptyClubData();
+  input.value = '';
+
+  saveClubSystem();
+  renderClubList();
+  showToast(`✅ ${name} angelegt`, 'success');
+}
+
+function selectClub(clubName) {
+  const club = CLUBS[clubName];
+  if (!club) return;
+
+  ACTIVE_CLUB = clubName;
+
+  persons = JSON.parse(JSON.stringify(club.persons || []));
+  prices = JSON.parse(JSON.stringify(club.prices || {}));
+  DRINKS = JSON.parse(JSON.stringify(club.DRINKS || []));
+  SPIELE_KATALOG = JSON.parse(JSON.stringify(club.SPIELE_KATALOG || []));
+  RUNDEN_GRUENDE = JSON.parse(JSON.stringify(club.RUNDEN_GRUENDE || []));
+  spiele = JSON.parse(JSON.stringify(club.spiele || []));
+  selectedLoser = club.selectedLoser || null;
+  teamDrinks = JSON.parse(JSON.stringify(club.teamDrinks || {}));
+
+  hydrateState();
+  renderAll();
+  updateAppHeader();
+
+  document.getElementById('club-start-screen').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+
+  saveClubSystem();
+}
+    
+function updateAppHeader() {
+  const title = document.querySelector('header h1');
+  const subtitle = document.querySelector('header .subtitle');
+
+  if (title) title.textContent = ACTIVE_CLUB || 'Kegelclub Manager';
+  if (subtitle) subtitle.textContent = 'Getränkeabrechnung';
+}
+    
 function openAssignModal(personName) {
   const p = persons.find(x => x.name === personName);
   if (!p) return;
