@@ -2181,15 +2181,34 @@ function playSound(sound) {
 	
 // ── AUTH / START ──
 async function startApp() {
-  loadClubSystem();
+  loadLocal();
   renderClubList();
   updateVersionInfo();
-
   appReady = true;
 
+  const clubsLoaded = await loadClubListFromFirestore();
+  if (clubsLoaded) {
+    saveLocal();
+  }
+
   document.getElementById('loading-screen').style.display = 'none';
-  document.getElementById('club-start-screen').classList.remove('hidden');
-  document.getElementById('app').style.display = 'none';
+
+  if (ACTIVE_CLUB) {
+    document.getElementById('app').style.display = 'block';
+    await selectClub(ACTIVE_CLUB);
+  } else {
+    document.getElementById('club-start-screen').classList.remove('hidden');
+    document.getElementById('app').style.display = 'none';
+  }
+
+  if (!navigator.onLine) {
+    showToast('📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', 'success');
+    return;
+  }
+
+  if (clubsLoaded) {
+    showToast('☁️ Clubs aus Firestore geladen', 'success');
+  }
 }
 
 // ── LOCAL STORAGE ──
@@ -2647,7 +2666,49 @@ function startNewKegelabend() {
 function euros(val) {
   return (val || 0).toFixed(2).replace('.', ',') + ' €';
 }
+    
+async function saveClubMetaToFirestore(clubName) {
+  if (!window.firestoreApi || !clubName) return false;
 
+  try {
+    const clubId = getClubFirestoreId(clubName);
+
+    await window.firestoreApi.saveClubMeta(clubId, {
+      name: clubName,
+      createdAt: new Date().toISOString()
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Fehler beim Speichern der Club-Metadaten:', e);
+    return false;
+  }
+}
+    
+async function loadClubListFromFirestore() {
+  if (!window.firestoreApi) return false;
+
+  try {
+    const clubsFromDb = await window.firestoreApi.loadClubList();
+
+    if (!clubsFromDb || !clubsFromDb.length) return false;
+
+    CLUBS = {};
+
+    clubsFromDb.forEach(entry => {
+      const clubName = entry.name || entry.id;
+      CLUBS[clubName] = CLUBS[clubName] || createEmptyClubData();
+    });
+
+    saveClubSystem();
+    renderClubList();
+    return true;
+  } catch (e) {
+    console.error('Fehler beim Laden der Clubliste:', e);
+    return false;
+  }
+}
+    
 function getClubFirestoreId(clubName) {
   return String(clubName || '')
     .trim()
@@ -2755,26 +2816,28 @@ function renderClubList() {
   });
 }
 
-function createClub() {
+async function createClub() {
   const input = document.getElementById('new-club-input');
   const name = (input.value || '').trim();
 
   if (!name) {
-    showToast('Bitte Namen für den Kegelclub eingeben', 'error');
+    showToast('Bitte Clubnamen eingeben', 'error');
     return;
   }
 
   if (CLUBS[name]) {
-    showToast('Kegelclub existiert bereits', 'error');
+    showToast('Club existiert bereits', 'error');
     return;
   }
 
   CLUBS[name] = createEmptyClubData();
-  input.value = '';
-
   saveClubSystem();
   renderClubList();
-  showToast(`✅ ${name} angelegt`, 'success');
+
+  await saveClubMetaToFirestore(name);
+
+  input.value = '';
+  showToast(`✅ Club "${name}" angelegt`, 'success');
 }
 
 async function selectClub(clubName) {
@@ -4461,7 +4524,9 @@ import {
   setDoc,
   getDoc,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -4500,13 +4565,27 @@ window.firestoreApi = {
     }, { merge: true });
   },
 
+  async saveClubMeta(clubId, payload = {}) {
+    const ref = doc(db, 'clubs', clubId);
+    await setDoc(ref, {
+      ...payload,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  },
+
+  async loadClubList() {
+    const snap = await getDocs(collection(db, 'clubs'));
+    return snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+  },
+
   subscribeToClubState(clubId, onData, onError) {
     const ref = doc(db, 'clubs', clubId, 'state', 'current');
     return onSnapshot(
       ref,
-      (snap) => {
-        onData(snap.exists() ? snap.data() : null);
-      },
+      (snap) => onData(snap.exists() ? snap.data() : null),
       onError
     );
   }
