@@ -1827,7 +1827,73 @@
     font-size: 1.7rem;
   }
 }
-      
+ 
+      #club-list {
+  display: grid;
+  gap: 14px;
+}
+
+.club-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.club-card:active {
+  transform: scale(0.98);
+}
+
+.club-card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+.club-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #ddd;
+  position: relative;
+}
+
+.club-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.club-avatar-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: #bbb;
+  color: white;
+}
+
+.club-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.club-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.club-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
       
       
   </style>
@@ -2949,23 +3015,27 @@ function renderClubList() {
   el.innerHTML = '';
 
   if (!clubNames.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.9rem;padding:8px 0;">Noch kein Kegelclub angelegt</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch kein Kegelclub angelegt</div>';
     return;
   }
 
   clubNames.forEach(name => {
     const card = document.createElement('div');
     card.className = 'club-card';
-    card.onclick = () => selectClub(name);
+
+    const avatar = getClubAvatarHtml(name);
+
+    const memberCount = (CLUBS[name].persons || []).filter(p => !p.isGuest).length;
 
     card.innerHTML = `
-      ${getClubAvatarHtml(name)}
-      <div class="club-card-text">
-        <div class="club-card-name">${name}</div>
-        <div class="club-card-sub">Kegelclub öffnen</div>
+      ${avatar}
+      <div class="club-info">
+        <div class="club-name">${name}</div>
+        <div class="club-meta">${memberCount} Mitglieder</div>
       </div>
-      <div class="club-card-arrow">›</div>
     `;
+
+    card.onclick = () => selectClub(name);
 
     el.appendChild(card);
   });
@@ -3073,6 +3143,57 @@ async function selectClub(clubName) {
 
   syncCurrentClubToStore();
   saveClubSystem();
+}
+    
+    
+    function getClubAvatarFileCandidates(name) {
+  const clean = String(name || '').trim();
+
+  const normalized = clean
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const base = normalized
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return [
+    `clubbilder/${base}.jpg`,
+    `clubbilder/${base}.jpeg`,
+    `clubbilder/${base}.png`,
+    `clubbilder/${base}.webp`
+  ];
+}
+
+function getClubAvatarHtml(name) {
+  const initials = String(name || '')
+    .split(' ')
+    .map(n => n[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const candidates = getClubAvatarFileCandidates(name);
+
+  return `
+    <div class="club-avatar">
+      <img src="${candidates[0]}" 
+           onerror="
+             if(this.dataset.i===undefined){this.dataset.i='0';}
+             var files=${JSON.stringify(candidates).replace(/"/g,'&quot;')};
+             var next=parseInt(this.dataset.i)+1;
+             if(next<files.length){
+               this.dataset.i=next;
+               this.src=files[next];
+             } else {
+               this.style.display='none';
+               this.nextElementSibling.style.display='flex';
+             }
+           ">
+      <div class="club-avatar-fallback">${initials}</div>
+    </div>
+  `;
 }
     
 function updateAppHeader() {
