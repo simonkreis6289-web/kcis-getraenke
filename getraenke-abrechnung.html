@@ -1681,6 +1681,155 @@
         align-items: stretch;
       }
     }
+      
+/* ── CLUB STARTSEITE ── */
+.club-start-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.club-start-hero {
+  background: linear-gradient(135deg, rgba(245,166,35,0.12), rgba(46,51,80,0.06));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.club-start-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.club-start-text {
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.club-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.club-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.club-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+  border-color: var(--accent);
+}
+
+.club-card:active {
+  transform: translateY(0);
+}
+
+.club-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+}
+
+.club-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.club-avatar-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.club-card-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.club-card-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.club-card-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.club-card-arrow {
+  font-size: 1.2rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.back-btn {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .club-list-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .club-card {
+    min-height: 86px;
+  }
+
+  .club-avatar {
+    width: 58px;
+    height: 58px;
+  }
+
+  .club-start-title {
+    font-size: 1.7rem;
+  }
+}
+      
+      
+      
   </style>
     
 </head>
@@ -1695,30 +1844,38 @@
   <span style="color:var(--muted);font-size:0.8rem">Lade Daten…</span>
 </div>
     
-    <div id="club-start-screen" class="hidden">
+<div id="club-start-screen" class="hidden">
   <main>
-    <div class="section-title">Kegelclub auswählen</div>
+    <div class="club-start-wrap">
+      <div class="club-start-hero">
+        <div class="club-start-title">Kegelclub Manager</div>
+        <div class="club-start-text">
+          Wähle einen vorhandenen Kegelclub aus oder lege direkt einen neuen an.
+          Jeder Club verwaltet seine eigenen Mitglieder, Preise, Getränke und Einstellungen.
+        </div>
+      </div>
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;">
-      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
-        Neuen Kegelclub anlegen
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+          Neuen Kegelclub anlegen
+        </div>
+        <div class="add-person-row">
+          <input
+            type="text"
+            id="new-club-input"
+            placeholder="Neuen Kegelclub eingeben…"
+            onkeydown="if(event.key==='Enter') createClub()"
+          >
+          <button class="add-btn" onclick="createClub()">+ Kegelclub anlegen</button>
+        </div>
       </div>
-      <div class="add-person-row">
-        <input
-          type="text"
-          id="new-club-input"
-          placeholder="Neuen Kegelclub eingeben…"
-          onkeydown="if(event.key==='Enter') createClub()"
-        >
-        <button class="add-btn" onclick="createClub()">+ Kegelclub anlegen</button>
-      </div>
-    </div>
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
-      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
-        Vorhandene Kegelclubs
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+          Vorhandene Kegelclubs
+        </div>
+        <div id="club-list" class="club-list-grid"></div>
       </div>
-      <div id="club-list"></div>
     </div>
   </main>
 </div>
@@ -1823,6 +1980,7 @@
 
     <div style="display:flex;flex-direction:column;align-items:flex-end;">
       <div class="header-btns">
+        <button class="back-btn hidden" onclick="goToClubSelection()" id="clubBackBtn">↩ Clubs</button>
         <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
         <button class="archive-btn" onclick="startNewKegelabend()">🆕 Neuer Kegelabend</button>
         <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
@@ -2791,21 +2949,44 @@ function renderClubList() {
   el.innerHTML = '';
 
   if (!clubNames.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Noch kein Kegelclub angelegt</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.9rem;padding:8px 0;">Noch kein Kegelclub angelegt</div>';
     return;
   }
 
   clubNames.forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'add-btn';
-    btn.style.width = '100%';
-    btn.style.marginBottom = '8px';
-    btn.textContent = name;
-    btn.onclick = () => selectClub(name);
-    el.appendChild(btn);
+    const card = document.createElement('div');
+    card.className = 'club-card';
+    card.onclick = () => selectClub(name);
+
+    card.innerHTML = `
+      ${getClubAvatarHtml(name)}
+      <div class="club-card-text">
+        <div class="club-card-name">${name}</div>
+        <div class="club-card-sub">Kegelclub öffnen</div>
+      </div>
+      <div class="club-card-arrow">›</div>
+    `;
+
+    el.appendChild(card);
   });
 }
+    
+function goToClubSelection() {
+  if (currentClubUnsubscribe) {
+    currentClubUnsubscribe();
+    currentClubUnsubscribe = null;
+  }
 
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('club-start-screen').classList.remove('hidden');
+
+  renderClubList();
+  updateAppHeader();
+}
+    
 async function createClub() {
   const input = document.getElementById('new-club-input');
   const name = (input.value || '').trim();
@@ -2897,9 +3078,14 @@ async function selectClub(clubName) {
 function updateAppHeader() {
   const title = document.querySelector('header h1');
   const subtitle = document.querySelector('header .subtitle');
+  const backBtn = document.getElementById('clubBackBtn');
 
   if (title) title.textContent = ACTIVE_CLUB || 'Kegelclub Manager';
-  if (subtitle) subtitle.textContent = 'Getränkeabrechnung';
+  if (subtitle) subtitle.textContent = ACTIVE_CLUB ? 'Getränkeabrechnung' : 'Club auswählen';
+
+  if (backBtn) {
+    backBtn.classList.toggle('hidden', !ACTIVE_CLUB);
+  }
 }
     
 function openAssignModal(personName) {
@@ -3096,7 +3282,61 @@ function getAvatarHtml(name) {
     </div>
   `;
 }
-	
+
+    function getClubAvatarFileCandidates(name) {
+  const clean = String(name || '').trim();
+
+  const normalized = clean
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const base = normalized
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return [
+    `clubbilder/${base}.jpg`,
+    `clubbilder/${base}.jpeg`,
+    `clubbilder/${base}.png`,
+    `clubbilder/${base}.webp`
+  ];
+}
+
+function getClubAvatarHtml(name) {
+  const initials = String(name || '')
+    .split(' ')
+    .map(n => n[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const candidates = getClubAvatarFileCandidates(name);
+
+  return `
+    <div class="club-avatar">
+      <img
+        src="${candidates[0]}"
+        alt="${name}"
+        onerror="
+          if(this.dataset.tryIndex===undefined){this.dataset.tryIndex='0';}
+          var files = ${JSON.stringify(candidates).replace(/"/g, '&quot;')};
+          var next = parseInt(this.dataset.tryIndex,10) + 1;
+          if(next < files.length){
+            this.dataset.tryIndex = String(next);
+            this.src = files[next];
+          } else {
+            this.remove();
+            var fb = this.parentNode.querySelector('.club-avatar-fallback');
+            if(fb) fb.style.display='flex';
+          }
+        "
+      >
+      <span class="club-avatar-fallback" style="display:none;">${initials}</span>
+    </div>
+  `;
+}
+    
 // ── PREISE SPEICHERN ──
 async function savePrices() {
   DRINKS.forEach(d => {
