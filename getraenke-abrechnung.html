@@ -2164,6 +2164,7 @@ let appReady = false;
     
 let ACTIVE_CLUB = null;
 let CLUBS = {};
+let currentClubUnsubscribe = null;
     
   const sounds = {
   cash: new Audio('sounds/cash.mp3'),
@@ -2241,14 +2242,15 @@ function applyLoadedState(state) {
 }
 
 async function loadFromFirestore() {
-  if (!window.firestoreApi) return false;
+  if (!window.firestoreApi || !ACTIVE_CLUB) return false;
 
   try {
-    const state = await window.firestoreApi.loadCurrentEvent(FIRESTORE_EVENT_DOC_ID);
+    const clubId = getClubFirestoreId(ACTIVE_CLUB);
+    const state = await window.firestoreApi.loadClubState(clubId);
     if (!state) return false;
 
     applyLoadedState(state);
-    console.log('Firestore geladen:', state);
+    console.log('Firestore geladen:', ACTIVE_CLUB, state);
     return true;
   } catch (e) {
     console.error('Fehler beim Laden aus Firestore:', e);
@@ -2257,15 +2259,21 @@ async function loadFromFirestore() {
 }
 
 async function saveToFirestore(showSuccessToast = false) {
-  if (!window.firestoreApi) return false;
+  if (!window.firestoreApi || !ACTIVE_CLUB) return false;
 
   try {
-    await window.firestoreApi.saveCurrentEvent(FIRESTORE_EVENT_DOC_ID, getFirestoreState());
-    if (showSuccessToast) showToast('☁️ In Firestore gespeichert', 'success');
+    const clubId = getClubFirestoreId(ACTIVE_CLUB);
+    await window.firestoreApi.saveClubState(clubId, getFirestoreState());
+
+    if (showSuccessToast) {
+      showToast(`☁️ ${ACTIVE_CLUB} gespeichert`, 'success');
+    }
     return true;
   } catch (e) {
     console.error('Fehler beim Speichern in Firestore:', e);
-    if (showSuccessToast) showToast('❌ Firestore-Speichern fehlgeschlagen', 'error');
+    if (showSuccessToast) {
+      showToast('❌ Firestore-Speichern fehlgeschlagen', 'error');
+    }
     return false;
   }
 }
@@ -2582,21 +2590,19 @@ async function closeDrinksAndExportPDF() {
 }
     
 async function archiveEvent(snapshot) {
-  if (!window.firestoreApi) return;
+  if (!window.firestoreApi || !ACTIVE_CLUB) return;
 
-  const dateId = new Date().toISOString().replace(/[:.]/g, '-');
+  const clubId = getClubFirestoreId(ACTIVE_CLUB);
+  const archiveId = 'archive_' + new Date().toISOString().replace(/[:.]/g, '-');
 
   try {
-    await window.firestoreApi.saveCurrentEvent(
-      'archive_' + dateId,
-      {
-        ...snapshot,
-        status: 'closed',
-        closedAt: new Date().toISOString(),
-        club: ACTIVE_CLUB,
-        category: 'getraenke'
-      }
-    );
+    await window.firestoreApi.archiveClubEvent(clubId, archiveId, {
+      ...snapshot,
+      status: 'closed',
+      closedAt: new Date().toISOString(),
+      club: ACTIVE_CLUB,
+      category: 'getraenke'
+    });
   } catch (e) {
     console.error('Archivieren fehlgeschlagen:', e);
     throw e;
@@ -2642,6 +2648,16 @@ function euros(val) {
   return (val || 0).toFixed(2).replace('.', ',') + ' €';
 }
 
+function getClubFirestoreId(clubName) {
+  return String(clubName || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'club';
+}
+    
 function createEmptyClubData() {
   return {
     persons: [],
@@ -2761,20 +2777,27 @@ function createClub() {
   showToast(`✅ ${name} angelegt`, 'success');
 }
 
-function selectClub(clubName) {
-  const club = CLUBS[clubName];
-  if (!club) return;
+async function selectClub(clubName) {
+  if (!clubName) return;
+
+  if (currentClubUnsubscribe) {
+    currentClubUnsubscribe();
+    currentClubUnsubscribe = null;
+  }
 
   ACTIVE_CLUB = clubName;
+  const clubId = getClubFirestoreId(clubName);
 
-  persons = JSON.parse(JSON.stringify(club.persons || []));
-  prices = JSON.parse(JSON.stringify(club.prices || {}));
-  DRINKS = JSON.parse(JSON.stringify(club.DRINKS || []));
-  SPIELE_KATALOG = JSON.parse(JSON.stringify(club.SPIELE_KATALOG || []));
-  RUNDEN_GRUENDE = JSON.parse(JSON.stringify(club.RUNDEN_GRUENDE || []));
-  spiele = JSON.parse(JSON.stringify(club.spiele || []));
-  selectedLoser = club.selectedLoser || null;
-  teamDrinks = JSON.parse(JSON.stringify(club.teamDrinks || {}));
+  const localClub = CLUBS[clubName] || createEmptyClubData();
+
+  persons = JSON.parse(JSON.stringify(localClub.persons || []));
+  prices = JSON.parse(JSON.stringify(localClub.prices || {}));
+  DRINKS = JSON.parse(JSON.stringify(localClub.DRINKS || []));
+  SPIELE_KATALOG = JSON.parse(JSON.stringify(localClub.SPIELE_KATALOG || []));
+  RUNDEN_GRUENDE = JSON.parse(JSON.stringify(localClub.RUNDEN_GRUENDE || []));
+  spiele = JSON.parse(JSON.stringify(localClub.spiele || []));
+  selectedLoser = localClub.selectedLoser || null;
+  teamDrinks = JSON.parse(JSON.stringify(localClub.teamDrinks || {}));
 
   hydrateState();
   renderAll();
@@ -2783,6 +2806,33 @@ function selectClub(clubName) {
   document.getElementById('club-start-screen').classList.add('hidden');
   document.getElementById('app').style.display = 'block';
 
+  const firestoreLoaded = await loadFromFirestore();
+
+  if (!firestoreLoaded) {
+    await saveToFirestore(false);
+  } else {
+    renderAll();
+    updateAppHeader();
+  }
+
+  currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
+    clubId,
+    (state) => {
+      if (!state) return;
+
+      applyLoadedState(state);
+      renderAll();
+      updateAppHeader();
+
+      syncCurrentClubToStore();
+      saveClubSystem();
+    },
+    (error) => {
+      console.error('Live-Sync Fehler:', error);
+    }
+  );
+
+  syncCurrentClubToStore();
   saveClubSystem();
 }
     
@@ -4405,13 +4455,14 @@ if ('serviceWorker' in navigator) {
     
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-  import {
-    getFirestore,
-    doc,
-    setDoc,
-    getDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyClS5Mby1bZ39Olgra0bEvV273_c5FRTck",
@@ -4426,21 +4477,40 @@ if ('serviceWorker' in navigator) {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  window.firestoreApi = {
-    async loadCurrentEvent(docId = 'current') {
-      const ref = doc(db, 'events', docId);
-      const snap = await getDoc(ref);
-      return snap.exists() ? snap.data() : null;
-    },
+window.firestoreApi = {
+  async loadClubState(clubId) {
+    const ref = doc(db, 'clubs', clubId, 'state', 'current');
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : null;
+  },
 
-    async saveCurrentEvent(docId = 'current', payload = {}) {
-      const ref = doc(db, 'events', docId);
-      await setDoc(ref, {
-        ...payload,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-    }
-  };
+  async saveClubState(clubId, payload = {}) {
+    const ref = doc(db, 'clubs', clubId, 'state', 'current');
+    await setDoc(ref, {
+      ...payload,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  },
+
+  async archiveClubEvent(clubId, archiveId, payload = {}) {
+    const ref = doc(db, 'clubs', clubId, 'archive', archiveId);
+    await setDoc(ref, {
+      ...payload,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  },
+
+  subscribeToClubState(clubId, onData, onError) {
+    const ref = doc(db, 'clubs', clubId, 'state', 'current');
+    return onSnapshot(
+      ref,
+      (snap) => {
+        onData(snap.exists() ? snap.data() : null);
+      },
+      onError
+    );
+  }
+};
 
   console.log('Firestore API bereit');
 
