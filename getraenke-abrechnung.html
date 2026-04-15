@@ -2181,19 +2181,36 @@ function playSound(sound) {
 	
 // ── AUTH / START ──
 async function startApp() {
-  loadLocal();
+  loadClubSystem();
+
+  if (ACTIVE_CLUB && CLUBS[ACTIVE_CLUB]) {
+    const localClub = CLUBS[ACTIVE_CLUB];
+
+    persons = Array.isArray(localClub.persons) ? localClub.persons : [];
+    spiele = Array.isArray(localClub.spiele) ? localClub.spiele : [];
+    DRINKS = Array.isArray(localClub.DRINKS) && localClub.DRINKS.length ? localClub.DRINKS : DRINKS;
+    prices = localClub.prices || {};
+    SPIELE_KATALOG = Array.isArray(localClub.SPIELE_KATALOG) && localClub.SPIELE_KATALOG.length ? localClub.SPIELE_KATALOG : SPIELE_KATALOG;
+    RUNDEN_GRUENDE = Array.isArray(localClub.RUNDEN_GRUENDE) && localClub.RUNDEN_GRUENDE.length ? localClub.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
+    selectedLoser = localClub.selectedLoser || null;
+    teamDrinks = localClub.teamDrinks || {};
+
+    hydrateState();
+  }
+
   renderClubList();
   updateVersionInfo();
   appReady = true;
 
   const clubsLoaded = await loadClubListFromFirestore();
   if (clubsLoaded) {
-    saveLocal();
+    saveClubSystem();
   }
 
   document.getElementById('loading-screen').style.display = 'none';
 
   if (ACTIVE_CLUB) {
+    document.getElementById('club-start-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
     await selectClub(ACTIVE_CLUB);
   } else {
@@ -2298,38 +2315,8 @@ async function saveToFirestore(showSuccessToast = false) {
 }
 
 async function manualSaveAll() {
-  saveLocal();
+  saveClubSystem();
   await saveToFirestore(true);
-}
-    
-function saveLocal() {
-  try {
-    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(getSerializableState()));
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function loadLocal() {
-  try {
-    const raw = localStorage.getItem(LOCAL_STATE_KEY);
-    if (!raw) return false;
-    const state = JSON.parse(raw);
-
-    persons = Array.isArray(state.persons) ? state.persons : [];
-    spiele = Array.isArray(state.spiele) ? state.spiele : [];
-    DRINKS = Array.isArray(state.DRINKS) && state.DRINKS.length ? state.DRINKS : DRINKS;
-    prices = state.prices || prices;
-    SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
-    RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
-    selectedLoser = state.selectedLoser || null;
-    teamDrinks = state.teamDrinks || {};
-    hydrateState();
-    return true;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
 }
 
 function hydrateState() {
@@ -2362,7 +2349,6 @@ function hydrateState() {
 
 function persistState() {
   if (!appReady) return;
-  saveLocal();
   saveClubSystem();
   queueAutoSave();
 }
@@ -2370,7 +2356,7 @@ function persistState() {
 function queueAutoSave() {
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(async () => {
-    saveLocal();
+    saveClubSystem();
     await saveToFirestore(false);
   }, 800);
 }
@@ -2690,15 +2676,19 @@ async function loadClubListFromFirestore() {
 
   try {
     const clubsFromDb = await window.firestoreApi.loadClubList();
-
     if (!clubsFromDb || !clubsFromDb.length) return false;
 
-    CLUBS = {};
+    const mergedClubs = { ...CLUBS };
 
     clubsFromDb.forEach(entry => {
       const clubName = entry.name || entry.id;
-      CLUBS[clubName] = CLUBS[clubName] || createEmptyClubData();
+
+      if (!mergedClubs[clubName]) {
+        mergedClubs[clubName] = createEmptyClubData();
+      }
     });
+
+    CLUBS = mergedClubs;
 
     saveClubSystem();
     renderClubList();
@@ -2834,10 +2824,15 @@ async function createClub() {
   saveClubSystem();
   renderClubList();
 
-  await saveClubMetaToFirestore(name);
+  const ok = await saveClubMetaToFirestore(name);
+
+  if (!ok) {
+    showToast('⚠️ Club lokal angelegt, aber nicht in Firestore gespeichert', 'error');
+  } else {
+    showToast(`✅ Club "${name}" angelegt`, 'success');
+  }
 
   input.value = '';
-  showToast(`✅ Club "${name}" angelegt`, 'success');
 }
 
 async function selectClub(clubName) {
