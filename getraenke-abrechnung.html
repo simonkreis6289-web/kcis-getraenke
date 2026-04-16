@@ -3642,6 +3642,26 @@ function getAvatarHtml(name) {
   `;
 }
 
+function getClubAvatarFileCandidates(name) {
+  const clean = String(name || '').trim();
+
+  const normalized = clean
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const base = normalized
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return [
+    `clubbilder/${base}.jpg`,
+    `clubbilder/${base}.jpeg`,
+    `clubbilder/${base}.png`,
+    `clubbilder/${base}.webp`
+  ];
+}
+    
 function getClubAvatarHtml(name) {
   const initials = String(name || '')
     .split(' ')
