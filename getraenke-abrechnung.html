@@ -632,26 +632,30 @@
       table-layout: fixed;
     }
 
-    thead th {
-      background: var(--surface2);
-      padding: 10px 8px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-      position: relative;
-      z-index: 1;
-      width: 70px;
-    }
+thead th {
+  background: var(--surface2);
+  padding: 10px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+  position: relative;
+  z-index: 1;
+  width: 62px;
+}
 
-    thead th:first-child {
+    tbody td:first-child {
       text-align: left;
       padding-left: 12px;
-      width: 180px;
+      min-width: 130px;
+      max-width: 130px;
     }
 
     thead th.sticky-col {
@@ -661,17 +665,52 @@
       background: var(--table-sticky-bg);
       box-shadow: 6px 0 10px rgba(0,0,0,0.04);
     }
+      tbody tr.left-row {
+      background: var(--left_card_bg) !important;
+    }
 
+    tbody tr.left-row td {
+      background: transparent;
+    }
+
+    tbody tr.left-row td.sticky-col {
+      background: rgba(255, 204, 0, 0.22) !important;
+    }
+
+    tbody tr.left-row .counter-btn,
+    tbody tr.left-row .counter-val,
+    tbody tr.left-row .pname,
+    tbody tr.left-row .prole,
+    tbody tr.left-row .ptisch,
+    tbody tr.left-row .total-cell,
+    tbody tr.left-row .paid-cell,
+    tbody tr.left-row .round-cell {
+      opacity: 0.7;
+    }
+      
+th.drink-col {
+  width: 62px;
+}
+
+th.sum-col {
+  width: 74px;
+}
+      
     tbody tr {
+      transition: background 0.1s ease;
       background: var(--table-row-bg);
     }
 
+    tbody tr:active {
+      background: rgba(0,0,0,0.05);
+    }
+      
     tbody tr.alt-row {
       background: var(--table-row-alt-bg);
     }
 
     tbody td {
-      padding: 12px 6px;
+      padding: 16px 6px;
       text-align: center;
       vertical-align: middle;
       white-space: nowrap;
@@ -761,15 +800,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 8px;
     }
 
     .counter-btn {
-      width: 28px;
-      height: 28px;
+      width: 40px;
+      height: 40px;
       border-radius: 8px;
       border: none;
-      font-size: 1rem;
+      font-size: 1.5rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
@@ -795,10 +834,10 @@
     }
 
     .counter-val {
-      min-width: 22px;
+      min-width: 28px;
       text-align: center;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       color: #000000;
     }
       
@@ -3624,10 +3663,12 @@ function renderDrinkRows(list, body, startIndex = 0) {
 
   list.forEach(p => {
     const tr = document.createElement('tr');
-      tr.style.cursor = 'pointer';
-      tr.onclick = () => openDrinkEditModal(p.name);
-    const isAlt = rowIndex % 2 === 1;
-    tr.className = isAlt ? 'alt-row' : '';
+      tr.style.cursor = 'default';
+        const isAlt = rowIndex % 2 === 1;
+        const classes = [];
+        if (isAlt) classes.push('alt-row');
+        if (p.left) classes.push('left-row');
+        tr.className = classes.join(' ');
 
     const leftClass = p.left ? 'left-state' : '';
     const leftEmoji = p.left ? '<span class="left-emoji">​🏡​</span>' : '';
@@ -3654,14 +3695,18 @@ const avatarHtml = getAvatarHtml(p.name)
 </td>
     `;
 
-    DRINKS.forEach(d => {
-      const v = p.drinks[d.key] || 0;
-        html += `
-          <td>
-            <span class="counter-val">${v}</span>
-          </td>
-        `;
-    });
+DRINKS.forEach(d => {
+  const v = p.drinks[d.key] || 0;
+  html += `
+    <td>
+      <div class="counter">
+        <button type="button" class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
+        <span class="counter-val">${v}</span>
+        <button type="button" class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
+      </div>
+    </td>
+  `;
+});
 
     const te = p.teamExtra || 0;
     const re = p.roundExtra || 0;
@@ -3681,13 +3726,20 @@ const avatarHtml = getAvatarHtml(p.name)
 }
         
 function renderGetraenke() {
-  const members = getPresentMembers().sort((a, b) => a.name.localeCompare(b.name, 'de'));
-  const guests = getPresentGuests().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    const members = getPresentMembers().sort((a, b) => {
+      if (!!a.left !== !!b.left) return a.left ? 1 : -1;
+      return a.name.localeCompare(b.name, 'de');
+    });
 
-  document.getElementById('drinks-header').innerHTML =
-    '<th class="sticky-col">Name</th>' +
-    DRINKS.map(d => `<th>${d.label}</th>`).join('') +
-    '<th>Strafen+</th><th>Runde+</th><th>Gesamt</th><th>Bezahlt</th>';
+    const guests = getPresentGuests().sort((a, b) => {
+      if (!!a.left !== !!b.left) return a.left ? 1 : -1;
+      return a.name.localeCompare(b.name, 'de');
+    });
+
+document.getElementById('drinks-header').innerHTML =
+  '<th class="sticky-col name-col">Name</th>' +
+  DRINKS.map(d => `<th class="drink-col">${d.label}</th>`).join('') +
+  '<th class="sum-col">Strafen+</th><th class="sum-col">Runde+</th><th class="sum-col">Gesamt</th><th class="sum-col">Bezahlt</th>';
 
   const body = document.getElementById('drinks-body');
   body.innerHTML = '';
@@ -3721,51 +3773,9 @@ function changeDrink(name, key, delta) {
   persistState();
 }
     
-function openDrinkEditModal(name) {
-  const p = persons.find(x => x.name === name);
-  if (!p) return;
-  if (p.left) return;
-
-  drinkEditPerson = p;
-
-  drinkEditDraft = {};
-  DRINKS.forEach(d => {
-    drinkEditDraft[d.key] = 0;
-  });
-
-  document.getElementById('drink-edit-name').textContent = p.name;
-
-  const list = document.getElementById('drink-edit-list');
-  list.innerHTML = '';
-
-  DRINKS.forEach(d => {
-    const row = document.createElement('div');
-    row.className = 'round-drink-row drink-edit-row';
-
-row.className = 'drink-edit-row';
-
-row.innerHTML = `
-  <div class="drink-edit-label">${d.label}</div>
-
-  <div class="drink-edit-actions">
-    <button type="button" class="fast-btn minus" onclick="applyDrinkFast('${escapeForJs(d.key)}', -1)">-1</button>
-
-    <div class="counter">
-      <button type="button" class="counter-btn minus" onclick="changeDrinkEdit('${escapeForJs(d.key)}', -1)">−</button>
-      <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
-      <button type="button" class="counter-btn plus" onclick="changeDrinkEdit('${escapeForJs(d.key)}', 1)">+</button>
-    </div>
-
-    <button type="button" class="fast-btn plus" onclick="applyDrinkFast('${escapeForJs(d.key)}', 1)">+1</button>
-  </div>
-`;
-
-    list.appendChild(row);
-  });
-
-  document.getElementById('drink-edit-modal').classList.remove('hidden');
+function openDrinkEditModal() {
+  return;
 }
-
 
 function changeDrinkEdit(key, delta) {
   drinkEditDraft[key] = Math.max(0, (drinkEditDraft[key] || 0) + delta);
