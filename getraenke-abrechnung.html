@@ -737,6 +737,15 @@ th.sum-col {
       background: var(--table-sticky-alt-bg);
     }
 
+    .left-row {
+      background: linear-gradient(
+        90deg,
+        rgba(255,204,0,0.15),
+        rgba(0,0,0,0.03)
+      ) !important;
+      opacity: 0.75;
+    }
+      
     .guest-separator-row td {
       padding: 8px 12px;
       border-top: 1px solid var(--border);
@@ -767,13 +776,14 @@ th.sum-col {
 
     .person-cell .pname {
       font-weight: 600;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: #000000;
       display: flex;
       align-items: center;
       gap: 6px;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .person-cell .left-emoji {
@@ -3658,28 +3668,31 @@ present.filter(p => p.tisch === 'T2').sort((a, b) => {
   if (!present.find(p => p.tisch === 'T2')) t2El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 }
 
-function renderDrinkRows(list, body, startIndex = 0) {
+function renderDrinkRows(list, body, startIndex = 0, hasStrafen = true, hasRunden = true) {
   let rowIndex = startIndex;
 
   list.forEach(p => {
     const tr = document.createElement('tr');
-      tr.style.cursor = 'default';
-        const isAlt = rowIndex % 2 === 1;
-        const classes = [];
-        if (isAlt) classes.push('alt-row');
-        if (p.left) classes.push('left-row');
-        tr.className = classes.join(' ');
+    tr.style.cursor = 'default';
+
+    const isAlt = rowIndex % 2 === 1;
+    const classes = [];
+
+    if (isAlt) classes.push('alt-row');
+    if (p.left) classes.push('left-row');
+
+    tr.className = classes.join(' ');
 
     const leftClass = p.left ? 'left-state' : '';
-    const leftEmoji = p.left ? '<span class="left-emoji">​🏡​</span>' : '';
+    const leftEmoji = p.left ? '<span class="left-emoji">🏡</span>' : '';
 
     const tl = p.tisch
       ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫ Wand' : '🔴 TV'}</span>`
       : `<span class="ptisch">Kein Team</span>`;
-	  
-const avatarHtml = getAvatarHtml(p.name)
-  .replace('class="person-avatar"', 'class="table-avatar"');
-	  
+
+    const avatarHtml = getAvatarHtml(p.name)
+      .replace('class="person-avatar"', 'class="table-avatar"');
+
     let html = `
 <td class="sticky-col">
   <div class="person-cell ${leftClass}">
@@ -3695,27 +3708,56 @@ const avatarHtml = getAvatarHtml(p.name)
 </td>
     `;
 
-DRINKS.forEach(d => {
-  const v = p.drinks[d.key] || 0;
-  html += `
-    <td>
-      <div class="counter">
-        <button type="button" class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
-        <span class="counter-val">${v}</span>
-        <button type="button" class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
-      </div>
-    </td>
-  `;
-});
+    // 🍺 Getränke
+    DRINKS.forEach(d => {
+      const v = p.drinks[d.key] || 0;
+
+      html += `
+        <td>
+          <div class="counter">
+            <button type="button" class="counter-btn minus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',-1)">−</button>
+            <span class="counter-val">${v}</span>
+            <button type="button" class="counter-btn plus" onclick="changeDrink('${escapeForJs(p.name)}','${escapeForJs(d.key)}',1)">+</button>
+          </div>
+        </td>
+      `;
+    });
 
     const te = p.teamExtra || 0;
     const re = p.roundExtra || 0;
     const paid = p.paid || 0;
 
-    html += `<td style="color:${te > 0 ? 'var(--accent2)' : '#000'};font-weight:700;font-size:0.85rem">${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
-    html += `<td class="round-cell ${re > 0 ? '' : 'zero'}">${re > 0 ? '+' + re.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
-    html += `<td class="total-cell">${calcTotal(p).toFixed(2).replace('.', ',')}€</td>`;
-    html += `<td class="paid-cell ${paid > 0 ? '' : 'zero'}">${paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}</td>`;
+    // 🚨 Strafen (nur wenn aktiv)
+    if (hasStrafen) {
+      html += `
+        <td style="color:${te > 0 ? 'var(--accent2)' : '#000'};font-weight:700;font-size:0.85rem">
+          ${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}
+        </td>
+      `;
+    }
+
+    // 🍻 Runden (nur wenn aktiv)
+    if (hasRunden) {
+      html += `
+        <td class="round-cell ${re > 0 ? '' : 'zero'}">
+          ${re > 0 ? '+' + re.toFixed(2).replace('.', ',') + '€' : '—'}
+        </td>
+      `;
+    }
+
+    // 💰 Gesamt
+    html += `
+      <td class="total-cell">
+        ${calcTotal(p).toFixed(2).replace('.', ',')}€
+      </td>
+    `;
+
+    // 💸 Bezahlt
+    html += `
+      <td class="paid-cell ${paid > 0 ? '' : 'zero'}">
+        ${paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}
+      </td>
+    `;
 
     tr.innerHTML = html;
     body.appendChild(tr);
@@ -3726,38 +3768,51 @@ DRINKS.forEach(d => {
 }
         
 function renderGetraenke() {
-    const members = getPresentMembers().sort((a, b) => {
-      if (!!a.left !== !!b.left) return a.left ? 1 : -1;
-      return a.name.localeCompare(b.name, 'de');
-    });
+  const allPersons = [...getPresentMembers(), ...getPresentGuests()];
 
-    const guests = getPresentGuests().sort((a, b) => {
-      if (!!a.left !== !!b.left) return a.left ? 1 : -1;
-      return a.name.localeCompare(b.name, 'de');
-    });
+  const hasStrafen = allPersons.some(p => (p.teamExtra || 0) > 0);
+  const hasRunden = allPersons.some(p => (p.roundExtra || 0) > 0);
 
-document.getElementById('drinks-header').innerHTML =
-  '<th class="sticky-col name-col">Name</th>' +
-  DRINKS.map(d => `<th class="drink-col">${d.label}</th>`).join('') +
-  '<th class="sum-col">Strafen+</th><th class="sum-col">Runde+</th><th class="sum-col">Gesamt</th><th class="sum-col">Bezahlt</th>';
+  const members = getPresentMembers().sort((a, b) => {
+    if (!!a.left !== !!b.left) return a.left ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+
+  const guests = getPresentGuests().sort((a, b) => {
+    if (!!a.left !== !!b.left) return a.left ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+
+  let headerHtml = '<th class="sticky-col name-col">Name</th>';
+  headerHtml += DRINKS.map(d => `<th class="drink-col">${d.label}</th>`).join('');
+
+  if (hasStrafen) headerHtml += '<th class="sum-col">Strafen+</th>';
+  if (hasRunden) headerHtml += '<th class="sum-col">Runde+</th>';
+
+  headerHtml += '<th class="sum-col">Gesamt</th><th class="sum-col">Bezahlt</th>';
+
+  document.getElementById('drinks-header').innerHTML = headerHtml;
+
+  const extraCols = (hasStrafen ? 1 : 0) + (hasRunden ? 1 : 0);
+  const totalCols = 1 + DRINKS.length + extraCols + 2;
 
   const body = document.getElementById('drinks-body');
   body.innerHTML = '';
 
   let rowIndex = 0;
-  rowIndex = renderDrinkRows(members, body, rowIndex);
+  rowIndex = renderDrinkRows(members, body, rowIndex, hasStrafen, hasRunden);
 
   if (members.length && guests.length) {
     const sep = document.createElement('tr');
     sep.className = 'guest-separator-row';
-    sep.innerHTML = `<td colspan="${DRINKS.length + 5}">Gastkegler</td>`;
+    sep.innerHTML = `<td colspan="${totalCols}">Gastkegler</td>`;
     body.appendChild(sep);
   }
 
-  rowIndex = renderDrinkRows(guests, body, rowIndex);
+  rowIndex = renderDrinkRows(guests, body, rowIndex, hasStrafen, hasRunden);
 
   if (!members.length && !guests.length) {
-    body.innerHTML = `<tr><td colspan="${DRINKS.length + 5}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
   }
 }
 
