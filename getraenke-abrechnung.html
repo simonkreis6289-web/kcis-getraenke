@@ -648,7 +648,6 @@ thead th {
   line-height: 1.15;
   position: relative;
   z-index: 1;
-  width: 62px;
 }
 
     tbody td:first-child {
@@ -688,12 +687,16 @@ thead th {
       opacity: 0.7;
     }
       
+th.name-col {
+  width: 150px;
+}
+
 th.drink-col {
-  width: 62px;
+  width: 78px;
 }
 
 th.sum-col {
-  width: 74px;
+  width: 72px;
 }
       
     tbody tr {
@@ -709,21 +712,21 @@ th.sum-col {
       background: var(--table-row-alt-bg);
     }
 
-    tbody td {
-      padding: 16px 6px;
-      text-align: center;
-      vertical-align: middle;
-      white-space: nowrap;
-      color: #000000;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-    }
+tbody td {
+  padding: 14px 6px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: #000000;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
 
-    tbody td:first-child {
-      text-align: left;
-      padding-left: 12px;
-      min-width: 160px;
-      max-width: 160px;
-    }
+tbody td:first-child {
+  text-align: left;
+  padding-left: 12px;
+  min-width: 150px;
+  max-width: 150px;
+}
 
     tbody td.sticky-col {
       position: sticky;
@@ -806,27 +809,29 @@ th.sum-col {
     .person-cell .ptisch.t1 { color: var(--t1b); }
     .person-cell .ptisch.t2 { color: var(--t2b); }
 
-    .counter {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
+.counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
 
-    .counter-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1.5rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-    }
-
+.counter-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: none;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
     .counter-btn.minus {
       background: var(--btn-minus-bg);
       color: var(--btn-minus-fg);
@@ -842,14 +847,87 @@ th.sum-col {
       cursor: not-allowed;
       transform: none;
     }
+.counter-val {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #000000;
+  flex-shrink: 0;
+}
+     
+      @media (max-width: 760px) {
+  thead th {
+    padding: 8px 4px;
+    font-size: 0.58rem;
+    line-height: 1.05;
+    letter-spacing: 0.4px;
+  }
 
-    .counter-val {
-      min-width: 28px;
-      text-align: center;
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #000000;
-    }
+  th.name-col {
+    width: 132px;
+  }
+
+  th.drink-col {
+    width: 92px;
+  }
+
+  th.sum-col {
+    width: 62px;
+  }
+
+  tbody td {
+    padding: 10px 4px;
+  }
+
+  tbody td:first-child {
+    min-width: 132px;
+    max-width: 132px;
+    padding-left: 8px;
+  }
+
+  .table-person-inline {
+    gap: 6px;
+  }
+
+  .table-avatar {
+    width: 24px;
+    height: 24px;
+  }
+
+  .person-cell .pname {
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+
+  .person-cell .prole,
+  .person-cell .ptisch {
+    font-size: 0.52rem;
+  }
+
+  .counter {
+    gap: 4px;
+  }
+
+  .counter-btn {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .counter-val {
+    min-width: 18px;
+    font-size: 0.85rem;
+  }
+
+  .total-cell,
+  .paid-cell,
+  .round-cell {
+    font-size: 0.82rem;
+  }
+}
       
     .drink-edit-row .counter-btn {
       width: 44px;
