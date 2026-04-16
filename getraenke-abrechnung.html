@@ -3748,15 +3748,15 @@ row.innerHTML = `
   <div class="drink-edit-label">${d.label}</div>
 
   <div class="drink-edit-actions">
-    <button class="fast-btn minus" onclick="event.stopPropagation(); applyDrinkFast('${escapeForJs(d.key)}', -1)">-1</button>
+    <button type="button" class="fast-btn minus" onclick="applyDrinkFast('${escapeForJs(d.key)}', -1)">-1</button>
 
     <div class="counter">
-      <button class="counter-btn minus" onclick="event.stopPropagation(); changeDrinkEdit('${escapeForJs(d.key)}', -1)">−</button>
+      <button type="button" class="counter-btn minus" onclick="changeDrinkEdit('${escapeForJs(d.key)}', -1)">−</button>
       <span class="counter-val" id="drink-edit-${d.key}">${drinkEditDraft[d.key]}</span>
-      <button class="counter-btn plus" onclick="event.stopPropagation(); changeDrinkEdit('${escapeForJs(d.key)}', 1)">+</button>
+      <button type="button" class="counter-btn plus" onclick="changeDrinkEdit('${escapeForJs(d.key)}', 1)">+</button>
     </div>
 
-    <button class="fast-btn plus" onclick="event.stopPropagation(); applyDrinkFast('${escapeForJs(d.key)}', 1)">+1</button>
+    <button type="button" class="fast-btn plus" onclick="applyDrinkFast('${escapeForJs(d.key)}', 1)">+1</button>
   </div>
 `;
 
