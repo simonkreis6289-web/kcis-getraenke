@@ -832,6 +832,7 @@ tbody td:first-child {
   justify-content: center;
   user-select: none;
 }
+      
     .counter-btn.minus {
       background: var(--btn-minus-bg);
       color: var(--btn-minus-fg);
@@ -847,6 +848,7 @@ tbody td:first-child {
       cursor: not-allowed;
       transform: none;
     }
+      
 .counter-val {
   min-width: 24px;
   text-align: center;
@@ -855,8 +857,44 @@ tbody td:first-child {
   color: #000000;
   flex-shrink: 0;
 }
+      
+@media (min-width: 1201px) {
+  th.drink-col {
+    width: 88px;
+  }
+
+  th.sum-col {
+    width: 72px;
+  }
+}
+      
+@media (min-width: 761px) and (max-width: 1200px) {
+  th.drink-col {
+    width: 96px;
+  }
+
+  th.sum-col {
+    width: 68px;
+  }
+
+  tbody td {
+    padding: 12px 6px;
+  }
+
+  .counter-btn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    font-size: 1rem;
+  }
+
+  .counter-val {
+    min-width: 20px;
+    font-size: 0.95rem;
+  }
+}
      
-      @media (max-width: 760px) {
+@media (max-width: 760px) {
   thead th {
     padding: 8px 4px;
     font-size: 0.58rem;
@@ -905,9 +943,15 @@ tbody td:first-child {
     font-size: 0.52rem;
   }
 
-  .counter {
-    gap: 4px;
-  }
+.counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  min-width: max-content;
+}
 
   .counter-btn {
     width: 30px;
@@ -915,11 +959,13 @@ tbody td:first-child {
     min-width: 30px;
     border-radius: 8px;
     font-size: 0.95rem;
+        flex: 0 0 auto;
   }
 
   .counter-val {
     min-width: 18px;
     font-size: 0.85rem;
+       flex: 0 0 auto;
   }
 
   .total-cell,
