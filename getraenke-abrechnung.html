@@ -2385,6 +2385,7 @@ let toastTimer = null;
 let assignPerson = null;
 let autoSaveTimer = null;
 let appReady = false;
+let lastLocalChangeAt = 0;
     
 let ACTIVE_CLUB = null;
 let CLUBS = {};
@@ -2481,7 +2482,8 @@ function getFirestoreState() {
     RUNDEN_GRUENDE,
     selectedLoser,
     teamDrinks,
-    updatedFrom: 'app'
+    updatedFrom: 'app',
+    updatedClientAt: lastLocalChangeAt
   };
 }
 
@@ -2573,6 +2575,8 @@ function hydrateState() {
 
 function persistState() {
   if (!appReady) return;
+
+  lastLocalChangeAt = Date.now();
   saveClubSystem();
   queueAutoSave();
 }
@@ -3124,77 +3128,38 @@ async function selectClub(clubName) {
     updateAppHeader();
   }
 
-  currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
-    clubId,
-    (state) => {
-      if (!state) return;
+currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
+  clubId,
+  (state) => {
+    if (!state) return;
 
-      applyLoadedState(state);
-      renderAll();
-      updateAppHeader();
+    const incomingClientAt = Number(state.updatedClientAt || 0);
 
-      syncCurrentClubToStore();
-      saveClubSystem();
-    },
-    (error) => {
-      console.error('Live-Sync Fehler:', error);
+    // Älteren Stand nicht über den neueren lokalen Zustand drüberbügeln
+    if (incomingClientAt && incomingClientAt < lastLocalChangeAt) {
+      console.log('Älteren Firestore-Snapshot ignoriert', {
+        incomingClientAt,
+        lastLocalChangeAt
+      });
+      return;
     }
-  );
 
-  syncCurrentClubToStore();
-  saveClubSystem();
-}
-    
-    
-    function getClubAvatarFileCandidates(name) {
-  const clean = String(name || '').trim();
+    applyLoadedState(state);
 
-  const normalized = clean
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    if (incomingClientAt) {
+      lastLocalChangeAt = incomingClientAt;
+    }
 
-  const base = normalized
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    renderAll();
+    updateAppHeader();
 
-  return [
-    `clubbilder/${base}.jpg`,
-    `clubbilder/${base}.jpeg`,
-    `clubbilder/${base}.png`,
-    `clubbilder/${base}.webp`
-  ];
-}
-
-function getClubAvatarHtml(name) {
-  const initials = String(name || '')
-    .split(' ')
-    .map(n => n[0] || '')
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  const candidates = getClubAvatarFileCandidates(name);
-
-  return `
-    <div class="club-avatar">
-      <img src="${candidates[0]}" 
-           onerror="
-             if(this.dataset.i===undefined){this.dataset.i='0';}
-             var files=${JSON.stringify(candidates).replace(/"/g,'&quot;')};
-             var next=parseInt(this.dataset.i)+1;
-             if(next<files.length){
-               this.dataset.i=next;
-               this.src=files[next];
-             } else {
-               this.style.display='none';
-               this.nextElementSibling.style.display='flex';
-             }
-           ">
-      <div class="club-avatar-fallback">${initials}</div>
-    </div>
-  `;
-}
+    syncCurrentClubToStore();
+    saveClubSystem();
+  },
+  (error) => {
+    console.error('Live-Sync Fehler:', error);
+  }
+);
     
 function updateAppHeader() {
   const title = document.querySelector('header h1');
@@ -3711,14 +3676,7 @@ const avatarHtml = getAvatarHtml(p.name)
 
   return rowIndex;
 }
-    
-function closeDrinkEditModal() {
-  document.getElementById('drink-edit-modal').classList.add('hidden');
-  document.getElementById('drink-edit-list').innerHTML = '';
-  drinkEditPerson = null;
-  drinkEditDraft = {};
-}
-    
+        
 function renderGetraenke() {
   const members = getPresentMembers().sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const guests = getPresentGuests().sort((a, b) => a.name.localeCompare(b.name, 'de'));
