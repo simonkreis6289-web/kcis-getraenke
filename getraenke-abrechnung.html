@@ -1178,6 +1178,8 @@ tbody td:first-child {
 .person-avatar-fallback {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   display: none;
   align-items: center;
   justify-content: center;
@@ -2654,6 +2656,7 @@ function playSound(sound) {
 // ── AUTH / START ──
 async function startApp() {
   loadClubSystem();
+  setupClubAvatarUpload();
 
   if (ACTIVE_CLUB && CLUBS[ACTIVE_CLUB]) {
     const localClub = CLUBS[ACTIVE_CLUB];
@@ -3227,7 +3230,10 @@ function createEmptyClubData() {
 function syncCurrentClubToStore() {
   if (!ACTIVE_CLUB) return;
 
+  const existingClub = CLUBS[ACTIVE_CLUB] || createEmptyClubData();
+
   CLUBS[ACTIVE_CLUB] = {
+    avatar: existingClub.avatar || '',
     persons: JSON.parse(JSON.stringify(persons)),
     prices: JSON.parse(JSON.stringify(prices)),
     DRINKS: JSON.parse(JSON.stringify(DRINKS)),
@@ -3655,40 +3661,6 @@ function getClubAvatarHtml(name) {
       </div>
     `;
   }
-
-  const candidates = getClubAvatarFileCandidates(name);
-
-  return `
-    <div class="club-avatar">
-      <img
-        src="${candidates[0]}"
-        alt="${name}"
-        onerror="
-          if(this.dataset.tryIndex===undefined){this.dataset.tryIndex='0';}
-          var files = ${JSON.stringify(candidates).replace(/"/g, '&quot;')};
-          var next = parseInt(this.dataset.tryIndex,10) + 1;
-          if(next < files.length){
-            this.dataset.tryIndex = String(next);
-            this.src = files[next];
-          } else {
-            this.remove();
-            var fb = this.parentNode.querySelector('.club-avatar-fallback');
-            if(fb) fb.style.display='flex';
-          }
-        "
-      >
-      <span class="club-avatar-fallback" style="display:none;">${initials}</span>
-    </div>
-  `;
-}
-
-function getClubAvatarHtml(name) {
-  const initials = String(name || '')
-    .split(' ')
-    .map(n => n[0] || '')
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 
   const candidates = getClubAvatarFileCandidates(name);
 
