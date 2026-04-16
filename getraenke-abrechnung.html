@@ -1621,6 +1621,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      pointer-events: none;
     }
 
     #toast.show {
@@ -2346,8 +2347,7 @@
 </div>
 
 <div id="toast"></div>
-    
-    
+       
 <script>
 const APP_VERSION = '20260318-13';
 const APPVersionSelf = '1.0.2.10';
@@ -3128,38 +3128,41 @@ async function selectClub(clubName) {
     updateAppHeader();
   }
 
-currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
-  clubId,
-  (state) => {
-    if (!state) return;
+  currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
+    clubId,
+    (state) => {
+      if (!state) return;
 
-    const incomingClientAt = Number(state.updatedClientAt || 0);
+      const incomingClientAt = Number(state.updatedClientAt || 0);
 
-    // Älteren Stand nicht über den neueren lokalen Zustand drüberbügeln
-    if (incomingClientAt && incomingClientAt < lastLocalChangeAt) {
-      console.log('Älteren Firestore-Snapshot ignoriert', {
-        incomingClientAt,
-        lastLocalChangeAt
-      });
-      return;
+      if (incomingClientAt && incomingClientAt < lastLocalChangeAt) {
+        console.log('Älteren Firestore-Snapshot ignoriert', {
+          incomingClientAt,
+          lastLocalChangeAt
+        });
+        return;
+      }
+
+      applyLoadedState(state);
+
+      if (incomingClientAt) {
+        lastLocalChangeAt = incomingClientAt;
+      }
+
+      renderAll();
+      updateAppHeader();
+
+      syncCurrentClubToStore();
+      saveClubSystem();
+    },
+    (error) => {
+      console.error('Live-Sync Fehler:', error);
     }
+  );
 
-    applyLoadedState(state);
-
-    if (incomingClientAt) {
-      lastLocalChangeAt = incomingClientAt;
-    }
-
-    renderAll();
-    updateAppHeader();
-
-    syncCurrentClubToStore();
-    saveClubSystem();
-  },
-  (error) => {
-    console.error('Live-Sync Fehler:', error);
-  }
-);
+  syncCurrentClubToStore();
+  saveClubSystem();
+}
     
 function updateAppHeader() {
   const title = document.querySelector('header h1');
