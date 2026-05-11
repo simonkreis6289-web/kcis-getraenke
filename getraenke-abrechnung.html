@@ -684,11 +684,11 @@ th.name-col {
 }
 
 th.drink-col {
-  width: 78px;
+  width: 92px;
 }
 
 th.sum-col {
-  width: 72px;
+  width: 82px;
 }
       
     tbody tr {
@@ -800,29 +800,40 @@ tbody td:first-child {
 
     .person-cell .ptisch.t1 { color: var(--t1b); }
     .person-cell .ptisch.t2 { color: var(--t2b); }
-
+      
 .counter {
-  display: flex;
+  display: inline-grid;
+  grid-template-columns: 28px 24px 28px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  flex-wrap: nowrap;
+  gap: 4px;
+  width: max-content;
+  margin: 0 auto;
 }
 
 .counter-btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   border: none;
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
+  line-height: 1;
+}
+
+.counter-val {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #000000;
 }
       
     .counter-btn.minus {
@@ -873,17 +884,22 @@ tbody td:first-child {
     padding: 12px 6px;
   }
 
-  .counter-btn {
-    width: 30px;
-    height: 30px;
-    min-width: 34px;
-    font-size: 1rem;
-  }
+.counter {
+  grid-template-columns: 26px 22px 26px;
+  gap: 3px;
+}
 
-  .counter-val {
-    min-width: 20px;
-    font-size: 0.95rem;
-  }
+.counter-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  font-size: 0.9rem;
+}
+
+.counter-val {
+  min-width: 22px;
+  font-size: 0.85rem;
+}
 }
      
 @media (max-width: 860px) {
@@ -936,29 +952,23 @@ tbody td:first-child {
   }
 
 .counter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  min-width: max-content;
+  grid-template-columns: 24px 20px 24px;
+  gap: 3px;
+  min-width: 71px;
 }
 
-  .counter-btn {
-    width: 25px;
-    height: 25px;
-    min-width: 30px;
-    border-radius: 8px;
-    font-size: 0.95rem;
-        flex: 0 0 auto;
-  }
+.counter-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+}
 
-  .counter-val {
-    min-width: 18px;
-    font-size: 0.85rem;
-       flex: 0 0 auto;
-  }
+.counter-val {
+  min-width: 20px;
+  font-size: 0.8rem;
+}
 
   .total-cell,
   .paid-cell,
@@ -3901,7 +3911,7 @@ present.filter(p => p.tisch === 'T2').sort((a, b) => {
   if (!present.find(p => p.tisch === 'T2')) t2El.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Noch niemand</span>';
 }
 
-function renderDrinkRows(list, body, startIndex = 0, hasStrafen = true, hasRunden = true) {
+function renderDrinkRows(list, body, startIndex = 0) {
   let rowIndex = startIndex;
 
   list.forEach(p => {
@@ -3926,6 +3936,17 @@ function renderDrinkRows(list, body, startIndex = 0, hasStrafen = true, hasRunde
     const avatarHtml = getAvatarHtml(p.name)
       .replace('class="person-avatar"', 'class="table-avatar"');
 
+    const te = p.teamExtra || 0;
+    const re = p.roundExtra || 0;
+    const paid = p.paid || 0;
+
+    const extrasHtml = `
+      <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;">
+        ${te > 0 ? `<div style="color:var(--accent2);font-weight:800;">🚨 Strafen +${te.toFixed(2).replace('.', ',')}€</div>` : ''}
+        ${re > 0 ? `<div style="color:var(--round);font-weight:800;">🍻 Runden +${re.toFixed(2).replace('.', ',')}€</div>` : ''}
+      </div>
+    `;
+
     let html = `
 <td class="sticky-col">
   <div class="person-cell ${leftClass}">
@@ -3935,13 +3956,13 @@ function renderDrinkRows(list, body, startIndex = 0, hasStrafen = true, hasRunde
         <span class="pname">${leftEmoji}${p.name}</span>
         ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
         ${tl}
+        ${extrasHtml}
       </div>
     </div>
   </div>
 </td>
     `;
 
-    // 🍺 Getränke
     DRINKS.forEach(d => {
       const v = p.drinks[d.key] || 0;
 
@@ -3956,37 +3977,10 @@ function renderDrinkRows(list, body, startIndex = 0, hasStrafen = true, hasRunde
       `;
     });
 
-    const te = p.teamExtra || 0;
-    const re = p.roundExtra || 0;
-    const paid = p.paid || 0;
-
-    // 🚨 Strafen (nur wenn aktiv)
-    if (hasStrafen) {
-      html += `
-        <td style="color:${te > 0 ? 'var(--accent2)' : '#000'};font-weight:700;font-size:0.85rem">
-          ${te > 0 ? '+' + te.toFixed(2).replace('.', ',') + '€' : '—'}
-        </td>
-      `;
-    }
-
-    // 🍻 Runden (nur wenn aktiv)
-    if (hasRunden) {
-      html += `
-        <td class="round-cell ${re > 0 ? '' : 'zero'}">
-          ${re > 0 ? '+' + re.toFixed(2).replace('.', ',') + '€' : '—'}
-        </td>
-      `;
-    }
-
-    // 💰 Gesamt
     html += `
       <td class="total-cell">
         ${calcTotal(p).toFixed(2).replace('.', ',')}€
       </td>
-    `;
-
-    // 💸 Bezahlt
-    html += `
       <td class="paid-cell ${paid > 0 ? '' : 'zero'}">
         ${paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}
       </td>
@@ -4001,11 +3995,6 @@ function renderDrinkRows(list, body, startIndex = 0, hasStrafen = true, hasRunde
 }
         
 function renderGetraenke() {
-  const allPersons = [...getPresentMembers(), ...getPresentGuests()];
-
-  const hasStrafen = allPersons.some(p => (p.teamExtra || 0) > 0);
-  const hasRunden = allPersons.some(p => (p.roundExtra || 0) > 0);
-
   const members = getPresentMembers().sort((a, b) => {
     if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
@@ -4019,21 +4008,17 @@ function renderGetraenke() {
   let headerHtml = '<th class="sticky-col name-col">Name</th>';
   headerHtml += DRINKS.map(d => `<th class="drink-col">${d.label}</th>`).join('');
 
-  if (hasStrafen) headerHtml += '<th class="sum-col">Strafen+</th>';
-  if (hasRunden) headerHtml += '<th class="sum-col">Runde+</th>';
-
-  headerHtml += '<th class="sum-col">Gesamt</th><th class="sum-col">Bezahlt</th>';
+headerHtml += '<th class="sum-col">Gesamt</th><th class="sum-col">Bezahlt</th>';
 
   document.getElementById('drinks-header').innerHTML = headerHtml;
 
-  const extraCols = (hasStrafen ? 1 : 0) + (hasRunden ? 1 : 0);
-  const totalCols = 1 + DRINKS.length + extraCols + 2;
+const totalCols = 1 + DRINKS.length + 2;
 
   const body = document.getElementById('drinks-body');
   body.innerHTML = '';
 
   let rowIndex = 0;
-  rowIndex = renderDrinkRows(members, body, rowIndex, hasStrafen, hasRunden);
+rowIndex = renderDrinkRows(members, body, rowIndex);
 
   if (members.length && guests.length) {
     const sep = document.createElement('tr');
@@ -4042,7 +4027,7 @@ function renderGetraenke() {
     body.appendChild(sep);
   }
 
-  rowIndex = renderDrinkRows(guests, body, rowIndex, hasStrafen, hasRunden);
+rowIndex = renderDrinkRows(guests, body, rowIndex);
 
   if (!members.length && !guests.length) {
     body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
