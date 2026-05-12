@@ -8,13 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="KC IS">
 
-  <title>Kegelclub Manager</title>
+  <title>KC IS – Getränkeabrechnung</title>
 
   <link rel="manifest" href="manifest.json?v=20260318-v13">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
 
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -248,12 +248,13 @@
     .status-bar {
       background: var(--statusBar_bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 16px;
+      border-radius: 14px;
+      padding: 14px 18px;
       display: flex;
-      gap: 20px;
+      gap: 26px;
       margin-bottom: 16px;
       flex-wrap: wrap;
+      align-items: center;
     }
       
 .main-tabs {
@@ -314,19 +315,23 @@
     }
 
     .stat-val {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.4rem;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 700;
       color: var(--accent);
       line-height: 1;
+      letter-spacing: 0.5px;
     }
 
     .stat-label {
-      font-size: 0.65rem;
+      font-size: 0.72rem;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.4px;
+      font-weight: 700;
+      margin-top: 2px;
     }
-
+      
     .section-title {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 1.1rem;
@@ -918,6 +923,19 @@ tbody td:first-child {
     line-height: 1.05;
     letter-spacing: 0.4px;
   }
+    
+    .status-bar {
+      gap: 18px;
+      padding: 14px;
+    }
+
+    .stat-val {
+      font-size: 1.55rem;
+    }
+
+    .stat-label {
+      font-size: 0.66rem;
+    }
 
   th.name-col {
     width: 132px;
