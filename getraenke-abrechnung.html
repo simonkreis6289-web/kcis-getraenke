@@ -2361,34 +2361,28 @@ tbody td:first-child {
 }
 
 .tannenbaum-box-cell {
-  width: 20px;
-  padding: 4px 6px;
+  width: 90px !important;
+  padding: 0 !important;
+}
+
+.tannenbaum-middle {
+  width: 24px !important;
+  padding: 0 !important;
+  text-align: center;
 }
 
 .tannenbaum-side {
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 54px;
 }
 
 .tannenbaum-side.wand {
-  justify-content: flex-end;
-  flex-direction: row;
+  justify-content: flex-end !important;
 }
 
 .tannenbaum-side.tv {
-  justify-content: flex-start;
-  flex-direction: row;
-}
-
-.tannenbaum-middle {
-  width: 35px;
-  text-align: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: var(--muted);
+  justify-content: flex-start !important;
 }
 
 .tannenbaum-number {
@@ -3075,7 +3069,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.2.10';
+const APPVersionSelf = '1.0.2.20';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
