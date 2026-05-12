@@ -77,6 +77,8 @@
         --bahn-stop-border: rgba(220, 0, 0, 0.45);
         --bahn-stop-text: rgba(255, 70, 70, 1);
         
+        --statusBarFontColor: #007fba;
+        
     }
 
     * {
@@ -317,7 +319,7 @@
 .stat-val {
   font-family: 'DM Sans', sans-serif;
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--accent);
   line-height: 1;
   letter-spacing: -0.3px;
@@ -331,7 +333,7 @@
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.1px;
-  font-weight: 800;
+  font-weight: 700;
   margin-top: 3px;
   white-space: nowrap;
 }
@@ -2310,12 +2312,12 @@ tbody td:first-child {
 
   <main>
     <div class="status-bar">
-      <div class="stat"><span class="stat-val" id="stat-anwesend">0</span><span class="stat-label">Anwesend</span></div>
-        <div class="stat"><span class="stat-val" id="stat-bahnzeit">00:00:00</span><span class="stat-label">Bahnzeit</span></div>
-        <div class="stat"><span class="stat-val" id="stat-bahnpreis" style="color:var(--accent2)">0,00 €</span><span class="stat-label">Bahn</span></div>
-      <div class="stat"><span class="stat-val" id="stat-t1">0</span><span class="stat-label">Wand</span></div>
-      <div class="stat"><span class="stat-val" id="stat-t2">0</span><span class="stat-label">TV</span></div>
-      <div class="stat"><span class="stat-val" id="stat-offen">0,00 €</span><span class="stat-label">Offen</span></div>
+      <div class="stat"><span class="stat-val" id="stat-anwesend" style="color:var(--statusBarFontColor)">0</span><span class="stat-label">Anwesend</span></div>
+      <div class="stat"><span class="stat-val" id="stat-bahnzeit" style="color:var(--statusBarFontColor)">00:00:00</span><span class="stat-label">Bahnzeit</span></div>
+      <div class="stat"><span class="stat-val" id="stat-bahnpreis" style="color:var(--accent2)">0,00 €</span><span class="stat-label">Bahn</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t1" style="color:var(--statusBarFontColor)">0</span><span class="stat-label">Wand</span></div>
+      <div class="stat"><span class="stat-val" id="stat-t2" style="color:var(--statusBarFontColor)">0</span><span class="stat-label">TV</span></div>
+      <div class="stat"><span class="stat-val" id="stat-offen" style="color:var(--statusBarFontColor)">0,00 €</span><span class="stat-label">Offen</span></div>
       <div class="stat"><span class="stat-val" id="stat-bezahlt" style="color:var(--green)">0,00 €</span><span class="stat-label">Bezahlt</span></div>
       <div class="stat"><span class="stat-val" id="stat-ueberschuss" style="color:var(--purple)">0,00 €</span><span class="stat-label">Überschuss</span></div>
       <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
