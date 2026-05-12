@@ -2358,10 +2358,29 @@ tbody td:first-child {
     grid-template-columns: 1fr;
   }
 
-  .tannenbaum-number {
+.tannenbaum-number {
     width: 30px;
     height: 30px;
   }
+}
+      
+.tannenbaum-tree {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.tannenbaum-row {
+  display: flex;
+  gap: 6px;
+}
+
+.tannenbaum-team.t1 .tannenbaum-row {
+  justify-content: flex-end;
+}
+
+.tannenbaum-team.t2 .tannenbaum-row {
+  justify-content: flex-start;
 }
       
 </style>
@@ -2773,7 +2792,13 @@ tbody td:first-child {
                 <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">🔴 Wurf TV</button>
               </div>
 
-              <div id="tannenbaum-board"></div>
+                <div id="tannenbaum-board"></div>
+
+                <div style="margin-top:14px;">
+                  <button class="save-prices-btn" onclick="resetTannenbaumGame()">
+                    ↻ Tannenbaum neu starten
+                  </button>
+                </div>
             </div>
 
       </div>
@@ -4791,6 +4816,17 @@ function renderTannenbaumTeam(team) {
       </div>
     </div>
   `;
+}
+    
+function resetTannenbaumGame() {
+  if (!confirm('Tannenbaum wirklich zurücksetzen?')) return;
+
+  tannenbaumState = createTannenbaumState();
+
+  renderTannenbaum();
+  persistState();
+
+  showToast('↻ Tannenbaum zurückgesetzt', 'success');
 }
 
 // ── RENDER ──
