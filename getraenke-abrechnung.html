@@ -2205,6 +2205,7 @@ tbody td:first-child {
     <div style="display:flex;flex-direction:column;align-items:flex-end;">
       <div class="header-btns">
         <button class="back-btn hidden" onclick="goToClubSelection()" id="clubBackBtn">↩ Clubs</button>
+          <button class="round-btn" onclick="toggleBahnTimer()" id="bahnTimerBtn">▶ Bahn starten</button>
         <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
         <button class="archive-btn" onclick="startNewKegelabend()">🆕 Neuer Kegelabend</button>
         <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
@@ -2253,6 +2254,8 @@ tbody td:first-child {
   <main>
     <div class="status-bar">
       <div class="stat"><span class="stat-val" id="stat-anwesend">0</span><span class="stat-label">Anwesend</span></div>
+        <div class="stat"><span class="stat-val" id="stat-bahnzeit">00:00:00</span><span class="stat-label">Bahnzeit</span></div>
+        <div class="stat"><span class="stat-val" id="stat-bahnpreis" style="color:var(--accent2)">0,00 €</span><span class="stat-label">Bahn</span></div>
       <div class="stat"><span class="stat-val" id="stat-t1">0</span><span class="stat-label">Wand</span></div>
       <div class="stat"><span class="stat-val" id="stat-t2">0</span><span class="stat-label">TV</span></div>
       <div class="stat"><span class="stat-val" id="stat-offen">0,00 €</span><span class="stat-label">Offen</span></div>
@@ -2442,8 +2445,31 @@ tbody td:first-child {
 
       <div id="tab-einstellungen" class="hidden">
         <div class="section-title">Einstellungen</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-          Hier kommen später die Einstellungen rein.
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
+          <div class="modal-input-row" style="margin-bottom:0;">
+            <label>Bahpreis / Stunde (€)</label>
+            <input
+              type="number"
+              step="0.50"
+              min="0"
+              id="bahn-preis-input"
+              class="modal-euro-input"
+              placeholder="0.00"
+              onchange="saveBahnPreis()"
+              oninput="previewBahnPreis()"
+            >
+          </div>
+          <div class="modal-meta-row">
+            <span>Aktuelle Bahnzeit</span>
+            <strong id="settings-bahnzeit">00:00:00</strong>
+          </div>
+
+          <div class="modal-meta-row">
+            <span>Aktueller Bahnpreis</span>
+            <strong id="settings-bahnpreis" style="color:var(--accent2)">0,00 €</strong>
+          </div>
+
+          <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahpreis speichern</button>
         </div>
       </div>
     </div>
@@ -2555,6 +2581,10 @@ const sounds = {
 };
     
 let pendingClubAvatarName = null;
+let bahnPreisProStunde = 0;
+let bahnTimerStart = null;
+let bahnTimerRunning = false;
+let bahnTimerInterval = null;
 
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
@@ -2715,8 +2745,21 @@ async function startApp() {
 
 // ── LOCAL STORAGE ──
 function getSerializableState() {
-  return { persons, spiele, DRINKS, prices, SPIELE_KATALOG, RUNDEN_GRUENDE, selectedLoser, teamDrinks };
+  return {
+    persons,
+    spiele,
+    DRINKS,
+    prices,
+    SPIELE_KATALOG,
+    RUNDEN_GRUENDE,
+    selectedLoser,
+    teamDrinks,
+    bahnPreisProStunde,
+    bahnTimerStart,
+    bahnTimerRunning
+  };
 }
+    
 const FIRESTORE_EVENT_DOC_ID = 'current';
 
 function getTodayMeta() {
@@ -2758,7 +2801,9 @@ function applyLoadedState(state) {
   RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
   selectedLoser = state.selectedLoser || null;
   teamDrinks = state.teamDrinks || {};
-
+    bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
+    bahnTimerStart = state.bahnTimerStart || null;
+    bahnTimerRunning = !!state.bahnTimerRunning;
   hydrateState();
   return true;
 }
@@ -3129,7 +3174,9 @@ function startNewKegelabend() {
   roundDraftDrinks = {};
   drinkEditPerson = null;
   drinkEditDraft = {};
-
+    bahnTimerStart = null;
+    bahnTimerRunning = false;
+    localStorage.removeItem(getBahnStoppedKey());
   renderAll();
   persistState();
 
@@ -3233,7 +3280,10 @@ function createEmptyClubData() {
     RUNDEN_GRUENDE: ['1000er-Runde', '2000er-Runde', 'Geburtstag'],
     spiele: [],
     selectedLoser: null,
-    teamDrinks: {}
+    teamDrinks: {},
+      bahnPreisProStunde: 0,
+        bahnTimerStart: null,
+        bahnTimerRunning: false
   };
 }
 
@@ -3251,7 +3301,10 @@ function syncCurrentClubToStore() {
     RUNDEN_GRUENDE: JSON.parse(JSON.stringify(RUNDEN_GRUENDE)),
     spiele: JSON.parse(JSON.stringify(spiele)),
     selectedLoser,
-    teamDrinks: JSON.parse(JSON.stringify(teamDrinks))
+    teamDrinks: JSON.parse(JSON.stringify(teamDrinks)),
+    bahnPreisProStunde,
+    bahnTimerStart,
+    bahnTimerRunning
   };
 }
 
@@ -3391,6 +3444,9 @@ async function selectClub(clubName) {
   spiele = JSON.parse(JSON.stringify(localClub.spiele || []));
   selectedLoser = localClub.selectedLoser || null;
   teamDrinks = JSON.parse(JSON.stringify(localClub.teamDrinks || {}));
+    bahnPreisProStunde = parseFloat(localClub.bahnPreisProStunde || 0) || 0;
+    bahnTimerStart = localClub.bahnTimerStart || null;
+    bahnTimerRunning = !!localClub.bahnTimerRunning;
 
   hydrateState();
   renderAll();
@@ -3761,12 +3817,101 @@ function recalcTeamExtras() {
     });
   });
 }
+   
+function getBahnElapsedSeconds() {
+  if (!bahnTimerStart) return 0;
+
+  if (!bahnTimerRunning) {
+    return Math.max(0, parseInt(localStorage.getItem(getBahnStoppedKey()) || '0', 10) || 0);
+  }
+
+  const start = new Date(bahnTimerStart).getTime();
+  if (!start || isNaN(start)) return 0;
+
+  return Math.max(0, Math.floor((Date.now() - start) / 1000));
+}
+
+function getBahnStoppedKey() {
+  return 'kcis_bahn_stopped_seconds_' + getClubFirestoreId(ACTIVE_CLUB || 'club');
+}
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+
+  return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+}
+
+function calcBahnPreis() {
+  const seconds = getBahnElapsedSeconds();
+  return (seconds / 3600) * (bahnPreisProStunde || 0);
+}
+
+function updateBahnDisplay() {
+  const seconds = getBahnElapsedSeconds();
+  const zeit = formatDuration(seconds);
+  const preis = euros(calcBahnPreis());
+
+  const statZeit = document.getElementById('stat-bahnzeit');
+  const statPreis = document.getElementById('stat-bahnpreis');
+  const settingsZeit = document.getElementById('settings-bahnzeit');
+  const settingsPreis = document.getElementById('settings-bahnpreis');
+  const btn = document.getElementById('bahnTimerBtn');
+  const input = document.getElementById('bahn-preis-input');
+
+  if (statZeit) statZeit.textContent = zeit;
+  if (statPreis) statPreis.textContent = preis;
+  if (settingsZeit) settingsZeit.textContent = zeit;
+  if (settingsPreis) settingsPreis.textContent = preis;
+
+  if (btn) {
+    btn.textContent = bahnTimerRunning ? '⏸ Bahn stoppen' : '▶ Bahn starten';
+  }
+
+  if (input && document.activeElement !== input) {
+    input.value = (bahnPreisProStunde || 0).toFixed(2);
+  }
+}
+
+function toggleBahnTimer() {
+  if (!bahnTimerRunning) {
+    const stoppedSeconds = parseInt(localStorage.getItem(getBahnStoppedKey()) || '0', 10) || 0;
+    bahnTimerStart = new Date(Date.now() - stoppedSeconds * 1000).toISOString();
+    bahnTimerRunning = true;
+    showToast('▶ Bahnzeit gestartet', 'success');
+  } else {
+    const seconds = getBahnElapsedSeconds();
+    localStorage.setItem(getBahnStoppedKey(), String(seconds));
+    bahnTimerRunning = false;
+    showToast('⏸ Bahnzeit gestoppt', 'success');
+  }
+
+  updateBahnDisplay();
+  persistState();
+}
+
+function saveBahnPreis() {
+  const input = document.getElementById('bahn-preis-input');
+  bahnPreisProStunde = parseFloat(String(input?.value || '0').replace(',', '.')) || 0;
+
+  updateBahnDisplay();
+  persistState();
+  showToast('✅ Bahnpreis gespeichert', 'success');
+}
+
+function previewBahnPreis() {
+  const input = document.getElementById('bahn-preis-input');
+  bahnPreisProStunde = parseFloat(String(input?.value || '0').replace(',', '.')) || 0;
+  updateBahnDisplay();
+}
 
 // ── RENDER ──
 function renderAll() {
   recalcTeamExtras();
   updateHeaderDateTime();
   updateStats();
+  updateBahnDisplay();
   renderAnwesenheit();
   renderGruppen();
   renderGetraenke();
@@ -5085,6 +5230,7 @@ window.addEventListener('offline', () => {
 
 updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
+bahnTimerInterval = setInterval(updateBahnDisplay, 1000);
 </script>
 
 <script>
