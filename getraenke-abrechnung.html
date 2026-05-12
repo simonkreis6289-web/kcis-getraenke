@@ -79,8 +79,8 @@
         
         --statusBarFontColor: #007fba;
         
-        --countdown-bg: #a500c2;
-        --countdown-font: #fadeff; 
+        --countdown-bg: #ff0095;
+        --countdown-font: #ffe6f4; 
         
     }
 
@@ -2164,7 +2164,7 @@ tbody td:first-child {
 .team-stopwatch-btn.pause {
   background: rgba(255, 255, 0, 0.10) !important;
   color: #b36b00 !important;
-  border-color: rgba(255, 255, 0, 0.8) !important;
+  border-color: rgba(255, 255, 0, 1) !important;
 }
 
 .team-stopwatch-btn.stop {
@@ -2176,7 +2176,7 @@ tbody td:first-child {
 .team-stopwatch-btn.restart {
   background: rgba(61, 61, 61, 0.10) !important;
   color: rgba(219, 219, 219, 1) !important;
-  border-color: rgba(61, 61, 61, 0.80) !important; 
+  border-color: rgba(61, 61, 61, 1) !important; 
 }
 
 .team-stopwatch-settings {
@@ -2200,6 +2200,20 @@ tbody td:first-child {
   width: 20px;
   height: 20px;
   accent-color: var(--accent);
+}
+      
+.team-stopwatch-controls-wrap {
+  background: white;
+  padding: 18px 22px;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+}
+
+.team-stopwatch-controls {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
       
 </style>
@@ -2420,12 +2434,25 @@ tbody td:first-child {
     <div id="team-stopwatch-global" class="team-stopwatch-global hidden">
       <div class="team-stopwatch-time" id="team-stopwatch-time">00:00</div>
 
-      <div class="team-stopwatch-controls">
-        <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">▶ Start</button>
-        <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">⏸ Pause</button>
-        <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">■ Stop</button>
-        <button class="team-stopwatch-btn restart" onclick="restartTeamStopwatch()">↻ Neustart</button>
-      </div>
+        <div class="team-stopwatch-controls-wrap">
+          <div class="team-stopwatch-controls">
+            <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">
+              ▶ Läuft
+            </button>
+
+            <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">
+              ⏸ Pause
+            </button>
+
+            <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">
+              ■ Stop
+            </button>
+
+            <button class="team-stopwatch-btn restart" onclick="restartTeamStopwatch()">
+              ↻ Neustart
+            </button>
+          </div>
+        </div>
     </div>
       
     <!-- ORGANISATION -->
