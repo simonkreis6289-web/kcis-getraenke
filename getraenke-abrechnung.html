@@ -4760,14 +4760,17 @@ function handleTannenbaumThrow(number) {
     own.remaining[n] -= 1;
     action = `${getTeamLabel(team)} streicht ${number}`;
   } else if ((other.remaining[n] || 0) > 0) {
-    const amount = number * 0.10;
+  const amount = number * 0.10;
 
-    other.strikes.push({
-      number,
-      amount,
-      causedBy: team,
-      createdAt: new Date().toISOString()
-    });
+  own.strikes.push({
+    number,
+    amount,
+    causedBy: team,
+    createdAt: new Date().toISOString()
+  });
+
+  action = `${getTeamLabel(team)} bekommt Strich: +${amount.toFixed(2).replace('.', ',')} €`;
+}
 
     action = `${getTeamLabel(otherTeam)} bekommt Strich: +${amount.toFixed(2).replace('.', ',')} €`;
   } else {
