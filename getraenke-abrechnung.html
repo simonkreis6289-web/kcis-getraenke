@@ -2486,6 +2486,22 @@ tbody td:first-child {
             <span>Tannenbaum-Stoppuhr aktivieren</span>
           </label>
         </div>
+          
+          <div id="team-countdown-settings" class="hidden" style="margin-top:12px;display:grid;gap:10px;">
+              <div class="modal-input-row" style="margin-bottom:0;">
+                <label>Countdown Minuten</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  id="team-countdown-minutes"
+                  class="modal-euro-input"
+                  placeholder="z. B. 10"
+                  onchange="saveTeamCountdownDuration()"
+                  oninput="previewTeamCountdownDuration()"
+                >
+              </div>
+            </div>
 
         <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
           <div style="font-size:0.85rem;color:var(--muted);line-height:1.5;">
@@ -2628,7 +2644,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.2.10';
+const APPVersionSelf = '1.1.0.00';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -2680,6 +2696,12 @@ let bahnPreisProStunde = 0;
 let bahnTimerStart = null;
 let bahnTimerRunning = false;
 let bahnTimerInterval = null;
+let teamStopwatchActive = false;
+let teamStopwatchRunning = false;
+let teamStopwatchStart = null;
+let teamCountdownDuration = 0;
+let teamCountdownRemainingBefore = 0;
+let teamStopwatchInterval = null;
 
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
@@ -2851,7 +2873,12 @@ function getSerializableState() {
     teamDrinks,
     bahnPreisProStunde,
     bahnTimerStart,
-    bahnTimerRunning
+    bahnTimerRunning,
+    teamStopwatchActive,
+    teamStopwatchRunning,
+    teamStopwatchStart,
+    teamCountdownDuration,
+    teamCountdownRemainingBefore
   };
 }
     
@@ -2880,6 +2907,14 @@ function getFirestoreState() {
     RUNDEN_GRUENDE,
     selectedLoser,
     teamDrinks,
+    bahnPreisProStunde,
+    bahnTimerStart,
+    bahnTimerRunning,
+    teamStopwatchActive,
+    teamStopwatchRunning,
+    teamStopwatchStart,
+    teamCountdownDuration,
+    teamCountdownRemainingBefore,
     updatedFrom: 'app',
     updatedClientAt: lastLocalChangeAt
   };
@@ -2899,6 +2934,11 @@ function applyLoadedState(state) {
     bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
     bahnTimerStart = state.bahnTimerStart || null;
     bahnTimerRunning = !!state.bahnTimerRunning;
+    teamStopwatchActive = !!state.teamStopwatchActive;
+    teamStopwatchRunning = !!state.teamStopwatchRunning;
+    teamStopwatchStart = state.teamStopwatchStart || null;
+    teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
+    teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;
   hydrateState();
   return true;
 }
@@ -3272,6 +3312,11 @@ function startNewKegelabend() {
     bahnTimerStart = null;
     bahnTimerRunning = false;
     localStorage.removeItem(getBahnStoppedKey());
+    teamStopwatchActive = false;
+    teamStopwatchRunning = false;
+    teamStopwatchStart = null;
+    teamCountdownDuration = 0;
+    teamCountdownRemainingBefore = 0;
   renderAll();
   persistState();
 
@@ -3378,7 +3423,12 @@ function createEmptyClubData() {
     teamDrinks: {},
       bahnPreisProStunde: 0,
         bahnTimerStart: null,
-        bahnTimerRunning: false
+        bahnTimerRunning: false,
+        teamStopwatchActive: false,
+        teamStopwatchRunning: false,
+        teamStopwatchStart: null,
+        teamCountdownDuration: 0,
+        teamCountdownRemainingBefore: 0
   };
 }
 
@@ -3399,7 +3449,12 @@ function syncCurrentClubToStore() {
     teamDrinks: JSON.parse(JSON.stringify(teamDrinks)),
     bahnPreisProStunde,
     bahnTimerStart,
-    bahnTimerRunning
+    bahnTimerRunning,
+    teamStopwatchActive,
+    teamStopwatchRunning,
+    teamStopwatchStart,
+    teamCountdownDuration,
+    teamCountdownRemainingBefore
   };
 }
 
@@ -3542,6 +3597,11 @@ async function selectClub(clubName) {
     bahnPreisProStunde = parseFloat(localClub.bahnPreisProStunde || 0) || 0;
     bahnTimerStart = localClub.bahnTimerStart || null;
     bahnTimerRunning = !!localClub.bahnTimerRunning;
+    teamStopwatchActive = !!localClub.teamStopwatchActive;
+    teamStopwatchRunning = !!localClub.teamStopwatchRunning;
+    teamStopwatchStart = localClub.teamStopwatchStart || null;
+    teamCountdownDuration = parseInt(localClub.teamCountdownDuration || 0, 10) || 0;
+    teamCountdownRemainingBefore = parseInt(localClub.teamCountdownRemainingBefore || 0, 10) || 0;
 
   hydrateState();
   renderAll();
@@ -4024,6 +4084,161 @@ function previewBahnPreis() {
   bahnPreisProStunde = parseFloat(String(input?.value || '0').replace(',', '.')) || 0;
   updateBahnDisplay();
 }
+                                         
+function getTeamCountdownRemainingSeconds() {
+  if (!teamStopwatchActive) return 0;
+
+  let remaining = teamCountdownRemainingBefore || teamCountdownDuration || 0;
+
+  if (teamStopwatchRunning && teamStopwatchStart) {
+    const start = new Date(teamStopwatchStart).getTime();
+    if (start && !isNaN(start)) {
+      remaining -= Math.floor((Date.now() - start) / 1000);
+    }
+  }
+
+  return Math.max(0, remaining);
+}
+
+function formatStopwatch(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+
+  if (h > 0) {
+    return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+  }
+
+  return [m, s].map(v => String(v).padStart(2, '0')).join(':');
+}
+
+function updateTeamStopwatchDisplay() {
+  const global = document.getElementById('team-stopwatch-global');
+  const timeEl = document.getElementById('team-stopwatch-time');
+  const check = document.getElementById('team-stopwatch-active-check');
+  const settings = document.getElementById('team-countdown-settings');
+  const input = document.getElementById('team-countdown-minutes');
+  const startBtn = document.getElementById('teamStopwatchStartBtn');
+
+  const remaining = getTeamCountdownRemainingSeconds();
+
+  if (global) global.classList.toggle('hidden', !teamStopwatchActive);
+  if (settings) settings.classList.toggle('hidden', !teamStopwatchActive);
+  if (timeEl) timeEl.textContent = formatStopwatch(remaining);
+  if (check) check.checked = !!teamStopwatchActive;
+
+  if (input && document.activeElement !== input) {
+    input.value = teamCountdownDuration > 0 ? String(Math.ceil(teamCountdownDuration / 60)) : '';
+  }
+
+  if (startBtn) {
+    startBtn.textContent = teamStopwatchRunning ? '▶ Läuft' : '▶ Start';
+    startBtn.disabled = !!teamStopwatchRunning || remaining <= 0;
+    startBtn.style.opacity = startBtn.disabled ? '0.55' : '1';
+  }
+
+  if (teamStopwatchRunning && remaining <= 0) {
+    teamStopwatchRunning = false;
+    teamStopwatchStart = null;
+    teamCountdownRemainingBefore = 0;
+    showToast('⏰ Tannenbaum-Countdown abgelaufen', 'success');
+    persistState();
+  }
+}
+
+function toggleTeamStopwatchActive() {
+  const check = document.getElementById('team-stopwatch-active-check');
+  teamStopwatchActive = !!check?.checked;
+
+  if (!teamStopwatchActive) {
+    teamStopwatchRunning = false;
+    teamStopwatchStart = null;
+  }
+
+  updateTeamStopwatchDisplay();
+  persistState();
+}
+
+function saveTeamCountdownDuration() {
+  const input = document.getElementById('team-countdown-minutes');
+  const minutes = parseInt(input?.value || '0', 10) || 0;
+
+  teamCountdownDuration = Math.max(0, minutes * 60);
+  teamCountdownRemainingBefore = teamCountdownDuration;
+  teamStopwatchRunning = false;
+  teamStopwatchStart = null;
+
+  updateTeamStopwatchDisplay();
+  persistState();
+}
+
+function previewTeamCountdownDuration() {
+  const input = document.getElementById('team-countdown-minutes');
+  const minutes = parseInt(input?.value || '0', 10) || 0;
+
+  teamCountdownDuration = Math.max(0, minutes * 60);
+  teamCountdownRemainingBefore = teamCountdownDuration;
+  teamStopwatchRunning = false;
+  teamStopwatchStart = null;
+
+  updateTeamStopwatchDisplay();
+}
+
+function startTeamStopwatch() {
+  if (!teamStopwatchActive) teamStopwatchActive = true;
+
+  if (!teamCountdownDuration && !teamCountdownRemainingBefore) {
+    showToast('Bitte zuerst eine Countdown-Zeit einstellen', 'error');
+    return;
+  }
+
+  if (teamStopwatchRunning) return;
+
+  if (getTeamCountdownRemainingSeconds() <= 0) {
+    teamCountdownRemainingBefore = teamCountdownDuration;
+  }
+
+  teamStopwatchRunning = true;
+  teamStopwatchStart = new Date().toISOString();
+
+  updateTeamStopwatchDisplay();
+  persistState();
+}
+
+function pauseTeamStopwatch() {
+  if (!teamStopwatchRunning) return;
+
+  teamCountdownRemainingBefore = getTeamCountdownRemainingSeconds();
+  teamStopwatchRunning = false;
+  teamStopwatchStart = null;
+
+  updateTeamStopwatchDisplay();
+  persistState();
+}
+
+function stopTeamStopwatch() {
+  teamStopwatchRunning = false;
+  teamStopwatchStart = null;
+  teamCountdownRemainingBefore = teamCountdownDuration;
+
+  updateTeamStopwatchDisplay();
+  persistState();
+}
+
+function restartTeamStopwatch() {
+  if (!teamCountdownDuration) {
+    showToast('Bitte zuerst eine Countdown-Zeit einstellen', 'error');
+    return;
+  }
+
+  teamCountdownRemainingBefore = teamCountdownDuration;
+  teamStopwatchStart = new Date().toISOString();
+  teamStopwatchRunning = true;
+  teamStopwatchActive = true;
+
+  updateTeamStopwatchDisplay();
+  persistState();
+}                                    
 
 // ── RENDER ──
 function renderAll() {
@@ -4031,6 +4246,7 @@ function renderAll() {
   updateHeaderDateTime();
   updateStats();
   updateBahnDisplay();
+  updateTeamStopwatchDisplay();
   renderAnwesenheit();
   renderGruppen();
   renderGetraenke();
@@ -5352,6 +5568,7 @@ window.addEventListener('offline', () => {
 updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 bahnTimerInterval = setInterval(updateBahnDisplay, 1000);
+teamStopwatchInterval = setInterval(updateTeamStopwatchDisplay, 1000);
 </script>
 
 <script>
