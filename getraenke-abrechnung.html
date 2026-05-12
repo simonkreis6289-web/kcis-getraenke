@@ -2255,7 +2255,7 @@ tbody td:first-child {
   justify-content: center;
 }
       
-      .tannenbaum-game {
+.tannenbaum-game {
   margin-top: 16px;
   display: grid;
   gap: 16px;
@@ -2426,6 +2426,16 @@ tbody td:first-child {
   cursor: pointer;
 }
 
+/* TV links: Zahlen zur Mitte schieben */
+.tannenbaum-team.t2 .tannenbaum-row {
+  justify-content: flex-end;
+}
+
+/* Wand rechts: Zahlen von der Mitte nach außen */
+.tannenbaum-team.t1 .tannenbaum-row {
+  justify-content: flex-start;
+}
+      
 @media (max-width: 760px) {
   .tannenbaum-input-row,
   .tannenbaum-summary {
@@ -4794,23 +4804,23 @@ function renderTannenbaum() {
 
   board.className = 'tannenbaum-board';
 
-  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
-    return `
-      <tr>
-        <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
-        <td class="tannenbaum-middle">${n}</td>
-        <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
-      </tr>
-    `;
-  }).join('');
+const rows = Object.keys(TANNENBAUM_BASE).map(n => {
+  return `
+    <tr>
+      <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
+      <td class="tannenbaum-middle">${n}</td>
+      <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
+    </tr>
+  `;
+}).join('');
 
   board.innerHTML = `
     <table class="tannenbaum-table">
       <thead>
         <tr>
-          <th class="tv">🔴 TV</th>
-          <th>Zahl</th>
           <th class="wand">⚫ Wand</th>
+          <th>Zahl</th>
+          <th class="tv">🔴 TV</th>
         </tr>
       </thead>
       <tbody>
