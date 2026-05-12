@@ -2113,6 +2113,86 @@ tbody td:first-child {
   color: var(--bahn-stop-text) !important;
 }
       
+      .team-stopwatch-global {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--statusBar_bg);
+  text-align: center;
+}
+
+.team-stopwatch-time {
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(3rem, 12vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  color: var(--accent2);
+  margin-bottom: 14px;
+}
+
+.team-stopwatch-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.team-stopwatch-btn {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.team-stopwatch-btn.start {
+  background: rgba(0, 120, 40, 0.18);
+  color: rgba(0, 160, 60, 1);
+  border-color: rgba(0, 160, 60, 0.55);
+}
+
+.team-stopwatch-btn.pause {
+  background: rgba(245, 166, 35, 0.18);
+  color: #b36b00;
+  border-color: rgba(245, 166, 35, 0.55);
+}
+
+.team-stopwatch-btn.stop {
+  background: rgba(140, 0, 0, 0.18);
+  color: rgba(220, 0, 0, 1);
+  border-color: rgba(220, 0, 0, 0.45);
+}
+
+.team-stopwatch-settings {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.team-stopwatch-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.team-stopwatch-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+      
 </style>
     
 </head>
@@ -2644,7 +2724,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.1.0.00';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
