@@ -2255,7 +2255,7 @@ tbody td:first-child {
   justify-content: center;
 }
       
-.tannenbaum-game {
+      .tannenbaum-game {
   margin-top: 16px;
   display: grid;
   gap: 16px;
@@ -2290,51 +2290,63 @@ tbody td:first-child {
 }
 
 .tannenbaum-board {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.tannenbaum-team {
   border: 2px solid var(--border);
   border-radius: 18px;
-  padding: 16px;
   background: var(--surface);
+  overflow: hidden;
 }
 
-.tannenbaum-team.t1 {
-  border-color: var(--t1b);
+.tannenbaum-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.tannenbaum-team.t2 {
-  border-color: var(--t2b);
+.tannenbaum-table th {
+  background: var(--surface2);
+  padding: 12px 8px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
 }
 
-.tannenbaum-team-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.5rem;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
-}
-
-.tannenbaum-team.t1 .tannenbaum-team-title {
-  color: var(--t1b);
-}
-
-.tannenbaum-team.t2 .tannenbaum-team-title {
+.tannenbaum-table th.tv {
   color: var(--t2b);
 }
 
-.tannenbaum-tree {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 14px;
+.tannenbaum-table th.wand {
+  color: var(--t1b);
 }
 
-.tannenbaum-row {
+.tannenbaum-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  vertical-align: middle;
+}
+
+.tannenbaum-side {
   display: flex;
-  justify-content: center;
   gap: 6px;
+  min-height: 34px;
+  align-items: center;
+}
+
+.tannenbaum-side.tv {
+  justify-content: flex-start;
+}
+
+.tannenbaum-side.wand {
+  justify-content: flex-end;
+}
+
+.tannenbaum-middle {
+  width: 58px;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--muted);
 }
 
 .tannenbaum-number {
@@ -2342,7 +2354,7 @@ tbody td:first-child {
   height: 34px;
   border-radius: 9px;
   border: 1px solid var(--border);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
@@ -2352,25 +2364,48 @@ tbody td:first-child {
 .tannenbaum-number.crossed {
   opacity: 0.35;
   text-decoration: line-through;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0,0,0,0.06);
 }
 
-.tannenbaum-strikes {
-  border-top: 1px solid var(--border);
-  padding-top: 10px;
+.tannenbaum-summary {
   display: grid;
-  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tannenbaum-summary-card {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--surface);
+}
+
+.tannenbaum-summary-card.tv {
+  border-color: var(--t2b);
+}
+
+.tannenbaum-summary-card.wand {
+  border-color: var(--t1b);
+}
+
+.tannenbaum-summary-title {
+  font-weight: 900;
+  margin-bottom: 8px;
 }
 
 .tannenbaum-strike-line {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   font-size: 0.82rem;
   font-weight: 700;
+  padding: 4px 0;
 }
 
 .tannenbaum-total {
   margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   font-size: 1.1rem;
   font-weight: 900;
 }
@@ -2392,34 +2427,35 @@ tbody td:first-child {
 }
 
 @media (max-width: 760px) {
-  .tannenbaum-board,
-  .tannenbaum-input-row {
+  .tannenbaum-input-row,
+  .tannenbaum-summary {
     grid-template-columns: 1fr;
   }
 
-.tannenbaum-number {
-    width: 30px;
-    height: 30px;
+  .tannenbaum-table th {
+    font-size: 0.78rem;
+    padding: 10px 4px;
   }
-}
-      
-.tannenbaum-tree {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 14px;
-}
 
-.tannenbaum-row {
-  display: flex;
-  gap: 6px;
-}
+  .tannenbaum-table td {
+    padding: 7px 4px;
+  }
 
-.tannenbaum-team.t1 .tannenbaum-row {
-  justify-content: flex-end;
-}
+  .tannenbaum-middle {
+    width: 38px;
+    font-size: 1.35rem;
+  }
 
-.tannenbaum-team.t2 .tannenbaum-row {
-  justify-content: flex-start;
+  .tannenbaum-number {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+    border-radius: 7px;
+  }
+
+  .tannenbaum-side {
+    gap: 3px;
+  }
 }
       
 </style>
@@ -2825,21 +2861,25 @@ tbody td:first-child {
               </div>
             </div>
           
-          <div class="tannenbaum-game">
+            <div class="tannenbaum-game">
               <div class="tannenbaum-input-row">
-                <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">⚫ Wurf Wand</button>
-                <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">🔴 Wurf TV</button>
+                <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">
+                  ⚫ Wurf Wand
+                </button>
+
+                <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">
+                  🔴 Wurf TV
+                </button>
               </div>
 
-                <div id="tannenbaum-board"></div>
+              <div id="tannenbaum-board"></div>
 
-                <div style="margin-top:14px;">
-                  <button class="save-prices-btn" onclick="resetTannenbaumGame()">
-                    ↻ Tannenbaum neu starten
-                  </button>
-                </div>
+              <div style="margin-top:14px;">
+                <button class="save-prices-btn" onclick="resetTannenbaumGame()">
+                  ↻ Tannenbaum neu starten
+                </button>
+              </div>
             </div>
-
       </div>
     </div>
 
@@ -3175,21 +3215,6 @@ async function startApp() {
   loadClubSystem();
   setupClubAvatarUpload();
 
-  if (ACTIVE_CLUB && CLUBS[ACTIVE_CLUB]) {
-    const localClub = CLUBS[ACTIVE_CLUB];
-
-    persons = Array.isArray(localClub.persons) ? localClub.persons : [];
-    spiele = Array.isArray(localClub.spiele) ? localClub.spiele : [];
-    DRINKS = Array.isArray(localClub.DRINKS) && localClub.DRINKS.length ? localClub.DRINKS : DRINKS;
-    prices = localClub.prices || {};
-    SPIELE_KATALOG = Array.isArray(localClub.SPIELE_KATALOG) && localClub.SPIELE_KATALOG.length ? localClub.SPIELE_KATALOG : SPIELE_KATALOG;
-    RUNDEN_GRUENDE = Array.isArray(localClub.RUNDEN_GRUENDE) && localClub.RUNDEN_GRUENDE.length ? localClub.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
-    selectedLoser = localClub.selectedLoser || null;
-    teamDrinks = localClub.teamDrinks || {};
-
-    hydrateState();
-  }
-
   renderClubList();
   updateVersionInfo();
   appReady = true;
@@ -3201,9 +3226,10 @@ async function startApp() {
 
   document.getElementById('loading-screen').style.display = 'none';
 
-  if (ACTIVE_CLUB) {
+  if (ACTIVE_CLUB && CLUBS[ACTIVE_CLUB]) {
     document.getElementById('club-start-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
+
     await selectClub(ACTIVE_CLUB);
   } else {
     document.getElementById('club-start-screen').classList.remove('hidden');
@@ -4411,17 +4437,6 @@ function updateBahnDisplay() {
   }
 }
 
-function restartTeamStopwatch() {
-  teamStopwatchElapsedBefore = 0;
-  teamStopwatchStart = new Date().toISOString();
-  teamStopwatchRunning = true;
-  teamStopwatchActive = true;
-
-  updateTeamStopwatchDisplay();
-  persistState();
-  showToast('↻ Tannenbaum-Stoppuhr neu gestartet', 'success');
-}
-
 function toggleBahnTimer() {
   if (!bahnTimerRunning) {
     const stoppedSeconds = parseInt(localStorage.getItem(getBahnStoppedKey()) || '0', 10) || 0;
@@ -4779,37 +4794,63 @@ function renderTannenbaum() {
 
   board.className = 'tannenbaum-board';
 
+  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
+    return `
+      <tr>
+        <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
+        <td class="tannenbaum-middle">${n}</td>
+        <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
+      </tr>
+    `;
+  }).join('');
+
   board.innerHTML = `
-    ${renderTannenbaumTeam('T1')}
-    ${renderTannenbaumTeam('T2')}
+    <table class="tannenbaum-table">
+      <thead>
+        <tr>
+          <th class="tv">🔴 TV</th>
+          <th>Zahl</th>
+          <th class="wand">⚫ Wand</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+
+    <div class="tannenbaum-summary">
+      ${renderTannenbaumSummary('T2')}
+      ${renderTannenbaumSummary('T1')}
+    </div>
   `;
 }
 
-function renderTannenbaumTeam(team) {
+function renderTannenbaumNumberCells(team, number, sideClass) {
   const data = tannenbaumState.teams[team];
-  const teamClass = team === 'T1' ? 't1' : 't2';
+  const baseCount = TANNENBAUM_BASE[number];
+  const remaining = data.remaining[number] || 0;
+  const visibleCount = Math.max(baseCount, remaining);
+  const cells = [];
 
-  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
-    const baseCount = TANNENBAUM_BASE[n];
-    const remaining = data.remaining[n] || 0;
-    const cells = [];
-    const visibleCount = Math.max(baseCount, remaining);
+  for (let i = 0; i < visibleCount; i++) {
+    const crossed = i >= remaining;
+    cells.push(`
+      <span class="tannenbaum-number ${crossed ? 'crossed' : ''}">
+        ${number}
+      </span>
+    `);
+  }
 
-    for (let i = 0; i < visibleCount; i++) {
-      const crossed = i >= remaining;
-      cells.push(`
-        <span class="tannenbaum-number ${crossed ? 'crossed' : ''}">
-          ${n}
-        </span>
-      `);
-    }
+  return `
+    <div class="tannenbaum-side ${sideClass}">
+      ${cells.join('')}
+    </div>
+  `;
+}
 
-    return `
-      <div class="tannenbaum-row">
-        ${cells.join('')}
-      </div>
-    `;
-  }).join('');
+function renderTannenbaumSummary(team) {
+  const data = tannenbaumState.teams[team];
+  const teamClass = team === 'T1' ? 'wand' : 'tv';
 
   const groupedStrikes = {};
   data.strikes.forEach(s => {
@@ -4838,17 +4879,11 @@ function renderTannenbaumTeam(team) {
     : '';
 
   return `
-    <div class="tannenbaum-team ${teamClass}">
-      <div class="tannenbaum-team-title">${getTeamLabel(team)}</div>
+    <div class="tannenbaum-summary-card ${teamClass}">
+      <div class="tannenbaum-summary-title">${getTeamLabel(team)}</div>
 
-      <div class="tannenbaum-tree">
-        ${rows}
-      </div>
-
-      <div class="tannenbaum-strikes">
-        ${strikeLines || '<div style="font-size:0.8rem;color:var(--muted);font-weight:700;">Noch keine Striche</div>'}
-        ${bonusLine}
-      </div>
+      ${strikeLines || '<div style="font-size:0.8rem;color:var(--muted);font-weight:700;">Noch keine Striche</div>'}
+      ${bonusLine}
 
       <div class="tannenbaum-total">
         Betrag: ${euros(getTannenbaumTeamTotal(team))}
