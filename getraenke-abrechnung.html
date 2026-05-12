@@ -2529,6 +2529,134 @@ tbody td:first-child {
   }
 }
       
+      .tannenbaum-board {
+  border: none;
+  background: transparent;
+  overflow: visible;
+}
+
+.tannenbaum-tree-table-wrap,
+.tannenbaum-price-wrap {
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tannenbaum-tree-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.tannenbaum-tree-table th:nth-child(1),
+.tannenbaum-tree-table th:nth-child(5) {
+  width: 22%;
+}
+
+.tannenbaum-tree-table th:nth-child(2),
+.tannenbaum-tree-table th:nth-child(4) {
+  width: 25%;
+}
+
+.tannenbaum-tree-table th:nth-child(3) {
+  width: 6%;
+}
+
+.tannenbaum-side.wand {
+  justify-content: flex-start;
+}
+
+.tannenbaum-side.tv {
+  justify-content: flex-end;
+}
+
+.tannenbaum-strich-cell {
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.tannenbaum-strich-cell.wand {
+  text-align: right;
+  color: var(--t1b);
+}
+
+.tannenbaum-strich-cell.tv {
+  text-align: left;
+  color: var(--t2b);
+}
+
+.tally-empty {
+  color: var(--muted);
+  opacity: 0.35;
+  font-weight: 800;
+}
+
+.tally-mark {
+  display: inline-block;
+  font-weight: 900;
+}
+
+.tally-space {
+  display: inline-block;
+  width: 8px;
+}
+
+.tannenbaum-price-wrap {
+  margin-top: 16px;
+}
+
+.tannenbaum-price-title {
+  padding: 12px 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245,166,35,0.12);
+}
+
+.tannenbaum-price-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tannenbaum-price-table th,
+.tannenbaum-price-table td {
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  font-weight: 800;
+}
+
+.tannenbaum-price-table tfoot td {
+  background: rgba(0,0,0,0.035);
+  border-top: 2px solid var(--border);
+}
+
+.tannenbaum-price-table .wand,
+.tannenbaum-tree-table .wand {
+  color: var(--t1b);
+}
+
+.tannenbaum-price-table .tv,
+.tannenbaum-tree-table .tv {
+  color: var(--t2b);
+}
+
+@media (max-width: 760px) {
+  .tannenbaum-tree-table-wrap,
+  .tannenbaum-price-wrap {
+    overflow-x: auto;
+  }
+
+  .tannenbaum-tree-table,
+  .tannenbaum-price-table {
+    min-width: 720px;
+  }
+}
+      
 </style>
     
 </head>
@@ -4889,42 +5017,99 @@ function renderTannenbaum() {
 
     return `
       <tr>
+        <td class="tannenbaum-strich-cell wand">${renderTally(wandInfo.count)}</td>
         <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
         <td class="tannenbaum-middle">${n}</td>
         <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
-        <td class="tannenbaum-strich-cell">${renderTally(wandInfo.count)}</td>
-        <td class="tannenbaum-money-cell">${euros(wandInfo.total)}</td>
-        <td class="tannenbaum-strich-cell">${renderTally(tvInfo.count)}</td>
-        <td class="tannenbaum-money-cell">${euros(tvInfo.total)}</td>
+        <td class="tannenbaum-strich-cell tv">${renderTally(tvInfo.count)}</td>
       </tr>
     `;
   }).join('');
 
   board.innerHTML = `
-    <table class="tannenbaum-table">
-      <thead>
-        <tr>
-          <th class="wand">⚫ Wand</th>
-          <th>Zahl</th>
-          <th class="tv">🔴 TV</th>
-          <th class="wand">Striche Wand</th>
-          <th class="wand">€ Wand</th>
-          <th class="tv">Striche TV</th>
-          <th class="tv">€ TV</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3">Bonus / Gesamt</td>
-          <td colspan="2">${renderTannenbaumBonusAndTotal('T1')}</td>
-          <td colspan="2">${renderTannenbaumBonusAndTotal('T2')}</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div class="tannenbaum-tree-table-wrap">
+      <table class="tannenbaum-table tannenbaum-tree-table">
+        <thead>
+          <tr>
+            <th class="wand">Striche Wand</th>
+            <th class="wand">⚫ Wand</th>
+            <th>Zahl</th>
+            <th class="tv">🔴 TV</th>
+            <th class="tv">Striche TV</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+    ${renderTannenbaumPriceTable()}
   `;
+}
+    
+function renderTannenbaumPriceTable() {
+  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
+    const wandInfo = getTannenbaumStrikeInfo('T1', n);
+    const tvInfo = getTannenbaumStrikeInfo('T2', n);
+
+    return `
+      <tr>
+        <td>${n}</td>
+        <td>${wandInfo.count}</td>
+        <td>${euros(wandInfo.total)}</td>
+        <td>${tvInfo.count}</td>
+        <td>${euros(tvInfo.total)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const wandBonus = tannenbaumState.teams.T1.bonus || 0;
+  const tvBonus = tannenbaumState.teams.T2.bonus || 0;
+
+  return `
+    <div class="tannenbaum-price-wrap">
+      <div class="tannenbaum-price-title">Strafgeld Übersicht</div>
+
+      <table class="tannenbaum-price-table">
+        <thead>
+          <tr>
+            <th>Zahl</th>
+            <th class="wand">Striche Wand</th>
+            <th class="wand">€ Wand</th>
+            <th class="tv">Striche TV</th>
+            <th class="tv">€ TV</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td>Bonus</td>
+            <td></td>
+            <td>${euros(wandBonus)}</td>
+            <td></td>
+            <td>${euros(tvBonus)}</td>
+          </tr>
+          <tr>
+            <td>Gesamt</td>
+            <td></td>
+            <td>${euros(getTannenbaumTeamTotal('T1'))}</td>
+            <td></td>
+            <td>${euros(getTannenbaumTeamTotal('T2'))}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+}
+
+function renderTally(count) {
+  if (!count) return '<span class="tally-empty">0</span>';
+
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    html += '<span class="tally-mark">|</span>';
+    if (i % 5 === 0) html += '<span class="tally-space"></span>';
+  }
+  return html;
 }
 
 function renderTannenbaumBonusAndTotal(team) {
