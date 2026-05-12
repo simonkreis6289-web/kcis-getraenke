@@ -2659,43 +2659,45 @@ tbody td:first-child {
 
 .tannenbaum-board {
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .tannenbaum-tree-table-wrap,
 .tannenbaum-price-wrap {
-  min-width: 760px;
+  min-width: 860px;
 }
 
 .tannenbaum-side {
   display: flex;
   align-items: center;
-  gap: 4px;
-  min-height: 40px;
+  gap: 6px;
+  min-height: 52px;
 }
 
+/* LINKS: von Mitte nach außen */
 .tannenbaum-side.wand {
   justify-content: flex-end;
-  flex-direction: row-reverse;
 }
 
+/* RECHTS: von Mitte nach außen */
 .tannenbaum-side.tv {
   justify-content: flex-start;
-  flex-direction: row;
 }
 
 .tannenbaum-number {
-  min-width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 0.9rem;
+  font-size: 1rem;
   border: 2px solid currentColor;
   background: var(--surface);
+  flex-shrink: 0;
 }
 
 .tannenbaum-side.wand .tannenbaum-number {
@@ -2709,24 +2711,20 @@ tbody td:first-child {
 .tannenbaum-number.crossed {
   opacity: 0.35;
   text-decoration: line-through;
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .tannenbaum-strich-cell {
-  min-width: 120px;
+  min-width: 140px;
   white-space: nowrap;
+  font-size: 1.2rem;
+  font-weight: 900;
 }
 
-@media (max-width: 760px) {
-  .tannenbaum-board {
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 12px;
-  }
-
+@media (max-width: 900px) {
   .tannenbaum-tree-table-wrap,
   .tannenbaum-price-wrap {
-    min-width: 760px;
+    min-width: 860px;
   }
 }
       
