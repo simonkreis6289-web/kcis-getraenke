@@ -2254,8 +2254,8 @@ tbody td:first-child {
   flex-wrap: wrap;
   justify-content: center;
 }
-      
-.tannenbaum-game {
+     
+     .tannenbaum-game {
   margin-top: 16px;
   display: grid;
   gap: 16px;
@@ -2290,124 +2290,134 @@ tbody td:first-child {
 }
 
 .tannenbaum-board {
+  width: 100%;
+}
+
+.tannenbaum-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   border: 2px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
-  overflow: hidden;
 }
 
 .tannenbaum-table {
   width: 100%;
+  min-width: 980px;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
-.tannenbaum-table th {
-  background: var(--surface2);
-  padding: 12px 8px;
-  font-size: 0.9rem;
-  font-weight: 900;
+.tannenbaum-table th,
+.tannenbaum-table td {
+  padding: 12px;
   text-align: center;
-  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
-.tannenbaum-table th.tv {
-  color: var(--t2b);
+.tannenbaum-table tbody tr:nth-child(even) {
+  background: rgba(0,0,0,0.025);
+}
+
+.tannenbaum-table th {
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: var(--surface2);
 }
 
 .tannenbaum-table th.wand {
   color: var(--t1b);
 }
 
-.tannenbaum-table td {
-  padding: 9px 8px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  vertical-align: middle;
+.tannenbaum-table th.tv {
+  color: var(--t2b);
+}
+
+.tannenbaum-strich-cell {
+  width: 170px;
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: var(--accent2);
+  white-space: nowrap;
+  letter-spacing: 2px;
+}
+
+.tannenbaum-strich-cell.left {
+  text-align: right;
+}
+
+.tannenbaum-strich-cell.right {
+  text-align: left;
+}
+
+.tannenbaum-zero {
+  color: var(--muted);
+  opacity: 0.35;
+  font-size: 1.1rem;
+}
+
+.tannenbaum-box-cell {
+  width: 330px;
 }
 
 .tannenbaum-side {
   display: flex;
-  gap: 6px;
-  min-height: 34px;
   align-items: center;
+  gap: 8px;
+  min-height: 54px;
 }
 
-.tannenbaum-side.tv {
-  justify-content: flex-start;
-}
-
+/* Wand links: an der Mitte starten, nach links wachsen */
 .tannenbaum-side.wand {
   justify-content: flex-end;
+  flex-direction: row;
+}
+
+/* TV rechts: an der Mitte starten, nach rechts wachsen */
+.tannenbaum-side.tv {
+  justify-content: flex-start;
+  flex-direction: row;
 }
 
 .tannenbaum-middle {
-  width: 58px;
+  width: 70px;
   text-align: center;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.7rem;
+  font-size: 2rem;
   font-weight: 900;
   color: var(--muted);
 }
 
 .tannenbaum-number {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: 1px solid var(--border);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid currentColor;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  background: #fff;
+  font-size: 1.05rem;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.tannenbaum-side.wand .tannenbaum-number {
+  color: var(--t1b);
+}
+
+.tannenbaum-side.tv .tannenbaum-number {
+  color: var(--t2b);
 }
 
 .tannenbaum-number.crossed {
-  opacity: 0.35;
+  opacity: 0.32;
   text-decoration: line-through;
-  background: rgba(0,0,0,0.06);
-}
-
-.tannenbaum-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.tannenbaum-summary-card {
-  border: 2px solid var(--border);
-  border-radius: 14px;
-  padding: 14px;
-  background: var(--surface);
-}
-
-.tannenbaum-summary-card.tv {
-  border-color: var(--t2b);
-}
-
-.tannenbaum-summary-card.wand {
-  border-color: var(--t1b);
-}
-
-.tannenbaum-summary-title {
-  font-weight: 900;
-  margin-bottom: 8px;
-}
-
-.tannenbaum-strike-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  padding: 4px 0;
-}
-
-.tannenbaum-total {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-  font-size: 1.1rem;
-  font-weight: 900;
+  background: rgba(0,0,0,0.04);
 }
 
 .tannenbaum-number-grid {
@@ -2426,397 +2436,18 @@ tbody td:first-child {
   cursor: pointer;
 }
 
-/* TV links: Zahlen zur Mitte schieben */
-.tannenbaum-team.t2 .tannenbaum-row {
-  justify-content: flex-end;
-}
-
-/* Wand rechts: Zahlen von der Mitte nach außen */
-.tannenbaum-team.t1 .tannenbaum-row {
-  justify-content: flex-start;
-}
-      
-@media (max-width: 760px) {
-  .tannenbaum-input-row,
-  .tannenbaum-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .tannenbaum-table th {
-    font-size: 0.78rem;
-    padding: 10px 4px;
-  }
-
-  .tannenbaum-table td {
-    padding: 7px 4px;
-  }
-
-  .tannenbaum-middle {
-    width: 38px;
-    font-size: 1.35rem;
-  }
-
-  .tannenbaum-number {
-    width: 26px;
-    height: 26px;
-    font-size: 0.78rem;
-    border-radius: 7px;
-  }
-
-  .tannenbaum-side {
-    gap: 3px;
-  }
-}
-      .tannenbaum-table th,
-.tannenbaum-table td {
-  text-align: center;
-}
-
-.tannenbaum-table tbody tr:nth-child(even) {
-  background: rgba(0,0,0,0.025);
-}
-
-.tannenbaum-strich-cell {
-  font-weight: 900;
-  font-size: 1.1rem;
-  letter-spacing: 2px;
-  min-width: 90px;
-}
-
-.tannenbaum-money-cell {
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.tally-empty {
-  color: var(--muted);
-  opacity: 0.45;
-  font-weight: 800;
-}
-
-.tally-mark {
-  display: inline-block;
-  color: var(--accent2);
-  font-weight: 900;
-}
-
-.tally-space {
-  display: inline-block;
-  width: 8px;
-}
-
-.tannenbaum-table tfoot td {
-  padding: 12px 8px;
-  background: rgba(245,166,35,0.12);
-  border-top: 2px solid var(--border);
-  font-weight: 900;
-}
-
-.tannenbaum-footer-sum {
-  display: grid;
-  gap: 4px;
-  font-size: 0.85rem;
-}
-
-@media (max-width: 760px) {
-  .tannenbaum-board {
-    overflow-x: auto;
-  }
-
-  .tannenbaum-table {
-    min-width: 720px;
-  }
-}
-      
-      .tannenbaum-board {
-  border: none;
-  background: transparent;
-  overflow: visible;
-}
-
-.tannenbaum-tree-table-wrap,
 .tannenbaum-price-wrap {
-  border: 2px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface);
-  overflow: hidden;
-}
-
-.tannenbaum-tree-table {
-  width: 100%;
-  table-layout: fixed;
-}
-
-.tannenbaum-tree-table th:nth-child(1),
-.tannenbaum-tree-table th:nth-child(5) {
-  width: 22%;
-}
-
-.tannenbaum-tree-table th:nth-child(2),
-.tannenbaum-tree-table th:nth-child(4) {
-  width: 25%;
-}
-
-.tannenbaum-tree-table th:nth-child(3) {
-  width: 6%;
-}
-
-.tannenbaum-side.wand {
-  justify-content: flex-start;
-}
-
-.tannenbaum-side.tv {
-  justify-content: flex-end;
-}
-
-.tannenbaum-strich-cell {
-  font-size: 1.15rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-  white-space: nowrap;
-}
-
-.tannenbaum-strich-cell.wand {
-  text-align: right;
-  color: var(--t1b);
-}
-
-.tannenbaum-strich-cell.tv {
-  text-align: left;
-  color: var(--t2b);
-}
-
-.tally-empty {
-  color: var(--muted);
-  opacity: 0.35;
-  font-weight: 800;
-}
-
-.tally-mark {
-  display: inline-block;
-  font-weight: 900;
-}
-
-.tally-space {
-  display: inline-block;
-  width: 8px;
-}
-
-.tannenbaum-price-wrap {
-  margin-top: 16px;
-}
-
-.tannenbaum-price-title {
-  padding: 12px 14px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(245,166,35,0.12);
-}
-
-.tannenbaum-price-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.tannenbaum-price-table th,
-.tannenbaum-price-table td {
-  padding: 10px 8px;
-  text-align: center;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  font-weight: 800;
-}
-
-.tannenbaum-price-table tfoot td {
-  background: rgba(0,0,0,0.035);
-  border-top: 2px solid var(--border);
-}
-
-.tannenbaum-price-table .wand,
-.tannenbaum-tree-table .wand {
-  color: var(--t1b);
-}
-
-.tannenbaum-price-table .tv,
-.tannenbaum-tree-table .tv {
-  color: var(--t2b);
-}
-
-@media (max-width: 760px) {
-  .tannenbaum-tree-table-wrap,
-  .tannenbaum-price-wrap {
-    overflow-x: auto;
-  }
-
-  .tannenbaum-tree-table,
-  .tannenbaum-price-table {
-    min-width: 720px;
-  }
-}
-
-.tannenbaum-board {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 10px;
-}
-
-.tannenbaum-tree-table-wrap,
-.tannenbaum-price-wrap {
-  min-width: 860px;
-}
-
-.tannenbaum-side {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 52px;
-}
-
-/* LINKS: von Mitte nach außen */
-.tannenbaum-side.wand {
-  justify-content: flex-end;
-}
-
-/* RECHTS: von Mitte nach außen */
-.tannenbaum-side.tv {
-  justify-content: flex-start;
-}
-
-.tannenbaum-number {
-  min-width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 1rem;
-  border: 2px solid currentColor;
-  background: var(--surface);
-  flex-shrink: 0;
-}
-
-.tannenbaum-side.wand .tannenbaum-number {
-  color: var(--t1b);
-}
-
-.tannenbaum-side.tv .tannenbaum-number {
-  color: var(--t2b);
-}
-
-.tannenbaum-number.crossed {
-  opacity: 0.35;
-  text-decoration: line-through;
-  transform: scale(0.95);
-}
-
-.tannenbaum-strich-cell {
-  min-width: 140px;
-  white-space: nowrap;
-  font-size: 1.2rem;
-  font-weight: 900;
-}
-
-@media (max-width: 900px) {
-  .tannenbaum-tree-table-wrap,
-  .tannenbaum-price-wrap {
-    min-width: 860px;
-  }
-}
-
-.tannenbaum-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.tannenbaum-table {
-  width: 100%;
-  min-width: 980px;
-  border-collapse: collapse;
-}
-
-.tannenbaum-table th,
-.tannenbaum-table td {
-  padding: 12px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-.tannenbaum-side {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 56px;
-}
-
-.tannenbaum-side.wand {
-  justify-content: flex-end;
-}
-
-.tannenbaum-side.tv {
-  justify-content: flex-start;
-}
-
-.tannenbaum-number {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 1.05rem;
-  background: var(--surface);
-  border: 2px solid currentColor;
-  flex-shrink: 0;
-}
-
-.tannenbaum-side.wand .tannenbaum-number {
-  color: #111;
-}
-
-.tannenbaum-side.tv .tannenbaum-number {
-  color: #d9001b;
-}
-
-.tannenbaum-number.crossed {
-  opacity: 0.3;
-  text-decoration: line-through;
-}
-
-.tannenbaum-middle {
-  font-size: 2rem;
-  font-weight: 900;
-  width: 80px;
-}
-
-.tannenbaum-strich-cell {
-  width: 160px;
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: #ff3b1f;
-  white-space: nowrap;
-}
-
-.tannenbaum-zero {
-  color: #999;
-}
-
-.tannenbaum-price-wrap {
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .tannenbaum-price-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 14px;
 }
 
 .tannenbaum-price-card {
+  border: 2px solid var(--border);
   border-radius: 18px;
   overflow: hidden;
   background: var(--surface);
@@ -2825,18 +2456,20 @@ tbody td:first-child {
 .tannenbaum-price-title {
   padding: 14px;
   font-weight: 900;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .tannenbaum-price-card.wand .tannenbaum-price-title {
-  background: #111;
-  color: white;
+  background: var(--t1b);
+  color: #fff;
 }
 
 .tannenbaum-price-card.tv .tannenbaum-price-title {
-  background: #d9001b;
-  color: white;
+  background: var(--t2b);
+  color: #fff;
 }
 
 .tannenbaum-price-card table {
@@ -2848,17 +2481,29 @@ tbody td:first-child {
 .tannenbaum-price-card td {
   padding: 10px;
   text-align: left;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.tannenbaum-price-card th:last-child,
+.tannenbaum-price-card td:last-child {
+  text-align: right;
 }
 
 .tannenbaum-price-card tfoot td {
   font-weight: 900;
+  background: rgba(0,0,0,0.035);
 }
 
 @media (max-width: 900px) {
   .tannenbaum-price-grid {
     grid-template-columns: 1fr;
   }
+
+  .tannenbaum-input-row {
+    grid-template-columns: 1fr;
+  }
 }
+
       
 </style>
     
@@ -3431,7 +3076,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.1.0.20';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -5186,26 +4831,6 @@ function handleTannenbaumThrow(number) {
   showToast(action, 'success');
 }
 
-function getTannenbaumStrikeInfo(team, number) {
-  const data = tannenbaumState.teams[team];
-  const strikes = data.strikes.filter(s => String(s.number) === String(number));
-  const count = strikes.length;
-  const total = strikes.reduce((sum, s) => sum + (parseFloat(s.amount || 0) || 0), 0);
-
-  return { count, total };
-}
-
-function renderTally(count) {
-  if (!count) return '<span class="tally-empty">0</span>';
-
-  let html = '';
-  for (let i = 1; i <= count; i++) {
-    html += '<span class="tally-mark">|</span>';
-    if (i % 5 === 0) html += '<span class="tally-space"></span>';
-  }
-  return html;
-}
-
 function renderTannenbaum() {
   ensureTannenbaumState();
 
@@ -5239,99 +4864,19 @@ function renderTannenbaum() {
       <table class="tannenbaum-table">
         <thead>
           <tr>
-            <th>STRICHE WAND</th>
-            <th class="wand">⚫ WAND</th>
-            <th>ZAHL</th>
+            <th>Striche Wand</th>
+            <th class="wand">⚫ Wand</th>
+            <th>Zahl</th>
             <th class="tv">🔴 TV</th>
-            <th>STRICHE TV</th>
+            <th>Striche TV</th>
           </tr>
         </thead>
-        <tbody>
-          ${rows}
-        </tbody>
+        <tbody>${rows}</tbody>
       </table>
     </div>
 
     <div class="tannenbaum-price-wrap">
       ${renderTannenbaumPriceTable()}
-    </div>
-  `;
-}
-    
-function renderTannenbaumPriceTable() {
-  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
-    const wandInfo = getTannenbaumStrikeInfo('T1', n);
-    const tvInfo = getTannenbaumStrikeInfo('T2', n);
-
-    return `
-      <tr>
-        <td>${n}</td>
-        <td>${wandInfo.count}</td>
-        <td>${euros(wandInfo.total)}</td>
-        <td>${tvInfo.count}</td>
-        <td>${euros(tvInfo.total)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  const wandBonus = tannenbaumState.teams.T1.bonus || 0;
-  const tvBonus = tannenbaumState.teams.T2.bonus || 0;
-
-  return `
-    <div class="tannenbaum-price-wrap">
-      <div class="tannenbaum-price-title">Strafgeld Übersicht</div>
-
-      <table class="tannenbaum-price-table">
-        <thead>
-          <tr>
-            <th>Zahl</th>
-            <th class="wand">Striche Wand</th>
-            <th class="wand">€ Wand</th>
-            <th class="tv">Striche TV</th>
-            <th class="tv">€ TV</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-        <tfoot>
-          <tr>
-            <td>Bonus</td>
-            <td></td>
-            <td>${euros(wandBonus)}</td>
-            <td></td>
-            <td>${euros(tvBonus)}</td>
-          </tr>
-          <tr>
-            <td>Gesamt</td>
-            <td></td>
-            <td>${euros(getTannenbaumTeamTotal('T1'))}</td>
-            <td></td>
-            <td>${euros(getTannenbaumTeamTotal('T2'))}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  `;
-}
-
-function renderTally(count) {
-  if (!count) return '<span class="tally-empty">0</span>';
-
-  let html = '';
-  for (let i = 1; i <= count; i++) {
-    html += '<span class="tally-mark">|</span>';
-    if (i % 5 === 0) html += '<span class="tally-space"></span>';
-  }
-  return html;
-}
-
-function renderTannenbaumBonusAndTotal(team) {
-  const data = tannenbaumState.teams[team];
-  const bonus = data.bonus || 0;
-
-  return `
-    <div class="tannenbaum-footer-sum">
-      ${bonus > 0 ? `<div>Bonus: ${euros(bonus)}</div>` : '<div>Bonus: 0,00 €</div>'}
-      <strong>Gesamt: ${euros(getTannenbaumTeamTotal(team))}</strong>
     </div>
   `;
 }
@@ -5354,10 +4899,6 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
     `);
   }
 
-  if (team === 'T1') {
-    cells.reverse();
-  }
-
   return `
     <div class="tannenbaum-side ${sideClass}">
       ${cells.join('')}
@@ -5367,14 +4908,19 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
 
 function renderTannenbaumStrikeMarks(team, number) {
   const data = tannenbaumState.teams[team];
-
   const strikes = data.strikes.filter(s => String(s.number) === String(number));
 
   if (!strikes.length) {
     return '<span class="tannenbaum-zero">0</span>';
   }
 
-  return strikes.map(() => '|').join(' ');
+  let html = '';
+  strikes.forEach((_, index) => {
+    html += '|';
+    if ((index + 1) % 5 === 0) html += ' ';
+  });
+
+  return html;
 }
 
 function renderTannenbaumPriceTable() {
@@ -5391,34 +4937,35 @@ function renderTannenbaumPriceCard(team) {
   const grouped = {};
 
   data.strikes.forEach(s => {
-    const n = s.number;
+    const n = String(s.number);
     if (!grouped[n]) grouped[n] = { count: 0, total: 0 };
 
-    grouped[n].count++;
-    grouped[n].total += s.amount;
+    grouped[n].count += 1;
+    grouped[n].total += parseFloat(s.amount || 0) || 0;
   });
 
   const rows = Object.keys(grouped)
     .sort((a, b) => Number(a) - Number(b))
     .map(n => `
       <tr>
-        <td>${grouped[n].count}x</td>
+        <td>${grouped[n].count}×</td>
         <td>Strich auf ${n}</td>
         <td>${euros(grouped[n].total)}</td>
       </tr>
     `).join('');
 
+  const bonus = data.bonus || 0;
+  const total = getTannenbaumTeamTotal(team);
+
   return `
     <div class="tannenbaum-price-card ${team === 'T1' ? 'wand' : 'tv'}">
-      <div class="tannenbaum-price-title">
-        ${getTeamLabel(team)}
-      </div>
+      <div class="tannenbaum-price-title">${getTeamLabel(team)}</div>
 
       <table>
         <thead>
           <tr>
             <th>Anzahl</th>
-            <th>Strich auf</th>
+            <th>Grund</th>
             <th>Betrag</th>
           </tr>
         </thead>
@@ -5428,11 +4975,18 @@ function renderTannenbaumPriceCard(team) {
               <td colspan="3">Noch keine Striche</td>
             </tr>
           `}
+          ${bonus > 0 ? `
+            <tr>
+              <td>1×</td>
+              <td>Leer-Bonus Gegner</td>
+              <td>${euros(bonus)}</td>
+            </tr>
+          ` : ''}
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="2">Summe</td>
-            <td>${euros(getTannenbaumTeamTotal(team))}</td>
+            <td colspan="2">Gesamt</td>
+            <td>${euros(total)}</td>
           </tr>
         </tfoot>
       </table>
@@ -5440,49 +4994,6 @@ function renderTannenbaumPriceCard(team) {
   `;
 }
 
-function renderTannenbaumSummary(team) {
-  const data = tannenbaumState.teams[team];
-  const teamClass = team === 'T1' ? 'wand' : 'tv';
-
-  const groupedStrikes = {};
-  data.strikes.forEach(s => {
-    const n = s.number;
-    if (!groupedStrikes[n]) groupedStrikes[n] = { count: 0, total: 0 };
-    groupedStrikes[n].count += 1;
-    groupedStrikes[n].total += parseFloat(s.amount || 0) || 0;
-  });
-
-  const strikeLines = Object.keys(groupedStrikes)
-    .sort((a, b) => Number(a) - Number(b))
-    .map(n => `
-      <div class="tannenbaum-strike-line">
-        <span>${groupedStrikes[n].count}× Strich auf ${n}</span>
-        <span>${euros(groupedStrikes[n].total)}</span>
-      </div>
-    `).join('');
-
-  const bonusLine = data.bonus > 0
-    ? `
-      <div class="tannenbaum-strike-line">
-        <span>Leer-Bonus Gegner</span>
-        <span>${euros(data.bonus)}</span>
-      </div>
-    `
-    : '';
-
-  return `
-    <div class="tannenbaum-summary-card ${teamClass}">
-      <div class="tannenbaum-summary-title">${getTeamLabel(team)}</div>
-
-      ${strikeLines || '<div style="font-size:0.8rem;color:var(--muted);font-weight:700;">Noch keine Striche</div>'}
-      ${bonusLine}
-
-      <div class="tannenbaum-total">
-        Betrag: ${euros(getTannenbaumTeamTotal(team))}
-      </div>
-    </div>
-  `;
-}
     
 function resetTannenbaumGame() {
   if (!confirm('Tannenbaum wirklich zurücksetzen?')) return;
