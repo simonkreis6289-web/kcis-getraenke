@@ -1459,25 +1459,56 @@ tbody td:first-child {
       color: var(--t2b);
     }
 
-    .team-drinks-grid,
-    .round-drinks-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 8px;
-      margin-bottom: 14px;
-    }
+.team-drinks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
 
-    .team-drink-row,
-    .round-drink-row {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
+.team-drink-row {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.team-drink-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.15;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.team-drink-row .counter {
+  display: grid;
+  grid-template-columns: 28px 22px 28px;
+  align-items: center;
+  gap: 5px;
+  min-width: 88px;
+}
+
+.team-drink-row .counter-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.team-drink-row .counter-val {
+  min-width: 22px;
+  font-size: 0.9rem;
+  text-align: center;
+}
       
 #drink-edit-list {
   display: flex;
@@ -1560,6 +1591,14 @@ tbody td:first-child {
    
   .club-actions {
       margin-top: 6px;
+  }
+      
+.team-drinks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-drink-row {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
     
 }
