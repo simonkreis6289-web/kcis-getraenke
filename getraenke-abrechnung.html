@@ -2467,6 +2467,67 @@ tbody td:first-child {
     gap: 3px;
   }
 }
+      .tannenbaum-table th,
+.tannenbaum-table td {
+  text-align: center;
+}
+
+.tannenbaum-table tbody tr:nth-child(even) {
+  background: rgba(0,0,0,0.025);
+}
+
+.tannenbaum-strich-cell {
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  min-width: 90px;
+}
+
+.tannenbaum-money-cell {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tally-empty {
+  color: var(--muted);
+  opacity: 0.45;
+  font-weight: 800;
+}
+
+.tally-mark {
+  display: inline-block;
+  color: var(--accent2);
+  font-weight: 900;
+}
+
+.tally-space {
+  display: inline-block;
+  width: 8px;
+}
+
+.tannenbaum-table tfoot td {
+  padding: 12px 8px;
+  background: rgba(245,166,35,0.12);
+  border-top: 2px solid var(--border);
+  font-weight: 900;
+}
+
+.tannenbaum-footer-sum {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .tannenbaum-board {
+    overflow-x: auto;
+  }
+
+  .tannenbaum-table {
+    min-width: 720px;
+  }
+}
       
 </style>
     
@@ -4760,17 +4821,14 @@ function handleTannenbaumThrow(number) {
     own.remaining[n] -= 1;
     action = `${getTeamLabel(team)} streicht ${number}`;
   } else if ((other.remaining[n] || 0) > 0) {
-  const amount = number * 0.10;
+    const amount = number * 0.10;
 
-  own.strikes.push({
-    number,
-    amount,
-    causedBy: team,
-    createdAt: new Date().toISOString()
-  });
-
-  action = `${getTeamLabel(team)} bekommt Strich: +${amount.toFixed(2).replace('.', ',')} €`;
-}
+    other.strikes.push({
+      number,
+      amount,
+      causedBy: team,
+      createdAt: new Date().toISOString()
+    });
 
     action = `${getTeamLabel(otherTeam)} bekommt Strich: +${amount.toFixed(2).replace('.', ',')} €`;
   } else {
@@ -4781,7 +4839,6 @@ function handleTannenbaumThrow(number) {
   if (isTannenbaumTeamEmpty(team) && !own.finished) {
     own.finished = true;
     other.bonus = (other.bonus || 0) + 5;
-
     action += ` · ${getTeamLabel(team)} ist leer! ${getTeamLabel(otherTeam)} +5,00 €`;
   }
 
@@ -4795,8 +4852,27 @@ function handleTannenbaumThrow(number) {
   closeTannenbaumThrowModal();
   renderTannenbaum();
   persistState();
-
   showToast(action, 'success');
+}
+
+function getTannenbaumStrikeInfo(team, number) {
+  const data = tannenbaumState.teams[team];
+  const strikes = data.strikes.filter(s => String(s.number) === String(number));
+  const count = strikes.length;
+  const total = strikes.reduce((sum, s) => sum + (parseFloat(s.amount || 0) || 0), 0);
+
+  return { count, total };
+}
+
+function renderTally(count) {
+  if (!count) return '<span class="tally-empty">0</span>';
+
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    html += '<span class="tally-mark">|</span>';
+    if (i % 5 === 0) html += '<span class="tally-space"></span>';
+  }
+  return html;
 }
 
 function renderTannenbaum() {
@@ -4807,15 +4883,22 @@ function renderTannenbaum() {
 
   board.className = 'tannenbaum-board';
 
-const rows = Object.keys(TANNENBAUM_BASE).map(n => {
-  return `
-    <tr>
-      <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
-      <td class="tannenbaum-middle">${n}</td>
-      <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
-    </tr>
-  `;
-}).join('');
+  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
+    const wandInfo = getTannenbaumStrikeInfo('T1', n);
+    const tvInfo = getTannenbaumStrikeInfo('T2', n);
+
+    return `
+      <tr>
+        <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
+        <td class="tannenbaum-middle">${n}</td>
+        <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
+        <td class="tannenbaum-strich-cell">${renderTally(wandInfo.count)}</td>
+        <td class="tannenbaum-money-cell">${euros(wandInfo.total)}</td>
+        <td class="tannenbaum-strich-cell">${renderTally(tvInfo.count)}</td>
+        <td class="tannenbaum-money-cell">${euros(tvInfo.total)}</td>
+      </tr>
+    `;
+  }).join('');
 
   board.innerHTML = `
     <table class="tannenbaum-table">
@@ -4824,16 +4907,34 @@ const rows = Object.keys(TANNENBAUM_BASE).map(n => {
           <th class="wand">⚫ Wand</th>
           <th>Zahl</th>
           <th class="tv">🔴 TV</th>
+          <th class="wand">Striche Wand</th>
+          <th class="wand">€ Wand</th>
+          <th class="tv">Striche TV</th>
+          <th class="tv">€ TV</th>
         </tr>
       </thead>
       <tbody>
         ${rows}
       </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Bonus / Gesamt</td>
+          <td colspan="2">${renderTannenbaumBonusAndTotal('T1')}</td>
+          <td colspan="2">${renderTannenbaumBonusAndTotal('T2')}</td>
+        </tr>
+      </tfoot>
     </table>
+  `;
+}
 
-    <div class="tannenbaum-summary">
-      ${renderTannenbaumSummary('T2')}
-      ${renderTannenbaumSummary('T1')}
+function renderTannenbaumBonusAndTotal(team) {
+  const data = tannenbaumState.teams[team];
+  const bonus = data.bonus || 0;
+
+  return `
+    <div class="tannenbaum-footer-sum">
+      ${bonus > 0 ? `<div>Bonus: ${euros(bonus)}</div>` : '<div>Bonus: 0,00 €</div>'}
+      <strong>Gesamt: ${euros(getTannenbaumTeamTotal(team))}</strong>
     </div>
   `;
 }
