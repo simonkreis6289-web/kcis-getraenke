@@ -2727,6 +2727,138 @@ tbody td:first-child {
     min-width: 860px;
   }
 }
+
+.tannenbaum-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tannenbaum-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.tannenbaum-table th,
+.tannenbaum-table td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.tannenbaum-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+}
+
+.tannenbaum-side.wand {
+  justify-content: flex-end;
+}
+
+.tannenbaum-side.tv {
+  justify-content: flex-start;
+}
+
+.tannenbaum-number {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.05rem;
+  background: var(--surface);
+  border: 2px solid currentColor;
+  flex-shrink: 0;
+}
+
+.tannenbaum-side.wand .tannenbaum-number {
+  color: #111;
+}
+
+.tannenbaum-side.tv .tannenbaum-number {
+  color: #d9001b;
+}
+
+.tannenbaum-number.crossed {
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+
+.tannenbaum-middle {
+  font-size: 2rem;
+  font-weight: 900;
+  width: 80px;
+}
+
+.tannenbaum-strich-cell {
+  width: 160px;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #ff3b1f;
+  white-space: nowrap;
+}
+
+.tannenbaum-zero {
+  color: #999;
+}
+
+.tannenbaum-price-wrap {
+  margin-top: 24px;
+}
+
+.tannenbaum-price-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.tannenbaum-price-card {
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.tannenbaum-price-title {
+  padding: 14px;
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.tannenbaum-price-card.wand .tannenbaum-price-title {
+  background: #111;
+  color: white;
+}
+
+.tannenbaum-price-card.tv .tannenbaum-price-title {
+  background: #d9001b;
+  color: white;
+}
+
+.tannenbaum-price-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tannenbaum-price-card th,
+.tannenbaum-price-card td {
+  padding: 10px;
+  text-align: left;
+}
+
+.tannenbaum-price-card tfoot td {
+  font-weight: 900;
+}
+
+@media (max-width: 900px) {
+  .tannenbaum-price-grid {
+    grid-template-columns: 1fr;
+  }
+}
       
 </style>
     
@@ -3299,7 +3431,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.0.2.10';
+const APPVersionSelf = '1.1.0.20';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -5080,40 +5212,49 @@ function renderTannenbaum() {
   const board = document.getElementById('tannenbaum-board');
   if (!board) return;
 
-  board.className = 'tannenbaum-board';
+  const rows = Object.keys(TANNENBAUM_BASE).map(n => `
+    <tr>
+      <td class="tannenbaum-strich-cell left">
+        ${renderTannenbaumStrikeMarks('T1', n)}
+      </td>
 
-  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
-    const wandInfo = getTannenbaumStrikeInfo('T1', n);
-    const tvInfo = getTannenbaumStrikeInfo('T2', n);
+      <td class="tannenbaum-box-cell">
+        ${renderTannenbaumNumberCells('T1', n, 'wand')}
+      </td>
 
-    return `
-      <tr>
-        <td class="tannenbaum-strich-cell wand">${renderTally(wandInfo.count)}</td>
-        <td>${renderTannenbaumNumberCells('T1', n, 'wand')}</td>
-        <td class="tannenbaum-middle">${n}</td>
-        <td>${renderTannenbaumNumberCells('T2', n, 'tv')}</td>
-        <td class="tannenbaum-strich-cell tv">${renderTally(tvInfo.count)}</td>
-      </tr>
-    `;
-  }).join('');
+      <td class="tannenbaum-middle">${n}</td>
+
+      <td class="tannenbaum-box-cell">
+        ${renderTannenbaumNumberCells('T2', n, 'tv')}
+      </td>
+
+      <td class="tannenbaum-strich-cell right">
+        ${renderTannenbaumStrikeMarks('T2', n)}
+      </td>
+    </tr>
+  `).join('');
 
   board.innerHTML = `
-    <div class="tannenbaum-tree-table-wrap">
-      <table class="tannenbaum-table tannenbaum-tree-table">
+    <div class="tannenbaum-scroll">
+      <table class="tannenbaum-table">
         <thead>
           <tr>
-            <th class="wand">Striche Wand</th>
-            <th class="wand">⚫ Wand</th>
-            <th>Zahl</th>
+            <th>STRICHE WAND</th>
+            <th class="wand">⚫ WAND</th>
+            <th>ZAHL</th>
             <th class="tv">🔴 TV</th>
-            <th class="tv">Striche TV</th>
+            <th>STRICHE TV</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>
+          ${rows}
+        </tbody>
       </table>
     </div>
 
-    ${renderTannenbaumPriceTable()}
+    <div class="tannenbaum-price-wrap">
+      ${renderTannenbaumPriceTable()}
+    </div>
   `;
 }
     
@@ -5200,6 +5341,7 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
   const baseCount = TANNENBAUM_BASE[number];
   const remaining = data.remaining[number] || 0;
   const visibleCount = Math.max(baseCount, remaining);
+
   const cells = [];
 
   for (let i = 0; i < visibleCount; i++) {
@@ -5212,9 +5354,88 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
     `);
   }
 
+  if (team === 'T1') {
+    cells.reverse();
+  }
+
   return `
     <div class="tannenbaum-side ${sideClass}">
       ${cells.join('')}
+    </div>
+  `;
+}
+
+function renderTannenbaumStrikeMarks(team, number) {
+  const data = tannenbaumState.teams[team];
+
+  const strikes = data.strikes.filter(s => String(s.number) === String(number));
+
+  if (!strikes.length) {
+    return '<span class="tannenbaum-zero">0</span>';
+  }
+
+  return strikes.map(() => '|').join(' ');
+}
+
+function renderTannenbaumPriceTable() {
+  return `
+    <div class="tannenbaum-price-grid">
+      ${renderTannenbaumPriceCard('T1')}
+      ${renderTannenbaumPriceCard('T2')}
+    </div>
+  `;
+}
+
+function renderTannenbaumPriceCard(team) {
+  const data = tannenbaumState.teams[team];
+  const grouped = {};
+
+  data.strikes.forEach(s => {
+    const n = s.number;
+    if (!grouped[n]) grouped[n] = { count: 0, total: 0 };
+
+    grouped[n].count++;
+    grouped[n].total += s.amount;
+  });
+
+  const rows = Object.keys(grouped)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(n => `
+      <tr>
+        <td>${grouped[n].count}x</td>
+        <td>Strich auf ${n}</td>
+        <td>${euros(grouped[n].total)}</td>
+      </tr>
+    `).join('');
+
+  return `
+    <div class="tannenbaum-price-card ${team === 'T1' ? 'wand' : 'tv'}">
+      <div class="tannenbaum-price-title">
+        ${getTeamLabel(team)}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Anzahl</th>
+            <th>Strich auf</th>
+            <th>Betrag</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || `
+            <tr>
+              <td colspan="3">Noch keine Striche</td>
+            </tr>
+          `}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Summe</td>
+            <td>${euros(getTannenbaumTeamTotal(team))}</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   `;
 }
