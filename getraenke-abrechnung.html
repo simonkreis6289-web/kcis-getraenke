@@ -2656,6 +2656,79 @@ tbody td:first-child {
     min-width: 720px;
   }
 }
+
+.tannenbaum-board {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.tannenbaum-tree-table-wrap,
+.tannenbaum-price-wrap {
+  min-width: 760px;
+}
+
+.tannenbaum-side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+}
+
+.tannenbaum-side.wand {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.tannenbaum-side.tv {
+  justify-content: flex-start;
+  flex-direction: row;
+}
+
+.tannenbaum-number {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+  border: 2px solid currentColor;
+  background: var(--surface);
+}
+
+.tannenbaum-side.wand .tannenbaum-number {
+  color: var(--t1b);
+}
+
+.tannenbaum-side.tv .tannenbaum-number {
+  color: var(--t2b);
+}
+
+.tannenbaum-number.crossed {
+  opacity: 0.35;
+  text-decoration: line-through;
+  transform: scale(0.96);
+}
+
+.tannenbaum-strich-cell {
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .tannenbaum-board {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 12px;
+  }
+
+  .tannenbaum-tree-table-wrap,
+  .tannenbaum-price-wrap {
+    min-width: 760px;
+  }
+}
       
 </style>
     
@@ -5133,6 +5206,7 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
 
   for (let i = 0; i < visibleCount; i++) {
     const crossed = i >= remaining;
+
     cells.push(`
       <span class="tannenbaum-number ${crossed ? 'crossed' : ''}">
         ${number}
