@@ -2216,6 +2216,154 @@ tbody td:first-child {
   justify-content: center;
 }
       
+.tannenbaum-game {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.tannenbaum-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tannenbaum-throw-btn {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  background: var(--surface);
+}
+
+.tannenbaum-throw-btn.t1 {
+  color: var(--t1b);
+  border-color: var(--t1b);
+  background: var(--t1b_bg);
+}
+
+.tannenbaum-throw-btn.t2 {
+  color: var(--t2b);
+  border-color: var(--t2b);
+  background: var(--t2b_bg);
+}
+
+.tannenbaum-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tannenbaum-team {
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.tannenbaum-team.t1 {
+  border-color: var(--t1b);
+}
+
+.tannenbaum-team.t2 {
+  border-color: var(--t2b);
+}
+
+.tannenbaum-team-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.tannenbaum-team.t1 .tannenbaum-team-title {
+  color: var(--t1b);
+}
+
+.tannenbaum-team.t2 .tannenbaum-team-title {
+  color: var(--t2b);
+}
+
+.tannenbaum-tree {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.tannenbaum-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tannenbaum-number {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  background: #fff;
+}
+
+.tannenbaum-number.crossed {
+  opacity: 0.35;
+  text-decoration: line-through;
+  background: rgba(0,0,0,0.05);
+}
+
+.tannenbaum-strikes {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.tannenbaum-strike-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tannenbaum-total {
+  margin-top: 10px;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.tannenbaum-number-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.tannenbaum-number-btn {
+  height: 62px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  font-size: 1.6rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .tannenbaum-board,
+  .tannenbaum-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tannenbaum-number {
+    width: 30px;
+    height: 30px;
+  }
+}
+      
 </style>
     
 </head>
@@ -2618,6 +2766,15 @@ tbody td:first-child {
                 >
               </div>
             </div>
+          
+          <div class="tannenbaum-game">
+              <div class="tannenbaum-input-row">
+                <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">⚫ Wurf Wand</button>
+                <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">🔴 Wurf TV</button>
+              </div>
+
+              <div id="tannenbaum-board"></div>
+            </div>
 
       </div>
     </div>
@@ -2750,6 +2907,19 @@ tbody td:first-child {
     </div>
   </div>
 </div>
+    
+<div class="modal-overlay hidden" id="tannenbaum-throw-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="tannenbaum-throw-title">Wurf eintragen</h3>
+    <div class="modal-sub">Geworfene Zahl auswählen</div>
+
+    <div id="tannenbaum-number-grid" class="tannenbaum-number-grid"></div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="modal-cancel" onclick="closeTannenbaumThrowModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
        
@@ -2813,6 +2983,21 @@ let teamStopwatchStart = null;
 let teamCountdownDuration = 0;
 let teamCountdownRemainingBefore = 0;
 let teamStopwatchInterval = null;
+    
+let tannenbaumThrowTeam = null;
+const TANNENBAUM_BASE = {
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 4,
+  7: 3,
+  8: 2,
+  9: 1
+};
+
+let tannenbaumState = createTannenbaumState();
 
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
@@ -2983,6 +3168,7 @@ function getSerializableState() {
     selectedLoser,
     teamDrinks,
     bahnPreisProStunde,
+    tannenbaumState,
     bahnTimerStart,
     bahnTimerRunning,
     teamStopwatchActive,
@@ -3017,6 +3203,7 @@ function getFirestoreState() {
     SPIELE_KATALOG,
     RUNDEN_GRUENDE,
     selectedLoser,
+    tannenbaumState,
     teamDrinks,
     bahnPreisProStunde,
     bahnTimerStart,
@@ -3050,6 +3237,8 @@ function applyLoadedState(state) {
     teamStopwatchStart = state.teamStopwatchStart || null;
     teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
     teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;
+    tannenbaumState = state.tannenbaumState || createTannenbaumState();
+    ensureTannenbaumState();
   hydrateState();
   return true;
 }
@@ -3428,6 +3617,7 @@ function startNewKegelabend() {
     teamStopwatchStart = null;
     teamCountdownDuration = 0;
     teamCountdownRemainingBefore = 0;
+    tannenbaumState = createTannenbaumState();
   renderAll();
   persistState();
 
@@ -3539,7 +3729,8 @@ function createEmptyClubData() {
         teamStopwatchRunning: false,
         teamStopwatchStart: null,
         teamCountdownDuration: 0,
-        teamCountdownRemainingBefore: 0
+        teamCountdownRemainingBefore: 0,
+      tannenbaumState: createTannenbaumState()
   };
 }
 
@@ -3565,7 +3756,8 @@ function syncCurrentClubToStore() {
     teamStopwatchRunning,
     teamStopwatchStart,
     teamCountdownDuration,
-    teamCountdownRemainingBefore
+    teamCountdownRemainingBefore,
+    tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState))
   };
 }
 
@@ -3713,6 +3905,8 @@ async function selectClub(clubName) {
     teamStopwatchStart = localClub.teamStopwatchStart || null;
     teamCountdownDuration = parseInt(localClub.teamCountdownDuration || 0, 10) || 0;
     teamCountdownRemainingBefore = parseInt(localClub.teamCountdownRemainingBefore || 0, 10) || 0;
+    tannenbaumState = JSON.parse(JSON.stringify(localClub.tannenbaumState || createTannenbaumState()));
+    ensureTannenbaumState();
 
   hydrateState();
   renderAll();
@@ -4349,7 +4543,255 @@ function restartTeamStopwatch() {
 
   updateTeamStopwatchDisplay();
   persistState();
-}                                    
+}     
+  
+  function createTannenbaumState() {
+  return {
+    teams: {
+      T1: {
+        remaining: { ...TANNENBAUM_BASE },
+        strikes: [],
+        bonus: 0,
+        finished: false
+      },
+      T2: {
+        remaining: { ...TANNENBAUM_BASE },
+        strikes: [],
+        bonus: 0,
+        finished: false
+      }
+    },
+    history: []
+  };
+}
+
+function ensureTannenbaumState() {
+  if (!tannenbaumState || !tannenbaumState.teams) {
+    tannenbaumState = createTannenbaumState();
+  }
+
+  ['T1', 'T2'].forEach(team => {
+    if (!tannenbaumState.teams[team]) {
+      tannenbaumState.teams[team] = createTannenbaumState().teams[team];
+    }
+
+    if (!tannenbaumState.teams[team].remaining) {
+      tannenbaumState.teams[team].remaining = { ...TANNENBAUM_BASE };
+    }
+
+    if (!Array.isArray(tannenbaumState.teams[team].strikes)) {
+      tannenbaumState.teams[team].strikes = [];
+    }
+
+    tannenbaumState.teams[team].bonus = parseFloat(tannenbaumState.teams[team].bonus || 0) || 0;
+    tannenbaumState.teams[team].finished = !!tannenbaumState.teams[team].finished;
+
+    Object.keys(TANNENBAUM_BASE).forEach(n => {
+      if (tannenbaumState.teams[team].remaining[n] === undefined) {
+        tannenbaumState.teams[team].remaining[n] = TANNENBAUM_BASE[n];
+      }
+    });
+  });
+
+  if (!Array.isArray(tannenbaumState.history)) {
+    tannenbaumState.history = [];
+  }
+}
+
+function getOtherTeam(team) {
+  return team === 'T1' ? 'T2' : 'T1';
+}
+
+function getTeamLabel(team) {
+  return team === 'T1' ? '⚫ Wand' : '🔴 TV';
+}
+
+function isTannenbaumTeamEmpty(team) {
+  ensureTannenbaumState();
+  return Object.keys(TANNENBAUM_BASE).every(n => {
+    return (tannenbaumState.teams[team].remaining[n] || 0) <= 0;
+  });
+}
+
+function getTannenbaumTeamTotal(team) {
+  ensureTannenbaumState();
+
+  const data = tannenbaumState.teams[team];
+
+  const strikesTotal = data.strikes.reduce((sum, s) => {
+    return sum + (parseFloat(s.amount || 0) || 0);
+  }, 0);
+
+  return strikesTotal + (data.bonus || 0);
+}
+
+function openTannenbaumThrowModal(team) {
+  ensureTannenbaumState();
+
+  tannenbaumThrowTeam = team;
+
+  const title = document.getElementById('tannenbaum-throw-title');
+  const grid = document.getElementById('tannenbaum-number-grid');
+
+  if (title) title.textContent = `Wurf für ${getTeamLabel(team)}`;
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'tannenbaum-number-btn';
+    btn.textContent = n;
+    btn.onclick = () => handleTannenbaumThrow(n);
+    grid.appendChild(btn);
+  }
+
+  document.getElementById('tannenbaum-throw-modal').classList.remove('hidden');
+}
+
+function closeTannenbaumThrowModal() {
+  document.getElementById('tannenbaum-throw-modal').classList.add('hidden');
+  tannenbaumThrowTeam = null;
+}
+
+function handleTannenbaumThrow(number) {
+  ensureTannenbaumState();
+
+  const team = tannenbaumThrowTeam;
+  if (!team) return;
+
+  const otherTeam = getOtherTeam(team);
+  const own = tannenbaumState.teams[team];
+  const other = tannenbaumState.teams[otherTeam];
+
+  const n = String(number);
+  let action = '';
+
+  if ((own.remaining[n] || 0) > 0) {
+    own.remaining[n] -= 1;
+    action = `${getTeamLabel(team)} streicht ${number}`;
+  } else if ((other.remaining[n] || 0) > 0) {
+    const amount = number * 0.10;
+
+    other.strikes.push({
+      number,
+      amount,
+      causedBy: team,
+      createdAt: new Date().toISOString()
+    });
+
+    action = `${getTeamLabel(otherTeam)} bekommt Strich: +${amount.toFixed(2).replace('.', ',')} €`;
+  } else {
+    own.remaining[n] = (own.remaining[n] || 0) + 1;
+    action = `${getTeamLabel(team)} bekommt ${number} wieder zurück`;
+  }
+
+  if (isTannenbaumTeamEmpty(team) && !own.finished) {
+    own.finished = true;
+    other.bonus = (other.bonus || 0) + 5;
+
+    action += ` · ${getTeamLabel(team)} ist leer! ${getTeamLabel(otherTeam)} +5,00 €`;
+  }
+
+  tannenbaumState.history.unshift({
+    team,
+    number,
+    action,
+    createdAt: new Date().toISOString()
+  });
+
+  closeTannenbaumThrowModal();
+  renderTannenbaum();
+  persistState();
+
+  showToast(action, 'success');
+}
+
+function renderTannenbaum() {
+  ensureTannenbaumState();
+
+  const board = document.getElementById('tannenbaum-board');
+  if (!board) return;
+
+  board.className = 'tannenbaum-board';
+
+  board.innerHTML = `
+    ${renderTannenbaumTeam('T1')}
+    ${renderTannenbaumTeam('T2')}
+  `;
+}
+
+function renderTannenbaumTeam(team) {
+  const data = tannenbaumState.teams[team];
+  const teamClass = team === 'T1' ? 't1' : 't2';
+
+  const rows = Object.keys(TANNENBAUM_BASE).map(n => {
+    const baseCount = TANNENBAUM_BASE[n];
+    const remaining = data.remaining[n] || 0;
+    const cells = [];
+    const visibleCount = Math.max(baseCount, remaining);
+
+    for (let i = 0; i < visibleCount; i++) {
+      const crossed = i >= remaining;
+      cells.push(`
+        <span class="tannenbaum-number ${crossed ? 'crossed' : ''}">
+          ${n}
+        </span>
+      `);
+    }
+
+    return `
+      <div class="tannenbaum-row">
+        ${cells.join('')}
+      </div>
+    `;
+  }).join('');
+
+  const groupedStrikes = {};
+  data.strikes.forEach(s => {
+    const n = s.number;
+    if (!groupedStrikes[n]) groupedStrikes[n] = { count: 0, total: 0 };
+    groupedStrikes[n].count += 1;
+    groupedStrikes[n].total += parseFloat(s.amount || 0) || 0;
+  });
+
+  const strikeLines = Object.keys(groupedStrikes)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(n => `
+      <div class="tannenbaum-strike-line">
+        <span>${groupedStrikes[n].count}× Strich auf ${n}</span>
+        <span>${euros(groupedStrikes[n].total)}</span>
+      </div>
+    `).join('');
+
+  const bonusLine = data.bonus > 0
+    ? `
+      <div class="tannenbaum-strike-line">
+        <span>Leer-Bonus Gegner</span>
+        <span>${euros(data.bonus)}</span>
+      </div>
+    `
+    : '';
+
+  return `
+    <div class="tannenbaum-team ${teamClass}">
+      <div class="tannenbaum-team-title">${getTeamLabel(team)}</div>
+
+      <div class="tannenbaum-tree">
+        ${rows}
+      </div>
+
+      <div class="tannenbaum-strikes">
+        ${strikeLines || '<div style="font-size:0.8rem;color:var(--muted);font-weight:700;">Noch keine Striche</div>'}
+        ${bonusLine}
+      </div>
+
+      <div class="tannenbaum-total">
+        Betrag: ${euros(getTannenbaumTeamTotal(team))}
+      </div>
+    </div>
+  `;
+}
 
 // ── RENDER ──
 function renderAll() {
@@ -4358,6 +4800,7 @@ function renderAll() {
   updateStats();
   updateBahnDisplay();
   updateTeamStopwatchDisplay();
+    renderTannenbaum();
   renderAnwesenheit();
   renderGruppen();
   renderGetraenke();
