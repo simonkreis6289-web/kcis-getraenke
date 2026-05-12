@@ -4934,7 +4934,9 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
   const cells = [];
 
   for (let i = 0; i < visibleCount; i++) {
-    const crossed = i >= remaining;
+    const crossed = team === 'T1'
+      ? i < (visibleCount - remaining)
+      : i >= remaining;
 
     cells.push(`
       <span class="tannenbaum-number ${crossed ? 'crossed' : ''}">
