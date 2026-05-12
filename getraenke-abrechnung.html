@@ -2328,6 +2328,17 @@ tbody td:first-child {
       <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
     </div>
 
+    <div id="team-stopwatch-global" class="team-stopwatch-global hidden">
+      <div class="team-stopwatch-time" id="team-stopwatch-time">00:00</div>
+
+      <div class="team-stopwatch-controls">
+        <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">▶ Start</button>
+        <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">⏸ Pause</button>
+        <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">■ Stop</button>
+        <button class="team-stopwatch-btn stop" onclick="restartTeamStopwatch()">↻ Neustart</button>
+      </div>
+    </div>
+      
     <!-- ORGANISATION -->
     <div id="main-organisation" class="main-panel">
       <div id="tab-anwesenheit">
@@ -2611,13 +2622,6 @@ tbody td:first-child {
       <button class="modal-ok" onclick="confirmDrinkEdit()">✓ Übernehmen</button>
     </div>
   </div>
-</div>
-    
-<div class="team-stopwatch-controls">
-  <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">▶ Start</button>
-  <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">⏸ Pause</button>
-  <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">■ Stop</button>
-  <button class="team-stopwatch-btn stop" onclick="restartTeamStopwatch()">↻ Neustart</button>
 </div>
 
 <div id="toast"></div>
