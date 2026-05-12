@@ -2366,9 +2366,16 @@ tbody td:first-child {
 }
 
 .tannenbaum-middle {
-  width: 24px !important;
+  width: 44px !important;
   padding: 0 !important;
-  text-align: center;
+  text-align: center !important;
+
+  font-size: 2rem;
+  font-weight: 900;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-text-stroke: 0.4px #000;
+  text-rendering: geometricPrecision;
 }
 
 .tannenbaum-side {
@@ -2497,13 +2504,11 @@ tbody td:first-child {
   }
 }
 
-      /* Tannenbaum: Spalten eng um die Mitte ziehen */
 .tannenbaum-table {
   min-width: 680px !important;
   table-layout: fixed !important;
 }
 
-/* Spaltenbreiten direkt über alle Zellen setzen */
 .tannenbaum-table th:nth-child(1),
 .tannenbaum-table td:nth-child(1),
 .tannenbaum-table th:nth-child(5),
