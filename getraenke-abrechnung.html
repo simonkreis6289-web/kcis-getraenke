@@ -2054,6 +2054,11 @@ tbody td:first-child {
   border-color: rgba(232, 65, 42, 0.4);
 }
       
+      #bahnTimerBtn {
+          color: deepskyblue ;
+          background: darkblue; 
+      }
+      
 </style>
     
 </head>
@@ -2205,9 +2210,9 @@ tbody td:first-child {
     <div style="display:flex;flex-direction:column;align-items:flex-end;">
       <div class="header-btns">
         <button class="back-btn hidden" onclick="goToClubSelection()" id="clubBackBtn">↩ Clubs</button>
-          <button class="round-btn" onclick="toggleBahnTimer()" id="bahnTimerBtn">▶ Bahn starten</button>
         <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
         <button class="archive-btn" onclick="startNewKegelabend()">🆕 Neuer Kegelabend</button>
+        <button class="round-btn" onclick="toggleBahnTimer()" id="bahnTimerBtn">▶ Bahn starten</button>
         <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
       </div>
       <div class="version-info" id="versionInfo"></div>
@@ -3845,7 +3850,10 @@ function formatDuration(seconds) {
 
 function calcBahnPreis() {
   const seconds = getBahnElapsedSeconds();
-  return (seconds / 3600) * (bahnPreisProStunde || 0);
+  if (seconds <= 0) return 0;
+
+  const startedHalfHours = Math.ceil(seconds / 1800);
+  return startedHalfHours * ((bahnPreisProStunde || 0) / 2);
 }
 
 function updateBahnDisplay() {
