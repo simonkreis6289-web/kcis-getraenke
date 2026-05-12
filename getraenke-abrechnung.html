@@ -79,6 +79,9 @@
         
         --statusBarFontColor: #007fba;
         
+        --countdown-bg: #a500c2;
+        --countdown-font: #fadeff; 
+        
     }
 
     * {
@@ -2113,13 +2116,13 @@ tbody td:first-child {
   color: var(--bahn-stop-text) !important;
 }
       
-      .team-stopwatch-global {
+.team-stopwatch-global {
   width: 100%;
   margin-bottom: 18px;
   padding: 18px;
   border: 2px solid var(--border);
   border-radius: 16px;
-  background: var(--statusBar_bg);
+  background: var(--countdown-bg);
   text-align: center;
 }
 
@@ -2127,11 +2130,11 @@ tbody td:first-child {
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(3rem, 12vw, 7rem);
   font-weight: 900;
-  line-height: 1;
-  letter-spacing: -2px;
+  line-height: 1.2;
+  letter-spacing: 0px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  color: var(--accent2);
+  color: var(--countdown-font);
   margin-bottom: 14px;
 }
 
@@ -2153,21 +2156,27 @@ tbody td:first-child {
 }
 
 .team-stopwatch-btn.start {
-  background: rgba(0, 120, 40, 0.18);
-  color: rgba(0, 160, 60, 1);
-  border-color: rgba(0, 160, 60, 0.55);
+  background: var(--bahn-run-bg);
+  color: var(--bahn-run-text);
+  border-color: var(--bahn-run-border);
 }
 
 .team-stopwatch-btn.pause {
-  background: rgba(245, 166, 35, 0.18);
+  background: rgba(255, 255, 0, 0.10);
   color: #b36b00;
-  border-color: rgba(245, 166, 35, 0.55);
+  border-color: rgba(255, 255, 0, 0.8);
 }
 
 .team-stopwatch-btn.stop {
-  background: rgba(140, 0, 0, 0.18);
-  color: rgba(220, 0, 0, 1);
-  border-color: rgba(220, 0, 0, 0.45);
+  background: var(--bahn-stop-bg);
+  color: var(--bahn-stop-border);
+  border-color: var(--bahn-stop-text);
+}
+
+.team-stopwatch-btn.restart {
+  background: rgba(61, 61, 61, 0.10);
+  color: rgba(219, 219, 219, 1);
+  border-color: rgba(61, 61, 61, 0.80);
 }
 
 .team-stopwatch-settings {
@@ -2415,7 +2424,7 @@ tbody td:first-child {
         <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">▶ Start</button>
         <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">⏸ Pause</button>
         <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">■ Stop</button>
-        <button class="team-stopwatch-btn stop" onclick="restartTeamStopwatch()">↻ Neustart</button>
+        <button class="team-stopwatch-btn restart" onclick="restartTeamStopwatch()">↻ Neustart</button>
       </div>
     </div>
       
