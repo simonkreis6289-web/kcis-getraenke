@@ -3432,7 +3432,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.1.0.00';
+const APPVersionSelf = '1.2.0.00';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -6014,11 +6014,17 @@ function renderDarts() {
   if (scoreT2) scoreT2.textContent = dartsState.scores.T2;
   if (roundT1) roundT1.textContent = `Runde: ${getDartsRoundTotal('T1')}`;
   if (roundT2) roundT2.textContent = `Runde: ${getDartsRoundTotal('T2')}`;
-  if (buffer) {
-    buffer.textContent = dartsState.winner
-      ? `🏆 Gewinner: ${getTeamLabel(dartsState.winner)}`
-      : `Puffer: ${dartsState.buffer || 0} Punkte`;
-  }
+    if (buffer) {
+      if (dartsState.winner) {
+        buffer.style.display = 'block';
+        buffer.textContent = `🏆 Gewinner: ${getTeamLabel(dartsState.winner)}`;
+      } else if ((dartsState.buffer || 0) > 0) {
+        buffer.style.display = 'block';
+        buffer.textContent = `Puffer: ${dartsState.buffer} Punkte`;
+      } else {
+        buffer.style.display = 'none';
+      }
+    }
 
   renderDartsRoundList();
   renderDartsHistory();
