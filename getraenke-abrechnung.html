@@ -3122,7 +3122,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.1.1.0';
+const APPVersionSelf = '1.2.0.0';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -3158,6 +3158,12 @@ let assignPerson = null;
 let autoSaveTimer = null;
 let appReady = false;
 let lastLocalChangeAt = 0;
+let lastRemoteChangeAt = 0;
+let isApplyingRemoteState = false;
+
+const CLIENT_ID_KEY = 'kcis_client_id_v1';
+const CLIENT_ID = localStorage.getItem(CLIENT_ID_KEY) || crypto.randomUUID();
+localStorage.setItem(CLIENT_ID_KEY, CLIENT_ID);
     
 let ACTIVE_CLUB = null;
 let CLUBS = {};
@@ -3387,18 +3393,23 @@ function getFirestoreState() {
     SPIELE_KATALOG,
     RUNDEN_GRUENDE,
     selectedLoser,
-    tannenbaumState,
     teamDrinks,
+
     bahnPreisProStunde,
     bahnTimerStart,
     bahnTimerRunning,
+
     teamStopwatchActive,
     teamStopwatchRunning,
     teamStopwatchStart,
     teamCountdownDuration,
     teamCountdownRemainingBefore,
+
+    tannenbaumState,
+
     updatedFrom: 'app',
-    updatedClientAt: lastLocalChangeAt
+    updatedClientAt: lastLocalChangeAt,
+    updatedClientId: CLIENT_ID
   };
 }
 
@@ -3426,7 +3437,11 @@ function applyLoadedState(state) {
 
   tannenbaumState = state.tannenbaumState || createTannenbaumState();
   ensureTannenbaumState();
-
+    
+  if (state.updatedClientAt) {
+    lastRemoteChangeAt = Number(state.updatedClientAt || 0);
+  }
+    
   hydrateState();
   return true;
 }
@@ -3505,7 +3520,7 @@ function hydrateState() {
 }
 
 function persistState() {
-  if (!appReady || !ACTIVE_CLUB) return;
+  if (!appReady || !ACTIVE_CLUB || isApplyingRemoteState) return;
 
   lastLocalChangeAt = Date.now();
 
@@ -3953,7 +3968,8 @@ function syncCurrentClubToStore() {
     teamStopwatchRunning,
     teamStopwatchStart,
     teamCountdownDuration,
-    lastLocalChangeAt,
+      lastLocalChangeAt,
+      lastRemoteChangeAt,
     teamCountdownRemainingBefore,
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState))
   };
@@ -4087,6 +4103,8 @@ async function selectClub(clubName) {
 
   const localClub = CLUBS[clubName] || createEmptyClubData();
 
+    lastLocalChangeAt = Number(localClub.lastLocalChangeAt || 0);
+    lastRemoteChangeAt = Number(localClub.lastRemoteChangeAt || 0);
   persons = JSON.parse(JSON.stringify(localClub.persons || []));
   prices = JSON.parse(JSON.stringify(localClub.prices || {}));
   DRINKS = JSON.parse(JSON.stringify(localClub.DRINKS || []));
@@ -4126,41 +4144,52 @@ async function selectClub(clubName) {
   }
 
   if (window.firestoreApi && typeof window.firestoreApi.subscribeToClubState === 'function') {
-    currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
-      clubId,
-      (state) => {
-        if (!state) return;
+  currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
+    clubId,
+    (state) => {
+      if (!state) return;
 
-        const incomingClientAt = Number(state.updatedClientAt || 0);
+      const incomingClientAt = Number(state.updatedClientAt || 0);
+      const incomingClientId = state.updatedClientId || '';
 
-        if (incomingClientAt && incomingClientAt < lastLocalChangeAt) {
-          console.log('Älteren Firestore-Snapshot ignoriert', {
-            incomingClientAt,
-            lastLocalChangeAt
-          });
-          return;
-        }
-
-        applyLoadedState(state);
-
-        if (incomingClientAt) {
-          lastLocalChangeAt = incomingClientAt;
-        }
-
-        renderAll();
-        updateAppHeader();
-
-        syncCurrentClubToStore();
-        saveClubSystem();
-      },
-      (error) => {
-        console.error('Live-Sync Fehler:', error);
+      if (incomingClientId === CLIENT_ID) {
+        lastRemoteChangeAt = Math.max(lastRemoteChangeAt, incomingClientAt);
+        return;
       }
-    );
-  }
 
-  syncCurrentClubToStore();
-  saveClubSystem();
+      if (incomingClientAt && incomingClientAt < lastRemoteChangeAt) {
+        console.log('Älteren Firestore-Stand ignoriert', {
+          incomingClientAt,
+          lastRemoteChangeAt
+        });
+        return;
+      }
+
+      isApplyingRemoteState = true;
+
+      applyLoadedState(state);
+
+      lastRemoteChangeAt = incomingClientAt;
+      lastLocalChangeAt = Math.max(lastLocalChangeAt, incomingClientAt);
+
+      renderAll();
+      updateAppHeader();
+
+      syncCurrentClubToStore();
+      saveClubSystem();
+
+      isApplyingRemoteState = false;
+
+      console.log('Live-Sync übernommen:', {
+        incomingClientAt,
+        incomingClientId
+      });
+    },
+    (error) => {
+      console.error('Live-Sync Fehler:', error);
+      showToast('❌ Live-Sync Fehler. Console prüfen.', 'error');
+    }
+  );
 }
     
 function updateAppHeader() {
@@ -6392,7 +6421,7 @@ function undoReset() {
 
 // ── NETWORK EVENTS ──
 window.addEventListener('online', async () => {
-  showToast('🌐 Wieder online. Prüfe neuesten Stand…', 'success');
+  showToast('🌐 Wieder online. Synchronisiere…', 'success');
 
   if (!ACTIVE_CLUB || !window.firestoreApi) return;
 
@@ -6400,22 +6429,25 @@ window.addEventListener('online', async () => {
   const remoteState = await window.firestoreApi.loadClubState(clubId);
   const remoteUpdatedAt = Number(remoteState?.updatedClientAt || 0);
 
-  if (lastLocalChangeAt >= remoteUpdatedAt) {
+  if (!remoteState || lastLocalChangeAt >= remoteUpdatedAt) {
     await saveToFirestore(false);
-    showToast('☁️ Lokale Änderungen hochgeladen', 'success');
-  } else {
-    applyLoadedState(remoteState);
-
-    if (remoteUpdatedAt) {
-      lastLocalChangeAt = remoteUpdatedAt;
-    }
-
-    renderAll();
-    syncCurrentClubToStore();
-    saveClubSystem();
-
-    showToast('☁️ Neuerer Stand aus Firestore geladen', 'success');
+    showToast('☁️ Lokaler Stand hochgeladen', 'success');
+    return;
   }
+
+  isApplyingRemoteState = true;
+
+  applyLoadedState(remoteState);
+  lastRemoteChangeAt = remoteUpdatedAt;
+  lastLocalChangeAt = Math.max(lastLocalChangeAt, remoteUpdatedAt);
+
+  renderAll();
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  isApplyingRemoteState = false;
+
+  showToast('☁️ Firestore-Stand übernommen', 'success');
 });
 
 window.addEventListener('offline', () => {
