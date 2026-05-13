@@ -1459,14 +1459,14 @@ tbody td:first-child {
       color: var(--t2b);
     }
 
-.team-drinks-grid {
+.round-drinks-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
-.team-drink-row {
+.round-drink-row {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -1475,10 +1475,9 @@ tbody td:first-child {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  min-width: 0;
 }
 
-.team-drink-name {
+.round-drink-name {
   font-size: 0.82rem;
   font-weight: 800;
   line-height: 1.15;
@@ -1487,27 +1486,32 @@ tbody td:first-child {
   overflow-wrap: anywhere;
 }
 
-.team-drink-row .counter {
+.round-drink-row .counter {
   display: grid;
-  grid-template-columns: 28px 22px 28px;
+  grid-template-columns: 28px 24px 28px;
   align-items: center;
   gap: 5px;
-  min-width: 88px;
+  min-width: 92px;
 }
 
-.team-drink-row .counter-btn {
+.round-drink-row .counter-btn {
   width: 28px;
   height: 28px;
   min-width: 28px;
   border-radius: 8px;
   font-size: 0.9rem;
-  line-height: 1;
 }
 
-.team-drink-row .counter-val {
-  min-width: 22px;
+.round-drink-row .counter-val {
+  min-width: 24px;
   font-size: 0.9rem;
   text-align: center;
+}
+
+@media (max-width: 760px) {
+  .round-drink-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
       
 #drink-edit-list {
