@@ -3003,6 +3003,11 @@ tbody td:first-child {
     <div id="main-strafen" class="main-panel hidden">
       <div id="tab-strafen-uebersicht">
         <div class="section-title">Strafen Übersicht</div>
+          
+            <div class="getraenke-toolbar">
+              <button class="add-btn" onclick="openKranzModal()" style="margin-bottom:14px;"   >🎯 9er/Kranz geworfen</button>
+            </div>
+
              <div class="drinks-table-wrap">
           <table class="drinks-table">
             <thead>
@@ -3013,10 +3018,6 @@ tbody td:first-child {
         </div>
       </div>
         
-        <div class="getraenke-toolbar">
-          <button class="add-btn" onclick="openKranzModal()">🎯 9er/Kranz geworfen</button>
-        </div>
-
       <div id="tab-strafen-abrechnung" class="hidden">
         <div class="section-title">Strafen Abrechnung</div>
         <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
@@ -3260,7 +3261,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.9.0.00';
+const APPVersionSelf = '1.4.0.00';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
