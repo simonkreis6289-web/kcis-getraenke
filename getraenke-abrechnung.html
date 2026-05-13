@@ -3122,7 +3122,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.2.0.0';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -3162,7 +3162,11 @@ let lastRemoteChangeAt = 0;
 let isApplyingRemoteState = false;
 
 const CLIENT_ID_KEY = 'kcis_client_id_v1';
-const CLIENT_ID = localStorage.getItem(CLIENT_ID_KEY) || crypto.randomUUID();
+const CLIENT_ID = localStorage.getItem(CLIENT_ID_KEY) || (
+  window.crypto && crypto.randomUUID
+    ? crypto.randomUUID()
+    : 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2)
+);
 localStorage.setItem(CLIENT_ID_KEY, CLIENT_ID);
     
 let ACTIVE_CLUB = null;
@@ -4190,6 +4194,7 @@ async function selectClub(clubName) {
       showToast('❌ Live-Sync Fehler. Console prüfen.', 'error');
     }
   );
+}
 }
     
 function updateAppHeader() {
