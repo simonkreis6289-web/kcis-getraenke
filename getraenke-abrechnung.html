@@ -3176,7 +3176,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.5.00.000';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -4067,44 +4067,35 @@ async function archiveEvent(snapshot) {
 }
 
 function startNewKegelabend() {
-  const ok = confirm('Wirklich einen neuen Kegelabend starten? Alle aktuellen Daten werden gelöscht.');
-  if (!ok) return;
-
   persons.forEach(p => {
-    if (!p.drinks) p.drinks = {};
+    p.present = false;
+    p.left = false;
+    p.leftAt = null;
+    p.paid = 0;
+    p.drinks = {};
+    p.roundCharges = [];
+    p.teamCharges = [];
 
-    Object.keys(p.drinks).forEach(k => {
-      p.drinks[k] = 0;
+    p.strafen = {};
+    STRAFEN.forEach(s => {
+      p.strafen[s.key] = 0;
     });
 
-    p.paid = 0;
-    p.teamExtra = 0;
-    p.roundExtra = 0;
-    p.rounds = [];
-    p.present = false;
-    p.tisch = '';
-    p.left = false;
-    p.leftAt = '';
+    DRINKS.forEach(d => {
+      p.drinks[d.key] = 0;
+    });
   });
 
   spiele = [];
-  teamDrinks = {};
-  selectedLoser = null;
-  roundDraftDrinks = {};
-  drinkEditPerson = null;
-  drinkEditDraft = {};
-    bahnTimerStart = null;
-    bahnTimerRunning = false;
-    localStorage.removeItem(getBahnStoppedKey());
-    teamStopwatchActive = false;
-    teamStopwatchRunning = false;
-    teamStopwatchStart = null;
-    teamCountdownDuration = 0;
-    teamCountdownRemainingBefore = 0;
-    tannenbaumState = createTannenbaumState();
+  rounds = [];
+  loserTeam = null;
+
+  bahnTimerRunning = false;
+  bahnStartTimestamp = null;
+  bahnAccumulatedSeconds = 0;
+
   renderAll();
   persistState();
-
   showToast('🆕 Neuer Kegelabend gestartet', 'success');
 }
     
