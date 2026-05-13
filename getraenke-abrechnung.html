@@ -3012,6 +3012,10 @@ tbody td:first-child {
           </table>
         </div>
       </div>
+        
+        <div class="getraenke-toolbar">
+          <button class="add-btn" onclick="openKranzModal()">🎯 9er/Kranz geworfen</button>
+        </div>
 
       <div id="tab-strafen-abrechnung" class="hidden">
         <div class="section-title">Strafen Abrechnung</div>
@@ -3236,12 +3240,27 @@ tbody td:first-child {
     </div>
   </div>
 </div>
+    
+    <div class="modal-overlay hidden" id="kranz-modal">
+  <div class="modal" style="max-width:520px;">
+    <h3>9er/Kranz geworfen</h3>
+    <div class="modal-sub">
+      Wer hat geworfen? Alle anderen Anwesenden bekommen +1 bei 9er/Kranz.
+    </div>
+
+    <div id="kranz-person-list" class="persons-grid"></div>
+
+    <div class="modal-btns" style="margin-top:16px;">
+      <button class="modal-cancel" onclick="closeKranzModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.10.0.00';
+const APPVersionSelf = '1.9.0.00';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -3675,6 +3694,73 @@ function persistState() {
   if (navigator.onLine) {
     queueAutoSave();
   }
+}
+    
+    function getKranzStrafeKey() {
+  const found = STRAFEN.find(s =>
+    String(s.label || '').toLowerCase().includes('9er') ||
+    String(s.label || '').toLowerCase().includes('kranz')
+  );
+
+  return found ? found.key : null;
+}
+
+function openKranzModal() {
+  const key = getKranzStrafeKey();
+
+  if (!key) {
+    showToast('Bitte zuerst eine Strafe "9er/Kranz" anlegen', 'error');
+    return;
+  }
+
+  const list = document.getElementById('kranz-person-list');
+  list.innerHTML = '';
+
+  const presentPeople = persons
+    .filter(p => p.present && !p.left)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  if (!presentPeople.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Niemand anwesend</div>';
+    return;
+  }
+
+  presentPeople.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'team-btn';
+    btn.textContent = p.name;
+    btn.onclick = () => confirmKranzThrow(p.name);
+    list.appendChild(btn);
+  });
+
+  document.getElementById('kranz-modal').classList.remove('hidden');
+}
+
+function closeKranzModal() {
+  document.getElementById('kranz-modal').classList.add('hidden');
+}
+
+function confirmKranzThrow(winnerName) {
+  const key = getKranzStrafeKey();
+
+  if (!key) {
+    showToast('Strafe 9er/Kranz nicht gefunden', 'error');
+    return;
+  }
+
+  persons.forEach(p => {
+    if (!p.present || p.left) return;
+    if (p.name === winnerName) return;
+
+    if (!p.strafen) p.strafen = {};
+    p.strafen[key] = (p.strafen[key] || 0) + 1;
+  });
+
+  closeKranzModal();
+  renderAll();
+  persistState();
+
+  showToast(`🎯 ${winnerName} bekommt nichts, alle anderen +1`, 'success');
 }
     
 function makeStrafeKey(label) {
