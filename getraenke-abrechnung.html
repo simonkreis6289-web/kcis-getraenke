@@ -2628,6 +2628,101 @@ tbody td:first-child {
 .tannenbaum-side.tv {
   justify-content: flex-start !important;
 }
+     
+    .darts-start-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.darts-score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.darts-score-card {
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+  background: var(--surface);
+}
+
+.darts-score-card.t1 {
+  border-color: var(--t1b);
+  background: var(--t1b_bg);
+}
+
+.darts-score-card.t2 {
+  border-color: var(--t2b);
+  background: var(--t2b_bg);
+}
+
+.darts-team-title {
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.darts-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.darts-round-score {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.darts-buffer {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(245,166,35,0.15);
+  color: var(--accent);
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.darts-number-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.darts-number-btn {
+  height: 58px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  font-size: 1.25rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.darts-number-btn.kranz {
+  grid-column: span 3;
+  background: rgba(245,166,35,0.18);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .darts-score-grid {
+    grid-template-columns: 1fr;
+  }
+}
       
 </style>
     
@@ -2814,7 +2909,7 @@ tbody td:first-child {
     
     <div class="sub-tabs hidden" id="subtabs-spiele">
       <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
-      <div class="sub-tab active" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
+        <div class="sub-tab" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
     </div>
 
   <!-- Untertabs Strafen -->
@@ -3051,6 +3146,69 @@ tbody td:first-child {
               </div>
             </div>
       </div>
+     <div id="tab-darts" class="hidden">
+          <div class="section-title">Darts</div>
+
+          <div class="darts-start-card">
+            <div class="modal-input-row" style="margin-bottom:0;">
+              <label>Startwert</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                id="darts-start-input"
+                class="modal-euro-input"
+                placeholder="301"
+              >
+            </div>
+
+            <button class="save-prices-btn" onclick="startDartsGame()">
+              🎯 Darts starten
+            </button>
+          </div>
+
+          <div id="darts-game-area" class="hidden">
+            <div class="darts-score-grid">
+              <div class="darts-score-card t1">
+                <div class="darts-team-title">⚫ Wand</div>
+                <div class="darts-score" id="darts-score-t1">301</div>
+                <div class="darts-round-score" id="darts-round-t1">Runde: 0</div>
+              </div>
+
+              <div class="darts-score-card t2">
+                <div class="darts-team-title">🔴 TV</div>
+                <div class="darts-score" id="darts-score-t2">301</div>
+                <div class="darts-round-score" id="darts-round-t2">Runde: 0</div>
+              </div>
+            </div>
+
+            <div class="darts-buffer" id="darts-buffer-display">Puffer: 0 Punkte</div>
+
+            <div class="tannenbaum-input-row">
+              <button class="tannenbaum-throw-btn t1" onclick="openDartsThrowModal('T1')">
+                ⚫ Wurf Wand
+              </button>
+
+              <button class="tannenbaum-throw-btn t2" onclick="openDartsThrowModal('T2')">
+                🔴 Wurf TV
+              </button>
+            </div>
+
+            <button class="save-prices-btn" onclick="finishDartsRound()">
+              Runde abschließen
+            </button>
+
+            <button class="modal-cancel" style="width:100%;margin-top:10px;" onclick="resetDartsGame()">
+              ↻ Darts neu starten
+            </button>
+
+            <div class="section-title">Würfe dieser Runde</div>
+            <div id="darts-round-list" class="spiele-list"></div>
+
+            <div class="section-title">Rundenverlauf</div>
+            <div id="darts-history-list" class="spiele-list"></div>
+          </div>
+        </div>
     </div>
 
     <!-- VERWALTUNG -->
@@ -3256,12 +3414,25 @@ tbody td:first-child {
     </div>
   </div>
 </div>
+    
+<div class="modal-overlay hidden" id="darts-throw-modal">
+  <div class="modal" style="max-width:430px;">
+    <h3 id="darts-throw-title">Darts Wurf</h3>
+    <div class="modal-sub">Geworfene Zahl auswählen</div>
+
+    <div id="darts-number-grid" class="darts-number-grid"></div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="modal-cancel" onclick="closeDartsThrowModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.4.0.00';
+const APPVersionSelf = '1.8.02.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -3349,6 +3520,23 @@ const TANNENBAUM_BASE = {
   8: 2,
   9: 1
 };
+    
+let dartsState = createDartsState();
+
+const DARTS_DEFAULT_VALUES = {
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 10,
+  7: 15,
+  8: 20,
+  9: 25,
+  kranz: 50
+};
+
+let dartsThrowTeam = null;
 
 let tannenbaumState = createTannenbaumState();
 
@@ -3517,6 +3705,7 @@ function getSerializableState() {
     teamCountdownRemainingBefore,
       STRAFEN,
     strafPrices,
+      dartsState,
     lastLocalChangeAt
   };
 }
@@ -3558,6 +3747,7 @@ function getFirestoreState() {
     teamCountdownRemainingBefore,
 
     tannenbaumState,
+      dartsState,
       STRAFEN,
       strafPrices,
 
@@ -3582,6 +3772,8 @@ function applyLoadedState(state) {
   bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
   bahnTimerStart = state.bahnTimerStart || null;
   bahnTimerRunning = !!state.bahnTimerRunning;
+    dartsState = state.dartsState || createDartsState();
+    ensureDartsState();
 
   teamStopwatchActive = !!state.teamStopwatchActive;
   teamStopwatchRunning = !!state.teamStopwatchRunning;
@@ -4257,6 +4449,7 @@ function startNewKegelabend() {
   teamCountdownRemainingBefore = 0;
 
   tannenbaumState = createTannenbaumState();
+    dartsState = createDartsState();
 
   renderAll();
   persistState();
@@ -4379,6 +4572,7 @@ function createEmptyClubData() {
         teamCountdownDuration: 0,
         teamCountdownRemainingBefore: 0,
       tannenbaumState: createTannenbaumState(),
+      dartsState: createDartsState(),
       lastLocalChangeAt: 0
   };
 }
@@ -4410,7 +4604,8 @@ function syncCurrentClubToStore() {
     teamCountdownRemainingBefore,
       STRAFEN: JSON.parse(JSON.stringify(STRAFEN)),
       strafPrices: JSON.parse(JSON.stringify(strafPrices)),
-    tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState))
+    tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState)),
+      dartsState: JSON.parse(JSON.stringify(dartsState))
   };
 }
 
@@ -4570,6 +4765,9 @@ async function selectClub(clubName) {
 
   tannenbaumState = JSON.parse(JSON.stringify(localClub.tannenbaumState || createTannenbaumState()));
   ensureTannenbaumState();
+    
+    dartsState = JSON.parse(JSON.stringify(localClub.dartsState || createDartsState()));
+    ensureDartsState();
 
   hydrateState();
   renderAll();
@@ -5592,6 +5790,311 @@ function resetTannenbaumGame() {
 
   showToast('↻ Tannenbaum zurückgesetzt', 'success');
 }
+    
+    function createDartsState() {
+  return {
+    active: false,
+    startValue: 301,
+    scores: {
+      T1: 301,
+      T2: 301
+    },
+    roundThrows: {
+      T1: [],
+      T2: []
+    },
+    valueMap: { ...DARTS_DEFAULT_VALUES },
+    buffer: 0,
+    winner: null,
+    history: []
+  };
+}
+
+function ensureDartsState() {
+  if (!dartsState) dartsState = createDartsState();
+
+  if (!dartsState.scores) dartsState.scores = { T1: 301, T2: 301 };
+  if (!dartsState.roundThrows) dartsState.roundThrows = { T1: [], T2: [] };
+  if (!dartsState.roundThrows.T1) dartsState.roundThrows.T1 = [];
+  if (!dartsState.roundThrows.T2) dartsState.roundThrows.T2 = [];
+  if (!dartsState.valueMap) dartsState.valueMap = { ...DARTS_DEFAULT_VALUES };
+  if (!Array.isArray(dartsState.history)) dartsState.history = [];
+  if (dartsState.buffer === undefined) dartsState.buffer = 0;
+  if (!dartsState.startValue) dartsState.startValue = 301;
+}
+
+function startDartsGame() {
+  const input = document.getElementById('darts-start-input');
+  const startValue = parseInt(input?.value || '301', 10) || 301;
+
+  dartsState = createDartsState();
+  dartsState.active = true;
+  dartsState.startValue = startValue;
+  dartsState.scores.T1 = startValue;
+  dartsState.scores.T2 = startValue;
+
+  renderDarts();
+  persistState();
+
+  showToast('🎯 Darts gestartet', 'success');
+}
+
+function resetDartsGame() {
+  if (!confirm('Darts wirklich neu starten?')) return;
+
+  dartsState = createDartsState();
+
+  renderDarts();
+  persistState();
+
+  showToast('↻ Darts zurückgesetzt', 'success');
+}
+
+function openDartsThrowModal(team) {
+  ensureDartsState();
+
+  if (!dartsState.active) {
+    showToast('Bitte zuerst Darts starten', 'error');
+    return;
+  }
+
+  dartsThrowTeam = team;
+
+  const title = document.getElementById('darts-throw-title');
+  const grid = document.getElementById('darts-number-grid');
+
+  if (title) title.textContent = `Wurf für ${getTeamLabel(team)}`;
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  for (let n = 1; n <= 9; n++) {
+    const value = dartsState.valueMap[n] ?? DARTS_DEFAULT_VALUES[n];
+
+    const btn = document.createElement('button');
+    btn.className = 'darts-number-btn';
+    btn.innerHTML = `${n}<br><span style="font-size:0.72rem;">${value} Punkte</span>`;
+    btn.onclick = () => handleDartsThrow(String(n));
+
+    grid.appendChild(btn);
+  }
+
+  const kranzValue = dartsState.valueMap.kranz ?? 50;
+
+  const kranzBtn = document.createElement('button');
+  kranzBtn.className = 'darts-number-btn kranz';
+  kranzBtn.innerHTML = `Kranz<br><span style="font-size:0.72rem;">${kranzValue} Punkte</span>`;
+  kranzBtn.onclick = () => handleDartsThrow('kranz');
+
+  grid.appendChild(kranzBtn);
+
+  document.getElementById('darts-throw-modal').classList.remove('hidden');
+}
+
+function closeDartsThrowModal() {
+  document.getElementById('darts-throw-modal').classList.add('hidden');
+  dartsThrowTeam = null;
+}
+
+function handleDartsThrow(hitKey) {
+  ensureDartsState();
+
+  if (!dartsThrowTeam) return;
+
+  const value = parseInt(dartsState.valueMap[hitKey] ?? DARTS_DEFAULT_VALUES[hitKey] ?? 0, 10) || 0;
+
+  dartsState.roundThrows[dartsThrowTeam].push({
+    hit: hitKey,
+    value,
+    createdAt: new Date().toISOString()
+  });
+
+  closeDartsThrowModal();
+  renderDarts();
+  persistState();
+
+  showToast(`${getTeamLabel(dartsThrowTeam)} +${value} Punkte`, 'success');
+}
+
+function getDartsRoundTotal(team) {
+  ensureDartsState();
+
+  return dartsState.roundThrows[team].reduce((sum, entry) => {
+    return sum + (parseInt(entry.value || 0, 10) || 0);
+  }, 0);
+}
+
+function finishDartsRound() {
+  ensureDartsState();
+
+  if (!dartsState.active || dartsState.winner) return;
+
+  const t1Round = getDartsRoundTotal('T1');
+  const t2Round = getDartsRoundTotal('T2');
+
+  if (t1Round <= 0 && t2Round <= 0) {
+    showToast('Keine Würfe in dieser Runde eingetragen', 'error');
+    return;
+  }
+
+  if (t1Round === t2Round) {
+    dartsState.buffer += t1Round + t2Round;
+
+    dartsState.history.unshift({
+      type: 'draw',
+      t1Round,
+      t2Round,
+      bufferAdded: t1Round + t2Round,
+      bufferAfter: dartsState.buffer,
+      createdAt: new Date().toISOString()
+    });
+
+    dartsState.roundThrows.T1 = [];
+    dartsState.roundThrows.T2 = [];
+
+    renderDarts();
+    persistState();
+
+    showToast(`🤝 Gleichstand. ${t1Round + t2Round} Punkte in den Puffer`, 'success');
+    return;
+  }
+
+  const winningTeam = t1Round > t2Round ? 'T1' : 'T2';
+  const winningPoints = t1Round + t2Round + dartsState.buffer;
+
+  dartsState.scores[winningTeam] = Math.max(0, dartsState.scores[winningTeam] - winningPoints);
+
+  dartsState.history.unshift({
+    type: 'round',
+    winner: winningTeam,
+    t1Round,
+    t2Round,
+    bufferUsed: dartsState.buffer,
+    pointsSubtracted: winningPoints,
+    scoreAfter: dartsState.scores[winningTeam],
+    createdAt: new Date().toISOString()
+  });
+
+  dartsState.buffer = 0;
+  dartsState.roundThrows.T1 = [];
+  dartsState.roundThrows.T2 = [];
+
+  if (dartsState.scores[winningTeam] <= 0) {
+    dartsState.winner = winningTeam;
+    dartsState.active = false;
+    showToast(`🏆 ${getTeamLabel(winningTeam)} gewinnt Darts!`, 'success');
+  } else {
+    showToast(`${getTeamLabel(winningTeam)} gewinnt die Runde: -${winningPoints}`, 'success');
+  }
+
+  renderDarts();
+  persistState();
+}
+
+function renderDarts() {
+  ensureDartsState();
+
+  const startInput = document.getElementById('darts-start-input');
+  const area = document.getElementById('darts-game-area');
+
+  if (startInput && document.activeElement !== startInput) {
+    startInput.value = dartsState.startValue || 301;
+  }
+
+  if (area) {
+    area.classList.toggle('hidden', !dartsState.active && !dartsState.history.length && !dartsState.winner);
+  }
+
+  const scoreT1 = document.getElementById('darts-score-t1');
+  const scoreT2 = document.getElementById('darts-score-t2');
+  const roundT1 = document.getElementById('darts-round-t1');
+  const roundT2 = document.getElementById('darts-round-t2');
+  const buffer = document.getElementById('darts-buffer-display');
+
+  if (scoreT1) scoreT1.textContent = dartsState.scores.T1;
+  if (scoreT2) scoreT2.textContent = dartsState.scores.T2;
+  if (roundT1) roundT1.textContent = `Runde: ${getDartsRoundTotal('T1')}`;
+  if (roundT2) roundT2.textContent = `Runde: ${getDartsRoundTotal('T2')}`;
+  if (buffer) {
+    buffer.textContent = dartsState.winner
+      ? `🏆 Gewinner: ${getTeamLabel(dartsState.winner)}`
+      : `Puffer: ${dartsState.buffer || 0} Punkte`;
+  }
+
+  renderDartsRoundList();
+  renderDartsHistory();
+}
+
+function renderDartsRoundList() {
+  const el = document.getElementById('darts-round-list');
+  if (!el) return;
+
+  const entries = [];
+
+  ['T1', 'T2'].forEach(team => {
+    dartsState.roundThrows[team].forEach((entry, index) => {
+      entries.push({
+        team,
+        index,
+        ...entry
+      });
+    });
+  });
+
+  if (!entries.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">Noch keine Würfe in dieser Runde</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(entry => `
+    <div class="spiel-card">
+      <div class="spiel-info">
+        <div class="spiel-verlierer ${entry.team.toLowerCase()}">${getTeamLabel(entry.team)}</div>
+        <div class="spiel-detail">Wurf: ${entry.hit === 'kranz' ? 'Kranz' : entry.hit}</div>
+      </div>
+      <div class="spiel-betrag">${entry.value}</div>
+    </div>
+  `).join('');
+}
+
+function renderDartsHistory() {
+  const el = document.getElementById('darts-history-list');
+  if (!el) return;
+
+  if (!dartsState.history.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">Noch keine abgeschlossene Runde</div>';
+    return;
+  }
+
+  el.innerHTML = dartsState.history.map((entry, index) => {
+    if (entry.type === 'draw') {
+      return `
+        <div class="spiel-card">
+          <div class="spiel-info">
+            <div class="spiel-verlierer round">🤝 Runde ${dartsState.history.length - index}: Gleichstand</div>
+            <div class="spiel-detail">Wand ${entry.t1Round} : ${entry.t2Round} TV</div>
+            <div class="spiel-detail">Puffer +${entry.bufferAdded}, jetzt ${entry.bufferAfter}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="spiel-card">
+        <div class="spiel-info">
+          <div class="spiel-verlierer ${entry.winner.toLowerCase()}">
+            ${getTeamLabel(entry.winner)} gewinnt Runde ${dartsState.history.length - index}
+          </div>
+          <div class="spiel-detail">Wand ${entry.t1Round} : ${entry.t2Round} TV</div>
+          <div class="spiel-detail">Puffer genutzt: ${entry.bufferUsed}</div>
+          <div class="spiel-detail">Abgezogen: ${entry.pointsSubtracted}</div>
+        </div>
+        <div class="spiel-betrag">${entry.scoreAfter}</div>
+      </div>
+    `;
+  }).join('');
+}
+    
 
 // ── RENDER ──
 function renderAll() {
@@ -5612,6 +6115,7 @@ function renderAll() {
   renderSpieleKatalog();
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
+    renderDarts();
     renderStrafen();
     renderStrafpreisEditor();
 }
@@ -6781,7 +7285,7 @@ function deletePerson(name) {
   const subTabMap = {
     organisation: ['anwesenheit', 'gruppen'],
     getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-    spiele: ['tannenbaum'],
+    spiele: ['tannenbaum','darts'],
     strafen: ['strafen-uebersicht', 'strafen-abrechnung'],
     verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
   };
