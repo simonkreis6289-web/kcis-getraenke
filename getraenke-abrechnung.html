@@ -2899,6 +2899,9 @@ tbody td:first-child {
         <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">
           Nicht zugewiesen – antippen zum Zuweisen:
         </div>
+        <button class="add-btn" onclick="randomAssignUnassignedPeople()">
+          🎲 Zufällig verteilen
+        </button>
         <div class="unassigned-list" id="unassigned-list"></div>
         <div class="gruppe-grid">
           <div class="gruppe-box t1">
@@ -3235,7 +3238,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.5.00.100';
+const APPVersionSelf = '1.60.000.0000';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -4816,6 +4819,37 @@ function getClubAvatarHtml(name) {
       <span class="club-avatar-fallback" style="display:none;">${initials}</span>
     </div>
   `;
+}
+    
+function randomAssignUnassignedPeople() {
+  const candidates = persons.filter(p => p.present && !p.left && !p.tisch);
+
+  if (!candidates.length) {
+    showToast('Alle Anwesenden sind bereits zugewiesen', 'success');
+    return;
+  }
+
+  const shuffled = candidates
+    .slice()
+    .sort(() => Math.random() - 0.5);
+
+  let t1Count = persons.filter(p => p.present && !p.left && p.tisch === 'T1').length;
+  let t2Count = persons.filter(p => p.present && !p.left && p.tisch === 'T2').length;
+
+  shuffled.forEach(p => {
+    if (t1Count <= t2Count) {
+      p.tisch = 'T1';
+      t1Count++;
+    } else {
+      p.tisch = 'T2';
+      t2Count++;
+    }
+  });
+
+  renderAll();
+  persistState();
+
+  showToast('🎲 Personen zufällig verteilt', 'success');
 }
     
 // ── PREISE SPEICHERN ──
