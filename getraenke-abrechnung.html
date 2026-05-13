@@ -2813,7 +2813,8 @@ tbody td:first-child {
   </div>
     
     <div class="sub-tabs hidden" id="subtabs-spiele">
-      <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">Tannenbaum</div>
+      <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
+      <div class="sub-tab active" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
     </div>
 
   <!-- Untertabs Strafen -->
@@ -2899,7 +2900,9 @@ tbody td:first-child {
         <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">
           Nicht zugewiesen – antippen zum Zuweisen:
         </div>
-        <button class="add-btn" onclick="randomAssignUnassignedPeople()">
+        <button class="add-btn" onclick="randomAssignUnassignedPeople()"
+                style="margin-bottom:14px;"
+                >
           🎲 Zufällig verteilen
         </button>
         <div class="unassigned-list" id="unassigned-list"></div>
@@ -3238,7 +3241,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.7.0.00';
+const APPVersionSelf = '1.10.0.00';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
