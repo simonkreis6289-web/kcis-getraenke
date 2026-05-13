@@ -2160,103 +2160,89 @@ tbody td:first-child {
 }
       
 .team-stopwatch-global {
+  position: sticky;
+  top: 76px;
+  z-index: 90;
+
   width: 100%;
   margin-bottom: 18px;
-  padding: 18px;
+  padding: 8px 10px;
   border: 2px solid var(--border);
   border-radius: 16px;
   background: var(--countdown-bg);
-  text-align: center;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
 }
 
 .team-stopwatch-time {
   font-family: 'DM Sans', sans-serif;
-  font-size: clamp(3rem, 12vw, 7rem);
-  font-weight: 600;
-  line-height: 1.0;
-  letter-spacing: 0px;
+  font-size: clamp(2.3rem, 8vw, 5.2rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   color: var(--countdown-font);
-  margin-bottom: 14px;
+  text-align: center;
+}
+
+.team-stopwatch-controls-wrap {
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.14);
 }
 
 .team-stopwatch-controls {
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.team-stopwatch-controls.left {
+  justify-content: flex-start;
+}
+
+.team-stopwatch-controls.right {
+  justify-content: flex-end;
 }
 
 .team-stopwatch-btn {
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 5px 5px;
+  border-radius: 10px;
+  padding: 7px 9px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.team-stopwatch-btn.start {
-  background: rgba(0, 200, 70, 0.10) !important;
-  color: rgba(0, 200, 70, 0.80) !important;
-  border-color: rgba(0, 200, 70, 1) !important;
-}
-
-.team-stopwatch-btn.pause {
-  background: rgba(235, 200, 0, 0.10) !important;
-  color: rgba(235, 200, 0, 0.80) !important;
-  border-color: rgba(235, 200, 0, 1) !important;
-}
-
-.team-stopwatch-btn.stop {
-  background: rgba(255, 0, 0, 0.10) !important;
-  color: rgba(255, 0, 0, 0.8) !important;
-  border-color: rgba(255, 0, 0, 1) !important; 
-}
-
-.team-stopwatch-btn.restart {
-  background: rgba(61, 61, 61, 0.10) !important;
-  color: rgba(61, 61, 61, 0.8) !important;
-  border-color: rgba(61, 61, 61, 1) !important; 
-}
-
-.team-stopwatch-settings {
-  margin-bottom: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-
-.team-stopwatch-check {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.team-stopwatch-check input {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--accent);
-}
-      
-.team-stopwatch-controls-wrap {
-  background: white;
-  padding: 5px 5px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-}
+@media (max-width: 760px) {
+  .team-stopwatch-global {
+    top: 70px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 
-.team-stopwatch-controls {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  justify-content: center;
+  .team-stopwatch-time {
+    order: 1;
+  }
+
+  .team-stopwatch-controls-wrap.left {
+    order: 2;
+  }
+
+  .team-stopwatch-controls-wrap.right {
+    order: 3;
+  }
+
+  .team-stopwatch-controls {
+    justify-content: center !important;
+  }
 }
      
 .modal-countdown-input { text-align: left; }
@@ -2771,27 +2757,31 @@ tbody td:first-child {
     </div>
 
     <div id="team-stopwatch-global" class="team-stopwatch-global hidden">
+      <div class="team-stopwatch-controls-wrap left">
+        <div class="team-stopwatch-controls left">
+          <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">
+            ▶ Start
+          </button>
+
+          <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">
+            ⏸ Pause
+          </button>
+        </div>
+      </div>
+
       <div class="team-stopwatch-time" id="team-stopwatch-time">00:00</div>
 
-        <div class="team-stopwatch-controls-wrap">
-          <div class="team-stopwatch-controls">
-            <button class="team-stopwatch-btn start" onclick="startTeamStopwatch()" id="teamStopwatchStartBtn">
-              ▶ Läuft
-            </button>
+      <div class="team-stopwatch-controls-wrap right">
+        <div class="team-stopwatch-controls right">
+          <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">
+            ■ Stop
+          </button>
 
-            <button class="team-stopwatch-btn pause" onclick="pauseTeamStopwatch()">
-              ⏸ Pause
-            </button>
-
-            <button class="team-stopwatch-btn stop" onclick="stopTeamStopwatch()">
-              ■ Stop
-            </button>
-
-            <button class="team-stopwatch-btn restart" onclick="restartTeamStopwatch()">
-              ↻ Neustart
-            </button>
-          </div>
+          <button class="team-stopwatch-btn restart" onclick="restartTeamStopwatch()">
+            ↻ Neu
+          </button>
         </div>
+      </div>
     </div>
       
     <!-- ORGANISATION -->
@@ -2934,29 +2924,6 @@ tbody td:first-child {
     <div id="main-spiele" class="main-panel hidden">
       <div id="tab-tannenbaum">
         <div class="section-title">Tannenbaum</div>
-
-        <div class="team-stopwatch-settings">
-          <label class="team-stopwatch-check">
-            <input type="checkbox" id="team-stopwatch-active-check" onchange="toggleTeamStopwatchActive()">
-            <span>Tannenbaum-Stoppuhr aktivieren</span>
-          </label>
-        </div>
-          
-          <div id="team-countdown-settings" class="hidden" style="margin-top:12px;display:grid;gap:10px;">
-              <div class="modal-input-row" style="margin-bottom:0;">
-                <label>Countdown Minuten</label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  id="team-countdown-minutes"
-                  class="modal-countdown-input"
-                  placeholder="z. B. 10"
-                  onchange="saveTeamCountdownDuration()"
-                  oninput="previewTeamCountdownDuration()"
-                >
-              </div>
-            </div>
           
             <div class="tannenbaum-game">
               <div class="tannenbaum-input-row">
@@ -3027,6 +2994,33 @@ tbody td:first-child {
         <div class="section-title">Einstellungen</div>
         <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
           <div class="modal-input-row" style="margin-bottom:0;">
+              <div class="section-title">Countdown</div>
+
+                <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
+                  <div class="team-stopwatch-settings" style="margin-bottom:0;">
+                    <label class="team-stopwatch-check">
+                      <input type="checkbox" id="team-stopwatch-active-check" onchange="toggleTeamStopwatchActive()">
+                      <span>Countdown aktivieren</span>
+                    </label>
+                  </div>
+
+                  <div id="team-countdown-settings" class="hidden" style="display:grid;gap:10px;">
+                    <div class="modal-input-row" style="margin-bottom:0;">
+                      <label>Countdown Minuten</label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        id="team-countdown-minutes"
+                        class="modal-countdown-input"
+                        placeholder="z. B. 10"
+                        onchange="saveTeamCountdownDuration()"
+                        oninput="previewTeamCountdownDuration()"
+                      >
+                    </div>
+                  </div>
+                </div>
+              
             <label>Bahpreis / Stunde (€)</label>
             <input
               type="number"
