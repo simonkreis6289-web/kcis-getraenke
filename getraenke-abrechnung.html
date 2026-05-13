@@ -1566,6 +1566,65 @@ tbody td:first-child {
   color: rgba(204, 0, 0, 1);
 }
 
+      .team-drinks-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.team-drink-row {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-drink-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.15;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.team-drink-row .counter {
+  display: grid;
+  grid-template-columns: 28px 24px 28px;
+  align-items: center;
+  gap: 5px;
+  min-width: 92px;
+}
+
+.team-drink-row .counter-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.team-drink-row .counter-val {
+  min-width: 24px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+      
+@media (max-width: 760px) {
+  .team-drinks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-drink-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+      
 #drink-edit-modal .drink-edit-actions .counter {
   gap: 6px;
 }
