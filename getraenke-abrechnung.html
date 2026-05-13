@@ -4169,20 +4169,27 @@ async function selectClub(clubName) {
         return;
       }
 
-      isApplyingRemoteState = true;
+        isApplyingRemoteState = true;
 
-      applyLoadedState(state);
+        try {
+          applyLoadedState(state);
 
-      lastRemoteChangeAt = incomingClientAt;
-      lastLocalChangeAt = Math.max(lastLocalChangeAt, incomingClientAt);
+          lastRemoteChangeAt = incomingClientAt;
+          lastLocalChangeAt = Math.max(lastLocalChangeAt, incomingClientAt);
 
-      renderAll();
-      updateAppHeader();
+          renderAll();
+          updateAppHeader();
 
-      syncCurrentClubToStore();
-      saveClubSystem();
+          syncCurrentClubToStore();
+          saveClubSystem();
 
-      isApplyingRemoteState = false;
+          console.log('Live-Sync übernommen:', {
+            incomingClientAt,
+            incomingClientId
+          });
+        } finally {
+          isApplyingRemoteState = false;
+        }
 
       console.log('Live-Sync übernommen:', {
         incomingClientAt,
