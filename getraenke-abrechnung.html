@@ -3358,7 +3358,8 @@ function getSerializableState() {
     teamStopwatchRunning,
     teamStopwatchStart,
     teamCountdownDuration,
-    teamCountdownRemainingBefore
+    teamCountdownRemainingBefore,
+    lastLocalChangeAt
   };
 }
     
@@ -3412,16 +3413,20 @@ function applyLoadedState(state) {
   RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
   selectedLoser = state.selectedLoser || null;
   teamDrinks = state.teamDrinks || {};
-    bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
-    bahnTimerStart = state.bahnTimerStart || null;
-    bahnTimerRunning = !!state.bahnTimerRunning;
-    teamStopwatchActive = !!state.teamStopwatchActive;
-    teamStopwatchRunning = !!state.teamStopwatchRunning;
-    teamStopwatchStart = state.teamStopwatchStart || null;
-    teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
-    teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;
-    tannenbaumState = state.tannenbaumState || createTannenbaumState();
-    ensureTannenbaumState();
+
+  bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
+  bahnTimerStart = state.bahnTimerStart || null;
+  bahnTimerRunning = !!state.bahnTimerRunning;
+
+  teamStopwatchActive = !!state.teamStopwatchActive;
+  teamStopwatchRunning = !!state.teamStopwatchRunning;
+  teamStopwatchStart = state.teamStopwatchStart || null;
+  teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
+  teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;
+
+  tannenbaumState = state.tannenbaumState || createTannenbaumState();
+  ensureTannenbaumState();
+
   hydrateState();
   return true;
 }
@@ -3453,12 +3458,15 @@ async function saveToFirestore(showSuccessToast = false) {
     if (showSuccessToast) {
       showToast(`☁️ ${ACTIVE_CLUB} gespeichert`, 'success');
     }
+
     return true;
   } catch (e) {
     console.error('Fehler beim Speichern in Firestore:', e);
+
     if (showSuccessToast) {
       showToast('❌ Firestore-Speichern fehlgeschlagen', 'error');
     }
+
     return false;
   }
 }
@@ -3497,11 +3505,16 @@ function hydrateState() {
 }
 
 function persistState() {
-  if (!appReady) return;
+  if (!appReady || !ACTIVE_CLUB) return;
 
   lastLocalChangeAt = Date.now();
+
+  syncCurrentClubToStore();
   saveClubSystem();
-  queueAutoSave();
+
+  if (navigator.onLine) {
+    queueAutoSave();
+  }
 }
 
 function queueAutoSave() {
@@ -3913,7 +3926,8 @@ function createEmptyClubData() {
         teamStopwatchStart: null,
         teamCountdownDuration: 0,
         teamCountdownRemainingBefore: 0,
-      tannenbaumState: createTannenbaumState()
+      tannenbaumState: createTannenbaumState(),
+      lastLocalChangeAt: 0
   };
 }
 
@@ -3939,6 +3953,7 @@ function syncCurrentClubToStore() {
     teamStopwatchRunning,
     teamStopwatchStart,
     teamCountdownDuration,
+    lastLocalChangeAt,
     teamCountdownRemainingBefore,
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState))
   };
@@ -4068,6 +4083,7 @@ async function selectClub(clubName) {
   }
 
   ACTIVE_CLUB = clubName;
+  lastLocalChangeAt = Number((CLUBS[clubName] || {}).lastLocalChangeAt || 0);
   const clubId = getClubFirestoreId(clubName);
 
   const localClub = CLUBS[clubName] || createEmptyClubData();
@@ -4107,37 +4123,39 @@ async function selectClub(clubName) {
     updateAppHeader();
   }
 
-  currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
-    clubId,
-    (state) => {
-      if (!state) return;
+  if (window.firestoreApi && typeof window.firestoreApi.subscribeToClubState === 'function') {
+    currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
+      clubId,
+      (state) => {
+        if (!state) return;
 
-      const incomingClientAt = Number(state.updatedClientAt || 0);
+        const incomingClientAt = Number(state.updatedClientAt || 0);
 
-      if (incomingClientAt && incomingClientAt < lastLocalChangeAt) {
-        console.log('Älteren Firestore-Snapshot ignoriert', {
-          incomingClientAt,
-          lastLocalChangeAt
-        });
-        return;
+        if (incomingClientAt && incomingClientAt < lastLocalChangeAt) {
+          console.log('Älteren Firestore-Snapshot ignoriert', {
+            incomingClientAt,
+            lastLocalChangeAt
+          });
+          return;
+        }
+
+        applyLoadedState(state);
+
+        if (incomingClientAt) {
+          lastLocalChangeAt = incomingClientAt;
+        }
+
+        renderAll();
+        updateAppHeader();
+
+        syncCurrentClubToStore();
+        saveClubSystem();
+      },
+      (error) => {
+        console.error('Live-Sync Fehler:', error);
       }
-
-      applyLoadedState(state);
-
-      if (incomingClientAt) {
-        lastLocalChangeAt = incomingClientAt;
-      }
-
-      renderAll();
-      updateAppHeader();
-
-      syncCurrentClubToStore();
-      saveClubSystem();
-    },
-    (error) => {
-      console.error('Live-Sync Fehler:', error);
-    }
-  );
+    );
+  }
 
   syncCurrentClubToStore();
   saveClubSystem();
@@ -6372,8 +6390,30 @@ function undoReset() {
 
 // ── NETWORK EVENTS ──
 window.addEventListener('online', async () => {
-  showToast('🌐 Wieder online. Firestore wird synchronisiert…', 'success');
-  await saveToFirestore(false);
+  showToast('🌐 Wieder online. Prüfe neuesten Stand…', 'success');
+
+  if (!ACTIVE_CLUB || !window.firestoreApi) return;
+
+  const clubId = getClubFirestoreId(ACTIVE_CLUB);
+  const remoteState = await window.firestoreApi.loadClubState(clubId);
+  const remoteUpdatedAt = Number(remoteState?.updatedClientAt || 0);
+
+  if (lastLocalChangeAt >= remoteUpdatedAt) {
+    await saveToFirestore(false);
+    showToast('☁️ Lokale Änderungen hochgeladen', 'success');
+  } else {
+    applyLoadedState(remoteState);
+
+    if (remoteUpdatedAt) {
+      lastLocalChangeAt = remoteUpdatedAt;
+    }
+
+    renderAll();
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    showToast('☁️ Neuerer Stand aus Firestore geladen', 'success');
+  }
 });
 
 window.addEventListener('offline', () => {
