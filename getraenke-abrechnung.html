@@ -1708,7 +1708,7 @@ tbody td:first-child {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.75);
-      z-index: 500;
+      z-index: 5000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2188,8 +2188,14 @@ tbody td:first-child {
   left: 16px;
   right: 16px;
   width: auto;
-  z-index: 1000;
   margin: 0;
+
+  z-index: 900;
+
+  background: #ffffff;
+  border: 2px solid var(--border);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+  backdrop-filter: none;
 }
 
 .team-stopwatch-time {
@@ -2932,8 +2938,13 @@ tbody td:first-child {
     <div id="main-strafen" class="main-panel hidden">
       <div id="tab-strafen-uebersicht">
         <div class="section-title">Strafen Übersicht</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-          Hier kommt später die Übersicht der Kegelstrafen rein.
+             <div class="drinks-table-wrap">
+          <table class="drinks-table">
+            <thead>
+              <tr id="strafen-header"></tr>
+            </thead>
+            <tbody id="strafen-body"></tbody>
+          </table>
         </div>
       </div>
 
@@ -3003,9 +3014,26 @@ tbody td:first-child {
 
       <div id="tab-strafpreise" class="hidden">
         <div class="section-title">Strafpreise bearbeiten</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-          Hier kommen später die Strafpreise rein.
-        </div>
+            <div class="section-title">Neue Strafe anlegen</div>
+
+            <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:10px;">
+              <div class="modal-input-row" style="margin-bottom:0;">
+                <label>Name</label>
+                <input type="text" id="new-strafe-name" class="modal-text-input" placeholder="z. B. Pudel">
+              </div>
+
+              <div class="modal-input-row" style="margin-bottom:0;">
+                <label>Preis (€)</label>
+                <input type="number" step="0.10" min="0" id="new-strafe-price" class="modal-euro-input" placeholder="0.00">
+              </div>
+
+              <button class="add-btn" onclick="addStrafe()">+ Strafe hinzufügen</button>
+            </div>
+
+            <div class="section-title">Strafpreise bearbeiten</div>
+            <div class="prices-editor" id="strafpreise-editor"></div>
+
+            <button class="save-prices-btn" onclick="saveStrafPrices()">💾 Strafpreise speichern</button>
       </div>
 
       <div id="tab-termine" class="hidden">
@@ -3165,6 +3193,13 @@ let DRINKS = [
   { key: 'weizen',   label: 'Weizen' },
   { key: 'wein',     label: 'Wein/Sekt' }
 ];
+    
+let STRAFEN = [
+  { key: 'pudel', label: 'Pudel' },
+  { key: 'klingel', label: 'Klingel' }
+];
+
+let strafPrices = {};
 
 let SPIELE_KATALOG = ['Tannenbaum','Darts'];
 let RUNDEN_GRUENDE = ['1000er-Runde', '2000er-Runde', 'Geburtstag'];
@@ -3395,6 +3430,8 @@ function getSerializableState() {
     teamStopwatchStart,
     teamCountdownDuration,
     teamCountdownRemainingBefore,
+      STRAFEN,
+    strafPrices,
     lastLocalChangeAt
   };
 }
@@ -3436,6 +3473,8 @@ function getFirestoreState() {
     teamCountdownRemainingBefore,
 
     tannenbaumState,
+      STRAFEN,
+      strafPrices,
 
     updatedFrom: 'app',
     updatedClientAt: lastLocalChangeAt,
@@ -3463,8 +3502,11 @@ function applyLoadedState(state) {
   teamStopwatchRunning = !!state.teamStopwatchRunning;
   teamStopwatchStart = state.teamStopwatchStart || null;
   teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
-  teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;
-
+  teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;    
+    
+    STRAFEN = Array.isArray(state.STRAFEN) && state.STRAFEN.length ? state.STRAFEN : STRAFEN;
+    strafPrices = state.strafPrices || {};
+    
   tannenbaumState = state.tannenbaumState || createTannenbaumState();
   ensureTannenbaumState();
     
@@ -3536,6 +3578,11 @@ function hydrateState() {
 
     DRINKS.forEach(d => {
       if (p.drinks[d.key] === undefined) p.drinks[d.key] = 0;
+        if (!p.strafen) p.strafen = {};
+    });
+          
+    STRAFEN.forEach(s => {
+      if (p.strafen[s.key] === undefined) p.strafen[s.key] = 0;
     });
 
     p.present = !!p.present;
@@ -3547,6 +3594,9 @@ function hydrateState() {
     p.left = !!p.left;
     p.leftAt = p.leftAt || '';
   });
+    STRAFEN.forEach(s => {
+      if (strafPrices[s.key] === undefined) strafPrices[s.key] = 0;
+    });
 }
 
 function persistState() {
@@ -3561,7 +3611,200 @@ function persistState() {
     queueAutoSave();
   }
 }
+    
+function makeStrafeKey(label) {
+  const key = label.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 
+  return key || ('strafe_' + Date.now());
+}
+
+function calcStrafenTotal(p) {
+  if (!p.strafen) p.strafen = {};
+  return STRAFEN.reduce((sum, s) => {
+    return sum + ((p.strafen[s.key] || 0) * (strafPrices[s.key] || 0));
+  }, 0);
+}
+
+function changeStrafe(personName, key, delta) {
+  const p = persons.find(x => x.name === personName);
+  if (!p || !p.present || p.left) return;
+
+  if (!p.strafen) p.strafen = {};
+  p.strafen[key] = Math.max(0, (p.strafen[key] || 0) + delta);
+
+  renderStrafen();
+  persistState();
+}
+
+function renderStrafen() {
+  const header = document.getElementById('strafen-header');
+  const body = document.getElementById('strafen-body');
+  if (!header || !body) return;
+
+  let headerHtml = '<th class="sticky-col name-col">Name</th>';
+  headerHtml += STRAFEN.map(s => `<th class="drink-col">${s.label}</th>`).join('');
+  headerHtml += '<th class="sum-col">Gesamt</th>';
+  header.innerHTML = headerHtml;
+
+  const present = persons
+    .filter(p => p.present)
+    .sort((a, b) => {
+      if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+      return a.name.localeCompare(b.name, 'de');
+    });
+
+  const totalCols = 1 + STRAFEN.length + 1;
+  body.innerHTML = '';
+
+  if (!present.length) {
+    body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+    return;
+  }
+
+  present.forEach((p, rowIndex) => {
+    if (!p.strafen) p.strafen = {};
+
+    const tr = document.createElement('tr');
+    tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
+
+    let html = `
+      <td class="sticky-col">
+        <div class="person-cell">
+          <div class="table-person-inline">
+            ${getAvatarHtml(p.name).replace('class="person-avatar"', 'class="table-avatar"')}
+            <div style="min-width:0;">
+              <span class="pname">${p.name}</span>
+              ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
+              <span class="ptisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</span>
+            </div>
+          </div>
+        </div>
+      </td>
+    `;
+
+    STRAFEN.forEach(s => {
+      const v = p.strafen[s.key] || 0;
+
+      html += `
+        <td>
+          <div class="counter">
+            <button type="button" class="counter-btn minus" onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)">−</button>
+            <span class="counter-val">${v}</span>
+            <button type="button" class="counter-btn plus" onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)">+</button>
+          </div>
+        </td>
+      `;
+    });
+
+    html += `
+      <td class="total-cell">
+        ${calcStrafenTotal(p).toFixed(2).replace('.', ',')}€
+      </td>
+    `;
+
+    tr.innerHTML = html;
+    body.appendChild(tr);
+  });
+}
+
+function renderStrafpreisEditor() {
+  const ed = document.getElementById('strafpreise-editor');
+  if (!ed) return;
+
+  ed.innerHTML = '';
+
+  STRAFEN.forEach(s => {
+    const c = document.createElement('div');
+    c.className = 'price-edit-card';
+    c.innerHTML = `
+      <label>${s.label}</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" step="0.10" min="0" class="price-input" id="straf-price-input-${s.key}" value="${(strafPrices[s.key] || 0).toFixed(2)}" placeholder="0.00">
+        <button class="delete-drink-btn" onclick="deleteStrafe('${escapeForJs(s.key)}')" title="Strafe löschen">✕</button>
+      </div>
+    `;
+    ed.appendChild(c);
+  });
+}
+
+function saveStrafPrices() {
+  STRAFEN.forEach(s => {
+    const el = document.getElementById('straf-price-input-' + s.key);
+    if (el) strafPrices[s.key] = parseFloat(String(el.value).replace(',', '.')) || 0;
+  });
+
+  renderStrafen();
+  persistState();
+  showToast('✅ Strafpreise gespeichert!', 'success');
+}
+
+function addStrafe() {
+  const nameInput = document.getElementById('new-strafe-name');
+  const priceInput = document.getElementById('new-strafe-price');
+
+  const name = (nameInput?.value || '').trim();
+  const price = parseFloat(String(priceInput?.value || '0').replace(',', '.')) || 0;
+
+  if (!name) {
+    showToast('Bitte Strafnamen eingeben', 'error');
+    return;
+  }
+
+  if (STRAFEN.find(s => s.label.toLowerCase() === name.toLowerCase())) {
+    showToast('Strafe existiert bereits', 'error');
+    return;
+  }
+
+  let key = makeStrafeKey(name);
+  while (STRAFEN.find(s => s.key === key)) {
+    key = key + '_' + Math.floor(Math.random() * 1000);
+  }
+
+  STRAFEN.push({ key, label: name });
+  strafPrices[key] = price;
+
+  persons.forEach(p => {
+    if (!p.strafen) p.strafen = {};
+    p.strafen[key] = 0;
+  });
+
+  nameInput.value = '';
+  priceInput.value = '';
+
+  renderAll();
+  persistState();
+  showToast('✅ Strafe hinzugefügt', 'success');
+}
+
+function deleteStrafe(key) {
+  const strafe = STRAFEN.find(s => s.key === key);
+  if (!strafe) return;
+
+  const used = persons.some(p => p.strafen && (p.strafen[key] || 0) > 0);
+
+  if (used) {
+    showToast('Strafe kann nicht gelöscht werden, weil sie bereits gezählt wurde', 'error');
+    return;
+  }
+
+  if (!confirm(`Strafe "${strafe.label}" wirklich löschen?`)) return;
+
+  STRAFEN = STRAFEN.filter(s => s.key !== key);
+  delete strafPrices[key];
+
+  persons.forEach(p => {
+    if (p.strafen && key in p.strafen) delete p.strafen[key];
+  });
+
+  renderAll();
+  persistState();
+  showToast('🗑️ Strafe gelöscht', 'success');
+}
+    
 function queueAutoSave() {
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(async () => {
@@ -3958,6 +4201,14 @@ function createEmptyClubData() {
       { key: 'weizen',   label: 'Weizen' },
       { key: 'wein',     label: 'Wein/Sekt' }
     ],
+      STRAFEN: [
+          { key: 'pudel', label: 'Pudel' },
+          { key: 'klingel', label: 'Klingel' }
+        ],
+        strafPrices: {
+          pudel: 0,
+          klingel: 0
+        },
     SPIELE_KATALOG: ['Tannenbaum', 'Darts'],
     RUNDEN_GRUENDE: ['1000er-Runde', '2000er-Runde', 'Geburtstag'],
     spiele: [],
@@ -4001,6 +4252,8 @@ function syncCurrentClubToStore() {
       lastLocalChangeAt,
       lastRemoteChangeAt,
     teamCountdownRemainingBefore,
+      STRAFEN: JSON.parse(JSON.stringify(STRAFEN)),
+      strafPrices: JSON.parse(JSON.stringify(strafPrices)),
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState))
   };
 }
@@ -4137,6 +4390,11 @@ async function selectClub(clubName) {
     lastRemoteChangeAt = Number(localClub.lastRemoteChangeAt || 0);
   persons = JSON.parse(JSON.stringify(localClub.persons || []));
   prices = JSON.parse(JSON.stringify(localClub.prices || {}));
+    STRAFEN = JSON.parse(JSON.stringify(localClub.STRAFEN || [
+      { key: 'pudel', label: 'Pudel' },
+      { key: 'klingel', label: 'Klingel' }
+    ]));
+    strafPrices = JSON.parse(JSON.stringify(localClub.strafPrices || {}));
   DRINKS = JSON.parse(JSON.stringify(localClub.DRINKS || []));
   SPIELE_KATALOG = JSON.parse(JSON.stringify(localClub.SPIELE_KATALOG || []));
   RUNDEN_GRUENDE = JSON.parse(JSON.stringify(localClub.RUNDEN_GRUENDE || []));
@@ -5167,6 +5425,8 @@ function renderAll() {
   renderSpieleKatalog();
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
+    renderStrafen();
+    renderStrafpreisEditor();
 }
 
 function updateStats() {
