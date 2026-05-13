@@ -3238,7 +3238,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.60.000.0000';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -4134,17 +4134,19 @@ function startNewKegelabend() {
     p.left = false;
     p.leftAt = null;
     p.paid = 0;
+    p.tisch = '';
+
     p.drinks = {};
     p.roundCharges = [];
     p.teamCharges = [];
-
     p.strafen = {};
-    STRAFEN.forEach(s => {
-      p.strafen[s.key] = 0;
-    });
 
     DRINKS.forEach(d => {
       p.drinks[d.key] = 0;
+    });
+
+    STRAFEN.forEach(s => {
+      p.strafen[s.key] = 0;
     });
   });
 
@@ -4156,8 +4158,13 @@ function startNewKegelabend() {
   bahnStartTimestamp = null;
   bahnAccumulatedSeconds = 0;
 
+  if (typeof stopTeamStopwatch === 'function') {
+    stopTeamStopwatch();
+  }
+
   renderAll();
   persistState();
+
   showToast('🆕 Neuer Kegelabend gestartet', 'success');
 }
     
