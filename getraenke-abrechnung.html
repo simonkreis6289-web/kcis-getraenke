@@ -2158,11 +2158,12 @@ tbody td:first-child {
   border: 1px solid var(--bahn-stop-border) !important;
   color: var(--bahn-stop-text) !important;
 }
-      
+    
+
 .team-stopwatch-global {
   position: sticky;
-  top: 76px;
-  z-index: 90;
+  top: 0;
+  z-index: 95;
 
   width: 100%;
   margin-bottom: 18px;
@@ -2179,12 +2180,10 @@ tbody td:first-child {
 
 .team-stopwatch-time {
   font-family: 'DM Sans', sans-serif;
-  font-size: clamp(2.3rem, 8vw, 5.2rem);
-  font-weight: 700;
+  font-size: clamp(2.8rem, 8vw, 5.2rem);
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
   color: var(--countdown-font);
   text-align: center;
 }
@@ -2198,22 +2197,14 @@ tbody td:first-child {
 
 .team-stopwatch-controls {
   display: flex;
+  flex-direction: column;
   gap: 6px;
-  flex-wrap: nowrap;
-}
-
-.team-stopwatch-controls.left {
-  justify-content: flex-start;
-}
-
-.team-stopwatch-controls.right {
-  justify-content: flex-end;
 }
 
 .team-stopwatch-btn {
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 7px 9px;
+  padding: 7px 10px;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.78rem;
   font-weight: 800;
@@ -2221,27 +2212,45 @@ tbody td:first-child {
   white-space: nowrap;
 }
 
+.team-stopwatch-btn.start {
+  background: var(--green_bg);
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.team-stopwatch-btn.pause {
+  background: rgba(245, 166, 35, 0.18);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.team-stopwatch-btn.stop {
+  background: rgba(232, 65, 42, 0.15);
+  color: var(--accent2);
+  border-color: var(--accent2);
+}
+
+.team-stopwatch-btn.restart {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
 @media (max-width: 760px) {
   .team-stopwatch-global {
-    top: 70px;
-    grid-template-columns: 1fr;
-    gap: 8px;
+    top: 0;
+    grid-template-columns: auto 1fr auto;
+    gap: 6px;
+    padding: 7px;
   }
 
   .team-stopwatch-time {
-    order: 1;
+    font-size: clamp(2.4rem, 12vw, 4rem);
   }
 
-  .team-stopwatch-controls-wrap.left {
-    order: 2;
-  }
-
-  .team-stopwatch-controls-wrap.right {
-    order: 3;
-  }
-
-  .team-stopwatch-controls {
-    justify-content: center !important;
+  .team-stopwatch-btn {
+    font-size: 0.68rem;
+    padding: 6px 7px;
   }
 }
      
@@ -2990,62 +2999,65 @@ tbody td:first-child {
         </div>
       </div>
 
-      <div id="tab-einstellungen" class="hidden">
-        <div class="section-title">Einstellungen</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
-          <div class="modal-input-row" style="margin-bottom:0;">
-              <div class="section-title">Countdown</div>
+     <div id="tab-einstellungen" class="hidden">
+  <div class="section-title">Countdown</div>
 
-                <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
-                  <div class="team-stopwatch-settings" style="margin-bottom:0;">
-                    <label class="team-stopwatch-check">
-                      <input type="checkbox" id="team-stopwatch-active-check" onchange="toggleTeamStopwatchActive()">
-                      <span>Countdown aktivieren</span>
-                    </label>
-                  </div>
+  <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+    <div class="team-stopwatch-settings" style="margin-bottom:0;">
+      <label class="team-stopwatch-check">
+        <input type="checkbox" id="team-stopwatch-active-check" onchange="toggleTeamStopwatchActive()">
+        <span>Countdown aktivieren</span>
+      </label>
+    </div>
 
-                  <div id="team-countdown-settings" class="hidden" style="display:grid;gap:10px;">
-                    <div class="modal-input-row" style="margin-bottom:0;">
-                      <label>Countdown Minuten</label>
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        id="team-countdown-minutes"
-                        class="modal-countdown-input"
-                        placeholder="z. B. 10"
-                        onchange="saveTeamCountdownDuration()"
-                        oninput="previewTeamCountdownDuration()"
-                      >
-                    </div>
-                  </div>
-                </div>
-              
-            <label>Bahpreis / Stunde (€)</label>
-            <input
-              type="number"
-              step="0.50"
-              min="0"
-              id="bahn-preis-input"
-              class="modal-euro-input"
-              placeholder="0.00"
-              onchange="saveBahnPreis()"
-              oninput="previewBahnPreis()"
-            >
-          </div>
-          <div class="modal-meta-row">
-            <span>Aktuelle Bahnzeit</span>
-            <strong id="settings-bahnzeit">00:00:00</strong>
-          </div>
-
-          <div class="modal-meta-row">
-            <span>Aktueller Bahnpreis</span>
-            <strong id="settings-bahnpreis" style="color:var(--accent2)">0,00 €</strong>
-          </div>
-
-          <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahpreis speichern</button>
-        </div>
+    <div id="team-countdown-settings" class="hidden" style="display:grid;gap:10px;">
+      <div class="modal-input-row" style="margin-bottom:0;">
+        <label>Countdown Minuten</label>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          id="team-countdown-minutes"
+          class="modal-countdown-input modal-euro-input"
+          placeholder="z. B. 10"
+          onchange="saveTeamCountdownDuration()"
+          oninput="previewTeamCountdownDuration()"
+        >
       </div>
+    </div>
+  </div>
+
+  <div class="section-title">Bahnpreis</div>
+
+  <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
+    <div class="modal-input-row" style="margin-bottom:0;">
+      <label>Bahnpreis / Stunde (€)</label>
+      <input
+        type="number"
+        step="0.50"
+        min="0"
+        id="bahn-preis-input"
+        class="modal-euro-input"
+        placeholder="0.00"
+        onchange="saveBahnPreis()"
+        oninput="previewBahnPreis()"
+      >
+    </div>
+
+    <div class="modal-meta-row">
+      <span>Aktuelle Bahnzeit</span>
+      <strong id="settings-bahnzeit">00:00:00</strong>
+    </div>
+
+    <div class="modal-meta-row">
+      <span>Aktueller Bahnpreis</span>
+      <strong id="settings-bahnpreis" style="color:var(--accent2)">0,00 €</strong>
+    </div>
+
+    <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahnpreis speichern</button>
+  </div>
+</div> 
+        
     </div>
   </main>
 </div>
@@ -3120,7 +3132,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.3.0.0';
+const APPVersionSelf = '1.0.2.10';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
