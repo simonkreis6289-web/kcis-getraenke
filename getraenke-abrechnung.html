@@ -2177,6 +2177,20 @@ tbody td:first-child {
   align-items: center;
   gap: 10px;
 }
+    
+.team-stopwatch-placeholder {
+  display: none;
+}
+
+.team-stopwatch-global.is-fixed {
+  position: fixed;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  width: auto;
+  z-index: 1000;
+  margin: 0;
+}
 
 .team-stopwatch-time {
   font-family: 'DM Sans', sans-serif;
@@ -2792,6 +2806,8 @@ tbody td:first-child {
         </div>
       </div>
     </div>
+      
+      <div id="team-stopwatch-placeholder" class="team-stopwatch-placeholder"></div>
       
     <!-- ORGANISATION -->
     <div id="main-organisation" class="main-panel">
@@ -4698,6 +4714,7 @@ function updateTeamStopwatchDisplay() {
     showToast('⏰ Tannenbaum-Countdown abgelaufen', 'success');
     persistState();
   }
+    updateCountdownFixedPosition();
 }
 
 function toggleTeamStopwatchActive() {
@@ -6482,6 +6499,44 @@ window.addEventListener('offline', () => {
   showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
 });
 
+function updateCountdownFixedPosition() {
+  const box = document.getElementById('team-stopwatch-global');
+  const placeholder = document.getElementById('team-stopwatch-placeholder');
+
+  if (!box || !placeholder || box.classList.contains('hidden')) {
+    if (box) box.classList.remove('is-fixed');
+    if (placeholder) {
+      placeholder.style.display = 'none';
+      placeholder.style.height = '0px';
+    }
+    return;
+  }
+
+  const boxHeight = box.offsetHeight;
+  const boxTop = placeholder.dataset.originalTop
+    ? Number(placeholder.dataset.originalTop)
+    : box.getBoundingClientRect().top + window.scrollY;
+
+  placeholder.dataset.originalTop = String(boxTop);
+
+  if (window.scrollY >= boxTop) {
+    placeholder.style.display = 'block';
+    placeholder.style.height = boxHeight + 'px';
+    box.classList.add('is-fixed');
+  } else {
+    placeholder.style.display = 'none';
+    placeholder.style.height = '0px';
+    box.classList.remove('is-fixed');
+  }
+}
+
+window.addEventListener('scroll', updateCountdownFixedPosition);
+window.addEventListener('resize', () => {
+  const placeholder = document.getElementById('team-stopwatch-placeholder');
+  if (placeholder) delete placeholder.dataset.originalTop;
+  updateCountdownFixedPosition();
+});                                 
+                                 
 updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 bahnTimerInterval = setInterval(updateBahnDisplay, 1000);
