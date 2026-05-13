@@ -3432,7 +3432,7 @@ tbody td:first-child {
        
 <script>
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '1.8.02.10';
+const APPVersionSelf = '1.5.20.00';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -3520,8 +3520,6 @@ const TANNENBAUM_BASE = {
   8: 2,
   9: 1
 };
-    
-let dartsState = createDartsState();
 
 const DARTS_DEFAULT_VALUES = {
   1: 1,
@@ -3535,7 +3533,8 @@ const DARTS_DEFAULT_VALUES = {
   9: 25,
   kranz: 50
 };
-
+    
+let dartsState = createDartsState();
 let dartsThrowTeam = null;
 
 let tannenbaumState = createTannenbaumState();
@@ -7244,19 +7243,20 @@ function addPerson(isGuest) {
   const drinks = {};
   DRINKS.forEach(d => drinks[d.key] = 0);
 
-  persons.push({
-    name,
-    isGuest: !!isGuest,
-    present: true,
-    tisch: '',
-    drinks,
-    paid: 0,
-    teamExtra: 0,
-    roundExtra: 0,
-    rounds: [],
-    left: false,
-    leftAt: ''
-  });
+    persons.push({
+      name,
+      isGuest: !!isGuest,
+      present: true,
+      tisch: '',
+      drinks,
+      strafen: Object.fromEntries(STRAFEN.map(s => [s.key, 0])),
+      paid: 0,
+      teamExtra: 0,
+      roundExtra: 0,
+      rounds: [],
+      left: false,
+      leftAt: ''
+    });
 
   input.value = '';
   renderAll();
