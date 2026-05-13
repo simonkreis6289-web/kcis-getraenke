@@ -4389,9 +4389,12 @@ function getAvatarHtml(name) {
           this.dataset.tryIndex = String(next);
           this.src = files[next];
         } else {
-          this.remove();
-          var fb = this.parentNode.querySelector('.person-avatar-fallback');
-          if(fb) fb.style.display='flex';
+            var parent = this.parentElement;
+            this.remove();
+            if (parent) {
+              var fb = parent.querySelector('.person-avatar-fallback');
+              if (fb) fb.style.display = 'flex';
+            }
         }
       "
     >
@@ -4460,9 +4463,12 @@ function getClubAvatarHtml(name) {
             this.dataset.tryIndex = String(next);
             this.src = files[next];
           } else {
+            var parent = this.parentElement;
             this.remove();
-            var fb = this.parentNode.querySelector('.club-avatar-fallback');
-            if(fb) fb.style.display='flex';
+            if (parent) {
+              var fb = parent.querySelector('.club-avatar-fallback');
+              if (fb) fb.style.display = 'flex';
+            }
           }
         "
       >
