@@ -3697,7 +3697,8 @@ let teamStopwatchStart = null;
 let teamCountdownDuration = 0;
 let teamCountdownRemainingBefore = 0;
 let teamStopwatchInterval = null;
-    let STRAFEN_LIMIT = 30;
+let STRAFEN_LIMIT = 30;
+const ABSENT_STRAFE_EXTRA = 2;
     
 let tannenbaumThrowTeam = null;
 const TANNENBAUM_DEFAULT_BASE = {
@@ -4462,22 +4463,7 @@ function renderStrafenHistory() {
     return '';
   }).join('');
 }
-    
-const STRAFEN_LIMIT = 30;
-const ABSENT_STRAFE_EXTRA = 2;
-    
-function getPersonTannenbaumTotal(p) {
-  if (!p) return 0;
-
-  const entries = Array.isArray(p.tannenbaumCharges)
-    ? p.tannenbaumCharges
-    : [];
-
-  return entries.reduce((sum, item) => {
-    return sum + (parseFloat(item.amount || 0) || 0);
-  }, 0);
-}
-    
+        
 function calcNormalStrafenRaw(p) {
   if (!p.strafen) p.strafen = {};
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
@@ -5160,7 +5146,7 @@ function startNewKegelabend() {
   teamDrinks = {};
   selectedLoser = null;
   roundDraftDrinks = {};
-
+    strafenHistory = [];
   bahnTimerStart = null;
   bahnTimerRunning = false;
   localStorage.removeItem(getBahnStoppedKey());
@@ -8351,6 +8337,11 @@ function addPerson(isGuest) {
     showToast('Name existiert bereits', 'error');
     return;
   }
+    
+    const personStrafen = {};
+        STRAFEN.forEach(s => {
+          personStrafen[s.key] = 0;
+        });
 
   const drinks = {};
   DRINKS.forEach(d => drinks[d.key] = 0);
@@ -8361,7 +8352,7 @@ persons.push({
   present: true,
   tisch: '',
   drinks,
-  strafen: {},
+    strafen: personStrafen,
   freeStrafen: [],
   tannenbaumCharges: [],
   paid: 0,
