@@ -3005,6 +3005,7 @@ tbody td:first-child {
       <div class="stat"><span class="stat-val" id="stat-bezahlt" style="color:var(--green)">0,00 €</span><span class="stat-label">Bezahlt</span></div>
       <div class="stat"><span class="stat-val" id="stat-ueberschuss" style="color:var(--purple)">0,00 €</span><span class="stat-label">Überschuss</span></div>
       <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Gesamt</span></div>
+      <div class="stat"><span class="stat-val" id="stat-strafen" style="color:var(--accent2)">0,00 €</span><span class="stat-label">Strafen</span></div>
     </div>
 
     <div id="team-stopwatch-global" class="team-stopwatch-global hidden">
@@ -3564,6 +3565,11 @@ tbody td:first-child {
         placeholder="z. B. Deckel vergessen"
       >
     </div>
+      
+      <label class="modal-check">
+          <input type="checkbox" id="free-strafe-ontop-check">
+          <span>On Top</span>
+        </label>
 
     <div class="modal-input-row">
       <label>Betrag (€)</label>
@@ -4180,12 +4186,13 @@ function confirmFreeStrafe() {
 
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
 
-  p.freeStrafen.push({
-    reason,
-    amount,
-    createdAt: new Date().toISOString()
-  });
-
+    p.freeStrafen.push({
+      reason,
+      amount,
+      onTop: !!document.getElementById('free-strafe-ontop-check')?.checked,
+      createdAt: new Date().toISOString()
+    });
+    
   closeFreeStrafeModal();
   renderAll();
   persistState();
@@ -4278,8 +4285,8 @@ function renderStrafen() {
     const tannenbaumTotal = getPersonTannenbaumTotal(p) || 0;
     const freeTotal = calcFreeStrafenTotal(p) || 0;
 
-    const freeDetails = p.freeStrafen
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}`)
+    const freeDetails = (p.freeStrafen || [])
+      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`)
       .join('<br>');
 
     let manualTotal = 0;
@@ -4349,7 +4356,7 @@ function renderStrafen() {
 
     html += `
       <td class="total-cell">
-        ${euros(total)}
+        ${euros(calcPersonStrafenTotalCapped(p))}
       </td>
     `;
 
@@ -4397,6 +4404,63 @@ function renderStrafenHistory() {
   `).join('');
 }
     
+const STRAFEN_LIMIT = 30;
+const ABSENT_STRAFE_EXTRA = 2;
+
+function calcNormalStrafenRaw(p) {
+  if (!p.strafen) p.strafen = {};
+  if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+
+  const counted = STRAFEN.reduce((sum, s) => {
+    return sum + ((p.strafen[s.key] || 0) * (strafPrices[s.key] || 0));
+  }, 0);
+
+  const freeNormal = p.freeStrafen
+    .filter(x => !x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const tannenbaum = getPersonTannenbaumTotal(p) || 0;
+
+  return counted + freeNormal + tannenbaum;
+}
+
+function calcOnTopStrafenTotal(p) {
+  if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+
+  return p.freeStrafen
+    .filter(x => x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+}
+
+function calcPersonStrafenTotalCapped(p) {
+  const normal = Math.min(calcNormalStrafenRaw(p), STRAFEN_LIMIT);
+  const onTop = calcOnTopStrafenTotal(p);
+  return normal + onTop;
+}
+
+function calcHighestPresentStrafenTotal() {
+  const present = persons.filter(p => p.present);
+  if (!present.length) return 0;
+
+  return Math.max(...present.map(p => calcPersonStrafenTotalCapped(p)));
+}
+
+function calcAbsentStrafenTotal() {
+  const highest = calcHighestPresentStrafenTotal();
+  if (highest <= 0) return 0;
+
+  return persons
+    .filter(p => !p.present && !p.isGuest)
+    .reduce((sum) => sum + highest + ABSENT_STRAFE_EXTRA, 0);
+}
+
+function calcAllStrafenTotal() {
+  const presentTotal = persons
+    .filter(p => p.present)
+    .reduce((sum, p) => sum + calcPersonStrafenTotalCapped(p), 0);
+
+  return presentTotal + calcAbsentStrafenTotal();
+}
     
 function renderStrafpreisEditor() {
   const ed = document.getElementById('strafpreise-editor');
@@ -6728,7 +6792,11 @@ function updateStats() {
   const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
   const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
   const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
-
+    const strafenGesamt = calcAllStrafenTotal();
+    const statStrafen = document.getElementById('stat-strafen');
+    
+    if (statStrafen) statStrafen.textContent = euros(strafenGesamt);
+    
   document.getElementById('stat-anwesend').textContent = present.length;
   document.getElementById('stat-t1').textContent = present.filter(p => p.tisch === 'T1').length;
   document.getElementById('stat-t2').textContent = present.filter(p => p.tisch === 'T2').length;
