@@ -4263,9 +4263,12 @@ function changeStrafe(personName, key, delta) {
   if (!p || !p.present || p.left) return;
 
   if (!p.strafen) p.strafen = {};
+
   p.strafen[key] = Math.max(0, (p.strafen[key] || 0) + delta);
 
   renderStrafen();
+  updateStats();
+
   persistState();
 }
 
