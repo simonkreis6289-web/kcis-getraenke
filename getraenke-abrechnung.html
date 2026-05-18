@@ -4194,9 +4194,10 @@ function confirmFreeStrafe() {
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
 
     p.freeStrafen.push({
-      reason,
-      amount,
-      onTop: !!document.getElementById('free-strafe-ontop-check')?.checked,
+      id: 'free_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      reason: reason,
+      amount: amount,
+      onTop: onTop,
       createdAt: new Date().toISOString()
     });
     
@@ -4207,6 +4208,23 @@ function confirmFreeStrafe() {
   showToast(`💸 ${reason}: ${euros(amount)} gebucht`, 'success');
 }
     
+function deleteFreeStrafe(personName, freeId) {
+  const p = persons.find(x => x.name === personName);
+  if (!p || !Array.isArray(p.freeStrafen)) return;
+
+  const item = p.freeStrafen.find(x => x.id === freeId);
+  if (!item) return;
+
+  if (!confirm(`Freien Betrag "${item.reason || 'Ohne Grund'}" wirklich löschen?`)) return;
+
+  p.freeStrafen = p.freeStrafen.filter(x => x.id !== freeId);
+
+  renderAll();
+  persistState();
+
+  showToast('🗑️ Freier Betrag gelöscht', 'success');
+}
+
 function makeStrafeKey(label) {
   const key = label.toLowerCase()
     .normalize('NFD')
@@ -4372,17 +4390,33 @@ function renderStrafen() {
   });
 }
 
-function renderStrafenHistory() {
-  const el = document.getElementById('strafen-history-list');
-  if (!el) return;
+function renderStrafenHistorie() {
+  const list = document.getElementById('strafen-history-list');
+  if (!list) return;
 
   const entries = [];
 
   persons.forEach(p => {
-    (p.strafExtras || []).forEach(extra => {
+    (p.tannenbaumStrafen || []).forEach(item => {
       entries.push({
+        type: 'tannenbaum',
         person: p.name,
-        ...extra
+        amount: item.amount || 0,
+        reason: item.reason || 'Tannenbaum',
+        createdAt: item.createdAt || '',
+        data: item
+      });
+    });
+
+    (p.freeStrafen || []).forEach(item => {
+      entries.push({
+        type: 'free',
+        person: p.name,
+        amount: item.amount || 0,
+        reason: item.reason || 'Freier Betrag',
+        onTop: !!item.onTop,
+        createdAt: item.createdAt || '',
+        id: item.id
       });
     });
   });
@@ -4390,25 +4424,52 @@ function renderStrafenHistory() {
   entries.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   if (!entries.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Strafen-Historie</div>';
+    list.innerHTML = `
+      <div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">
+        Noch keine Straf-Historie vorhanden
+      </div>
+    `;
     return;
   }
 
-  el.innerHTML = entries.map(entry => `
-    <div class="spiel-card">
-      <div class="spiel-info">
-        <div class="spiel-verlierer ${entry.type === 'tannenbaum' ? 'round' : ''}">
-          ${entry.type === 'tannenbaum' ? '🌲 Tannenbaum abgeschlossen' : '💸 Freier Betrag'}
+  list.innerHTML = entries.map(entry => {
+    if (entry.type === 'free') {
+      return `
+        <div class="spiel-card">
+          <div class="spiel-info">
+            <div class="spiel-verlierer round">💸 Freier Betrag für ${entry.person}</div>
+            <div class="spiel-detail"><strong>${entry.reason}</strong></div>
+            <div class="spiel-detail">
+              ${entry.onTop ? 'On Top, ohne 30€ Deckelung' : 'Normaler Strafbetrag'}
+            </div>
+            <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+          </div>
+
+          <div>
+            <div class="spiel-betrag">${euros(entry.amount)}</div>
+          </div>
+
+          <button class="del-spiel-btn" onclick="deleteFreeStrafe('${escapeForJs(entry.person)}','${escapeForJs(entry.id)}')">
+            ✕
+          </button>
         </div>
-        <div class="spiel-detail"><strong>${entry.person}</strong></div>
-        <div class="spiel-detail">${entry.reason || 'Ohne Grund'}</div>
-        <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+      `;
+    }
+
+    return `
+      <div class="spiel-card">
+        <div class="spiel-info">
+          <div class="spiel-verlierer t1">🌲 Tannenbaum für ${entry.person}</div>
+          <div class="spiel-detail"><strong>${entry.reason}</strong></div>
+          <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+        </div>
+
+        <div>
+          <div class="spiel-betrag">${euros(entry.amount)}</div>
+        </div>
       </div>
-      <div class="spiel-betrag">
-        +${(entry.amount || 0).toFixed(2).replace('.', ',')}€
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
     
 const STRAFEN_LIMIT = 30;
@@ -6797,7 +6858,7 @@ function renderAll() {
   renderSpieleKatalog();
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
-    renderStrafenHistory();
+    renderStrafenHistorie();
     renderDarts();
     renderTannenbaumSettings();
     renderDartsSettings();
