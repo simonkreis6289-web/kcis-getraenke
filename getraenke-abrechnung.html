@@ -3413,8 +3413,28 @@ tbody td:first-child {
 
     <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahnpreis speichern</button>
   </div>
-    
-            
+    <div class="section-title">Strafen</div>
+
+    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+      <div class="modal-input-row" style="margin-bottom:0;">
+        <label>Strafen-Deckelung (€)</label>
+        <input
+          type="number"
+          step="0.50"
+          min="0"
+          id="strafen-limit-input"
+          class="modal-euro-input"
+          placeholder="30.00"
+          onchange="saveStrafenLimit()"
+          oninput="previewStrafenLimit()"
+        >
+      </div>
+
+      <button class="save-prices-btn" onclick="saveStrafenLimit()">
+        💾 Strafen-Deckelung speichern
+      </button>
+    </div>
+                
     <div class="section-title">Tannenbaum Einstellungen</div>
 
     <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -3677,6 +3697,7 @@ let teamStopwatchStart = null;
 let teamCountdownDuration = 0;
 let teamCountdownRemainingBefore = 0;
 let teamStopwatchInterval = null;
+    let STRAFEN_LIMIT = 30;
     
 let tannenbaumThrowTeam = null;
 const TANNENBAUM_DEFAULT_BASE = {
@@ -3880,6 +3901,7 @@ function getSerializableState() {
     teamCountdownDuration,
     teamCountdownRemainingBefore,
       STRAFEN,
+      STRAFEN_LIMIT,
     strafPrices,
     lastLocalChangeAt
   };
@@ -3925,6 +3947,7 @@ function getFirestoreState() {
       tannenbaumHardRule,
       dartsState,
       STRAFEN,
+      STRAFEN_LIMIT,
       strafPrices,
       strafenHistory,
 
@@ -3945,7 +3968,7 @@ function applyLoadedState(state) {
   RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
   selectedLoser = state.selectedLoser || null;
   teamDrinks = state.teamDrinks || {};
-
+    STRAFEN_LIMIT = parseFloat(state.STRAFEN_LIMIT || 30) || 30;
   bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
   bahnTimerStart = state.bahnTimerStart || null;
   bahnTimerRunning = !!state.bahnTimerRunning;
@@ -5274,6 +5297,7 @@ function createEmptyClubData() {
       TANNENBAUM_BASE: { ...TANNENBAUM_DEFAULT_BASE },
       tannenbaumHardRule: true,
       dartsState: createDartsState(),
+    STRAFEN_LIMIT: 30,
       strafenHistory: [],
       lastLocalChangeAt: 0
   };
@@ -5310,6 +5334,7 @@ function syncCurrentClubToStore() {
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState)),
       TANNENBAUM_BASE: JSON.parse(JSON.stringify(TANNENBAUM_BASE)),
       tannenbaumHardRule,
+    STRAFEN_LIMIT,
       dartsState: JSON.parse(JSON.stringify(dartsState))
   };
 }
@@ -5463,7 +5488,7 @@ async function selectClub(clubName) {
   bahnPreisProStunde = parseFloat(localClub.bahnPreisProStunde || 0) || 0;
   bahnTimerStart = localClub.bahnTimerStart || null;
   bahnTimerRunning = !!localClub.bahnTimerRunning;
-
+    STRAFEN_LIMIT = parseFloat(localClub.STRAFEN_LIMIT || 30) || 30;
   teamStopwatchActive = !!localClub.teamStopwatchActive;
   teamStopwatchRunning = !!localClub.teamStopwatchRunning;
   teamStopwatchStart = localClub.teamStopwatchStart || null;
@@ -7145,7 +7170,31 @@ function renderDartsHistory() {
   }).join('');
 }
     
+function saveStrafenLimit() {
+  const input = document.getElementById('strafen-limit-input');
+  STRAFEN_LIMIT = parseFloat(String(input?.value || '30').replace(',', '.')) || 30;
 
+  renderAll();
+  persistState();
+
+  showToast('✅ Strafen-Deckelung gespeichert', 'success');
+}
+
+function previewStrafenLimit() {
+  const input = document.getElementById('strafen-limit-input');
+  STRAFEN_LIMIT = parseFloat(String(input?.value || '30').replace(',', '.')) || 30;
+
+  updateStats();
+  renderStrafen();
+}
+                                    
+function updateStrafenLimitInput() {
+  const input = document.getElementById('strafen-limit-input');
+  if (!input || document.activeElement === input) return;
+
+  input.value = (STRAFEN_LIMIT || 30).toFixed(2);
+}
+                                    
 // ── RENDER ──
 function renderAll() {
   recalcTeamExtras();
@@ -7174,6 +7223,8 @@ function renderAll() {
   renderDartsSettings();
   renderStrafen();
   renderStrafpreisEditor();
+                                    
+  updateStrafenLimitInput();
 }
 
 function updateStats() {
