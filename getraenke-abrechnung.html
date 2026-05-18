@@ -6635,8 +6635,14 @@ function renderDarts() {
   const t1RoundTotal = getDartsRoundTotal('T1');
   const t2RoundTotal = getDartsRoundTotal('T2');
 
-  const t1LiveRest = Math.max(0, (dartsState.scores.T1 || 0) - t1RoundTotal);
-  const t2LiveRest = Math.max(0, (dartsState.scores.T2 || 0) - t2RoundTotal);
+    let t1LiveRest = dartsState.scores.T1 || 0;
+    let t2LiveRest = dartsState.scores.T2 || 0;
+
+    if (t1RoundTotal > t2RoundTotal) {
+      t1LiveRest = Math.max(0, t1LiveRest - t1RoundTotal);
+    } else if (t2RoundTotal > t1RoundTotal) {
+      t2LiveRest = Math.max(0, t2LiveRest - t2RoundTotal);
+    }
 
   if (scoreT1) scoreT1.textContent = dartsState.scores.T1;
   if (scoreT2) scoreT2.textContent = dartsState.scores.T2;
