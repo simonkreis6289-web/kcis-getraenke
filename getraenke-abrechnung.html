@@ -3711,6 +3711,8 @@ let dartsThrowTeam = null;
 
 let tannenbaumState = createTannenbaumState();
 
+let strafenHistory = [];
+
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
   const input = document.getElementById('club-avatar-upload');
@@ -3870,6 +3872,7 @@ function getSerializableState() {
     TANNENBAUM_BASE,
     tannenbaumHardRule,
     dartsState,
+      strafenHistory,
     bahnTimerStart,
     bahnTimerRunning,
     teamStopwatchActive,
@@ -3908,7 +3911,6 @@ function getFirestoreState() {
     RUNDEN_GRUENDE,
     selectedLoser,
     teamDrinks,
-
     bahnPreisProStunde,
     bahnTimerStart,
     bahnTimerRunning,
@@ -3925,6 +3927,7 @@ function getFirestoreState() {
       dartsState,
       STRAFEN,
       strafPrices,
+      strafenHistory,
 
     updatedFrom: 'app',
     updatedClientAt: lastLocalChangeAt,
@@ -3955,6 +3958,7 @@ function applyLoadedState(state) {
   teamStopwatchStart = state.teamStopwatchStart || null;
   teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
   teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;    
+  strafenHistory = Array.isArray(state.strafenHistory) ? state.strafenHistory : [];
     
     STRAFEN = Array.isArray(state.STRAFEN) && state.STRAFEN.length ? state.STRAFEN : STRAFEN;
     strafPrices = state.strafPrices || {};
@@ -4394,85 +4398,46 @@ function renderStrafen() {
   });
 }
 
-function renderStrafenHistorie() {
-  const list = document.getElementById('strafen-history-list');
-  if (!list) return;
+function renderStrafenHistory() {
+  const el = document.getElementById('strafen-history-list');
+  if (!el) return;
 
-  const entries = [];
-
-  persons.forEach(p => {
-    (p.tannenbaumStrafen || []).forEach(item => {
-      entries.push({
-        type: 'tannenbaum',
-        person: p.name,
-        amount: item.amount || 0,
-        reason: item.reason || 'Tannenbaum',
-        createdAt: item.createdAt || '',
-        data: item
-      });
-    });
-
-    (p.freeStrafen || []).forEach(item => {
-      entries.push({
-        type: 'free',
-        person: p.name,
-        amount: item.amount || 0,
-        reason: item.reason || 'Freier Betrag',
-        onTop: !!item.onTop,
-        createdAt: item.createdAt || '',
-        id: item.id
-      });
-    });
-  });
-
-  entries.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-  if (!entries.length) {
-    list.innerHTML = `
-      <div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">
-        Noch keine Straf-Historie vorhanden
-      </div>
-    `;
+  if (!Array.isArray(strafenHistory) || !strafenHistory.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Straf-Historie vorhanden</div>';
     return;
   }
 
-  list.innerHTML = entries.map(entry => {
-    if (entry.type === 'free') {
+  el.innerHTML = strafenHistory.map(entry => {
+    if (entry.type === 'tannenbaum') {
+      const assigned = (entry.assignedTo || [])
+        .map(x => `${x.name} (${x.team === 'T1' ? 'Wand' : 'TV'}): ${euros(x.amount)}`)
+        .join('<br>');
+
+      const openT1 = (entry.openNumbers?.T1 || [])
+        .map(x => `${x.count}× ${x.number} = ${euros(x.amount)}`)
+        .join('<br>') || '—';
+
+      const openT2 = (entry.openNumbers?.T2 || [])
+        .map(x => `${x.count}× ${x.number} = ${euros(x.amount)}`)
+        .join('<br>') || '—';
+
       return `
         <div class="spiel-card">
           <div class="spiel-info">
-            <div class="spiel-verlierer round">💸 Freier Betrag für ${entry.person}</div>
-            <div class="spiel-detail"><strong>${entry.reason}</strong></div>
-            <div class="spiel-detail">
-              ${entry.onTop ? 'On Top, ohne 30€ Deckelung' : 'Normaler Strafbetrag'}
-            </div>
-            <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+            <div class="spiel-verlierer round">🌲 Tannenbaum abgeschlossen</div>
+            <div class="spiel-detail">${formatDateTime(entry.createdAt)}</div>
+            <div class="spiel-detail"><strong>Wand:</strong> ${euros(entry.totals?.T1 || 0)}</div>
+            <div class="spiel-detail"><strong>TV:</strong> ${euros(entry.totals?.T2 || 0)}</div>
+            <div class="spiel-detail"><strong>Offene Zahlen Wand:</strong><br>${openT1}</div>
+            <div class="spiel-detail"><strong>Offene Zahlen TV:</strong><br>${openT2}</div>
+            <div class="spiel-detail"><strong>Zugeordnet:</strong><br>${assigned || '—'}</div>
           </div>
-
-          <div>
-            <div class="spiel-betrag">${euros(entry.amount)}</div>
-          </div>
-
-          <button class="del-spiel-btn" onclick="deleteFreeStrafe('${escapeForJs(entry.person)}','${escapeForJs(entry.id)}')">
-            ✕
-          </button>
+          <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
         </div>
       `;
     }
 
-    return `
-      <div class="spiel-card">
-        <div class="spiel-info">
-          <div class="spiel-verlierer t1">🌲 Tannenbaum für ${entry.person}</div>
-          <div class="spiel-detail"><strong>${entry.reason}</strong></div>
-          <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
-        </div>
-
-        <div>
-          <div class="spiel-betrag">${euros(entry.amount)}</div>
-        </div>
-      </div>
-    `;
+    return '';
   }).join('');
 }
     
@@ -4564,6 +4529,30 @@ function renderStrafpreisEditor() {
     `;
     ed.appendChild(c);
   });
+}
+    
+function deleteStrafenHistoryEntry(id) {
+  const entry = strafenHistory.find(x => x.id === id);
+  if (!entry) return;
+
+  if (!confirm('Diesen Historien-Eintrag wirklich löschen?')) return;
+
+  persons.forEach(p => {
+    if (Array.isArray(p.tannenbaumCharges)) {
+      p.tannenbaumCharges = p.tannenbaumCharges.filter(x => x.id !== id);
+    }
+
+    if (Array.isArray(p.freeStrafen)) {
+      p.freeStrafen = p.freeStrafen.filter(x => x.id !== id);
+    }
+  });
+
+  strafenHistory = strafenHistory.filter(x => x.id !== id);
+
+  renderAll();
+  persistState();
+
+  showToast('🗑️ Historie gelöscht', 'success');
 }
 
 function saveStrafPrices() {
@@ -5068,6 +5057,7 @@ function createEmptyClubData() {
       TANNENBAUM_BASE: { ...TANNENBAUM_DEFAULT_BASE },
       tannenbaumHardRule: true,
       dartsState: createDartsState(),
+      strafenHistory: [],
       lastLocalChangeAt: 0
   };
 }
@@ -5099,6 +5089,7 @@ function syncCurrentClubToStore() {
     teamCountdownRemainingBefore,
       STRAFEN: JSON.parse(JSON.stringify(STRAFEN)),
       strafPrices: JSON.parse(JSON.stringify(strafPrices)),
+      strafenHistory: JSON.parse(JSON.stringify(strafenHistory)),
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState)),
       TANNENBAUM_BASE: JSON.parse(JSON.stringify(TANNENBAUM_BASE)),
       tannenbaumHardRule,
@@ -5263,6 +5254,7 @@ async function selectClub(clubName) {
     tannenbaumHardRule = localClub.tannenbaumHardRule !== undefined ? !!localClub.tannenbaumHardRule : true;
   tannenbaumState = JSON.parse(JSON.stringify(localClub.tannenbaumState || createTannenbaumState()));
   ensureTannenbaumState();
+ strafenHistory = JSON.parse(JSON.stringify(localClub.strafenHistory || []));
     
     dartsState = JSON.parse(JSON.stringify(localClub.dartsState || createDartsState()));
     ensureDartsState();
@@ -6119,32 +6111,88 @@ function handleTannenbaumThrow(number) {
 function finishTannenbaumGame() {
   ensureTannenbaumState();
 
-  const t1Total = getTannenbaumTeamTotal('T1');
-  const t2Total = getTannenbaumTeamTotal('T2');
+  if (!confirm('Tannenbaum wirklich abschließen und den Personen zuordnen?')) return;
 
-  if (t1Total <= 0 && t2Total <= 0) {
-    showToast('Kein Tannenbaum-Betrag vorhanden', 'error');
-    return;
-  }
+  const teamTotals = {
+    T1: getTannenbaumTeamTotal('T1'),
+    T2: getTannenbaumTeamTotal('T2')
+  };
 
-  const ok = confirm(
-    `Tannenbaum abschließen?\n\n` +
-    `⚫ Wand: ${euros(t1Total)}\n` +
-    `🔴 TV: ${euros(t2Total)}\n\n` +
-    `Die Beträge werden auf die aktiven Personen der jeweiligen Teams verteilt.`
-  );
+  const openT1 = getTannenbaumOpenNumbersTotal('T1');
+  const openT2 = getTannenbaumOpenNumbersTotal('T2');
 
-  if (!ok) return;
+  teamTotals.T1 += openT1.total;
+  teamTotals.T2 += openT2.total;
 
-  bookTannenbaumTeamCharge('T1', t1Total);
-  bookTannenbaumTeamCharge('T2', t2Total);
+  const membersT1 = persons.filter(p => p.present && !p.left && p.tisch === 'T1');
+  const membersT2 = persons.filter(p => p.present && !p.left && p.tisch === 'T2');
+
+  const historyEntry = {
+    id: 'tannenbaum_' + Date.now(),
+    type: 'tannenbaum',
+    createdAt: new Date().toISOString(),
+    totals: {
+      T1: teamTotals.T1,
+      T2: teamTotals.T2
+    },
+    openNumbers: {
+      T1: openT1.details,
+      T2: openT2.details
+    },
+    strikes: {
+      T1: JSON.parse(JSON.stringify(tannenbaumState.teams.T1.strikes || [])),
+      T2: JSON.parse(JSON.stringify(tannenbaumState.teams.T2.strikes || []))
+    },
+    bonus: {
+      T1: tannenbaumState.teams.T1.bonus || 0,
+      T2: tannenbaumState.teams.T2.bonus || 0
+    },
+    assignedTo: []
+  };
+
+  membersT1.forEach(p => {
+    if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
+
+    p.tannenbaumCharges.push({
+      id: historyEntry.id,
+      amount: teamTotals.T1,
+      reason: 'Tannenbaum',
+      createdAt: historyEntry.createdAt
+    });
+
+    historyEntry.assignedTo.push({
+      name: p.name,
+      team: 'T1',
+      amount: teamTotals.T1
+    });
+  });
+
+  membersT2.forEach(p => {
+    if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
+
+    p.tannenbaumCharges.push({
+      id: historyEntry.id,
+      amount: teamTotals.T2,
+      reason: 'Tannenbaum',
+      createdAt: historyEntry.createdAt
+    });
+
+    historyEntry.assignedTo.push({
+      name: p.name,
+      team: 'T2',
+      amount: teamTotals.T2
+    });
+  });
+
+  if (!Array.isArray(strafenHistory)) strafenHistory = [];
+  strafenHistory.unshift(historyEntry);
 
   tannenbaumState = createTannenbaumState();
 
   renderAll();
   persistState();
 
-  showToast('✅ Tannenbaum-Strafen gebucht', 'success');
+  showToast('🌲 Tannenbaum abgeschlossen und zugeordnet', 'success');
 }
 
 function bookTannenbaumTeamCharge(team, total) {
@@ -6172,6 +6220,36 @@ function bookTannenbaumTeamCharge(team, total) {
       createdAt: new Date().toISOString()
     });
   });
+}
+
+function getTannenbaumOpenNumbersTotal(team) {
+  ensureTannenbaumState();
+
+  const data = tannenbaumState.teams[team];
+  let total = 0;
+  const details = [];
+
+  Object.keys(TANNENBAUM_BASE).forEach(n => {
+    const openCount = parseInt(data.remaining[n] || 0, 10) || 0;
+    if (openCount <= 0) return;
+
+    const amount = Number(n) * 0.10 * openCount;
+    total += amount;
+
+    details.push({
+      number: Number(n),
+      count: openCount,
+      amount
+    });
+  });
+
+  return { total, details };
+}
+
+function getPersonTannenbaumTotal(p) {
+  return (p.tannenbaumCharges || []).reduce((sum, item) => {
+    return sum + (parseFloat(item.amount || 0) || 0);
+  }, 0);
 }
     
 function renderTannenbaum() {
@@ -6869,6 +6947,7 @@ function renderAll() {
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
     renderStrafenHistorie();
+    renderStrafenHistory();
     renderDarts();
     renderTannenbaumSettings();
     renderDartsSettings();
