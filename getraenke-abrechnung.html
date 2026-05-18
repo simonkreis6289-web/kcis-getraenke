@@ -3166,7 +3166,8 @@ tbody td:first-child {
         <div class="section-title">Strafen Übersicht</div>
           
             <div class="getraenke-toolbar">
-              <button class="add-btn" onclick="openKranzModal()" style="margin-bottom:14px;"   >🎯 9er/Kranz geworfen</button>
+                <button class="add-btn" onclick="openKranzModal()" style="margin-bottom:14px;"   >🎯 9er/Kranz geworfen</button>
+                <button class="add-btn" onclick="openFreeStrafeModal()" style="margin-bottom:14px;"> 💸 Freie Beträge</button>
             </div>
 
              <div class="drinks-table-wrap">
@@ -3206,6 +3207,9 @@ tbody td:first-child {
               <div id="tannenbaum-board"></div>
 
               <div style="margin-top:14px;">
+                <button class="save-prices-btn" onclick="finishTannenbaumGame()">
+                  ✅ Tannenbaum abschließen
+                </button>
                 <button class="save-prices-btn" onclick="resetTannenbaumGame()">
                   ↻ Tannenbaum neu starten
                 </button>
@@ -3337,47 +3341,7 @@ tbody td:first-child {
         </div>
       </div>
         
-    <div class="section-title">Tannenbaum Einstellungen</div>
-
-    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-      <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
-        Lege fest, wie oft jede Zahl pro Team gestrichen werden muss.
-      </div>
-
-      <div class="tannenbaum-settings-grid" id="tannenbaum-settings-grid"></div>
-
-      <label class="modal-check" style="margin-bottom:0;">
-        <input type="checkbox" id="tannenbaum-hard-rule-check" onchange="saveTannenbaumSettings()">
-        <span>Harte Regel aktiv: Wenn beide Teams eine Zahl weg haben, wird sie beim nächsten Treffer wieder aufgeschrieben.</span>
-      </label>
-
-      <button class="save-prices-btn" onclick="saveTannenbaumSettings()">
-        💾 Tannenbaum speichern
-      </button>
-
-      <button class="modal-cancel" onclick="resetTannenbaumSettings()" style="width:100%;">
-        ↻ Standardwerte wiederherstellen
-      </button>
-    </div>
-        
-    <div class="section-title">Darts Einstellungen</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-          <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
-            Lege fest, wie viele Punkte jeder Treffer zählt.
-          </div>
-
-          <div class="darts-settings-grid" id="darts-settings-grid"></div>
-
-          <button class="save-prices-btn" onclick="saveDartsSettings()">
-            💾 Darts-Wertung speichern
-          </button>
-
-          <button class="modal-cancel" onclick="resetDartsSettings()" style="width:100%;">
-            ↻ Standardwertung wiederherstellen
-          </button>
-        </div>
-        
-     <div id="tab-einstellungen" class="hidden">
+<div id="tab-einstellungen" class="hidden">
   <div class="section-title">Countdown</div>
 
   <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -3434,6 +3398,48 @@ tbody td:first-child {
 
     <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahnpreis speichern</button>
   </div>
+    
+            
+    <div class="section-title">Tannenbaum Einstellungen</div>
+
+    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+      <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
+        Lege fest, wie oft jede Zahl pro Team gestrichen werden muss.
+      </div>
+
+      <div class="tannenbaum-settings-grid" id="tannenbaum-settings-grid"></div>
+
+      <label class="modal-check" style="margin-bottom:0;">
+        <input type="checkbox" id="tannenbaum-hard-rule-check" onchange="saveTannenbaumSettings()">
+        <span>Harte Regel aktiv: Wenn beide Teams eine Zahl weg haben, wird sie beim nächsten Treffer wieder aufgeschrieben.</span>
+      </label>
+
+      <button class="save-prices-btn" onclick="saveTannenbaumSettings()">
+        💾 Tannenbaum speichern
+      </button>
+
+      <button class="modal-cancel" onclick="resetTannenbaumSettings()" style="width:100%;">
+        ↻ Standardwerte wiederherstellen
+      </button>
+    </div>
+        
+    <div class="section-title">Darts Einstellungen</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
+            Lege fest, wie viele Punkte jeder Treffer zählt.
+          </div>
+
+          <div class="darts-settings-grid" id="darts-settings-grid"></div>
+
+          <button class="save-prices-btn" onclick="saveDartsSettings()">
+            💾 Darts-Wertung speichern
+          </button>
+
+          <button class="modal-cancel" onclick="resetDartsSettings()" style="width:100%;">
+            ↻ Standardwertung wiederherstellen
+          </button>
+        </div>
+    
 </div> 
         
     </div>
@@ -3530,6 +3536,45 @@ tbody td:first-child {
 
     <div class="modal-btns" style="margin-top:14px;">
       <button class="modal-cancel" onclick="closeDartsThrowModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+    
+<div class="modal-overlay hidden" id="free-strafe-modal">
+  <div class="modal" style="max-width:520px;">
+    <h3>Freie Beträge</h3>
+    <div class="modal-sub">Freien Strafbetrag einer anwesenden Person zuordnen</div>
+
+    <div class="modal-input-row">
+      <label>Person</label>
+      <select id="free-strafe-person-select" class="modal-select"></select>
+    </div>
+
+    <div class="modal-input-row">
+      <label>Grund</label>
+      <input
+        type="text"
+        id="free-strafe-reason"
+        class="modal-text-input"
+        placeholder="z. B. Deckel vergessen"
+      >
+    </div>
+
+    <div class="modal-input-row">
+      <label>Betrag (€)</label>
+      <input
+        type="number"
+        step="0.10"
+        min="0"
+        id="free-strafe-amount"
+        class="modal-euro-input"
+        placeholder="0.00"
+      >
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeFreeStrafeModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmFreeStrafe()">+ Betrag buchen</button>
     </div>
   </div>
 </div>
@@ -3976,7 +4021,8 @@ function hydrateState() {
     STRAFEN.forEach(s => {
       if (p.strafen[s.key] === undefined) p.strafen[s.key] = 0;
     });
-
+    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+    if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
     p.present = !!p.present;
     p.isGuest = !!p.isGuest;
     p.tisch = normalizeTisch(p.tisch);
@@ -4071,6 +4117,77 @@ function confirmKranzThrow(winnerName) {
   showToast(`🎯 ${winnerName} bekommt nichts, alle anderen +1`, 'success');
 }
     
+function openFreeStrafeModal() {
+  const select = document.getElementById('free-strafe-person-select');
+  const reason = document.getElementById('free-strafe-reason');
+  const amount = document.getElementById('free-strafe-amount');
+
+  if (!select) return;
+
+  const presentPeople = persons
+    .filter(p => p.present && !p.left)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+  presentPeople.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+
+  if (reason) reason.value = '';
+  if (amount) amount.value = '';
+
+  document.getElementById('free-strafe-modal').classList.remove('hidden');
+}
+
+function closeFreeStrafeModal() {
+  document.getElementById('free-strafe-modal').classList.add('hidden');
+}
+
+function confirmFreeStrafe() {
+  const personName = document.getElementById('free-strafe-person-select')?.value || '';
+  const reason = (document.getElementById('free-strafe-reason')?.value || '').trim();
+  const amount = parseFloat(String(document.getElementById('free-strafe-amount')?.value || '0').replace(',', '.')) || 0;
+
+  if (!personName) {
+    showToast('Bitte Person auswählen', 'error');
+    return;
+  }
+
+  if (!reason) {
+    showToast('Bitte Grund eintragen', 'error');
+    return;
+  }
+
+  if (amount <= 0) {
+    showToast('Bitte Betrag eintragen', 'error');
+    return;
+  }
+
+  const p = persons.find(x => x.name === personName);
+  if (!p) {
+    showToast('Person nicht gefunden', 'error');
+    return;
+  }
+
+  if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+
+  p.freeStrafen.push({
+    reason,
+    amount,
+    createdAt: new Date().toISOString()
+  });
+
+  closeFreeStrafeModal();
+  renderAll();
+  persistState();
+
+  showToast(`💸 ${reason}: ${euros(amount)} gebucht`, 'success');
+}
+    
 function makeStrafeKey(label) {
   const key = label.toLowerCase()
     .normalize('NFD')
@@ -4081,11 +4198,26 @@ function makeStrafeKey(label) {
   return key || ('strafe_' + Date.now());
 }
 
+function calcFreeStrafenTotal(p) {
+  return (p.freeStrafen || []).reduce((sum, item) => {
+    return sum + (parseFloat(item.amount || 0) || 0);
+  }, 0);
+}
+
+function calcTannenbaumChargesTotal(p) {
+  return (p.tannenbaumCharges || []).reduce((sum, item) => {
+    return sum + (parseFloat(item.amount || 0) || 0);
+  }, 0);
+}
+
 function calcStrafenTotal(p) {
   if (!p.strafen) p.strafen = {};
-  return STRAFEN.reduce((sum, s) => {
+
+  const normalTotal = STRAFEN.reduce((sum, s) => {
     return sum + ((p.strafen[s.key] || 0) * (strafPrices[s.key] || 0));
   }, 0);
+
+  return normalTotal + calcFreeStrafenTotal(p) + calcTannenbaumChargesTotal(p);
 }
 
 function changeStrafe(personName, key, delta) {
@@ -4106,7 +4238,9 @@ function renderStrafen() {
 
   let headerHtml = '<th class="sticky-col name-col">Name</th>';
   headerHtml += STRAFEN.map(s => `<th class="drink-col">${s.label}</th>`).join('');
-  headerHtml += '<th class="sum-col">Gesamt</th>';
+  headerHtml += '<th class="drink-col">Tannenbaum</th>';
+    headerHtml += '<th class="drink-col">Freie Beträge</th>';
+    headerHtml += '<th class="sum-col">Gesamt</th>';
   header.innerHTML = headerHtml;
 
   const present = persons
@@ -4116,7 +4250,7 @@ function renderStrafen() {
       return a.name.localeCompare(b.name, 'de');
     });
 
-  const totalCols = 1 + STRAFEN.length + 1;
+  const totalCols = 1 + STRAFEN.length + 3;
   body.innerHTML = '';
 
   if (!present.length) {
@@ -4158,12 +4292,33 @@ function renderStrafen() {
         </td>
       `;
     });
+      
+      const tannenbaumTotal = calcTannenbaumChargesTotal(p);
+        const freeTotal = calcFreeStrafenTotal(p);
 
-    html += `
-      <td class="total-cell">
-        ${calcStrafenTotal(p).toFixed(2).replace('.', ',')}€
-      </td>
-    `;
+        const tannenbaumDetails = (p.tannenbaumCharges || [])
+          .map(item => `${item.reason || 'Tannenbaum'}: +${euros(item.amount)}`)
+          .join('<br>');
+
+        const freeDetails = (p.freeStrafen || [])
+          .map(item => `${item.reason}: +${euros(item.amount)}`)
+          .join('<br>');
+
+        html += `
+          <td class="total-cell">
+            ${tannenbaumTotal > 0 ? `+${euros(tannenbaumTotal)}<div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">${tannenbaumDetails}</div>` : '—'}
+          </td>
+
+          <td class="total-cell">
+            ${freeTotal > 0 ? `+${euros(freeTotal)}<div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">${freeDetails}</div>` : '—'}
+          </td>
+        `;
+
+html += `
+  <td class="total-cell">
+    ${calcStrafenTotal(p).toFixed(2).replace('.', ',')}€
+  </td>
+`;
 
     tr.innerHTML = html;
     body.appendChild(tr);
@@ -4536,6 +4691,8 @@ function startNewKegelabend() {
     p.teamExtra = 0;
     p.roundExtra = 0;
     p.rounds = [];
+      p.freeStrafen = [];
+      p.tannenbaumCharges = [];
 
     if (!p.drinks) p.drinks = {};
     DRINKS.forEach(d => {
@@ -5738,6 +5895,64 @@ function handleTannenbaumThrow(number) {
   showToast(action, 'success');
 }
 
+function finishTannenbaumGame() {
+  ensureTannenbaumState();
+
+  const t1Total = getTannenbaumTeamTotal('T1');
+  const t2Total = getTannenbaumTeamTotal('T2');
+
+  if (t1Total <= 0 && t2Total <= 0) {
+    showToast('Kein Tannenbaum-Betrag vorhanden', 'error');
+    return;
+  }
+
+  const ok = confirm(
+    `Tannenbaum abschließen?\n\n` +
+    `⚫ Wand: ${euros(t1Total)}\n` +
+    `🔴 TV: ${euros(t2Total)}\n\n` +
+    `Die Beträge werden auf die aktiven Personen der jeweiligen Teams verteilt.`
+  );
+
+  if (!ok) return;
+
+  bookTannenbaumTeamCharge('T1', t1Total);
+  bookTannenbaumTeamCharge('T2', t2Total);
+
+  tannenbaumState = createTannenbaumState();
+
+  renderAll();
+  persistState();
+
+  showToast('✅ Tannenbaum-Strafen gebucht', 'success');
+}
+
+function bookTannenbaumTeamCharge(team, total) {
+  if (total <= 0) return;
+
+  const members = persons.filter(p =>
+    p.present &&
+    !p.left &&
+    p.tisch === team
+  );
+
+  if (!members.length) return;
+
+  const amountPerPerson = total / members.length;
+
+  members.forEach(p => {
+    if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
+
+    p.tannenbaumCharges.push({
+      reason: 'Tannenbaum',
+      team,
+      amount: amountPerPerson,
+      total,
+      members: members.map(m => m.name),
+      createdAt: new Date().toISOString()
+    });
+  });
+}
+    
 function renderTannenbaum() {
   ensureTannenbaumState();
 
@@ -7557,20 +7772,22 @@ function addPerson(isGuest) {
   const drinks = {};
   DRINKS.forEach(d => drinks[d.key] = 0);
 
-    persons.push({
-      name,
-      isGuest: !!isGuest,
-      present: true,
-      tisch: '',
-      drinks,
-      strafen: Object.fromEntries(STRAFEN.map(s => [s.key, 0])),
-      paid: 0,
-      teamExtra: 0,
-      roundExtra: 0,
-      rounds: [],
-      left: false,
-      leftAt: ''
-    });
+persons.push({
+  name,
+  isGuest: !!isGuest,
+  present: true,
+  tisch: '',
+  drinks,
+  strafen: {},
+  freeStrafen: [],
+  tannenbaumCharges: [],
+  paid: 0,
+  teamExtra: 0,
+  roundExtra: 0,
+  rounds: [],
+  left: false,
+  leftAt: ''
+});
 
   input.value = '';
   renderAll();
