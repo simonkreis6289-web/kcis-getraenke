@@ -4169,7 +4169,8 @@ function confirmFreeStrafe() {
   const personName = document.getElementById('free-strafe-person-select')?.value || '';
   const reason = (document.getElementById('free-strafe-reason')?.value || '').trim();
   const amount = parseFloat(String(document.getElementById('free-strafe-amount')?.value || '0').replace(',', '.')) || 0;
-
+  const onTop = document.getElementById('free-strafe-ontop').checked;
+  
   if (!personName) {
     showToast('Bitte Person auswählen', 'error');
     return;
