@@ -2979,10 +2979,11 @@ tbody td:first-child {
     </div>
 
   <!-- Untertabs Strafen -->
-  <div class="sub-tabs hidden" id="subtabs-strafen">
-    <div class="sub-tab active" data-sub="strafen-uebersicht" onclick="showSubTab('strafen','strafen-uebersicht',this)">Übersicht</div>
-    <div class="sub-tab" data-sub="strafen-abrechnung" onclick="showSubTab('strafen','strafen-abrechnung',this)">Abrechnung</div>
-  </div>
+    <div class="sub-tabs hidden" id="subtabs-strafen">
+      <div class="sub-tab active" data-sub="strafen-uebersicht" onclick="showSubTab('strafen','strafen-uebersicht',this)">Übersicht</div>
+      <div class="sub-tab" data-sub="strafen-historie" onclick="showSubTab('strafen','strafen-historie',this)">Historie</div>
+      <div class="sub-tab" data-sub="strafen-abrechnung" onclick="showSubTab('strafen','strafen-abrechnung',this)">Abrechnung</div>
+    </div>
 
   <!-- Untertabs Verwaltung -->
   <div class="sub-tabs hidden" id="subtabs-verwaltung">
@@ -3179,6 +3180,11 @@ tbody td:first-child {
           </table>
         </div>
       </div>
+        
+        <div id="tab-strafen-historie" class="hidden">
+          <div class="section-title">Strafen Historie</div>
+          <div class="spiele-list" id="strafen-history-list"></div>
+        </div>
         
       <div id="tab-strafen-abrechnung" class="hidden">
         <div class="section-title">Strafen Abrechnung</div>
@@ -3438,8 +3444,7 @@ tbody td:first-child {
           <button class="modal-cancel" onclick="resetDartsSettings()" style="width:100%;">
             ↻ Standardwertung wiederherstellen
           </button>
-        </div>
-    
+        </div> 
 </div> 
         
     </div>
@@ -4238,9 +4243,8 @@ function renderStrafen() {
 
   let headerHtml = '<th class="sticky-col name-col">Name</th>';
   headerHtml += STRAFEN.map(s => `<th class="drink-col">${s.label}</th>`).join('');
-  headerHtml += '<th class="drink-col">Tannenbaum</th>';
-    headerHtml += '<th class="drink-col">Freie Beträge</th>';
-    headerHtml += '<th class="sum-col">Gesamt</th>';
+  headerHtml += '<th class="drink-col">Freie Beträge</th>';
+  headerHtml += '<th class="sum-col">Gesamt</th>';
   header.innerHTML = headerHtml;
 
   const present = persons
@@ -4250,7 +4254,7 @@ function renderStrafen() {
       return a.name.localeCompare(b.name, 'de');
     });
 
-  const totalCols = 1 + STRAFEN.length + 3;
+  const totalCols = 1 + STRAFEN.length + 2;
   body.innerHTML = '';
 
   if (!present.length) {
@@ -4260,9 +4264,21 @@ function renderStrafen() {
 
   present.forEach((p, rowIndex) => {
     if (!p.strafen) p.strafen = {};
+    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+    if (!Array.isArray(p.strafExtras)) p.strafExtras = [];
 
     const tr = document.createElement('tr');
     tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
+
+    const tannenbaumTotal = getPersonTannenbaumTotal(p);
+
+    const tannenbaumHtml = tannenbaumTotal > 0
+      ? `
+        <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+          🌲 Tannenbaum +${tannenbaumTotal.toFixed(2).replace('.', ',')}€
+        </div>
+      `
+      : '';
 
     let html = `
       <td class="sticky-col">
@@ -4273,6 +4289,7 @@ function renderStrafen() {
               <span class="pname">${p.name}</span>
               ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
               <span class="ptisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</span>
+              ${tannenbaumHtml}
             </div>
           </div>
         </div>
@@ -4292,39 +4309,74 @@ function renderStrafen() {
         </td>
       `;
     });
-      
-      const tannenbaumTotal = calcTannenbaumChargesTotal(p);
-        const freeTotal = calcFreeStrafenTotal(p);
 
-        const tannenbaumDetails = (p.tannenbaumCharges || [])
-          .map(item => `${item.reason || 'Tannenbaum'}: +${euros(item.amount)}`)
-          .join('<br>');
+    const freeTotal = calcFreeStrafenTotal(p);
+    const freeDetails = p.freeStrafen
+      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}`)
+      .join('<br>');
 
-        const freeDetails = (p.freeStrafen || [])
-          .map(item => `${item.reason}: +${euros(item.amount)}`)
-          .join('<br>');
+    html += `
+      <td class="total-cell">
+        ${freeTotal > 0 ? `
+          +${euros(freeTotal)}
+          <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
+            ${freeDetails}
+          </div>
+        ` : '—'}
+      </td>
+    `;
 
-        html += `
-          <td class="total-cell">
-            ${tannenbaumTotal > 0 ? `+${euros(tannenbaumTotal)}<div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">${tannenbaumDetails}</div>` : '—'}
-          </td>
-
-          <td class="total-cell">
-            ${freeTotal > 0 ? `+${euros(freeTotal)}<div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">${freeDetails}</div>` : '—'}
-          </td>
-        `;
-
-html += `
-  <td class="total-cell">
-    ${calcStrafenTotal(p).toFixed(2).replace('.', ',')}€
-  </td>
-`;
+    html += `
+      <td class="total-cell">
+        ${calcStrafenTotal(p).toFixed(2).replace('.', ',')}€
+      </td>
+    `;
 
     tr.innerHTML = html;
     body.appendChild(tr);
   });
 }
 
+function renderStrafenHistory() {
+  const el = document.getElementById('strafen-history-list');
+  if (!el) return;
+
+  const entries = [];
+
+  persons.forEach(p => {
+    (p.strafExtras || []).forEach(extra => {
+      entries.push({
+        person: p.name,
+        ...extra
+      });
+    });
+  });
+
+  entries.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+  if (!entries.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Strafen-Historie</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(entry => `
+    <div class="spiel-card">
+      <div class="spiel-info">
+        <div class="spiel-verlierer ${entry.type === 'tannenbaum' ? 'round' : ''}">
+          ${entry.type === 'tannenbaum' ? '🌲 Tannenbaum abgeschlossen' : '💸 Freier Betrag'}
+        </div>
+        <div class="spiel-detail"><strong>${entry.person}</strong></div>
+        <div class="spiel-detail">${entry.reason || 'Ohne Grund'}</div>
+        <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+      </div>
+      <div class="spiel-betrag">
+        +${(entry.amount || 0).toFixed(2).replace('.', ',')}€
+      </div>
+    </div>
+  `).join('');
+}
+    
+    
 function renderStrafpreisEditor() {
   const ed = document.getElementById('strafpreise-editor');
   if (!ed) return;
@@ -6641,6 +6693,7 @@ function renderAll() {
   renderSpieleKatalog();
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
+    renderStrafenHistory();
     renderDarts();
     renderTannenbaumSettings();
     renderDartsSettings();
@@ -7817,7 +7870,7 @@ function deletePerson(name) {
     organisation: ['anwesenheit', 'gruppen'],
     getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
     spiele: ['tannenbaum','darts'],
-    strafen: ['strafen-uebersicht', 'strafen-abrechnung'],
+    strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-abrechnung'],
     verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
   };
 
