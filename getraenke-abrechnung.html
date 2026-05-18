@@ -4406,7 +4406,19 @@ function renderStrafenHistory() {
     
 const STRAFEN_LIMIT = 30;
 const ABSENT_STRAFE_EXTRA = 2;
+    
+function getPersonTannenbaumTotal(p) {
+  if (!p) return 0;
 
+  const entries = Array.isArray(p.tannenbaumCharges)
+    ? p.tannenbaumCharges
+    : [];
+
+  return entries.reduce((sum, item) => {
+    return sum + (parseFloat(item.amount || 0) || 0);
+  }, 0);
+}
+    
 function calcNormalStrafenRaw(p) {
   if (!p.strafen) p.strafen = {};
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
