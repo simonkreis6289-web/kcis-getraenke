@@ -3827,7 +3827,6 @@ async function startApp() {
 
   renderClubList();
   updateVersionInfo();
-  appReady = true;
 
   const clubsLoaded = await loadClubListFromFirestore();
   if (clubsLoaded) {
@@ -3854,6 +3853,8 @@ async function startApp() {
   if (clubsLoaded) {
     showToast('☁️ Clubs aus Firestore geladen', 'success');
   }
+    
+    appReady = true;
 }
 
 // ── LOCAL STORAGE ──
@@ -5098,7 +5099,9 @@ function syncCurrentClubToStore() {
 }
 
 function saveClubSystem() {
-  syncCurrentClubToStore();
+  if (appReady && ACTIVE_CLUB && CLUBS[ACTIVE_CLUB]) {
+    syncCurrentClubToStore();
+  }
 
   const payload = {
     activeClub: ACTIVE_CLUB,
