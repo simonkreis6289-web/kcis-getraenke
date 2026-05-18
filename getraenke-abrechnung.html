@@ -2949,6 +2949,7 @@ tbody td:first-child {
       <div class="header-btns">
         <button class="back-btn hidden" onclick="goToClubSelection()" id="clubBackBtn">↩ Clubs</button>
         <button class="archive-btn" onclick="closeDrinksAndExportPDF()">🍺 Getränke abschließen</button>
+        <button class="archive-btn" onclick="closeStrafenAndExportPDF()">🚨 Strafen abschließen</button>
         <button class="archive-btn" onclick="startNewKegelabend()">🆕 Neuer Kegelabend</button>
         <button class="round-btn" onclick="toggleBahnTimer()" id="bahnTimerBtn">▶ Bahn starten</button>
         <button class="sync-btn" onclick="manualSaveAll()" id="saveBtn">💾 Speichern</button>
@@ -4677,6 +4678,225 @@ function getDrinksSnapshot() {
       members: Array.isArray(s.members) ? [...s.members] : []
     }))
   };
+}
+
+function getStrafenSnapshot() {
+  const presentPersons = persons
+    .filter(p => p.present)
+    .sort((a, b) => {
+      if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+      return a.name.localeCompare(b.name, 'de');
+    });
+
+  const absentMembers = persons
+    .filter(p => !p.present && !p.isGuest)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  return {
+    date: new Date().toISOString(),
+    strafen: STRAFEN.map(s => ({
+      key: s.key,
+      label: s.label,
+      price: strafPrices[s.key] || 0
+    })),
+    presentPersons: presentPersons.map(p => ({
+      name: p.name,
+      isGuest: !!p.isGuest,
+      tisch: p.tisch || '',
+      strafen: { ...(p.strafen || {}) },
+      freeStrafen: Array.isArray(p.freeStrafen) ? [...p.freeStrafen] : [],
+      tannenbaumCharges: Array.isArray(p.tannenbaumCharges) ? [...p.tannenbaumCharges] : [],
+      normalRaw: calcNormalStrafenRaw(p),
+      onTop: calcOnTopStrafenTotal(p),
+      total: calcPersonStrafenTotalCapped(p)
+    })),
+    absentMembers: absentMembers.map(p => ({
+      name: p.name,
+      total: calcHighestPresentStrafenTotal() + ABSENT_STRAFE_EXTRA
+    })),
+    highestPresent: calcHighestPresentStrafenTotal(),
+    absentExtra: ABSENT_STRAFE_EXTRA,
+    total: calcAllStrafenTotal(),
+    history: Array.isArray(strafenHistory) ? [...strafenHistory] : []
+  };
+}
+
+async function generateStrafenPDF(snapshot) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape" });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 12;
+  let y = 15;
+
+  const formatEuro = (v) => (v || 0).toFixed(2).replace('.', ',') + ' €';
+
+  const ensurePageSpace = (needed = 10) => {
+    if (y + needed > pageHeight - 12) {
+      doc.addPage();
+      y = 15;
+    }
+  };
+
+  doc.setFontSize(18);
+  doc.text("KC IS – Strafabrechnung", margin, y);
+
+  y += 8;
+  doc.setFontSize(10);
+  doc.text(new Date(snapshot.date).toLocaleString('de-DE'), margin, y);
+
+  y += 10;
+
+  doc.setFontSize(9);
+
+  let x = margin;
+  const nameWidth = 45;
+  const strafWidth = 26;
+  const extraWidth = 32;
+  const totalWidth = 28;
+
+  doc.text("Name", x, y);
+  x += nameWidth;
+
+  snapshot.strafen.forEach(s => {
+    doc.text(s.label, x, y, { maxWidth: strafWidth });
+    x += strafWidth;
+  });
+
+  doc.text("Frei", x, y); x += extraWidth;
+  doc.text("Tannenbaum", x, y); x += extraWidth;
+  doc.text("On Top", x, y); x += extraWidth;
+  doc.text("Gesamt", x, y);
+
+  y += 4;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
+
+  snapshot.presentPersons.forEach(p => {
+    ensurePageSpace(8);
+
+    let rowX = margin;
+
+    doc.text(p.name, rowX, y);
+    rowX += nameWidth;
+
+    snapshot.strafen.forEach(s => {
+      doc.text(String((p.strafen && p.strafen[s.key]) || 0), rowX, y);
+      rowX += strafWidth;
+    });
+
+    const freeNormal = (p.freeStrafen || [])
+      .filter(f => !f.onTop)
+      .reduce((sum, f) => sum + (parseFloat(f.amount || 0) || 0), 0);
+
+    const tannenbaum = (p.tannenbaumCharges || [])
+      .reduce((sum, t) => sum + (parseFloat(t.amount || 0) || 0), 0);
+
+    doc.text(formatEuro(freeNormal), rowX, y); rowX += extraWidth;
+    doc.text(formatEuro(tannenbaum), rowX, y); rowX += extraWidth;
+    doc.text(formatEuro(p.onTop), rowX, y); rowX += extraWidth;
+    doc.text(formatEuro(p.total), rowX, y);
+
+    y += 7;
+  });
+
+  if (snapshot.absentMembers.length) {
+    y += 6;
+    ensurePageSpace(16);
+
+    doc.setFontSize(13);
+    doc.text("Nicht anwesende Mitglieder", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    snapshot.absentMembers.forEach(p => {
+      ensurePageSpace(7);
+      doc.text(`${p.name}: ${formatEuro(p.total)}`, margin, y);
+      y += 6;
+    });
+  }
+
+  y += 6;
+  ensurePageSpace(20);
+
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  doc.setFontSize(12);
+  doc.text(`Höchste Strafe Anwesende: ${formatEuro(snapshot.highestPresent)}`, margin, y);
+  y += 6;
+  doc.text(`Nicht anwesend Zuschlag: +${formatEuro(snapshot.absentExtra)}`, margin, y);
+  y += 6;
+  doc.text(`Strafen gesamt: ${formatEuro(snapshot.total)}`, margin, y);
+
+  if (snapshot.history.length) {
+    y += 10;
+    ensurePageSpace(20);
+
+    doc.setFontSize(13);
+    doc.text("Historie", margin, y);
+    y += 7;
+
+    doc.setFontSize(9);
+
+    snapshot.history.forEach((entry, idx) => {
+      ensurePageSpace(16);
+
+      if (entry.type === 'tannenbaum') {
+        doc.text(`${idx + 1}. Tannenbaum abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
+        y += 5;
+        doc.text(`Wand: ${formatEuro(entry.totals?.T1 || 0)} | TV: ${formatEuro(entry.totals?.T2 || 0)}`, margin + 6, y);
+        y += 5;
+
+        const assigned = (entry.assignedTo || [])
+          .map(a => `${a.name}: ${formatEuro(a.amount)}`)
+          .join(', ');
+
+        doc.text(`Zugeordnet: ${assigned || '—'}`, margin + 6, y, {
+          maxWidth: pageWidth - margin * 2 - 6
+        });
+
+        y += 7;
+      }
+    });
+  }
+
+  return doc;
+}
+
+async function closeStrafenAndExportPDF() {
+  try {
+    const snapshot = getStrafenSnapshot();
+    const doc = await generateStrafenPDF(snapshot);
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `KCIS_Strafenabrechnung_${dateStr}.pdf`;
+
+    doc.save(filename);
+
+    await archiveStrafenEvent(snapshot);
+
+    showToast('✅ Straf-PDF erstellt und archiviert', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Fehler beim Strafabschluss', 'error');
+  }
+}
+
+async function archiveStrafenEvent(snapshot) {
+  if (!window.firestoreApi || !ACTIVE_CLUB) return;
+
+  const clubId = getClubFirestoreId(ACTIVE_CLUB);
+  const archiveId = 'strafen_' + new Date().toISOString().replace(/[:.]/g, '-');
+
+  await window.firestoreApi.archiveClubEvent(clubId, archiveId, {
+    ...snapshot,
+    status: 'closed',
+    closedAt: new Date().toISOString(),
+    club: ACTIVE_CLUB,
+    category: 'strafen'
+  });
 }
     
 async function generateDrinksPDF(snapshot) {
