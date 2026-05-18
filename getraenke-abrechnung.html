@@ -2645,6 +2645,39 @@ tbody td:first-child {
   gap: 14px;
   margin-bottom: 14px;
 }
+      
+.tannenbaum-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 10px;
+}
+
+.tannenbaum-setting-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.tannenbaum-setting-card label {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tannenbaum-setting-card input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-weight: 900;
+  font-size: 1rem;
+  text-align: center;
+}
 
 .darts-score-card {
   border: 2px solid var(--border);
@@ -2722,6 +2755,39 @@ tbody td:first-child {
   .darts-score-grid {
     grid-template-columns: 1fr;
   }
+}
+    
+.darts-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+  gap: 10px;
+}
+
+.darts-setting-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.darts-setting-card label {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.darts-setting-card input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-weight: 900;
+  font-size: 1rem;
+  text-align: center;
 }
       
 </style>
@@ -3270,7 +3336,47 @@ tbody td:first-child {
           Hier kommt später die Terminverwaltung rein.
         </div>
       </div>
+        
+    <div class="section-title">Tannenbaum Einstellungen</div>
 
+    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+      <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
+        Lege fest, wie oft jede Zahl pro Team gestrichen werden muss.
+      </div>
+
+      <div class="tannenbaum-settings-grid" id="tannenbaum-settings-grid"></div>
+
+      <label class="modal-check" style="margin-bottom:0;">
+        <input type="checkbox" id="tannenbaum-hard-rule-check" onchange="saveTannenbaumSettings()">
+        <span>Harte Regel aktiv: Wenn beide Teams eine Zahl weg haben, wird sie beim nächsten Treffer wieder aufgeschrieben.</span>
+      </label>
+
+      <button class="save-prices-btn" onclick="saveTannenbaumSettings()">
+        💾 Tannenbaum speichern
+      </button>
+
+      <button class="modal-cancel" onclick="resetTannenbaumSettings()" style="width:100%;">
+        ↻ Standardwerte wiederherstellen
+      </button>
+    </div>
+        
+    <div class="section-title">Darts Einstellungen</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
+            Lege fest, wie viele Punkte jeder Treffer zählt.
+          </div>
+
+          <div class="darts-settings-grid" id="darts-settings-grid"></div>
+
+          <button class="save-prices-btn" onclick="saveDartsSettings()">
+            💾 Darts-Wertung speichern
+          </button>
+
+          <button class="modal-cancel" onclick="resetDartsSettings()" style="width:100%;">
+            ↻ Standardwertung wiederherstellen
+          </button>
+        </div>
+        
      <div id="tab-einstellungen" class="hidden">
   <div class="section-title">Countdown</div>
 
@@ -3509,7 +3615,7 @@ let teamCountdownRemainingBefore = 0;
 let teamStopwatchInterval = null;
     
 let tannenbaumThrowTeam = null;
-const TANNENBAUM_BASE = {
+const TANNENBAUM_DEFAULT_BASE = {
   1: 1,
   2: 2,
   3: 3,
@@ -3520,6 +3626,9 @@ const TANNENBAUM_BASE = {
   8: 2,
   9: 1
 };
+
+let TANNENBAUM_BASE = { ...TANNENBAUM_DEFAULT_BASE };
+let tannenbaumHardRule = true;
 
 const DARTS_DEFAULT_VALUES = {
   1: 1,
@@ -3695,6 +3804,9 @@ function getSerializableState() {
     teamDrinks,
     bahnPreisProStunde,
     tannenbaumState,
+    TANNENBAUM_BASE,
+    tannenbaumHardRule,
+    dartsState,
     bahnTimerStart,
     bahnTimerRunning,
     teamStopwatchActive,
@@ -3704,7 +3816,6 @@ function getSerializableState() {
     teamCountdownRemainingBefore,
       STRAFEN,
     strafPrices,
-      dartsState,
     lastLocalChangeAt
   };
 }
@@ -3746,6 +3857,8 @@ function getFirestoreState() {
     teamCountdownRemainingBefore,
 
     tannenbaumState,
+      TANNENBAUM_BASE,
+      tannenbaumHardRule,
       dartsState,
       STRAFEN,
       strafPrices,
@@ -3782,6 +3895,9 @@ function applyLoadedState(state) {
     
     STRAFEN = Array.isArray(state.STRAFEN) && state.STRAFEN.length ? state.STRAFEN : STRAFEN;
     strafPrices = state.strafPrices || {};
+    
+    TANNENBAUM_BASE = state.TANNENBAUM_BASE || { ...TANNENBAUM_DEFAULT_BASE };
+    tannenbaumHardRule = state.tannenbaumHardRule !== undefined ? !!state.tannenbaumHardRule : true;
     
   tannenbaumState = state.tannenbaumState || createTannenbaumState();
   ensureTannenbaumState();
@@ -4571,6 +4687,8 @@ function createEmptyClubData() {
         teamCountdownDuration: 0,
         teamCountdownRemainingBefore: 0,
       tannenbaumState: createTannenbaumState(),
+      TANNENBAUM_BASE: { ...TANNENBAUM_DEFAULT_BASE },
+      tannenbaumHardRule: true,
       dartsState: createDartsState(),
       lastLocalChangeAt: 0
   };
@@ -4604,6 +4722,8 @@ function syncCurrentClubToStore() {
       STRAFEN: JSON.parse(JSON.stringify(STRAFEN)),
       strafPrices: JSON.parse(JSON.stringify(strafPrices)),
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState)),
+      TANNENBAUM_BASE: JSON.parse(JSON.stringify(TANNENBAUM_BASE)),
+      tannenbaumHardRule,
       dartsState: JSON.parse(JSON.stringify(dartsState))
   };
 }
@@ -4761,7 +4881,8 @@ async function selectClub(clubName) {
   teamStopwatchStart = localClub.teamStopwatchStart || null;
   teamCountdownDuration = parseInt(localClub.teamCountdownDuration || 0, 10) || 0;
   teamCountdownRemainingBefore = parseInt(localClub.teamCountdownRemainingBefore || 0, 10) || 0;
-
+    TANNENBAUM_BASE = JSON.parse(JSON.stringify(localClub.TANNENBAUM_BASE || TANNENBAUM_DEFAULT_BASE));
+    tannenbaumHardRule = localClub.tannenbaumHardRule !== undefined ? !!localClub.tannenbaumHardRule : true;
   tannenbaumState = JSON.parse(JSON.stringify(localClub.tannenbaumState || createTannenbaumState()));
   ensureTannenbaumState();
     
@@ -5589,10 +5710,14 @@ function handleTannenbaumThrow(number) {
     });
 
     action = `${getTeamLabel(otherTeam)} bekommt Strich: +${amount.toFixed(2).replace('.', ',')} €`;
-  } else {
-    own.remaining[n] = (own.remaining[n] || 0) + 1;
-    action = `${getTeamLabel(team)} bekommt ${number} wieder zurück`;
-  }
+    } else {
+      if (tannenbaumHardRule) {
+        own.remaining[n] = (own.remaining[n] || 0) + 1;
+        action = `${getTeamLabel(team)} bekommt ${number} wieder zurück`;
+      } else {
+        action = `${number} ist bei beiden Teams weg. Keine Änderung.`;
+      }
+    }
 
   if (isTannenbaumTeamEmpty(team) && !own.finished) {
     own.finished = true;
@@ -5808,6 +5933,68 @@ function resetTannenbaumGame() {
     history: []
   };
 }
+    
+function renderTannenbaumSettings() {
+  const grid = document.getElementById('tannenbaum-settings-grid');
+  const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
+
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  for (let n = 1; n <= 9; n++) {
+    const card = document.createElement('div');
+    card.className = 'tannenbaum-setting-card';
+    card.innerHTML = `
+      <label>Zahl ${n}</label>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        id="tannenbaum-count-${n}"
+        value="${TANNENBAUM_BASE[n] || 0}"
+        onchange="saveTannenbaumSettings()"
+      >
+    `;
+    grid.appendChild(card);
+  }
+
+  if (hardCheck) {
+    hardCheck.checked = !!tannenbaumHardRule;
+  }
+}
+
+function saveTannenbaumSettings() {
+  for (let n = 1; n <= 9; n++) {
+    const input = document.getElementById('tannenbaum-count-' + n);
+    if (input) {
+      TANNENBAUM_BASE[n] = Math.max(0, parseInt(input.value || '0', 10) || 0);
+    }
+  }
+
+  const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
+  tannenbaumHardRule = !!hardCheck?.checked;
+
+  tannenbaumState = createTannenbaumState();
+
+  renderAll();
+  persistState();
+
+  showToast('🌲 Tannenbaum-Einstellungen gespeichert', 'success');
+}
+
+function resetTannenbaumSettings() {
+  if (!confirm('Tannenbaum-Einstellungen auf Standard zurücksetzen? Das aktuelle Tannenbaum-Spiel wird neu gestartet.')) return;
+
+  TANNENBAUM_BASE = { ...TANNENBAUM_DEFAULT_BASE };
+  tannenbaumHardRule = true;
+  tannenbaumState = createTannenbaumState();
+
+  renderAll();
+  persistState();
+
+  showToast('↻ Tannenbaum-Standardwerte wiederhergestellt', 'success');
+}
 
 function ensureDartsState() {
   if (!dartsState) dartsState = createDartsState();
@@ -6010,10 +6197,35 @@ function renderDarts() {
   const roundT2 = document.getElementById('darts-round-t2');
   const buffer = document.getElementById('darts-buffer-display');
 
-  if (scoreT1) scoreT1.textContent = dartsState.scores.T1;
-  if (scoreT2) scoreT2.textContent = dartsState.scores.T2;
+    const projectedScores = getDartsLiveProjectedScores();
+
+    if (scoreT1) {
+      scoreT1.textContent = projectedScores.T1;
+
+      if (projectedScores.leader === 'T1') {
+        scoreT1.innerHTML = `${projectedScores.T1}<div style="font-size:0.75rem;font-family:'DM Sans';font-weight:800;color:var(--green);">Live-Rest</div>`;
+      }
+    }
+
+    if (scoreT2) {
+      scoreT2.textContent = projectedScores.T2;
+
+      if (projectedScores.leader === 'T2') {
+        scoreT2.innerHTML = `${projectedScores.T2}<div style="font-size:0.75rem;font-family:'DM Sans';font-weight:800;color:var(--green);">Live-Rest</div>`;
+      }
+    }
+    
   if (roundT1) roundT1.textContent = `Runde: ${getDartsRoundTotal('T1')}`;
   if (roundT2) roundT2.textContent = `Runde: ${getDartsRoundTotal('T2')}`;
+    
+    if (projectedScores.leader === 'T1' && roundT1) {
+          roundT1.textContent = `Runde: ${getDartsRoundTotal('T1')} · Live -${projectedScores.subtractPoints}`;
+        }
+
+        if (projectedScores.leader === 'T2' && roundT2) {
+          roundT2.textContent = `Runde: ${getDartsRoundTotal('T2')} · Live -${projectedScores.subtractPoints}`;
+        }
+    
     if (buffer) {
       if (dartsState.winner) {
         buffer.style.display = 'block';
@@ -6028,6 +6240,100 @@ function renderDarts() {
 
   renderDartsRoundList();
   renderDartsHistory();
+}
+    
+function getDartsLiveProjectedScores() {
+  ensureDartsState();
+
+  const t1Round = getDartsRoundTotal('T1');
+  const t2Round = getDartsRoundTotal('T2');
+
+  const projected = {
+    T1: dartsState.scores.T1,
+    T2: dartsState.scores.T2,
+    leader: null,
+    subtractPoints: 0
+  };
+
+  if (t1Round === t2Round) {
+    return projected;
+  }
+
+  const leader = t1Round > t2Round ? 'T1' : 'T2';
+  const subtractPoints = t1Round + t2Round + (dartsState.buffer || 0);
+
+  projected.leader = leader;
+  projected.subtractPoints = subtractPoints;
+  projected[leader] = Math.max(0, dartsState.scores[leader] - subtractPoints);
+
+  return projected;
+}
+    
+function renderDartsSettings() {
+  ensureDartsState();
+
+  const grid = document.getElementById('darts-settings-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  const entries = [
+    ['1', 'Wurf 1'],
+    ['2', 'Wurf 2'],
+    ['3', 'Wurf 3'],
+    ['4', 'Wurf 4'],
+    ['5', 'Wurf 5'],
+    ['6', 'Wurf 6'],
+    ['7', 'Wurf 7'],
+    ['8', 'Wurf 8'],
+    ['9', 'Wurf 9'],
+    ['kranz', 'Kranz']
+  ];
+
+  entries.forEach(([key, label]) => {
+    const card = document.createElement('div');
+    card.className = 'darts-setting-card';
+    card.innerHTML = `
+      <label>${label}</label>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        id="darts-value-${key}"
+        value="${dartsState.valueMap[key] ?? DARTS_DEFAULT_VALUES[key] ?? 0}"
+        onchange="saveDartsSettings()"
+      >
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function saveDartsSettings() {
+  ensureDartsState();
+
+  Object.keys(DARTS_DEFAULT_VALUES).forEach(key => {
+    const input = document.getElementById('darts-value-' + key);
+    if (input) {
+      dartsState.valueMap[key] = Math.max(0, parseInt(input.value || '0', 10) || 0);
+    }
+  });
+
+  renderDarts();
+  persistState();
+
+  showToast('🎯 Darts-Wertung gespeichert', 'success');
+}
+
+function resetDartsSettings() {
+  if (!confirm('Darts-Wertung auf Standard zurücksetzen?')) return;
+
+  ensureDartsState();
+  dartsState.valueMap = { ...DARTS_DEFAULT_VALUES };
+
+  renderAll();
+  persistState();
+
+  showToast('↻ Darts-Standardwertung wiederhergestellt', 'success');
 }
 
 function renderDartsRoundList() {
@@ -6121,6 +6427,8 @@ function renderAll() {
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
     renderDarts();
+    renderTannenbaumSettings();
+    renderDartsSettings();
     renderStrafen();
     renderStrafpreisEditor();
 }
