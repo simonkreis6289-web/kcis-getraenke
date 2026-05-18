@@ -4258,27 +4258,36 @@ function renderStrafen() {
   body.innerHTML = '';
 
   if (!present.length) {
-    body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+    body.innerHTML = `
+      <tr>
+        <td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">
+          Niemand anwesend
+        </td>
+      </tr>
+    `;
     return;
   }
 
   present.forEach((p, rowIndex) => {
     if (!p.strafen) p.strafen = {};
-    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
-    if (!Array.isArray(p.strafExtras)) p.strafExtras = [];
+    if (!p.freeStrafen) p.freeStrafen = [];
 
     const tr = document.createElement('tr');
     tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
 
-    const tannenbaumTotal = getPersonTannenbaumTotal(p);
+    const tannenbaumTotal = getPersonTannenbaumTotal(p) || 0;
+    const freeTotal = calcFreeStrafenTotal(p) || 0;
 
-    const tannenbaumHtml = tannenbaumTotal > 0
-      ? `
-        <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
-          🌲 Tannenbaum +${tannenbaumTotal.toFixed(2).replace('.', ',')}€
-        </div>
-      `
-      : '';
+    const freeDetails = p.freeStrafen
+      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}`)
+      .join('<br>');
+
+    let manualTotal = 0;
+    STRAFEN.forEach(s => {
+      manualTotal += (p.strafen[s.key] || 0) * (s.price || 0);
+    });
+
+    const total = manualTotal + freeTotal + tannenbaumTotal;
 
     let html = `
       <td class="sticky-col">
@@ -4288,8 +4297,19 @@ function renderStrafen() {
             <div style="min-width:0;">
               <span class="pname">${p.name}</span>
               ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
-              <span class="ptisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</span>
-              ${tannenbaumHtml}
+              <span class="ptisch">
+                ${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}
+              </span>
+
+              ${
+                tannenbaumTotal > 0
+                  ? `
+                    <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+                      🌲 Tannenbaum +${tannenbaumTotal.toFixed(2).replace('.', ',')}€
+                    </div>
+                  `
+                  : ''
+              }
             </div>
           </div>
         </div>
@@ -4302,33 +4322,34 @@ function renderStrafen() {
       html += `
         <td>
           <div class="counter">
-            <button type="button" class="counter-btn minus" onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)">−</button>
+            <button type="button" class="counter-btn minus"
+              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)">−</button>
             <span class="counter-val">${v}</span>
-            <button type="button" class="counter-btn plus" onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)">+</button>
+            <button type="button" class="counter-btn plus"
+              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)">+</button>
           </div>
         </td>
       `;
     });
 
-    const freeTotal = calcFreeStrafenTotal(p);
-    const freeDetails = p.freeStrafen
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}`)
-      .join('<br>');
-
     html += `
       <td class="total-cell">
-        ${freeTotal > 0 ? `
-          +${euros(freeTotal)}
-          <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
-            ${freeDetails}
-          </div>
-        ` : '—'}
+        ${
+          freeTotal > 0
+            ? `
+              +${euros(freeTotal)}
+              <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
+                ${freeDetails}
+              </div>
+            `
+            : '—'
+        }
       </td>
     `;
 
     html += `
       <td class="total-cell">
-        ${calcStrafenTotal(p).toFixed(2).replace('.', ',')}€
+        ${euros(total)}
       </td>
     `;
 
