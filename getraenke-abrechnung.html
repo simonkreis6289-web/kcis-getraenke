@@ -2790,6 +2790,13 @@ tbody td:first-child {
   text-align: center;
 }
       
+.darts-live-rest {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: var(--accent2);
+}
+      
 </style>
     
 </head>
@@ -6552,7 +6559,10 @@ function renderDarts() {
   }
 
   if (area) {
-    area.classList.toggle('hidden', !dartsState.active && !dartsState.history.length && !dartsState.winner);
+    area.classList.toggle(
+      'hidden',
+      !dartsState.active && !dartsState.history.length && !dartsState.winner
+    );
   }
 
   const scoreT1 = document.getElementById('darts-score-t1');
@@ -6561,46 +6571,43 @@ function renderDarts() {
   const roundT2 = document.getElementById('darts-round-t2');
   const buffer = document.getElementById('darts-buffer-display');
 
-    const projectedScores = getDartsLiveProjectedScores();
+  const t1RoundTotal = getDartsRoundTotal('T1');
+  const t2RoundTotal = getDartsRoundTotal('T2');
 
-    if (scoreT1) {
-      scoreT1.textContent = projectedScores.T1;
+  const t1LiveRest = Math.max(0, (dartsState.scores.T1 || 0) - t1RoundTotal);
+  const t2LiveRest = Math.max(0, (dartsState.scores.T2 || 0) - t2RoundTotal);
 
-      if (projectedScores.leader === 'T1') {
-        scoreT1.innerHTML = `${projectedScores.T1}<div style="font-size:0.75rem;font-family:'DM Sans';font-weight:800;color:var(--green);">Live-Rest</div>`;
-      }
+  if (scoreT1) scoreT1.textContent = dartsState.scores.T1;
+  if (scoreT2) scoreT2.textContent = dartsState.scores.T2;
+
+  if (roundT1) {
+    roundT1.innerHTML = `
+      <div>Runde: ${t1RoundTotal}</div>
+      <div class="darts-live-rest">Live-Rest: ${t1LiveRest}</div>
+    `;
+  }
+
+  if (roundT2) {
+    roundT2.innerHTML = `
+      <div>Runde: ${t2RoundTotal}</div>
+      <div class="darts-live-rest">Live-Rest: ${t2LiveRest}</div>
+    `;
+  }
+
+  if (buffer) {
+    const bufferValue = dartsState.buffer || 0;
+
+    if (dartsState.winner) {
+      buffer.classList.remove('hidden');
+      buffer.textContent = `🏆 Gewinner: ${getTeamLabel(dartsState.winner)}`;
+    } else if (bufferValue > 0) {
+      buffer.classList.remove('hidden');
+      buffer.textContent = `Puffer: ${bufferValue} Punkte`;
+    } else {
+      buffer.classList.add('hidden');
+      buffer.textContent = '';
     }
-
-    if (scoreT2) {
-      scoreT2.textContent = projectedScores.T2;
-
-      if (projectedScores.leader === 'T2') {
-        scoreT2.innerHTML = `${projectedScores.T2}<div style="font-size:0.75rem;font-family:'DM Sans';font-weight:800;color:var(--green);">Live-Rest</div>`;
-      }
-    }
-    
-  if (roundT1) roundT1.textContent = `Runde: ${getDartsRoundTotal('T1')}`;
-  if (roundT2) roundT2.textContent = `Runde: ${getDartsRoundTotal('T2')}`;
-    
-    if (projectedScores.leader === 'T1' && roundT1) {
-          roundT1.textContent = `Runde: ${getDartsRoundTotal('T1')} · Live -${projectedScores.subtractPoints}`;
-        }
-
-        if (projectedScores.leader === 'T2' && roundT2) {
-          roundT2.textContent = `Runde: ${getDartsRoundTotal('T2')} · Live -${projectedScores.subtractPoints}`;
-        }
-    
-    if (buffer) {
-      if (dartsState.winner) {
-        buffer.style.display = 'block';
-        buffer.textContent = `🏆 Gewinner: ${getTeamLabel(dartsState.winner)}`;
-      } else if ((dartsState.buffer || 0) > 0) {
-        buffer.style.display = 'block';
-        buffer.textContent = `Puffer: ${dartsState.buffer} Punkte`;
-      } else {
-        buffer.style.display = 'none';
-      }
-    }
+  }
 
   renderDartsRoundList();
   renderDartsHistory();
