@@ -4782,9 +4782,10 @@ snapshot.strafen.forEach(s => {
   x += strafeWidth;
 });
 
-doc.text("Freie Beträge", x, y + headerHeight); x += sumWidth;
-doc.text("Tannenbaum", x, y + headerHeight); x += sumWidth;
-doc.text("Gesamt", x, y + headerHeight);
+doc.text(formatEuro(freeNormal), rowX, y); rowX += sumWidth;
+doc.text(formatEuro(tannenbaum), rowX, y); rowX += sumWidth;
+doc.text(formatEuro(p.onTop), rowX, y); rowX += sumWidth;
+doc.text(formatEuro(p.total), rowX, y);
 
 y += headerHeight + 3;
 doc.line(margin, y, pageWidth - margin, y);
@@ -4800,7 +4801,7 @@ y += 6;
 
     snapshot.strafen.forEach(s => {
       doc.text(String((p.strafen && p.strafen[s.key]) || 0), rowX, y);
-      rowX += strafWidth;
+      rowX += strafeWidth;
     });
 
     const freeNormal = (p.freeStrafen || [])
@@ -4956,8 +4957,6 @@ async function generateDrinksPDF(snapshot) {
         const headerHeight = 34;
 
     doc.setFontSize(9);
-
-    let x = margin;
 
     doc.text("Name", x, y + headerHeight);
     x += nameWidth;
