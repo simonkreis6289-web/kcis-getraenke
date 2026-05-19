@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="KC IS">
 
-  <title>Kegelclub-Manager</title>
+  <title>KC IS – Getränkeabrechnung</title>
 
   <link rel="manifest" href="manifest.json?v=20260318-v13">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
@@ -4730,6 +4730,17 @@ function getStrafenSnapshot() {
   };
 }
 
+function getPdfClubName() {
+  return ACTIVE_CLUB || 'Kegelclub';
+}
+
+function getSafePdfClubName() {
+  return getPdfClubName()
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .replace(/\s+/g, '_');
+}
+
 async function generateStrafenPDF(snapshot) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a3" });
@@ -4859,13 +4870,8 @@ async function generateStrafenPDF(snapshot) {
     }
   }
 
-  doc.setFontSize(18);
-const clubName = selectedClub?.name || 'Kegelclub';
-
-doc.setFontSize(18);
-
-const clubName = selectedClub?.name || 'Kegelclub';
-doc.text(`${clubName} - Strafabrechnung`, margin, y);
+    doc.setFontSize(18);
+    doc.text(`${getPdfClubName()} - Strafabrechnung`, margin, y);
 
   y += 8;
   doc.setFontSize(10);
@@ -5004,7 +5010,8 @@ async function closeStrafenAndExportPDF() {
     const doc = await generateStrafenPDF(snapshot);
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = `KCIS_Strafenabrechnung_${dateStr}.pdf`;
+    const clubName = getSafePdfClubName();
+    const filename = `${clubName}_Strafenabrechnung_${dateStr}.pdf`;
 
     doc.save(filename);
 
@@ -5150,12 +5157,8 @@ async function generateDrinksPDF(snapshot) {
     }
   }
 
-  doc.setFontSize(18);
-const clubName = selectedClub?.name || 'Kegelclub';
-doc.setFontSize(18);
-
-const clubName = selectedClub?.name || 'Kegelclub';
-doc.text(`${clubName} - Getränkeabrechnung`, margin, y);
+    doc.setFontSize(18);
+    doc.text(`${getPdfClubName()} - Getränkeabrechnung`, margin, y);
 
   y += 8;
   doc.setFontSize(10);
@@ -5346,16 +5349,14 @@ async function closeDrinksAndExportPDF() {
     const doc = await generateDrinksPDF(snapshot);
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = `KCIS_Getraenkeabrechnung_${dateStr}.pdf`;
+    const clubName = getSafePdfClubName();
+    const filename = `${clubName}_Getraenkeabrechnung_${dateStr}.pdf`;
 
-    // PDF speichern
     doc.save(filename);
 
-    // Abend archivieren
     await archiveEvent(snapshot);
 
     showToast('✅ PDF erstellt und Abend archiviert', 'success');
-
   } catch (err) {
     console.error(err);
     showToast('❌ Fehler beim Abschließen', 'error');
