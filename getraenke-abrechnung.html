@@ -4762,24 +4762,33 @@ async function generateStrafenPDF(snapshot) {
     x += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      const price =
-        s.price ??
-        (snapshot.strafPrices ? snapshot.strafPrices[s.key] : undefined) ??
-        (typeof strafPrices !== 'undefined' ? strafPrices[s.key] : 0) ??
-        0;
+      const centerX = x + (strafeWidth / 2);
+      const centerY = y + (headerHeight / 2);
 
-      drawCell(x, top, strafeWidth, headerHeight);
+      doc.rect(x, y, strafeWidth, headerHeight);
 
-      doc.setFontSize(7.5);
-      doc.text(s.label, x + strafeWidth / 2 + 3, top + headerHeight - 11, {
-        angle: 90,
-        align: "center"
-      });
+      doc.saveGraphicsState();
+      doc.setFontSize(8);
 
-      doc.setFontSize(6.5);
-      doc.text(formatEuro(price), x + strafeWidth / 2, top + headerHeight - 3, {
-        align: "center"
-      });
+      doc.text(
+        s.label,
+        centerX,
+        centerY - 4,
+        {
+          align: "center",
+          angle: 90
+        }
+      );
+
+      doc.setFontSize(6);
+      doc.text(
+        formatEuro(strafPrices[s.key] || 0),
+        centerX,
+        y + headerHeight - 4,
+        { align: "center" }
+      );
+
+      doc.restoreGraphicsState();
 
       x += strafeWidth;
     });
@@ -4989,20 +4998,33 @@ async function generateDrinksPDF(snapshot) {
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      const price = d.price ?? (typeof prices !== 'undefined' ? prices[d.key] : 0) ?? 0;
+      const centerX = x + (drinkWidth / 2);
+      const centerY = y + (headerHeight / 2);
 
-      drawCell(x, top, drinkWidth, headerHeight);
+      doc.rect(x, y, drinkWidth, headerHeight);
 
-      doc.setFontSize(7.5);
-      doc.text(d.label, x + drinkWidth / 2 + 3, top + headerHeight - 11, {
-        angle: 90,
-        align: "center"
-      });
+      doc.saveGraphicsState();
+      doc.setFontSize(8);
 
-      doc.setFontSize(6.5);
-      doc.text(formatEuro(price), x + drinkWidth / 2, top + headerHeight - 3, {
-        align: "center"
-      });
+      doc.text(
+        d.label,
+        centerX,
+        centerY - 4,
+        {
+          align: "center",
+          angle: 90
+        }
+      );
+
+      doc.setFontSize(6);
+      doc.text(
+        formatEuro(drinkPrices[d.key] || 0),
+        centerX,
+        y + headerHeight - 4,
+        { align: "center" }
+      );
+
+      doc.restoreGraphicsState();
 
       x += drinkWidth;
     });
