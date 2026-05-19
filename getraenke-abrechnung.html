@@ -4732,7 +4732,11 @@ function getStrafenSnapshot() {
 
 async function generateStrafenPDF(snapshot) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "landscape" });
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a3"
+  });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -4759,28 +4763,32 @@ async function generateStrafenPDF(snapshot) {
 
   doc.setFontSize(9);
 
-  let x = margin;
-  const nameWidth = 45;
-  const strafWidth = 26;
-  const extraWidth = 32;
-  const totalWidth = 28;
+const nameWidth = 55;
+const strafeWidth = 13;
+const sumWidth = 28;
+const headerHeight = 34;
 
-  doc.text("Name", x, y);
-  x += nameWidth;
+let x = margin;
 
-  snapshot.strafen.forEach(s => {
-    doc.text(s.label, x, y, { maxWidth: strafWidth });
-    x += strafWidth;
+doc.setFontSize(9);
+doc.text("Name", x, y + headerHeight);
+x += nameWidth;
+
+snapshot.strafen.forEach(s => {
+  doc.text(s.label, x + 4, y + headerHeight - 2, {
+    angle: 90,
+    maxWidth: headerHeight
   });
+  x += strafeWidth;
+});
 
-  doc.text("Frei", x, y); x += extraWidth;
-  doc.text("Tannenbaum", x, y); x += extraWidth;
-  doc.text("On Top", x, y); x += extraWidth;
-  doc.text("Gesamt", x, y);
+doc.text("Freie Beträge", x, y + headerHeight); x += sumWidth;
+doc.text("Tannenbaum", x, y + headerHeight); x += sumWidth;
+doc.text("Gesamt", x, y + headerHeight);
 
-  y += 4;
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 6;
+y += headerHeight + 3;
+doc.line(margin, y, pageWidth - margin, y);
+y += 6;
 
   snapshot.presentPersons.forEach(p => {
     ensurePageSpace(8);
@@ -4910,7 +4918,11 @@ async function archiveStrafenEvent(snapshot) {
     
 async function generateDrinksPDF(snapshot) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "landscape" });
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a3"
+    });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -4938,27 +4950,35 @@ async function generateDrinksPDF(snapshot) {
   // Tabellenkopf
   doc.setFontSize(9);
     let x = margin;
-    const nameWidth = 50;
-    const drinkWidth = 28;
-    const sumWidth = 22;
+        const nameWidth = 55;
+        const drinkWidth = 13;
+        const sumWidth = 25;
+        const headerHeight = 34;
 
-    doc.text("Name", x, y);
+    doc.setFontSize(9);
+
+    let x = margin;
+
+    doc.text("Name", x, y + headerHeight);
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      doc.text(d.label, x, y, { maxWidth: drinkWidth });
+      doc.text(d.label, x + 4, y + headerHeight - 2, {
+        angle: 90,
+        maxWidth: headerHeight
+      });
       x += drinkWidth;
     });
 
-    doc.text("Getränke", x, y); x += sumWidth;
-    doc.text("Strafen", x, y);  x += sumWidth;
-    doc.text("Runden", x, y);   x += sumWidth;
-    doc.text("Gesamt", x, y);   x += sumWidth;
-    doc.text("Bezahlt", x, y);
+    doc.text("Getränke", x, y + headerHeight); x += sumWidth;
+    doc.text("Strafen", x, y + headerHeight);  x += sumWidth;
+    doc.text("Runden", x, y + headerHeight);   x += sumWidth;
+    doc.text("Gesamt", x, y + headerHeight);   x += sumWidth;
+    doc.text("Bezahlt", x, y + headerHeight);
 
-  y += 4;
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 6;
+    y += headerHeight + 3;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
 
   snapshot.persons.forEach(p => {
     ensurePageSpace(8);
