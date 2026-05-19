@@ -4773,17 +4773,17 @@ async function generateStrafenPDF(snapshot) {
   x += nameWidth;
 
   snapshot.strafen.forEach(s => {
-    doc.text(s.label, x + 4, y + headerHeight - 2, {
+    doc.text(s.label, x + strafeWidth / 2, y + headerHeight - 2, {
       angle: 90,
-      maxWidth: headerHeight
+      align: "center"
     });
     x += strafeWidth;
   });
 
-  doc.text("Freie Beträge", x, y + headerHeight); x += sumWidth;
-  doc.text("Tannenbaum", x, y + headerHeight); x += sumWidth;
-  doc.text("On Top", x, y + headerHeight); x += sumWidth;
-  doc.text("Gesamt", x, y + headerHeight);
+  ["Freie Beträge", "Tannenbaum", "On Top", "Gesamt"].forEach(label => {
+    doc.text(label, x + sumWidth / 2, y + headerHeight, { align: "center" });
+    x += sumWidth;
+  });
 
   y += headerHeight + 3;
   doc.line(margin, y, pageWidth - margin, y);
@@ -4798,7 +4798,12 @@ async function generateStrafenPDF(snapshot) {
     rowX += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      doc.text(String((p.strafen && p.strafen[s.key]) || 0), rowX, y);
+      doc.text(
+        String((p.strafen && p.strafen[s.key]) || 0),
+        rowX + strafeWidth / 2,
+        y,
+        { align: "center" }
+      );
       rowX += strafeWidth;
     });
 
@@ -4809,10 +4814,10 @@ async function generateStrafenPDF(snapshot) {
     const tannenbaum = (p.tannenbaumCharges || [])
       .reduce((sum, t) => sum + (parseFloat(t.amount || 0) || 0), 0);
 
-    doc.text(formatEuro(freeNormal), rowX, y); rowX += sumWidth;
-    doc.text(formatEuro(tannenbaum), rowX, y); rowX += sumWidth;
-    doc.text(formatEuro(p.onTop), rowX, y); rowX += sumWidth;
-    doc.text(formatEuro(p.total), rowX, y);
+    doc.text(formatEuro(freeNormal), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(tannenbaum), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(p.onTop), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(p.total), rowX + sumWidth / 2, y, { align: "center" });
 
     y += 7;
   });
@@ -4840,43 +4845,9 @@ async function generateStrafenPDF(snapshot) {
   y += 8;
 
   doc.setFontSize(12);
-  doc.text(`Höchste Strafe Anwesende: ${formatEuro(snapshot.highestPresent)}`, margin, y);
-  y += 6;
-  doc.text(`Nicht anwesend Zuschlag: +${formatEuro(snapshot.absentExtra)}`, margin, y);
-  y += 6;
+  doc.text(`Höchste Strafe Anwesende: ${formatEuro(snapshot.highestPresent)}`, margin, y); y += 6;
+  doc.text(`Nicht anwesend Zuschlag: +${formatEuro(snapshot.absentExtra)}`, margin, y); y += 6;
   doc.text(`Strafen gesamt: ${formatEuro(snapshot.total)}`, margin, y);
-
-  if (snapshot.history.length) {
-    y += 10;
-    ensurePageSpace(20);
-
-    doc.setFontSize(13);
-    doc.text("Historie", margin, y);
-    y += 7;
-
-    doc.setFontSize(9);
-
-    snapshot.history.forEach((entry, idx) => {
-      ensurePageSpace(16);
-
-      if (entry.type === 'tannenbaum') {
-        doc.text(`${idx + 1}. Tannenbaum abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
-        y += 5;
-        doc.text(`Wand: ${formatEuro(entry.totals?.T1 || 0)} | TV: ${formatEuro(entry.totals?.T2 || 0)}`, margin + 6, y);
-        y += 5;
-
-        const assigned = (entry.assignedTo || [])
-          .map(a => `${a.name}: ${formatEuro(a.amount)}`)
-          .join(', ');
-
-        doc.text(`Zugeordnet: ${assigned || '—'}`, margin + 6, y, {
-          maxWidth: pageWidth - margin * 2 - 6
-        });
-
-        y += 7;
-      }
-    });
-  }
 
   return doc;
 }
@@ -4917,11 +4888,11 @@ async function archiveStrafenEvent(snapshot) {
     
 async function generateDrinksPDF(snapshot) {
   const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a3"
-    });
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a3"
+  });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -4946,54 +4917,57 @@ async function generateDrinksPDF(snapshot) {
 
   y += 10;
 
-  // Tabellenkopf
+  const nameWidth = 55;
+  const drinkWidth = 13;
+  const sumWidth = 25;
+  const headerHeight = 34;
+
+  let x = margin;
+
   doc.setFontSize(9);
-    let x = margin;
-        const nameWidth = 55;
-        const drinkWidth = 13;
-        const sumWidth = 25;
-        const headerHeight = 34;
+  doc.text("Name", x, y + headerHeight);
+  x += nameWidth;
 
-    doc.setFontSize(9);
-
-    doc.text("Name", x, y + headerHeight);
-    x += nameWidth;
-
-    snapshot.drinks.forEach(d => {
-      doc.text(d.label, x + 4, y + headerHeight - 2, {
-        angle: 90,
-        maxWidth: headerHeight
-      });
-      x += drinkWidth;
+  snapshot.drinks.forEach(d => {
+    doc.text(d.label, x + drinkWidth / 2, y + headerHeight - 2, {
+      angle: 90,
+      align: "center"
     });
+    x += drinkWidth;
+  });
 
-    doc.text("Getränke", x, y + headerHeight); x += sumWidth;
-    doc.text("Strafen", x, y + headerHeight);  x += sumWidth;
-    doc.text("Runden", x, y + headerHeight);   x += sumWidth;
-    doc.text("Gesamt", x, y + headerHeight);   x += sumWidth;
-    doc.text("Bezahlt", x, y + headerHeight);
+  ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach(label => {
+    doc.text(label, x + sumWidth / 2, y + headerHeight, { align: "center" });
+    x += sumWidth;
+  });
 
-    y += headerHeight + 3;
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
+  y += headerHeight + 3;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
 
   snapshot.persons.forEach(p => {
     ensurePageSpace(8);
 
-let rowX = margin;
-doc.text(p.name, rowX, y);
-rowX += nameWidth;
+    let rowX = margin;
 
-snapshot.drinks.forEach(d => {
-  doc.text(String((p.drinks && p.drinks[d.key]) || 0), rowX, y);
-  rowX += drinkWidth;
-});
+    doc.text(p.name, rowX, y);
+    rowX += nameWidth;
 
-doc.text(formatEuro(p.drinksTotal), rowX, y); rowX += sumWidth;
-doc.text(formatEuro(p.teamExtra), rowX, y);   rowX += sumWidth;
-doc.text(formatEuro(p.roundExtra), rowX, y);  rowX += sumWidth;
-doc.text(formatEuro(p.total), rowX, y);       rowX += sumWidth;
-doc.text(formatEuro(p.paid), rowX, y);
+    snapshot.drinks.forEach(d => {
+      doc.text(
+        String((p.drinks && p.drinks[d.key]) || 0),
+        rowX + drinkWidth / 2,
+        y,
+        { align: "center" }
+      );
+      rowX += drinkWidth;
+    });
+
+    doc.text(formatEuro(p.drinksTotal), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(p.teamExtra), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(p.roundExtra), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(p.total), rowX + sumWidth / 2, y, { align: "center" }); rowX += sumWidth;
+    doc.text(formatEuro(p.paid), rowX + sumWidth / 2, y, { align: "center" });
 
     y += 7;
   });
@@ -5009,85 +4983,11 @@ doc.text(formatEuro(p.paid), rowX, y);
   const totalBezahlt = snapshot.persons.reduce((s, p) => s + (p.paid || 0), 0);
 
   doc.setFontSize(11);
-  doc.text(`Getränke gesamt: ${formatEuro(totalDrinks)}`, margin, y);
-  y += 6;
-  doc.text(`Strafen gesamt: ${formatEuro(totalStrafen)}`, margin, y);
-  y += 6;
-  doc.text(`Runden gesamt: ${formatEuro(totalRunden)}`, margin, y);
-  y += 6;
-  doc.text(`Abrechnung gesamt: ${formatEuro(totalGesamt)}`, margin, y);
-  y += 6;
+  doc.text(`Getränke gesamt: ${formatEuro(totalDrinks)}`, margin, y); y += 6;
+  doc.text(`Strafen gesamt: ${formatEuro(totalStrafen)}`, margin, y); y += 6;
+  doc.text(`Runden gesamt: ${formatEuro(totalRunden)}`, margin, y); y += 6;
+  doc.text(`Abrechnung gesamt: ${formatEuro(totalGesamt)}`, margin, y); y += 6;
   doc.text(`Bezahlt gesamt: ${formatEuro(totalBezahlt)}`, margin, y);
-
-  // Teamstrafen / Spiele
-  if (snapshot.spiele.length) {
-    y += 10;
-    ensurePageSpace(20);
-
-    doc.setFontSize(13);
-    doc.text("Teamstrafen / Spiele", margin, y);
-    y += 7;
-
-    doc.setFontSize(10);
-    snapshot.spiele.forEach((s, idx) => {
-      ensurePageSpace(14);
-
-      const loserLabel = s.loser === 'T1' ? 'Wand' : s.loser === 'T2' ? 'TV' : s.loser;
-      const drinkText = snapshot.drinks
-        .filter(d => (s.drinks[d.key] || 0) > 0)
-        .map(d => `${s.drinks[d.key]}x ${d.label}`)
-        .join(', ');
-
-      doc.text(`${idx + 1}. ${s.spieltyp || 'Spiel'} | Verlierer: ${loserLabel} | Gesamt: ${formatEuro(s.total)}`, margin, y);
-      y += 5;
-      doc.text(`Getränke: ${drinkText || '—'}`, margin + 6, y);
-      y += 5;
-      doc.text(`Aufgeteilt auf: ${(s.members || []).join(', ') || '—'} | Pro Kopf: ${formatEuro(s.proKopf)}`, margin + 6, y);
-      y += 6;
-    });
-  }
-
-  // Runden
-  const allRounds = [];
-  snapshot.persons.forEach(p => {
-    (p.rounds || []).forEach(r => {
-      allRounds.push({
-        person: p.name,
-        reason: r.reason || '',
-        drinks: r.drinks || {},
-        total: r.total || 0,
-        createdAt: r.createdAt || ''
-      });
-    });
-  });
-
-  if (allRounds.length) {
-    y += 6;
-    ensurePageSpace(20);
-
-    doc.setFontSize(13);
-    doc.text("Runden", margin, y);
-    y += 7;
-
-    doc.setFontSize(10);
-    allRounds.forEach((r, idx) => {
-      ensurePageSpace(12);
-
-      const drinkText = snapshot.drinks
-        .filter(d => (r.drinks[d.key] || 0) > 0)
-        .map(d => `${r.drinks[d.key]}x ${d.label}`)
-        .join(', ');
-
-      const dateText = r.createdAt
-        ? new Date(r.createdAt).toLocaleString('de-DE')
-        : '—';
-
-      doc.text(`${idx + 1}. ${r.person} | Grund: ${r.reason || '—'} | Gesamt: ${formatEuro(r.total)}`, margin, y);
-      y += 5;
-      doc.text(`Getränke: ${drinkText || '—'} | Zeit: ${dateText}`, margin + 6, y);
-      y += 6;
-    });
-  }
 
   return doc;
 }
