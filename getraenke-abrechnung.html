@@ -4790,8 +4790,11 @@ async function generateStrafenPDF(snapshot) {
     }
   }
 
-function textCenter(txt, x, top, w, h, opts = {}) {
-  const yPos = top + (h / 2) + 1.2;
+function textCenter(txt, x, top, w, h = null, opts = {}) {
+  const yPos = h === null
+    ? top
+    : top + (h / 2) + 1.2;
+
   doc.text(String(txt), x + w / 2, yPos, {
     align: "center",
     ...opts
@@ -5107,13 +5110,16 @@ async function generateDrinksPDF(snapshot) {
     }
   }
 
-function textCenter(txt, x, top, w, h, opts = {}) {
-  const yPos = top + (h / 2) + 1.2;
-  doc.text(String(txt), x + w / 2, yPos, {
-    align: "center",
-    ...opts
-  });
-}
+    function textCenter(txt, x, top, w, h = null, opts = {}) {
+      const yPos = h === null
+        ? top
+        : top + (h / 2) + 1.2;
+
+      doc.text(String(txt), x + w / 2, yPos, {
+        align: "center",
+        ...opts
+      });
+    }
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
@@ -5138,19 +5144,19 @@ function textCenter(txt, x, top, w, h, opts = {}) {
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      drawCell(x, top, drinkWidth, rowHeight, {
+      const price = d.price || 0;
+
+      drawCell(x, top, drinkWidth, headerHeight, {
+        top: true,
         bottom: true,
-        thickBottom: isLast
+        thickTop: true
       });
 
-      doc.setFontSize(8);
-      textCenter(
-        (p.drinks && p.drinks[d.key]) || 0,
-        x,
-        top,
-        drinkWidth,
-        rowHeight
-      );
+      doc.setFontSize(7);
+      drawWrappedText(d.label, x, top + 6, drinkWidth);
+
+      doc.setFontSize(6.5);
+      textCenter(formatEuro(price), x, top + headerHeight - 4, drinkWidth);
 
       x += drinkWidth;
     });
@@ -5232,7 +5238,13 @@ function textCenter(txt, x, top, w, h, opts = {}) {
       });
 
       doc.setFontSize(8);
-      textCenter((p.drinks && p.drinks[d.key]) || 0, x, top + 5, drinkWidth);
+          textCenter(
+          (p.drinks && p.drinks[d.key]) || 0,
+          x,
+          top,
+          drinkWidth,
+          rowHeight
+        );
       x += drinkWidth;
     });
 
