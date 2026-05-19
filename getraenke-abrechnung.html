@@ -4193,8 +4193,8 @@ function closeFreeStrafeModal() {
 
 function confirmFreeStrafe() {
   const personName = document.getElementById('free-strafe-person-select')?.value || '';
-  const reason = (document.getElementById('free-strafe-reason-input')?.value || '').trim();
-  const amount = parseFloat(String(document.getElementById('free-strafe-amount-input')?.value || '0').replace(',', '.')) || 0;
+const reason = (document.getElementById('free-strafe-reason')?.value || '').trim();
+const amount = parseFloat(String(document.getElementById('free-strafe-amount')?.value || '0').replace(',', '.')) || 0;
   const onTop = !!document.getElementById('free-strafe-ontop-check')?.checked;
 
   if (!personName) {
