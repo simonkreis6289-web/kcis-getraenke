@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="KC IS">
 
-  <title>KC IS – Getränkeabrechnung</title>
+  <title>Kegelclub - Manager</title>
 
   <link rel="manifest" href="manifest.json?v=20260318-v13">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
@@ -2941,7 +2941,6 @@ tbody td:first-child {
   <header>
     <div>
       <h1>KC IS</h1>
-      <div class="subtitle">Getränkeabrechnung</div>
       <div class="header-datetime" id="header-datetime"></div>
     </div>
 
@@ -4755,7 +4754,8 @@ async function generateStrafenPDF(snapshot) {
   const usableWidth = pageWidth - margin * 2;
   const nameWidth = 35;
   const sumWidth = 30;
-  const strafeWidth = (usableWidth - nameWidth - (4 * sumWidth)) / snapshot.strafen.length;
+  const strafeCount = Math.max(1, (snapshot.strafen || []).length);
+  const strafeWidth = (usableWidth - nameWidth - (4 * sumWidth)) / strafeCount;
 
   const headerHeight = 34;
   const rowHeight = 8;
@@ -4790,16 +4790,16 @@ async function generateStrafenPDF(snapshot) {
     }
   }
 
-function textCenter(txt, x, top, w, h = null, opts = {}) {
-  const yPos = h === null
-    ? top
-    : top + (h / 2) + 1.2;
+  function textCenter(txt, x, top, w, h = null, opts = {}) {
+    const yPos = h === null
+      ? top
+      : top + (h / 2) + 1.2;
 
-  doc.text(String(txt), x + w / 2, yPos, {
-    align: "center",
-    ...opts
-  });
-}
+    doc.text(String(txt), x + w / 2, yPos, {
+      align: "center",
+      ...opts
+    });
+  }
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
@@ -4810,12 +4810,15 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
 
   function getStrafPrice(s) {
     if (s.price !== undefined) return parseFloat(s.price) || 0;
+
     if (snapshot.strafPrices && snapshot.strafPrices[s.key] !== undefined) {
       return parseFloat(snapshot.strafPrices[s.key]) || 0;
     }
+
     if (typeof strafPrices !== 'undefined' && strafPrices[s.key] !== undefined) {
       return parseFloat(strafPrices[s.key]) || 0;
     }
+
     return 0;
   }
 
@@ -4835,7 +4838,7 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
     doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
-    snapshot.strafen.forEach(s => {
+    (snapshot.strafen || []).forEach(s => {
       const price = getStrafPrice(s);
 
       drawCell(x, top, strafeWidth, headerHeight, {
@@ -4877,8 +4880,8 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
     }
   }
 
-    doc.setFontSize(18);
-    doc.text(`${getPdfClubName()} - Strafabrechnung`, margin, y);
+  doc.setFontSize(18);
+  doc.text(`${getPdfClubName()} - Strafabrechnung`, margin, y);
 
   y += 8;
   doc.setFontSize(10);
@@ -4887,8 +4890,8 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
   y += 12;
   drawHeader();
 
-  snapshot.presentPersons.forEach((p, personIndex) => {
-    const isLast = personIndex === snapshot.presentPersons.length - 1;
+  (snapshot.presentPersons || []).forEach((p, personIndex) => {
+    const isLast = personIndex === (snapshot.presentPersons || []).length - 1;
 
     ensureSpace(rowHeight);
 
@@ -4905,7 +4908,7 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
     doc.text(p.name, x + 2, top + 5, { maxWidth: nameWidth - 3 });
     x += nameWidth;
 
-    snapshot.strafen.forEach(s => {
+    (snapshot.strafen || []).forEach(s => {
       drawCell(x, top, strafeWidth, rowHeight, {
         bottom: true,
         thickBottom: isLast
@@ -4943,13 +4946,7 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
       });
 
       doc.setFontSize(8);
-      textCenter(
-        value,
-        x,
-        top,
-        sumWidth,
-        rowHeight
-      );
+      textCenter(value, x, top, sumWidth, rowHeight);
 
       x += sumWidth;
     });
@@ -5016,7 +5013,11 @@ function textCenter(txt, x, top, w, h = null, opts = {}) {
       if (entry.type === 'free') {
         doc.text(`${idx + 1}. Freier Betrag | ${formatDateTime(entry.createdAt)}`, margin, y);
         y += 5;
-        doc.text(`${entry.person || '-'}: ${entry.reason || '-'} | ${formatEuro(entry.amount)}${entry.onTop ? ' | On Top' : ''}`, margin + 6, y);
+        doc.text(
+          `${entry.person || '-'}: ${entry.reason || '-'} | ${formatEuro(entry.amount)}${entry.onTop ? ' | On Top' : ''}`,
+          margin + 6,
+          y
+        );
         y += 7;
       }
     });
@@ -5075,7 +5076,8 @@ async function generateDrinksPDF(snapshot) {
   const usableWidth = pageWidth - margin * 2;
   const nameWidth = 35;
   const sumWidth = 29;
-  const drinkWidth = (usableWidth - nameWidth - (5 * sumWidth)) / snapshot.drinks.length;
+  const drinkCount = Math.max(1, (snapshot.drinks || []).length);
+  const drinkWidth = (usableWidth - nameWidth - (5 * sumWidth)) / drinkCount;
 
   const headerHeight = 34;
   const rowBaseHeight = 8;
@@ -5110,22 +5112,34 @@ async function generateDrinksPDF(snapshot) {
     }
   }
 
-    function textCenter(txt, x, top, w, h = null, opts = {}) {
-      const yPos = h === null
-        ? top
-        : top + (h / 2) + 1.2;
+  function textCenter(txt, x, top, w, h = null, opts = {}) {
+    const yPos = h === null ? top : top + (h / 2) + 1.2;
 
-      doc.text(String(txt), x + w / 2, yPos, {
-        align: "center",
-        ...opts
-      });
-    }
+    doc.text(String(txt), x + w / 2, yPos, {
+      align: "center",
+      ...opts
+    });
+  }
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
     lines.slice(0, 4).forEach((line, idx) => {
       doc.text(line, x + w / 2, yy + idx * lineHeight, { align: "center" });
     });
+  }
+
+  function getDrinkPrice(d) {
+    if (d.price !== undefined) return parseFloat(d.price) || 0;
+
+    if (snapshot.drinkPrices && snapshot.drinkPrices[d.key] !== undefined) {
+      return parseFloat(snapshot.drinkPrices[d.key]) || 0;
+    }
+
+    if (typeof prices !== 'undefined' && prices[d.key] !== undefined) {
+      return parseFloat(prices[d.key]) || 0;
+    }
+
+    return 0;
   }
 
   function drawHeader() {
@@ -5140,11 +5154,12 @@ async function generateDrinksPDF(snapshot) {
       thickTop: true,
       thickLeft: true
     });
+
     doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
-    snapshot.drinks.forEach(d => {
-      const price = d.price || 0;
+    (snapshot.drinks || []).forEach(d => {
+      const price = getDrinkPrice(d);
 
       drawCell(x, top, drinkWidth, headerHeight, {
         top: true,
@@ -5185,8 +5200,8 @@ async function generateDrinksPDF(snapshot) {
     }
   }
 
-    doc.setFontSize(18);
-    doc.text(`${getPdfClubName()} - Getränkeabrechnung`, margin, y);
+  doc.setFontSize(18);
+  doc.text(`${getPdfClubName()} - Getränkeabrechnung`, margin, y);
 
   y += 8;
   doc.setFontSize(10);
@@ -5195,7 +5210,7 @@ async function generateDrinksPDF(snapshot) {
   y += 12;
   drawHeader();
 
-  snapshot.persons.forEach((p, personIndex) => {
+  (snapshot.persons || []).forEach((p, personIndex) => {
     const isLast = personIndex === snapshot.persons.length - 1;
 
     const teamDetails = (snapshot.spiele || [])
@@ -5231,20 +5246,21 @@ async function generateDrinksPDF(snapshot) {
 
     x += nameWidth;
 
-    snapshot.drinks.forEach(d => {
+    (snapshot.drinks || []).forEach(d => {
       drawCell(x, top, drinkWidth, rowHeight, {
         bottom: true,
         thickBottom: isLast
       });
 
       doc.setFontSize(8);
-          textCenter(
-          (p.drinks && p.drinks[d.key]) || 0,
-          x,
-          top,
-          drinkWidth,
-          rowHeight
-        );
+      textCenter(
+        (p.drinks && p.drinks[d.key]) || 0,
+        x,
+        top,
+        drinkWidth,
+        rowHeight
+      );
+
       x += drinkWidth;
     });
 
@@ -5262,13 +5278,7 @@ async function generateDrinksPDF(snapshot) {
       });
 
       doc.setFontSize(8);
-      textCenter(
-        value,
-        x,
-        top,
-        sumWidth,
-        rowHeight
-      );
+      textCenter(value, x, top, sumWidth, rowHeight);
 
       x += sumWidth;
     });
@@ -5278,11 +5288,11 @@ async function generateDrinksPDF(snapshot) {
 
   y += 10;
 
-  const totalDrinks = snapshot.persons.reduce((s, p) => s + (p.drinksTotal || 0), 0);
-  const totalStrafen = snapshot.persons.reduce((s, p) => s + (p.teamExtra || 0), 0);
-  const totalRunden = snapshot.persons.reduce((s, p) => s + (p.roundExtra || 0), 0);
-  const totalGesamt = snapshot.persons.reduce((s, p) => s + (p.total || 0), 0);
-  const totalBezahlt = snapshot.persons.reduce((s, p) => s + (p.paid || 0), 0);
+  const totalDrinks = (snapshot.persons || []).reduce((s, p) => s + (p.drinksTotal || 0), 0);
+  const totalStrafen = (snapshot.persons || []).reduce((s, p) => s + (p.teamExtra || 0), 0);
+  const totalRunden = (snapshot.persons || []).reduce((s, p) => s + (p.roundExtra || 0), 0);
+  const totalGesamt = (snapshot.persons || []).reduce((s, p) => s + (p.total || 0), 0);
+  const totalBezahlt = (snapshot.persons || []).reduce((s, p) => s + (p.paid || 0), 0);
 
   doc.setFontSize(11);
   doc.text(`Getränke gesamt: ${formatEuro(totalDrinks)}`, margin, y); y += 6;
@@ -5307,7 +5317,7 @@ async function generateDrinksPDF(snapshot) {
 
       const loser = s.loser === 'T1' ? 'Wand' : s.loser === 'T2' ? 'TV' : s.loser || '-';
 
-      const drinksText = snapshot.drinks
+      const drinksText = (snapshot.drinks || [])
         .filter(d => (s.drinks && (s.drinks[d.key] || 0) > 0))
         .map(d => `${s.drinks[d.key]}x ${d.label}`)
         .join(', ');
@@ -5332,7 +5342,7 @@ async function generateDrinksPDF(snapshot) {
 
   const allRounds = [];
 
-  snapshot.persons.forEach(p => {
+  (snapshot.persons || []).forEach(p => {
     (p.rounds || []).forEach(r => {
       allRounds.push({
         person: p.name,
@@ -5359,7 +5369,7 @@ async function generateDrinksPDF(snapshot) {
       .forEach((r, idx) => {
         ensureSpace(16);
 
-        const drinksText = snapshot.drinks
+        const drinksText = (snapshot.drinks || [])
           .filter(d => (r.drinks && (r.drinks[d.key] || 0) > 0))
           .map(d => `${r.drinks[d.key]}x ${d.label}`)
           .join(', ');
