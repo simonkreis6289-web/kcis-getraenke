@@ -4761,19 +4761,26 @@ async function generateStrafenPDF(snapshot) {
 
   y += 10;
 
-  const nameWidth = 45;
-  const strafeWidth = 13;
-  const sumWidth = 28;
-  const headerHeight = 34;
+  const nameWidth = 62;
+  const sumWidth = 32;
+  const headerHeight = 46;
+
+  const availableWidth = pageWidth - margin * 2;
+  const fixedWidth = nameWidth + sumWidth * 4;
+  const strafeWidth = Math.max(
+    18,
+    (availableWidth - fixedWidth) / snapshot.strafen.length
+  );
 
   let x = margin;
 
   doc.setFontSize(9);
+  doc.setLineWidth(0.25);
   doc.text("Name", x, y + headerHeight);
   x += nameWidth;
 
   snapshot.strafen.forEach(s => {
-    doc.text(s.label, x + strafeWidth / 2, y + headerHeight - 2, {
+    doc.text(s.label, x + strafeWidth / 2, y + headerHeight - 4, {
       angle: 90,
       align: "center"
     });
@@ -4785,7 +4792,7 @@ async function generateStrafenPDF(snapshot) {
     x += sumWidth;
   });
 
-  y += headerHeight + 3;
+  y += headerHeight + 5;
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
@@ -4917,19 +4924,26 @@ async function generateDrinksPDF(snapshot) {
 
   y += 10;
 
-  const nameWidth = 45;
-  const drinkWidth = 13;
-  const sumWidth = 25;
-  const headerHeight = 34;
+  const nameWidth = 62;
+  const sumWidth = 28;
+  const headerHeight = 46;
+
+  const availableWidth = pageWidth - margin * 2;
+  const fixedWidth = nameWidth + sumWidth * 5;
+  const drinkWidth = Math.max(
+    18,
+    (availableWidth - fixedWidth) / snapshot.drinks.length
+  );
 
   let x = margin;
 
   doc.setFontSize(9);
+  doc.setLineWidth(0.25);
   doc.text("Name", x, y + headerHeight);
   x += nameWidth;
 
   snapshot.drinks.forEach(d => {
-    doc.text(d.label, x + drinkWidth / 2, y + headerHeight - 2, {
+    doc.text(d.label, x + drinkWidth / 2, y + headerHeight - 4, {
       angle: 90,
       align: "center"
     });
@@ -4941,7 +4955,7 @@ async function generateDrinksPDF(snapshot) {
     x += sumWidth;
   });
 
-  y += headerHeight + 3;
+  y += headerHeight + 5;
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
