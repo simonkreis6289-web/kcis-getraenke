@@ -4742,16 +4742,24 @@ async function generateStrafenPDF(snapshot) {
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
 
   const usableWidth = pageWidth - margin * 2;
-  const nameWidth = 58;
+  const nameWidth = 42;
   const sumWidth = 30;
   const strafeWidth = (usableWidth - nameWidth - (4 * sumWidth)) / snapshot.strafen.length;
 
   const headerHeight = 34;
   const rowHeight = 8;
 
-  function cell(x, yy, w, h) {
-    doc.rect(x, yy, w, h);
-  }
+function cell(x, yy, w, h) {
+  // vertikal normal
+  doc.setLineWidth(0.15);
+  doc.line(x, yy, x, yy + h);
+  doc.line(x + w, yy, x + w, yy + h);
+
+  // horizontal ultradünn
+  doc.setLineWidth(0.03);
+  doc.line(x, yy, x + w, yy);
+  doc.line(x, yy + h, x + w, yy + h);
+}
 
   function textCenter(txt, x, yy, w, opts = {}) {
     doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
@@ -4779,7 +4787,7 @@ async function generateStrafenPDF(snapshot) {
     let x = margin;
     const top = y;
 
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.03);
     doc.setFontSize(8);
 
     cell(x, top, nameWidth, headerHeight);
@@ -4979,16 +4987,24 @@ async function generateDrinksPDF(snapshot) {
   const teamLabel = t => t === 'T1' ? 'Wand' : t === 'T2' ? 'TV' : t || '-';
 
   const usableWidth = pageWidth - margin * 2;
-  const nameWidth = 58;
+  const nameWidth = 42;
   const sumWidth = 29;
   const drinkWidth = (usableWidth - nameWidth - (5 * sumWidth)) / snapshot.drinks.length;
 
   const headerHeight = 34;
   const rowBaseHeight = 8;
 
-  function cell(x, yy, w, h) {
-    doc.rect(x, yy, w, h);
-  }
+function cell(x, yy, w, h) {
+  // vertikal normal
+  doc.setLineWidth(0.15);
+  doc.line(x, yy, x, yy + h);
+  doc.line(x + w, yy, x + w, yy + h);
+
+  // horizontal ultradünn
+  doc.setLineWidth(0.03);
+  doc.line(x, yy, x + w, yy);
+  doc.line(x, yy + h, x + w, yy + h);
+}
 
   function textCenter(txt, x, yy, w, opts = {}) {
     doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
@@ -5005,7 +5021,7 @@ async function generateDrinksPDF(snapshot) {
     let x = margin;
     const top = y;
 
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.03);
     doc.setFontSize(8);
 
     cell(x, top, nameWidth, headerHeight);
