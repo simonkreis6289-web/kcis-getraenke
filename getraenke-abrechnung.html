@@ -4193,22 +4193,22 @@ function closeFreeStrafeModal() {
 
 function confirmFreeStrafe() {
   const personName = document.getElementById('free-strafe-person-select')?.value || '';
-  const reason = (document.getElementById('free-strafe-reason')?.value || '').trim();
-  const amount = parseFloat(String(document.getElementById('free-strafe-amount')?.value || '0').replace(',', '.')) || 0;
+  const reason = (document.getElementById('free-strafe-reason-input')?.value || '').trim();
+  const amount = parseFloat(String(document.getElementById('free-strafe-amount-input')?.value || '0').replace(',', '.')) || 0;
   const onTop = !!document.getElementById('free-strafe-ontop-check')?.checked;
-  
+
   if (!personName) {
     showToast('Bitte Person auswählen', 'error');
     return;
   }
 
   if (!reason) {
-    showToast('Bitte Grund eintragen', 'error');
+    showToast('Bitte Grund eingeben', 'error');
     return;
   }
 
   if (amount <= 0) {
-    showToast('Bitte Betrag eintragen', 'error');
+    showToast('Bitte Betrag eingeben', 'error');
     return;
   }
 
@@ -4218,21 +4218,36 @@ function confirmFreeStrafe() {
     return;
   }
 
-  if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+  const id = 'free_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
-    p.freeStrafen.push({
-      id: 'free_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-      reason: reason,
-      amount: amount,
-      onTop: onTop,
-      createdAt: new Date().toISOString()
-    });
-    
+  if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+  if (!Array.isArray(strafenHistory)) strafenHistory = [];
+
+  const entry = {
+    id,
+    type: 'free',
+    person: personName,
+    reason,
+    amount,
+    onTop,
+    createdAt: new Date().toISOString()
+  };
+
+  p.freeStrafen.push({
+    id,
+    reason,
+    amount,
+    onTop,
+    createdAt: entry.createdAt
+  });
+
+  strafenHistory.unshift(entry);
+
   closeFreeStrafeModal();
   renderAll();
   persistState();
 
-  showToast(`💸 ${reason}: ${euros(amount)} gebucht`, 'success');
+  showToast('💸 Freier Betrag gebucht', 'success');
 }
     
 function deleteFreeStrafe(personName, freeId) {
@@ -4447,13 +4462,37 @@ function renderStrafenHistory() {
         <div class="spiel-card">
           <div class="spiel-info">
             <div class="spiel-verlierer round">🌲 Tannenbaum abgeschlossen</div>
-            <div class="spiel-detail">${formatDateTime(entry.createdAt)}</div>
+            <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
             <div class="spiel-detail"><strong>Wand:</strong> ${euros(entry.totals?.T1 || 0)}</div>
             <div class="spiel-detail"><strong>TV:</strong> ${euros(entry.totals?.T2 || 0)}</div>
             <div class="spiel-detail"><strong>Offene Zahlen Wand:</strong><br>${openT1}</div>
             <div class="spiel-detail"><strong>Offene Zahlen TV:</strong><br>${openT2}</div>
             <div class="spiel-detail"><strong>Zugeordnet:</strong><br>${assigned || '—'}</div>
           </div>
+
+          <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
+        </div>
+      `;
+    }
+
+    if (entry.type === 'free') {
+      return `
+        <div class="spiel-card">
+          <div class="spiel-info">
+            <div class="spiel-verlierer round">💸 Freier Betrag</div>
+            <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+            <div class="spiel-detail"><strong>Person:</strong> ${entry.person || '—'}</div>
+            <div class="spiel-detail"><strong>Grund:</strong> ${entry.reason || '—'}</div>
+            <div class="spiel-detail">
+              <strong>Betrag:</strong> ${euros(entry.amount || 0)}
+              ${entry.onTop ? ' · On Top' : ''}
+            </div>
+          </div>
+
+          <div>
+            <div class="spiel-betrag round">${euros(entry.amount || 0)}</div>
+          </div>
+
           <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
         </div>
       `;
@@ -4544,22 +4583,28 @@ function deleteStrafenHistoryEntry(id) {
 
   if (!confirm('Diesen Historien-Eintrag wirklich löschen?')) return;
 
-  persons.forEach(p => {
-    if (Array.isArray(p.tannenbaumCharges)) {
-      p.tannenbaumCharges = p.tannenbaumCharges.filter(x => x.id !== id);
-    }
+  if (entry.type === 'tannenbaum') {
+    persons.forEach(p => {
+      if (Array.isArray(p.tannenbaumCharges)) {
+        p.tannenbaumCharges = p.tannenbaumCharges.filter(x => x.id !== id);
+      }
+    });
+  }
 
-    if (Array.isArray(p.freeStrafen)) {
-      p.freeStrafen = p.freeStrafen.filter(x => x.id !== id);
-    }
-  });
+  if (entry.type === 'free') {
+    persons.forEach(p => {
+      if (Array.isArray(p.freeStrafen)) {
+        p.freeStrafen = p.freeStrafen.filter(x => x.id !== id);
+      }
+    });
+  }
 
   strafenHistory = strafenHistory.filter(x => x.id !== id);
 
   renderAll();
   persistState();
 
-  showToast('🗑️ Historie gelöscht', 'success');
+  showToast('🗑️ Historien-Eintrag gelöscht', 'success');
 }
 
 function saveStrafPrices() {
