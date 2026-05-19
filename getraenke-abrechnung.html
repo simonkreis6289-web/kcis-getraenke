@@ -4761,35 +4761,33 @@ async function generateStrafenPDF(snapshot) {
 
   y += 10;
 
+  const nameWidth = 55;
+  const strafeWidth = 13;
+  const sumWidth = 28;
+  const headerHeight = 34;
+
+  let x = margin;
+
   doc.setFontSize(9);
+  doc.text("Name", x, y + headerHeight);
+  x += nameWidth;
 
-const nameWidth = 55;
-const strafeWidth = 13;
-const sumWidth = 28;
-const headerHeight = 34;
-
-let x = margin;
-
-doc.setFontSize(9);
-doc.text("Name", x, y + headerHeight);
-x += nameWidth;
-
-snapshot.strafen.forEach(s => {
-  doc.text(s.label, x + 4, y + headerHeight - 2, {
-    angle: 90,
-    maxWidth: headerHeight
+  snapshot.strafen.forEach(s => {
+    doc.text(s.label, x + 4, y + headerHeight - 2, {
+      angle: 90,
+      maxWidth: headerHeight
+    });
+    x += strafeWidth;
   });
-  x += strafeWidth;
-});
 
-doc.text(formatEuro(freeNormal), rowX, y); rowX += sumWidth;
-doc.text(formatEuro(tannenbaum), rowX, y); rowX += sumWidth;
-doc.text(formatEuro(p.onTop), rowX, y); rowX += sumWidth;
-doc.text(formatEuro(p.total), rowX, y);
+  doc.text("Freie Beträge", x, y + headerHeight); x += sumWidth;
+  doc.text("Tannenbaum", x, y + headerHeight); x += sumWidth;
+  doc.text("On Top", x, y + headerHeight); x += sumWidth;
+  doc.text("Gesamt", x, y + headerHeight);
 
-y += headerHeight + 3;
-doc.line(margin, y, pageWidth - margin, y);
-y += 6;
+  y += headerHeight + 3;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
 
   snapshot.presentPersons.forEach(p => {
     ensurePageSpace(8);
@@ -4811,9 +4809,9 @@ y += 6;
     const tannenbaum = (p.tannenbaumCharges || [])
       .reduce((sum, t) => sum + (parseFloat(t.amount || 0) || 0), 0);
 
-    doc.text(formatEuro(freeNormal), rowX, y); rowX += extraWidth;
-    doc.text(formatEuro(tannenbaum), rowX, y); rowX += extraWidth;
-    doc.text(formatEuro(p.onTop), rowX, y); rowX += extraWidth;
+    doc.text(formatEuro(freeNormal), rowX, y); rowX += sumWidth;
+    doc.text(formatEuro(tannenbaum), rowX, y); rowX += sumWidth;
+    doc.text(formatEuro(p.onTop), rowX, y); rowX += sumWidth;
     doc.text(formatEuro(p.total), rowX, y);
 
     y += 7;
