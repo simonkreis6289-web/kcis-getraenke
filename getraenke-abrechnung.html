@@ -4742,24 +4742,42 @@ async function generateStrafenPDF(snapshot) {
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
 
   const usableWidth = pageWidth - margin * 2;
-  const nameWidth = 42;
+  const nameWidth = 35;
   const sumWidth = 30;
   const strafeWidth = (usableWidth - nameWidth - (4 * sumWidth)) / snapshot.strafen.length;
 
   const headerHeight = 34;
   const rowHeight = 8;
 
-function cell(x, yy, w, h) {
-  // vertikal normal
-  doc.setLineWidth(0.15);
-  doc.line(x, yy, x, yy + h);
-  doc.line(x + w, yy, x + w, yy + h);
+  function drawCell(x, yy, w, h, opts = {}) {
+    const {
+      left = true,
+      right = true,
+      top = false,
+      bottom = false,
+      thickTop = false,
+      thickBottom = false,
+      thickLeft = false,
+      thickRight = false
+    } = opts;
 
-  // horizontal ultradünn
-  doc.setLineWidth(0.03);
-  doc.line(x, yy, x + w, yy);
-  doc.line(x, yy + h, x + w, yy + h);
-}
+    if (left) {
+      doc.setLineWidth(thickLeft ? 0.35 : 0.15);
+      doc.line(x, yy, x, yy + h);
+    }
+    if (right) {
+      doc.setLineWidth(thickRight ? 0.35 : 0.15);
+      doc.line(x + w, yy, x + w, yy + h);
+    }
+    if (top) {
+      doc.setLineWidth(thickTop ? 0.35 : 0.15);
+      doc.line(x, yy, x + w, yy);
+    }
+    if (bottom) {
+      doc.setLineWidth(thickBottom ? 0.35 : 0.03);
+      doc.line(x, yy + h, x + w, yy + h);
+    }
+  }
 
   function textCenter(txt, x, yy, w, opts = {}) {
     doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
@@ -4767,7 +4785,7 @@ function cell(x, yy, w, h) {
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
-    lines.forEach((line, idx) => {
+    lines.slice(0, 4).forEach((line, idx) => {
       doc.text(line, x + w / 2, yy + idx * lineHeight, { align: "center" });
     });
   }
@@ -4787,17 +4805,26 @@ function cell(x, yy, w, h) {
     let x = margin;
     const top = y;
 
-    doc.setLineWidth(0.03);
     doc.setFontSize(8);
 
-    cell(x, top, nameWidth, headerHeight);
+    drawCell(x, top, nameWidth, headerHeight, {
+      top: true,
+      bottom: true,
+      thickTop: true,
+      thickLeft: true
+    });
+
     doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
     snapshot.strafen.forEach(s => {
       const price = getStrafPrice(s);
 
-      cell(x, top, strafeWidth, headerHeight);
+      drawCell(x, top, strafeWidth, headerHeight, {
+        top: true,
+        bottom: true,
+        thickTop: true
+      });
 
       doc.setFontSize(7);
       drawWrappedText(s.label, x, top + 6, strafeWidth);
@@ -4808,8 +4835,14 @@ function cell(x, yy, w, h) {
       x += strafeWidth;
     });
 
-    ["Freie Beträge", "Tannenbaum", "On Top", "Gesamt"].forEach(label => {
-      cell(x, top, sumWidth, headerHeight);
+    ["Freie Beträge", "Tannenbaum", "On Top", "Gesamt"].forEach((label, idx) => {
+      drawCell(x, top, sumWidth, headerHeight, {
+        top: true,
+        bottom: true,
+        thickTop: true,
+        thickRight: idx === 3
+      });
+
       doc.setFontSize(7.5);
       drawWrappedText(label, x, top + 13, sumWidth);
       x += sumWidth;
@@ -4836,19 +4869,31 @@ function cell(x, yy, w, h) {
   y += 12;
   drawHeader();
 
-  snapshot.presentPersons.forEach(p => {
+  snapshot.presentPersons.forEach((p, personIndex) => {
+    const isLast = personIndex === snapshot.presentPersons.length - 1;
+
     ensureSpace(rowHeight);
 
     let x = margin;
     const top = y;
 
-    cell(x, top, nameWidth, rowHeight);
-    doc.setFontSize(8);
-    doc.text(p.name, x + 2, top + 5);
+    drawCell(x, top, nameWidth, rowHeight, {
+      bottom: true,
+      thickBottom: isLast,
+      thickLeft: true
+    });
+
+    doc.setFontSize(7.6);
+    doc.text(p.name, x + 2, top + 5, { maxWidth: nameWidth - 3 });
     x += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      cell(x, top, strafeWidth, rowHeight);
+      drawCell(x, top, strafeWidth, rowHeight, {
+        bottom: true,
+        thickBottom: isLast
+      });
+
+      doc.setFontSize(8);
       textCenter((p.strafen && p.strafen[s.key]) || 0, x, top + 5, strafeWidth);
       x += strafeWidth;
     });
@@ -4865,8 +4910,14 @@ function cell(x, yy, w, h) {
       formatEuro(tannenbaum),
       formatEuro(p.onTop),
       formatEuro(p.total)
-    ].forEach(value => {
-      cell(x, top, sumWidth, rowHeight);
+    ].forEach((value, idx) => {
+      drawCell(x, top, sumWidth, rowHeight, {
+        bottom: true,
+        thickBottom: isLast,
+        thickRight: idx === 3
+      });
+
+      doc.setFontSize(8);
       textCenter(value, x, top + 5, sumWidth);
       x += sumWidth;
     });
@@ -4924,7 +4975,9 @@ function cell(x, yy, w, h) {
           .map(a => `${a.name}: ${formatEuro(a.amount)}`)
           .join(', ');
 
-        doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, { maxWidth: pageWidth - margin * 2 - 6 });
+        doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, {
+          maxWidth: pageWidth - margin * 2 - 6
+        });
         y += 7;
       }
 
@@ -4987,24 +5040,42 @@ async function generateDrinksPDF(snapshot) {
   const teamLabel = t => t === 'T1' ? 'Wand' : t === 'T2' ? 'TV' : t || '-';
 
   const usableWidth = pageWidth - margin * 2;
-  const nameWidth = 42;
+  const nameWidth = 35;
   const sumWidth = 29;
   const drinkWidth = (usableWidth - nameWidth - (5 * sumWidth)) / snapshot.drinks.length;
 
   const headerHeight = 34;
   const rowBaseHeight = 8;
 
-function cell(x, yy, w, h) {
-  // vertikal normal
-  doc.setLineWidth(0.15);
-  doc.line(x, yy, x, yy + h);
-  doc.line(x + w, yy, x + w, yy + h);
+  function drawCell(x, yy, w, h, opts = {}) {
+    const {
+      left = true,
+      right = true,
+      top = false,
+      bottom = false,
+      thickTop = false,
+      thickBottom = false,
+      thickLeft = false,
+      thickRight = false
+    } = opts;
 
-  // horizontal ultradünn
-  doc.setLineWidth(0.03);
-  doc.line(x, yy, x + w, yy);
-  doc.line(x, yy + h, x + w, yy + h);
-}
+    if (left) {
+      doc.setLineWidth(thickLeft ? 0.35 : 0.15);
+      doc.line(x, yy, x, yy + h);
+    }
+    if (right) {
+      doc.setLineWidth(thickRight ? 0.35 : 0.15);
+      doc.line(x + w, yy, x + w, yy + h);
+    }
+    if (top) {
+      doc.setLineWidth(thickTop ? 0.35 : 0.15);
+      doc.line(x, yy, x + w, yy);
+    }
+    if (bottom) {
+      doc.setLineWidth(thickBottom ? 0.35 : 0.03);
+      doc.line(x, yy + h, x + w, yy + h);
+    }
+  }
 
   function textCenter(txt, x, yy, w, opts = {}) {
     doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
@@ -5012,7 +5083,7 @@ function cell(x, yy, w, h) {
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
-    lines.forEach((line, idx) => {
+    lines.slice(0, 4).forEach((line, idx) => {
       doc.text(line, x + w / 2, yy + idx * lineHeight, { align: "center" });
     });
   }
@@ -5021,17 +5092,25 @@ function cell(x, yy, w, h) {
     let x = margin;
     const top = y;
 
-    doc.setLineWidth(0.03);
     doc.setFontSize(8);
 
-    cell(x, top, nameWidth, headerHeight);
+    drawCell(x, top, nameWidth, headerHeight, {
+      top: true,
+      bottom: true,
+      thickTop: true,
+      thickLeft: true
+    });
     doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
       const price = d.price || 0;
 
-      cell(x, top, drinkWidth, headerHeight);
+      drawCell(x, top, drinkWidth, headerHeight, {
+        top: true,
+        bottom: true,
+        thickTop: true
+      });
 
       doc.setFontSize(7);
       drawWrappedText(d.label, x, top + 6, drinkWidth);
@@ -5042,8 +5121,14 @@ function cell(x, yy, w, h) {
       x += drinkWidth;
     });
 
-    ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach(label => {
-      cell(x, top, sumWidth, headerHeight);
+    ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach((label, idx) => {
+      drawCell(x, top, sumWidth, headerHeight, {
+        top: true,
+        bottom: true,
+        thickTop: true,
+        thickRight: idx === 4
+      });
+
       doc.setFontSize(7.5);
       drawWrappedText(label, x, top + 13, sumWidth);
       x += sumWidth;
@@ -5070,7 +5155,9 @@ function cell(x, yy, w, h) {
   y += 12;
   drawHeader();
 
-  snapshot.persons.forEach(p => {
+  snapshot.persons.forEach((p, personIndex) => {
+    const isLast = personIndex === snapshot.persons.length - 1;
+
     const teamDetails = (snapshot.spiele || [])
       .filter(s => (s.members || []).includes(p.name))
       .map(s => `Spiel: ${s.spieltyp || 'Teamspiel'} (${teamLabel(s.loser)}) +${formatEuro(s.proKopf || 0)}`);
@@ -5086,21 +5173,30 @@ function cell(x, yy, w, h) {
     let x = margin;
     const top = y;
 
-    cell(x, top, nameWidth, rowHeight);
-    doc.setFontSize(8);
-    doc.text(p.name, x + 2, top + 5);
+    drawCell(x, top, nameWidth, rowHeight, {
+      bottom: true,
+      thickBottom: isLast,
+      thickLeft: true
+    });
+
+    doc.setFontSize(7.6);
+    doc.text(p.name, x + 2, top + 5, { maxWidth: nameWidth - 3 });
 
     if (detailLines.length) {
-      doc.setFontSize(6.5);
+      doc.setFontSize(6.1);
       detailLines.forEach((line, idx) => {
-        doc.text(line, x + 2, top + 9 + idx * 4, { maxWidth: nameWidth - 4 });
+        doc.text(line, x + 2, top + 9 + idx * 4, { maxWidth: nameWidth - 3 });
       });
     }
 
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      cell(x, top, drinkWidth, rowHeight);
+      drawCell(x, top, drinkWidth, rowHeight, {
+        bottom: true,
+        thickBottom: isLast
+      });
+
       doc.setFontSize(8);
       textCenter((p.drinks && p.drinks[d.key]) || 0, x, top + 5, drinkWidth);
       x += drinkWidth;
@@ -5112,8 +5208,13 @@ function cell(x, yy, w, h) {
       formatEuro(p.roundExtra),
       formatEuro(p.total),
       formatEuro(p.paid)
-    ].forEach(value => {
-      cell(x, top, sumWidth, rowHeight);
+    ].forEach((value, idx) => {
+      drawCell(x, top, sumWidth, rowHeight, {
+        bottom: true,
+        thickBottom: isLast,
+        thickRight: idx === 4
+      });
+
       doc.setFontSize(8);
       textCenter(value, x, top + 5, sumWidth);
       x += sumWidth;
