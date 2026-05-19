@@ -4761,16 +4761,11 @@ async function generateStrafenPDF(snapshot) {
 
   y += 10;
 
-  const nameWidth = 62;
-  const sumWidth = 32;
-  const headerHeight = 46;
-
-  const availableWidth = pageWidth - margin * 2;
-  const fixedWidth = nameWidth + sumWidth * 4;
-  const strafeWidth = Math.max(
-    18,
-    (availableWidth - fixedWidth) / snapshot.strafen.length
-  );
+// Strafen
+const nameWidth = 45;
+const strafeWidth = 15;
+const sumWidth = 26;
+const headerHeight = 42;
 
   let x = margin;
 
@@ -4924,16 +4919,11 @@ async function generateDrinksPDF(snapshot) {
 
   y += 10;
 
-  const nameWidth = 62;
-  const sumWidth = 28;
-  const headerHeight = 46;
-
-  const availableWidth = pageWidth - margin * 2;
-  const fixedWidth = nameWidth + sumWidth * 5;
-  const drinkWidth = Math.max(
-    18,
-    (availableWidth - fixedWidth) / snapshot.drinks.length
-  );
+// Getränke
+const nameWidth = 45;
+const drinkWidth = 18;
+const sumWidth = 24;
+const headerHeight = 42;
 
   let x = margin;
 
