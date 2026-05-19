@@ -7264,14 +7264,10 @@ function renderDarts() {
   const t1RoundTotal = getDartsRoundTotal('T1');
   const t2RoundTotal = getDartsRoundTotal('T2');
 
-    let t1LiveRest = dartsState.scores.T1 || 0;
-    let t2LiveRest = dartsState.scores.T2 || 0;
+    const projected = getDartsLiveProjectedScores();
 
-    if (t1RoundTotal > t2RoundTotal) {
-      t1LiveRest = Math.max(0, t1LiveRest - t1RoundTotal);
-    } else if (t2RoundTotal > t1RoundTotal) {
-      t2LiveRest = Math.max(0, t2LiveRest - t2RoundTotal);
-    }
+    const t1LiveRest = projected.T1;
+    const t2LiveRest = projected.T2;
 
   if (scoreT1) scoreT1.textContent = dartsState.scores.T1;
   if (scoreT2) scoreT2.textContent = dartsState.scores.T2;
