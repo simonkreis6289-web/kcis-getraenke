@@ -4775,7 +4775,9 @@ const headerHeight = 42;
   x += nameWidth;
 
   snapshot.strafen.forEach(s => {
-    doc.text(s.label, x + strafeWidth / 2, y + headerHeight - 4, {
+    const colCenter = x + (strafeWidth / 2);
+
+    doc.text(s.label, colCenter - 1.5, y + headerHeight - 4, {
       angle: 90,
       align: "center"
     });
@@ -4800,12 +4802,12 @@ const headerHeight = 42;
     rowX += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      doc.text(
-        String((p.strafen && p.strafen[s.key]) || 0),
-        rowX + strafeWidth / 2,
-        y,
-        { align: "center" }
-      );
+        doc.text(
+          String((p.strafen && p.strafen[s.key]) || 0),
+          rowX + (strafeWidth / 2) - 1.5,
+          y,
+          { align: "center" }
+        );
       rowX += strafeWidth;
     });
 
@@ -4932,13 +4934,16 @@ const headerHeight = 42;
   doc.text("Name", x, y + headerHeight);
   x += nameWidth;
 
-  snapshot.drinks.forEach(d => {
-    doc.text(d.label, x + drinkWidth / 2, y + headerHeight - 4, {
-      angle: 90,
-      align: "center"
+    snapshot.drinks.forEach(d => {
+      const colCenter = x + (drinkWidth / 2);
+
+      doc.text(d.label, colCenter - 1.5, y + headerHeight - 4, {
+        angle: 90,
+        align: "center"
+      });
+
+      x += drinkWidth;
     });
-    x += drinkWidth;
-  });
 
   ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach(label => {
     doc.text(label, x + sumWidth / 2, y + headerHeight, { align: "center" });
@@ -4958,12 +4963,12 @@ const headerHeight = 42;
     rowX += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      doc.text(
-        String((p.drinks && p.drinks[d.key]) || 0),
-        rowX + drinkWidth / 2,
-        y,
-        { align: "center" }
-      );
+        doc.text(
+          String((p.drinks && p.drinks[d.key]) || 0),
+          rowX + (drinkWidth / 2) - 1.5,
+          y,
+          { align: "center" }
+        );
       rowX += drinkWidth;
     });
 
