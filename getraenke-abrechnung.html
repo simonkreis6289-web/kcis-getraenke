@@ -4734,69 +4734,76 @@ async function generateStrafenPDF(snapshot) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a3" });
 
+  const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 12;
   let y = 15;
 
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
 
-  const nameWidth = 56;
-  const strafeWidth = 16;
-  const sumWidth = 29;
-  const headerHeight = 42;
+  const usableWidth = pageWidth - margin * 2;
+  const nameWidth = 58;
+  const sumWidth = 30;
+  const strafeWidth = (usableWidth - nameWidth - (4 * sumWidth)) / snapshot.strafen.length;
+
+  const headerHeight = 34;
   const rowHeight = 8;
 
-  function drawCell(x, yy, w, h) {
+  function cell(x, yy, w, h) {
     doc.rect(x, yy, w, h);
+  }
+
+  function textCenter(txt, x, yy, w, opts = {}) {
+    doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
+  }
+
+  function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
+    const lines = doc.splitTextToSize(String(txt || ''), w - 3);
+    lines.forEach((line, idx) => {
+      doc.text(line, x + w / 2, yy + idx * lineHeight, { align: "center" });
+    });
+  }
+
+  function getStrafPrice(s) {
+    if (s.price !== undefined) return parseFloat(s.price) || 0;
+    if (snapshot.strafPrices && snapshot.strafPrices[s.key] !== undefined) {
+      return parseFloat(snapshot.strafPrices[s.key]) || 0;
+    }
+    if (typeof strafPrices !== 'undefined' && strafPrices[s.key] !== undefined) {
+      return parseFloat(strafPrices[s.key]) || 0;
+    }
+    return 0;
   }
 
   function drawHeader() {
     let x = margin;
     const top = y;
 
-    doc.setFontSize(8);
     doc.setLineWidth(0.2);
+    doc.setFontSize(8);
 
-    drawCell(x, top, nameWidth, headerHeight);
-    doc.text("Name", x + 2, top + headerHeight - 6);
+    cell(x, top, nameWidth, headerHeight);
+    doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      const centerX = x + (strafeWidth / 2);
-      const centerY = y + (headerHeight / 2);
+      const price = getStrafPrice(s);
 
-      doc.rect(x, y, strafeWidth, headerHeight);
+      cell(x, top, strafeWidth, headerHeight);
 
-      doc.saveGraphicsState();
-      doc.setFontSize(8);
+      doc.setFontSize(7);
+      drawWrappedText(s.label, x, top + 6, strafeWidth);
 
-      doc.text(
-        s.label,
-        centerX,
-        centerY - 4,
-        {
-          align: "center",
-          angle: 90
-        }
-      );
-
-      doc.setFontSize(6);
-      doc.text(
-        formatEuro(strafPrices[s.key] || 0),
-        centerX,
-        y + headerHeight - 4,
-        { align: "center" }
-      );
-
-      doc.restoreGraphicsState();
+      doc.setFontSize(6.5);
+      textCenter(formatEuro(price), x, top + headerHeight - 4, strafeWidth);
 
       x += strafeWidth;
     });
 
     ["Freie Beträge", "Tannenbaum", "On Top", "Gesamt"].forEach(label => {
-      drawCell(x, top, sumWidth, headerHeight);
-      doc.setFontSize(8);
-      doc.text(label, x + sumWidth / 2, top + headerHeight - 9, { align: "center" });
+      cell(x, top, sumWidth, headerHeight);
+      doc.setFontSize(7.5);
+      drawWrappedText(label, x, top + 13, sumWidth);
       x += sumWidth;
     });
 
@@ -4825,18 +4832,16 @@ async function generateStrafenPDF(snapshot) {
     ensureSpace(rowHeight);
 
     let x = margin;
-    const rowTop = y;
+    const top = y;
 
-    drawCell(x, rowTop, nameWidth, rowHeight);
+    cell(x, top, nameWidth, rowHeight);
     doc.setFontSize(8);
-    doc.text(p.name, x + 2, rowTop + 5);
+    doc.text(p.name, x + 2, top + 5);
     x += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      drawCell(x, rowTop, strafeWidth, rowHeight);
-      doc.text(String((p.strafen && p.strafen[s.key]) || 0), x + strafeWidth / 2, rowTop + 5, {
-        align: "center"
-      });
+      cell(x, top, strafeWidth, rowHeight);
+      textCenter((p.strafen && p.strafen[s.key]) || 0, x, top + 5, strafeWidth);
       x += strafeWidth;
     });
 
@@ -4853,8 +4858,8 @@ async function generateStrafenPDF(snapshot) {
       formatEuro(p.onTop),
       formatEuro(p.total)
     ].forEach(value => {
-      drawCell(x, rowTop, sumWidth, rowHeight);
-      doc.text(value, x + sumWidth / 2, rowTop + 5, { align: "center" });
+      cell(x, top, sumWidth, rowHeight);
+      textCenter(value, x, top + 5, sumWidth);
       x += sumWidth;
     });
 
@@ -4911,7 +4916,7 @@ async function generateStrafenPDF(snapshot) {
           .map(a => `${a.name}: ${formatEuro(a.amount)}`)
           .join(', ');
 
-        doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, { maxWidth: 380 });
+        doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, { maxWidth: pageWidth - margin * 2 - 6 });
         y += 7;
       }
 
@@ -4973,66 +4978,58 @@ async function generateDrinksPDF(snapshot) {
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
   const teamLabel = t => t === 'T1' ? 'Wand' : t === 'T2' ? 'TV' : t || '-';
 
-  const nameWidth = 56;
-  const drinkWidth = 18;
-  const sumWidth = 28;
-  const headerHeight = 42;
+  const usableWidth = pageWidth - margin * 2;
+  const nameWidth = 58;
+  const sumWidth = 29;
+  const drinkWidth = (usableWidth - nameWidth - (5 * sumWidth)) / snapshot.drinks.length;
+
+  const headerHeight = 34;
   const rowBaseHeight = 8;
 
-  const tableWidth = nameWidth + snapshot.drinks.length * drinkWidth + 5 * sumWidth;
-  const tableRight = margin + tableWidth;
-
-  function drawCell(x, yy, w, h) {
+  function cell(x, yy, w, h) {
     doc.rect(x, yy, w, h);
+  }
+
+  function textCenter(txt, x, yy, w, opts = {}) {
+    doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
+  }
+
+  function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
+    const lines = doc.splitTextToSize(String(txt || ''), w - 3);
+    lines.forEach((line, idx) => {
+      doc.text(line, x + w / 2, yy + idx * lineHeight, { align: "center" });
+    });
   }
 
   function drawHeader() {
     let x = margin;
     const top = y;
 
-    doc.setFontSize(8);
     doc.setLineWidth(0.2);
+    doc.setFontSize(8);
 
-    drawCell(x, top, nameWidth, headerHeight);
-    doc.text("Name", x + 2, top + headerHeight - 6);
+    cell(x, top, nameWidth, headerHeight);
+    doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      const centerX = x + (drinkWidth / 2);
-      const centerY = y + (headerHeight / 2);
+      const price = d.price || 0;
 
-      doc.rect(x, y, drinkWidth, headerHeight);
+      cell(x, top, drinkWidth, headerHeight);
 
-      doc.saveGraphicsState();
-      doc.setFontSize(8);
+      doc.setFontSize(7);
+      drawWrappedText(d.label, x, top + 6, drinkWidth);
 
-      doc.text(
-        d.label,
-        centerX,
-        centerY - 4,
-        {
-          align: "center",
-          angle: 90
-        }
-      );
-
-      doc.setFontSize(6);
-      doc.text(
-        formatEuro(drinkPrices[d.key] || 0),
-        centerX,
-        y + headerHeight - 4,
-        { align: "center" }
-      );
-
-      doc.restoreGraphicsState();
+      doc.setFontSize(6.5);
+      textCenter(formatEuro(price), x, top + headerHeight - 4, drinkWidth);
 
       x += drinkWidth;
     });
 
     ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach(label => {
-      drawCell(x, top, sumWidth, headerHeight);
-      doc.setFontSize(8);
-      doc.text(label, x + sumWidth / 2, top + headerHeight - 9, { align: "center" });
+      cell(x, top, sumWidth, headerHeight);
+      doc.setFontSize(7.5);
+      drawWrappedText(label, x, top + 13, sumWidth);
       x += sumWidth;
     });
 
@@ -5071,27 +5068,25 @@ async function generateDrinksPDF(snapshot) {
     ensureSpace(rowHeight);
 
     let x = margin;
-    const rowTop = y;
+    const top = y;
 
-    drawCell(x, rowTop, nameWidth, rowHeight);
+    cell(x, top, nameWidth, rowHeight);
     doc.setFontSize(8);
-    doc.text(p.name, x + 2, rowTop + 5);
+    doc.text(p.name, x + 2, top + 5);
 
     if (detailLines.length) {
       doc.setFontSize(6.5);
       detailLines.forEach((line, idx) => {
-        doc.text(line, x + 2, rowTop + 9 + idx * 4, { maxWidth: nameWidth - 4 });
+        doc.text(line, x + 2, top + 9 + idx * 4, { maxWidth: nameWidth - 4 });
       });
     }
 
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      drawCell(x, rowTop, drinkWidth, rowHeight);
+      cell(x, top, drinkWidth, rowHeight);
       doc.setFontSize(8);
-      doc.text(String((p.drinks && p.drinks[d.key]) || 0), x + drinkWidth / 2, rowTop + 5, {
-        align: "center"
-      });
+      textCenter((p.drinks && p.drinks[d.key]) || 0, x, top + 5, drinkWidth);
       x += drinkWidth;
     });
 
@@ -5102,9 +5097,9 @@ async function generateDrinksPDF(snapshot) {
       formatEuro(p.total),
       formatEuro(p.paid)
     ].forEach(value => {
-      drawCell(x, rowTop, sumWidth, rowHeight);
+      cell(x, top, sumWidth, rowHeight);
       doc.setFontSize(8);
-      doc.text(value, x + sumWidth / 2, rowTop + 5, { align: "center" });
+      textCenter(value, x, top + 5, sumWidth);
       x += sumWidth;
     });
 
