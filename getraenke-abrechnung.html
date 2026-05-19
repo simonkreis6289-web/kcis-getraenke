@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="KC IS">
 
-  <title>KC IS – Getränkeabrechnung</title>
+  <title>Kegelclub-Manager</title>
 
   <link rel="manifest" href="manifest.json?v=20260318-v13">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
@@ -4860,7 +4860,12 @@ async function generateStrafenPDF(snapshot) {
   }
 
   doc.setFontSize(18);
-  doc.text("KC IS - Strafabrechnung", margin, y);
+const clubName = selectedClub?.name || 'Kegelclub';
+
+doc.setFontSize(18);
+
+const clubName = selectedClub?.name || 'Kegelclub';
+doc.text(`${clubName} - Strafabrechnung`, margin, y);
 
   y += 8;
   doc.setFontSize(10);
@@ -5146,7 +5151,11 @@ async function generateDrinksPDF(snapshot) {
   }
 
   doc.setFontSize(18);
-  doc.text("KC IS - Getränkeabrechnung", margin, y);
+const clubName = selectedClub?.name || 'Kegelclub';
+doc.setFontSize(18);
+
+const clubName = selectedClub?.name || 'Kegelclub';
+doc.text(`${clubName} - Getränkeabrechnung`, margin, y);
 
   y += 8;
   doc.setFontSize(10);
@@ -5237,6 +5246,96 @@ async function generateDrinksPDF(snapshot) {
   doc.text(`Runden gesamt: ${formatEuro(totalRunden)}`, margin, y); y += 6;
   doc.text(`Abrechnung gesamt: ${formatEuro(totalGesamt)}`, margin, y); y += 6;
   doc.text(`Bezahlt gesamt: ${formatEuro(totalBezahlt)}`, margin, y);
+
+  y += 10;
+
+  if ((snapshot.spiele || []).length) {
+    ensureSpace(20);
+
+    doc.setFontSize(13);
+    doc.text("Teamspiele / verlorene Spiele", margin, y);
+    y += 7;
+
+    doc.setFontSize(9);
+
+    snapshot.spiele.forEach((s, idx) => {
+      ensureSpace(18);
+
+      const loser = s.loser === 'T1' ? 'Wand' : s.loser === 'T2' ? 'TV' : s.loser || '-';
+
+      const drinksText = snapshot.drinks
+        .filter(d => (s.drinks && (s.drinks[d.key] || 0) > 0))
+        .map(d => `${s.drinks[d.key]}x ${d.label}`)
+        .join(', ');
+
+      doc.text(`${idx + 1}. ${s.spieltyp || 'Teamspiel'} | Verlierer: ${loser}`, margin, y);
+      y += 5;
+
+      doc.text(`Getränke: ${drinksText || '-'}`, margin + 6, y, {
+        maxWidth: pageWidth - margin * 2 - 6
+      });
+      y += 5;
+
+      doc.text(
+        `Gesamt: ${formatEuro(s.total || 0)} | Pro Kopf: ${formatEuro(s.proKopf || 0)} | Spieler: ${(s.members || []).join(', ') || '-'}`,
+        margin + 6,
+        y,
+        { maxWidth: pageWidth - margin * 2 - 6 }
+      );
+      y += 7;
+    });
+  }
+
+  const allRounds = [];
+
+  snapshot.persons.forEach(p => {
+    (p.rounds || []).forEach(r => {
+      allRounds.push({
+        person: p.name,
+        reason: r.reason || '',
+        drinks: r.drinks || {},
+        total: r.total || 0,
+        createdAt: r.createdAt || ''
+      });
+    });
+  });
+
+  if (allRounds.length) {
+    y += 6;
+    ensureSpace(20);
+
+    doc.setFontSize(13);
+    doc.text("Gegebene Runden", margin, y);
+    y += 7;
+
+    doc.setFontSize(9);
+
+    allRounds
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .forEach((r, idx) => {
+        ensureSpace(16);
+
+        const drinksText = snapshot.drinks
+          .filter(d => (r.drinks && (r.drinks[d.key] || 0) > 0))
+          .map(d => `${r.drinks[d.key]}x ${d.label}`)
+          .join(', ');
+
+        doc.text(`${idx + 1}. ${r.person} | ${r.reason || 'Ohne Grund'} | ${formatEuro(r.total)}`, margin, y);
+        y += 5;
+
+        doc.text(`Getränke: ${drinksText || '-'}`, margin + 6, y, {
+          maxWidth: pageWidth - margin * 2 - 6
+        });
+        y += 5;
+
+        if (r.createdAt) {
+          doc.text(`Zeit: ${formatDateTime(r.createdAt)}`, margin + 6, y);
+          y += 6;
+        } else {
+          y += 2;
+        }
+      });
+  }
 
   return doc;
 }
