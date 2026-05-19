@@ -4790,9 +4790,13 @@ async function generateStrafenPDF(snapshot) {
     }
   }
 
-  function textCenter(txt, x, yy, w, opts = {}) {
-    doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
-  }
+function textCenter(txt, x, top, w, h, opts = {}) {
+  const yPos = top + (h / 2) + 1.2;
+  doc.text(String(txt), x + w / 2, yPos, {
+    align: "center",
+    ...opts
+  });
+}
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
@@ -4905,7 +4909,14 @@ async function generateStrafenPDF(snapshot) {
       });
 
       doc.setFontSize(8);
-      textCenter((p.strafen && p.strafen[s.key]) || 0, x, top + 5, strafeWidth);
+      textCenter(
+        (p.strafen && p.strafen[s.key]) || 0,
+        x,
+        top,
+        strafeWidth,
+        rowHeight
+      );
+
       x += strafeWidth;
     });
 
@@ -4929,7 +4940,14 @@ async function generateStrafenPDF(snapshot) {
       });
 
       doc.setFontSize(8);
-      textCenter(value, x, top + 5, sumWidth);
+      textCenter(
+        value,
+        x,
+        top,
+        sumWidth,
+        rowHeight
+      );
+
       x += sumWidth;
     });
 
@@ -5089,9 +5107,13 @@ async function generateDrinksPDF(snapshot) {
     }
   }
 
-  function textCenter(txt, x, yy, w, opts = {}) {
-    doc.text(String(txt), x + w / 2, yy, { align: "center", ...opts });
-  }
+function textCenter(txt, x, top, w, h, opts = {}) {
+  const yPos = top + (h / 2) + 1.2;
+  doc.text(String(txt), x + w / 2, yPos, {
+    align: "center",
+    ...opts
+  });
+}
 
   function drawWrappedText(txt, x, yy, w, lineHeight = 3.4) {
     const lines = doc.splitTextToSize(String(txt || ''), w - 3);
@@ -5116,19 +5138,19 @@ async function generateDrinksPDF(snapshot) {
     x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      const price = d.price || 0;
-
-      drawCell(x, top, drinkWidth, headerHeight, {
-        top: true,
+      drawCell(x, top, drinkWidth, rowHeight, {
         bottom: true,
-        thickTop: true
+        thickBottom: isLast
       });
 
-      doc.setFontSize(7);
-      drawWrappedText(d.label, x, top + 6, drinkWidth);
-
-      doc.setFontSize(6.5);
-      textCenter(formatEuro(price), x, top + headerHeight - 4, drinkWidth);
+      doc.setFontSize(8);
+      textCenter(
+        (p.drinks && p.drinks[d.key]) || 0,
+        x,
+        top,
+        drinkWidth,
+        rowHeight
+      );
 
       x += drinkWidth;
     });
@@ -5228,7 +5250,14 @@ async function generateDrinksPDF(snapshot) {
       });
 
       doc.setFontSize(8);
-      textCenter(value, x, top + 5, sumWidth);
+      textCenter(
+        value,
+        x,
+        top,
+        sumWidth,
+        rowHeight
+      );
+
       x += sumWidth;
     });
 
