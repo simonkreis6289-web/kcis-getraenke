@@ -4732,81 +4732,103 @@ function getStrafenSnapshot() {
 
 async function generateStrafenPDF(snapshot) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a3"
-  });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a3" });
 
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 12;
   let y = 15;
 
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
 
-  const nameWidth = 48;
+  const nameWidth = 56;
   const strafeWidth = 16;
-  const sumWidth = 26;
-  const headerHeight = 48;
-  const rowHeight = 7;
+  const sumWidth = 29;
+  const headerHeight = 42;
+  const rowHeight = 8;
 
-  const totalWidth =
-    nameWidth +
-    (snapshot.strafen.length * strafeWidth) +
-    (4 * sumWidth);
+  function drawCell(x, yy, w, h) {
+    doc.rect(x, yy, w, h);
+  }
 
-  const tableRight = margin + totalWidth;
+  function drawHeader() {
+    let x = margin;
+    const top = y;
+
+    doc.setFontSize(8);
+    doc.setLineWidth(0.2);
+
+    drawCell(x, top, nameWidth, headerHeight);
+    doc.text("Name", x + 2, top + headerHeight - 6);
+    x += nameWidth;
+
+    snapshot.strafen.forEach(s => {
+      const price =
+        s.price ??
+        (snapshot.strafPrices ? snapshot.strafPrices[s.key] : undefined) ??
+        (typeof strafPrices !== 'undefined' ? strafPrices[s.key] : 0) ??
+        0;
+
+      drawCell(x, top, strafeWidth, headerHeight);
+
+      doc.setFontSize(7.5);
+      doc.text(s.label, x + strafeWidth / 2 + 3, top + headerHeight - 11, {
+        angle: 90,
+        align: "center"
+      });
+
+      doc.setFontSize(6.5);
+      doc.text(formatEuro(price), x + strafeWidth / 2, top + headerHeight - 3, {
+        align: "center"
+      });
+
+      x += strafeWidth;
+    });
+
+    ["Freie Beträge", "Tannenbaum", "On Top", "Gesamt"].forEach(label => {
+      drawCell(x, top, sumWidth, headerHeight);
+      doc.setFontSize(8);
+      doc.text(label, x + sumWidth / 2, top + headerHeight - 9, { align: "center" });
+      x += sumWidth;
+    });
+
+    y += headerHeight;
+  }
+
+  function ensureSpace(needed) {
+    if (y + needed > pageHeight - 15) {
+      doc.addPage();
+      y = 15;
+      drawHeader();
+    }
+  }
 
   doc.setFontSize(18);
-  doc.text("KC IS – Strafabrechnung", margin, y);
+  doc.text("KC IS - Strafabrechnung", margin, y);
 
   y += 8;
   doc.setFontSize(10);
   doc.text(new Date(snapshot.date).toLocaleString('de-DE'), margin, y);
 
   y += 12;
-
-  const tableTop = y;
-  let x = margin;
-
-  doc.setFontSize(8.5);
-  doc.setLineWidth(0.2);
-
-  doc.text("Name", x + 2, y + headerHeight - 6);
-  x += nameWidth;
-
-  snapshot.strafen.forEach(s => {
-    doc.text(s.label, x + (strafeWidth / 2) + 3.5, y + headerHeight - 4, {
-      angle: 90,
-      align: "center"
-    });
-    x += strafeWidth;
-  });
-
-  ["Freie Beträge", "Tannenbaum", "On Top", "Gesamt"].forEach(label => {
-    doc.text(label, x + sumWidth / 2, y + headerHeight - 6, {
-      align: "center"
-    });
-    x += sumWidth;
-  });
-
-  doc.line(margin, y + headerHeight, tableRight, y + headerHeight);
-
-  y += headerHeight + 7;
+  drawHeader();
 
   snapshot.presentPersons.forEach(p => {
-    let rowX = margin;
+    ensureSpace(rowHeight);
 
-    doc.text(p.name, rowX + 2, y);
-    rowX += nameWidth;
+    let x = margin;
+    const rowTop = y;
+
+    drawCell(x, rowTop, nameWidth, rowHeight);
+    doc.setFontSize(8);
+    doc.text(p.name, x + 2, rowTop + 5);
+    x += nameWidth;
 
     snapshot.strafen.forEach(s => {
-      doc.text(
-        String((p.strafen && p.strafen[s.key]) || 0),
-        rowX + strafeWidth / 2,
-        y,
-        { align: "center" }
-      );
-      rowX += strafeWidth;
+      drawCell(x, rowTop, strafeWidth, rowHeight);
+      doc.text(String((p.strafen && p.strafen[s.key]) || 0), x + strafeWidth / 2, rowTop + 5, {
+        align: "center"
+      });
+      x += strafeWidth;
     });
 
     const freeNormal = (p.freeStrafen || [])
@@ -4816,41 +4838,39 @@ async function generateStrafenPDF(snapshot) {
     const tannenbaum = (p.tannenbaumCharges || [])
       .reduce((sum, t) => sum + (parseFloat(t.amount || 0) || 0), 0);
 
-    doc.text(formatEuro(freeNormal), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(tannenbaum), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(p.onTop), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(p.total), rowX + sumWidth / 2, y, { align: "center" });
+    [
+      formatEuro(freeNormal),
+      formatEuro(tannenbaum),
+      formatEuro(p.onTop),
+      formatEuro(p.total)
+    ].forEach(value => {
+      drawCell(x, rowTop, sumWidth, rowHeight);
+      doc.text(value, x + sumWidth / 2, rowTop + 5, { align: "center" });
+      x += sumWidth;
+    });
 
     y += rowHeight;
   });
 
-  const tableBottom = y - 3;
+  y += 10;
 
-  let lx = margin;
-  doc.line(margin, tableTop, tableRight, tableTop);
-  doc.line(margin, tableBottom, tableRight, tableBottom);
+  if (snapshot.absentMembers && snapshot.absentMembers.length) {
+    ensureSpace(12 + snapshot.absentMembers.length * 6);
 
-  doc.line(lx, tableTop, lx, tableBottom);
-  lx += nameWidth;
-  doc.line(lx, tableTop, lx, tableBottom);
+    doc.setFontSize(13);
+    doc.text("Nicht anwesende Mitglieder", margin, y);
+    y += 7;
 
-  snapshot.strafen.forEach(() => {
-    lx += strafeWidth;
-    doc.line(lx, tableTop, lx, tableBottom);
-  });
+    doc.setFontSize(10);
+    snapshot.absentMembers.forEach(p => {
+      doc.text(`${p.name}: ${formatEuro(p.total)}`, margin, y);
+      y += 6;
+    });
 
-  for (let i = 0; i < 4; i++) {
-    lx += sumWidth;
-    doc.line(lx, tableTop, lx, tableBottom);
+    y += 4;
   }
 
-  y += 10;
+  ensureSpace(22);
 
   doc.setFontSize(12);
   doc.text(`Höchste Strafe Anwesende: ${formatEuro(snapshot.highestPresent)}`, margin, y);
@@ -4858,6 +4878,42 @@ async function generateStrafenPDF(snapshot) {
   doc.text(`Nicht anwesend Zuschlag: +${formatEuro(snapshot.absentExtra)}`, margin, y);
   y += 6;
   doc.text(`Strafen gesamt: ${formatEuro(snapshot.total)}`, margin, y);
+
+  if (snapshot.history && snapshot.history.length) {
+    y += 10;
+    ensureSpace(20);
+
+    doc.setFontSize(13);
+    doc.text("Historie", margin, y);
+    y += 7;
+
+    doc.setFontSize(9);
+
+    snapshot.history.forEach((entry, idx) => {
+      ensureSpace(16);
+
+      if (entry.type === 'tannenbaum') {
+        doc.text(`${idx + 1}. Tannenbaum abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
+        y += 5;
+        doc.text(`Wand: ${formatEuro(entry.totals?.T1 || 0)} | TV: ${formatEuro(entry.totals?.T2 || 0)}`, margin + 6, y);
+        y += 5;
+
+        const assigned = (entry.assignedTo || [])
+          .map(a => `${a.name}: ${formatEuro(a.amount)}`)
+          .join(', ');
+
+        doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, { maxWidth: 380 });
+        y += 7;
+      }
+
+      if (entry.type === 'free') {
+        doc.text(`${idx + 1}. Freier Betrag | ${formatDateTime(entry.createdAt)}`, margin, y);
+        y += 5;
+        doc.text(`${entry.person || '-'}: ${entry.reason || '-'} | ${formatEuro(entry.amount)}${entry.onTop ? ' | On Top' : ''}`, margin + 6, y);
+        y += 7;
+      }
+    });
+  }
 
   return doc;
 }
@@ -4898,125 +4954,140 @@ async function archiveStrafenEvent(snapshot) {
     
 async function generateDrinksPDF(snapshot) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a3"
-  });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a3" });
 
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 12;
   let y = 15;
 
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
+  const teamLabel = t => t === 'T1' ? 'Wand' : t === 'T2' ? 'TV' : t || '-';
 
-  const nameWidth = 48;
-  const drinkWidth = 16;
-  const sumWidth = 24;
-  const headerHeight = 48;
-  const rowHeight = 7;
+  const nameWidth = 56;
+  const drinkWidth = 18;
+  const sumWidth = 28;
+  const headerHeight = 42;
+  const rowBaseHeight = 8;
 
-  const totalWidth =
-    nameWidth +
-    (snapshot.drinks.length * drinkWidth) +
-    (5 * sumWidth);
+  const tableWidth = nameWidth + snapshot.drinks.length * drinkWidth + 5 * sumWidth;
+  const tableRight = margin + tableWidth;
 
-  const tableRight = margin + totalWidth;
+  function drawCell(x, yy, w, h) {
+    doc.rect(x, yy, w, h);
+  }
+
+  function drawHeader() {
+    let x = margin;
+    const top = y;
+
+    doc.setFontSize(8);
+    doc.setLineWidth(0.2);
+
+    drawCell(x, top, nameWidth, headerHeight);
+    doc.text("Name", x + 2, top + headerHeight - 6);
+    x += nameWidth;
+
+    snapshot.drinks.forEach(d => {
+      const price = d.price ?? (typeof prices !== 'undefined' ? prices[d.key] : 0) ?? 0;
+
+      drawCell(x, top, drinkWidth, headerHeight);
+
+      doc.setFontSize(7.5);
+      doc.text(d.label, x + drinkWidth / 2 + 3, top + headerHeight - 11, {
+        angle: 90,
+        align: "center"
+      });
+
+      doc.setFontSize(6.5);
+      doc.text(formatEuro(price), x + drinkWidth / 2, top + headerHeight - 3, {
+        align: "center"
+      });
+
+      x += drinkWidth;
+    });
+
+    ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach(label => {
+      drawCell(x, top, sumWidth, headerHeight);
+      doc.setFontSize(8);
+      doc.text(label, x + sumWidth / 2, top + headerHeight - 9, { align: "center" });
+      x += sumWidth;
+    });
+
+    y += headerHeight;
+  }
+
+  function ensureSpace(needed) {
+    if (y + needed > pageHeight - 15) {
+      doc.addPage();
+      y = 15;
+      drawHeader();
+    }
+  }
 
   doc.setFontSize(18);
-  doc.text("KC IS – Getränkeabrechnung", margin, y);
+  doc.text("KC IS - Getränkeabrechnung", margin, y);
 
   y += 8;
   doc.setFontSize(10);
   doc.text(new Date(snapshot.date).toLocaleString('de-DE'), margin, y);
 
   y += 12;
+  drawHeader();
 
-  const tableTop = y;
-  let x = margin;
-
-  doc.setFontSize(8.5);
-  doc.setLineWidth(0.2);
-
-  // Name
-  doc.text("Name", x + 2, y + headerHeight - 6);
-  x += nameWidth;
-
-  // Getränkespalten
-  snapshot.drinks.forEach(d => {
-    doc.text(d.label, x + (drinkWidth / 2) + 3.5, y + headerHeight - 4, {
-      angle: 90,
-      align: "center"
-    });
-    x += drinkWidth;
-  });
-
-  // Summenspalten
-  ["Getränke", "Strafen", "Runden", "Gesamt", "Bezahlt"].forEach(label => {
-    doc.text(label, x + sumWidth / 2, y + headerHeight - 6, {
-      align: "center"
-    });
-    x += sumWidth;
-  });
-
-  // Linie unter Header
-  doc.line(margin, y + headerHeight, tableRight, y + headerHeight);
-
-  y += headerHeight + 7;
-
-  // Daten
   snapshot.persons.forEach(p => {
-    let rowX = margin;
+    const teamDetails = (snapshot.spiele || [])
+      .filter(s => (s.members || []).includes(p.name))
+      .map(s => `Spiel: ${s.spieltyp || 'Teamspiel'} (${teamLabel(s.loser)}) +${formatEuro(s.proKopf || 0)}`);
 
-    doc.text(p.name, rowX + 2, y);
-    rowX += nameWidth;
+    const roundDetails = (p.rounds || [])
+      .map(r => `Runde: ${r.reason || 'ohne Grund'} +${formatEuro(r.total || 0)}`);
+
+    const detailLines = [...teamDetails, ...roundDetails];
+    const rowHeight = rowBaseHeight + detailLines.length * 4;
+
+    ensureSpace(rowHeight);
+
+    let x = margin;
+    const rowTop = y;
+
+    drawCell(x, rowTop, nameWidth, rowHeight);
+    doc.setFontSize(8);
+    doc.text(p.name, x + 2, rowTop + 5);
+
+    if (detailLines.length) {
+      doc.setFontSize(6.5);
+      detailLines.forEach((line, idx) => {
+        doc.text(line, x + 2, rowTop + 9 + idx * 4, { maxWidth: nameWidth - 4 });
+      });
+    }
+
+    x += nameWidth;
 
     snapshot.drinks.forEach(d => {
-      doc.text(
-        String((p.drinks && p.drinks[d.key]) || 0),
-        rowX + drinkWidth / 2,
-        y,
-        { align: "center" }
-      );
-      rowX += drinkWidth;
+      drawCell(x, rowTop, drinkWidth, rowHeight);
+      doc.setFontSize(8);
+      doc.text(String((p.drinks && p.drinks[d.key]) || 0), x + drinkWidth / 2, rowTop + 5, {
+        align: "center"
+      });
+      x += drinkWidth;
     });
 
-    doc.text(formatEuro(p.drinksTotal), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(p.teamExtra), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(p.roundExtra), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(p.total), rowX + sumWidth / 2, y, { align: "center" });
-    rowX += sumWidth;
-
-    doc.text(formatEuro(p.paid), rowX + sumWidth / 2, y, { align: "center" });
+    [
+      formatEuro(p.drinksTotal),
+      formatEuro(p.teamExtra),
+      formatEuro(p.roundExtra),
+      formatEuro(p.total),
+      formatEuro(p.paid)
+    ].forEach(value => {
+      drawCell(x, rowTop, sumWidth, rowHeight);
+      doc.setFontSize(8);
+      doc.text(value, x + sumWidth / 2, rowTop + 5, { align: "center" });
+      x += sumWidth;
+    });
 
     y += rowHeight;
   });
-
-  const tableBottom = y - 3;
-
-  // Rahmen + Spalten
-  let lx = margin;
-  doc.line(margin, tableTop, tableRight, tableTop);
-  doc.line(margin, tableBottom, tableRight, tableBottom);
-
-  doc.line(lx, tableTop, lx, tableBottom);
-  lx += nameWidth;
-  doc.line(lx, tableTop, lx, tableBottom);
-
-  snapshot.drinks.forEach(() => {
-    lx += drinkWidth;
-    doc.line(lx, tableTop, lx, tableBottom);
-  });
-
-  for (let i = 0; i < 5; i++) {
-    lx += sumWidth;
-    doc.line(lx, tableTop, lx, tableBottom);
-  }
 
   y += 10;
 
