@@ -2900,7 +2900,7 @@ tbody td:first-child {
   border: 2px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
-  min-height: 104px;
+  min-height: 118px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2911,20 +2911,37 @@ tbody td:first-child {
   flex-direction: column;
   text-align: center;
 }
+      
+.tiberius-live-panel .add-btn {
+  font-size: 1.35rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #1bbf4a, #0e8f32);
+  color: #fff;
+  border: 2px solid #0b7428;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+  letter-spacing: 0.4px;
+  min-height: 118px;
+  width: 100%;
+}
+
+.tiberius-live-panel .add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.22);
+}
 
 .tiberius-live-label {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 900;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 6px;
+  margin-bottom: 16px;
 }
 
 .tiberius-live-value {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(4rem, 9vw, 7rem);
-  line-height: 0.9;
+  font-size: clamp(4.5rem, 0vw, 7.5rem);
+  line-height: 0.85;
   color: #000;
 }
 
