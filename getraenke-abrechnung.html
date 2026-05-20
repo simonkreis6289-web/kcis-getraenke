@@ -4572,6 +4572,7 @@ function renderStrafen() {
   headerHtml += STRAFEN.map(s => `<th class="drink-col">${s.label}</th>`).join('');
   headerHtml += '<th class="drink-col">Freie Beträge</th>';
   headerHtml += '<th class="sum-col">Gesamt</th>';
+
   header.innerHTML = headerHtml;
 
   const present = persons
@@ -4597,24 +4598,48 @@ function renderStrafen() {
 
   present.forEach((p, rowIndex) => {
     if (!p.strafen) p.strafen = {};
-    if (!p.freeStrafen) p.freeStrafen = [];
+    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
 
     const tr = document.createElement('tr');
     tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
 
     const tannenbaumTotal = getPersonTannenbaumTotal(p) || 0;
+
+    const lotterieTotal = p.freeStrafen
+      .filter(x => String(x.reason || '') === 'Lotterie')
+      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+    const tiberiusTotal = p.freeStrafen
+      .filter(x => String(x.reason || '') === 'Tiberius')
+      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
     const freeTotal = calcFreeStrafenTotal(p) || 0;
 
-    const freeDetails = (p.freeStrafen || [])
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`)
+    const freeDetails = p.freeStrafen
+      .map(item =>
+        `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`
+      )
       .join('<br>');
 
-    let manualTotal = 0;
-    STRAFEN.forEach(s => {
-      manualTotal += (p.strafen[s.key] || 0) * (s.price || 0);
-    });
+    const extrasHtml = `
+      ${tannenbaumTotal > 0 ? `
+        <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+          🌲 Tannenbaum +${tannenbaumTotal.toFixed(2).replace('.', ',')}€
+        </div>
+      ` : ''}
 
-    const total = manualTotal + freeTotal + tannenbaumTotal;
+      ${lotterieTotal > 0 ? `
+        <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+          🎰 Lotterie +${lotterieTotal.toFixed(2).replace('.', ',')}€
+        </div>
+      ` : ''}
+
+      ${tiberiusTotal > 0 ? `
+        <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+          🏛️ Tiberius +${tiberiusTotal.toFixed(2).replace('.', ',')}€
+        </div>
+      ` : ''}
+    `;
 
     let html = `
       <td class="sticky-col">
@@ -4627,16 +4652,7 @@ function renderStrafen() {
               <span class="ptisch">
                 ${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}
               </span>
-
-              ${
-                tannenbaumTotal > 0
-                  ? `
-                    <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
-                      🌲 Tannenbaum +${tannenbaumTotal.toFixed(2).replace('.', ',')}€
-                    </div>
-                  `
-                  : ''
-              }
+              ${extrasHtml}
             </div>
           </div>
         </div>
@@ -4649,11 +4665,19 @@ function renderStrafen() {
       html += `
         <td>
           <div class="counter">
-            <button type="button" class="counter-btn minus"
-              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)">−</button>
+            <button
+              type="button"
+              class="counter-btn minus"
+              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)"
+            >−</button>
+
             <span class="counter-val">${v}</span>
-            <button type="button" class="counter-btn plus"
-              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)">+</button>
+
+            <button
+              type="button"
+              class="counter-btn plus"
+              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)"
+            >+</button>
           </div>
         </td>
       `;
@@ -9007,11 +9031,6 @@ function finishTiberiusGame() {
     });
   });
 
-  if (!assignedTo.length) {
-    showToast('Keine Tiberius-Strafen zu buchen', 'error');
-    return;
-  }
-
   const historyId = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
   const entry = {
@@ -9019,24 +9038,26 @@ function finishTiberiusGame() {
     type: 'tiberius',
     createdAt: new Date().toISOString(),
     onTop: !!tiberiusState.onTop,
-    score: tiberiusState.score,
-    targets: JSON.parse(JSON.stringify(tiberiusState.targets)),
-    throws: JSON.parse(JSON.stringify(tiberiusState.throws)),
-    penalties: JSON.parse(JSON.stringify(tiberiusState.penalties)),
+    score: tiberiusState.score || 0,
+    targets: JSON.parse(JSON.stringify(tiberiusState.targets || [])),
+    throws: JSON.parse(JSON.stringify(tiberiusState.throws || [])),
+    penalties: JSON.parse(JSON.stringify(tiberiusState.penalties || {})),
     assignedTo
   };
 
   if (!Array.isArray(strafenHistory)) strafenHistory = [];
   strafenHistory.unshift(entry);
 
+  if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
   tiberiusState.history.unshift(entry);
+
   tiberiusState.finished = true;
   tiberiusState.active = false;
 
   renderAll();
   persistState();
 
-  showToast('✅ Tiberius abgeschlossen und Strafen gebucht', 'success');
+  showToast('✅ Tiberius abgeschlossen', 'success');
 }
 
 function renderTiberiusHistory() {
