@@ -4739,6 +4739,42 @@ function renderStrafenHistory() {
       `;
     }
 
+    if (entry.type === 'lotterie') {
+      const assigned = (entry.assignedTo || [])
+        .map(x => `${x.name}: ${euros(x.amount)}${x.onTop ? ' · On Top' : ''}`)
+        .join('<br>');
+
+      return `
+        <div class="spiel-card">
+          <div class="spiel-info">
+            <div class="spiel-verlierer round">🎰 Lotterie abgeschlossen</div>
+            <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+            <div class="spiel-detail"><strong>Gebucht:</strong><br>${assigned || '—'}</div>
+          </div>
+
+          <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
+        </div>
+      `;
+    }
+
+    if (entry.type === 'tiberius') {
+      const assigned = (entry.assignedTo || [])
+        .map(x => `${x.name}: ${euros(x.amount)}${x.onTop ? ' · On Top' : ''}`)
+        .join('<br>');
+
+      return `
+        <div class="spiel-card">
+          <div class="spiel-info">
+            <div class="spiel-verlierer round">🏛️ Tiberius abgeschlossen</div>
+            <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+            <div class="spiel-detail"><strong>Gebucht:</strong><br>${assigned || '—'}</div>
+          </div>
+
+          <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
+        </div>
+      `;
+    }
+
     return '';
   }).join('');
 }
@@ -4819,7 +4855,12 @@ function renderStrafpreisEditor() {
 }
     
 function deleteStrafenHistoryEntry(id) {
-  const entry = strafenHistory.find(x => x.id === id);
+  if (!Array.isArray(strafenHistory)) strafenHistory = [];
+
+  const entry = strafenHistory.find(x => x.id === id)
+    || lotterieState?.history?.find(x => x.id === id)
+    || tiberiusState?.history?.find(x => x.id === id);
+
   if (!entry) return;
 
   if (!confirm('Diesen Historien-Eintrag wirklich löschen?')) return;
@@ -4840,7 +4881,27 @@ function deleteStrafenHistoryEntry(id) {
     });
   }
 
+  if (entry.type === 'lotterie' || entry.type === 'tiberius') {
+    const chargeIds = (entry.assignedTo || [])
+      .map(x => x.id)
+      .filter(Boolean);
+
+    persons.forEach(p => {
+      if (Array.isArray(p.freeStrafen)) {
+        p.freeStrafen = p.freeStrafen.filter(x => !chargeIds.includes(x.id));
+      }
+    });
+  }
+
   strafenHistory = strafenHistory.filter(x => x.id !== id);
+
+  if (lotterieState && Array.isArray(lotterieState.history)) {
+    lotterieState.history = lotterieState.history.filter(x => x.id !== id);
+  }
+
+  if (tiberiusState && Array.isArray(tiberiusState.history)) {
+    tiberiusState.history = tiberiusState.history.filter(x => x.id !== id);
+  }
 
   renderAll();
   persistState();
@@ -8303,6 +8364,64 @@ function renderLotterieHistory() {
   }).join('');
 }    
     
+function renderLotterieSettings() {
+  const minInput = document.getElementById('lotterie-min-amount');
+  const maxInput = document.getElementById('lotterie-max-amount');
+
+  if (minInput && document.activeElement !== minInput) {
+    minInput.value = (parseFloat(lotterieSettings.minAmount || 0.10) || 0.10).toFixed(2);
+  }
+
+  if (maxInput && document.activeElement !== maxInput) {
+    maxInput.value = (parseFloat(lotterieSettings.maxAmount || 2.00) || 2.00).toFixed(2);
+  }
+}
+
+function saveLotterieSettings() {
+  const minInput = document.getElementById('lotterie-min-amount');
+  const maxInput = document.getElementById('lotterie-max-amount');
+
+  lotterieSettings.minAmount = roundTo10Cent(String(minInput?.value || '0.10').replace(',', '.'));
+  lotterieSettings.maxAmount = roundTo10Cent(String(maxInput?.value || '2.00').replace(',', '.'));
+
+  if (lotterieSettings.minAmount < 0) lotterieSettings.minAmount = 0;
+  if (lotterieSettings.maxAmount < 0) lotterieSettings.maxAmount = 0;
+
+  renderLotterieSettings();
+  persistState();
+
+  showToast('✅ Lotterie-Einstellungen gespeichert', 'success');
+}
+
+function renderTiberiusSettings() {
+  const minInput = document.getElementById('tiberius-min-pins');
+  const maxInput = document.getElementById('tiberius-max-pins');
+
+  if (minInput && document.activeElement !== minInput) {
+    minInput.value = parseInt(tiberiusSettings.minPins || 10, 10) || 10;
+  }
+
+  if (maxInput && document.activeElement !== maxInput) {
+    maxInput.value = parseInt(tiberiusSettings.maxPins || 80, 10) || 80;
+  }
+}
+
+function saveTiberiusSettings() {
+  const minInput = document.getElementById('tiberius-min-pins');
+  const maxInput = document.getElementById('tiberius-max-pins');
+
+  tiberiusSettings.minPins = parseInt(minInput?.value || '10', 10) || 10;
+  tiberiusSettings.maxPins = parseInt(maxInput?.value || '80', 10) || 80;
+
+  if (tiberiusSettings.minPins < 1) tiberiusSettings.minPins = 1;
+  if (tiberiusSettings.maxPins < 1) tiberiusSettings.maxPins = 1;
+
+  renderTiberiusSettings();
+  persistState();
+
+  showToast('✅ Tiberius-Einstellungen gespeichert', 'success');
+}
+    
 // ──-───────────────────────────────────────────────────────────────────────
 // ── TIBERIUS ──   
 function startTiberiusGame() {
@@ -8847,11 +8966,11 @@ function renderAll() {
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
 
-  renderStrafenHistory();
     renderLotterie();
     renderTiberius();
     renderLotterieSettings();
     renderTiberiusSettings();
+    renderStrafenHistory();
   renderDarts();
   renderTannenbaumSettings();
   renderDartsSettings();
