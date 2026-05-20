@@ -2888,6 +2888,59 @@ tbody td:first-child {
   padding: clamp(6px, 1.1vh, 12px) 8px;
 }
       
+.tiberius-live-panel {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.tiberius-live-panel > * {
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  min-height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tiberius-live-score,
+.tiberius-live-money {
+  flex-direction: column;
+  text-align: center;
+}
+
+.tiberius-live-label {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.tiberius-live-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(4rem, 9vw, 7rem);
+  line-height: 0.9;
+  color: #000;
+}
+
+.tiberius-live-amount {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1;
+  color: var(--accent2);
+}
+
+@media (max-width: 760px) {
+  .tiberius-live-panel {
+    grid-template-columns: 1fr;
+  }
+}
+      
 </style>
     
 </head>
@@ -3418,7 +3471,7 @@ tbody td:first-child {
         <div id="tab-tiberius" class="hidden">
           <div class="section-title">Tiberius</div>
 
-          <div class="darts-start-card">
+          <div class="darts-start-card" id="tiberius-start-card">
             <label class="modal-check" style="margin-bottom:0;">
               <input type="checkbox" id="tiberius-ontop-check" onchange="toggleTiberiusOnTop()">
               <span>Tiberius-Strafen On Top buchen</span>
@@ -3428,11 +3481,22 @@ tbody td:first-child {
               <button class="save-prices-btn" onclick="startTiberiusGame()">🏛️ Tiberius starten</button>
               <button class="round-btn" onclick="generateTiberiusTargets()" id="tiberius-random-btn">🎲 Zufällige Zielzahlen</button>
               <button class="modal-cancel" onclick="resetTiberiusGame()">↻ Tiberius neu starten</button>
-                <button class="add-btn" onclick="openTiberiusThrowModal()">🎳 Wurf eingeben</button>
             </div>
           </div>
             
-            <div class="darts-buffer" id="tiberius-score-display">Aktueller Punktestand: 0</div>        
+          <div class="tiberius-live-panel hidden" id="tiberius-live-panel">
+              <button class="add-btn" onclick="openTiberiusThrowModal()">🎳 Wurf eingeben</button>
+
+              <div class="tiberius-live-score">
+                <div class="tiberius-live-label">Punktestand</div>
+                <div class="tiberius-live-value" id="tiberius-score-display">0</div>
+              </div>
+
+              <div class="tiberius-live-money">
+                <div class="tiberius-live-label">Aktueller Betrag</div>
+                <div class="tiberius-live-amount" id="tiberius-current-amount">0,00 €</div>
+              </div>
+            </div>       
             
           <div id="tiberius-board"></div>
 
@@ -8497,7 +8561,9 @@ function saveLotterieSettings() {
 
   showToast('✅ Lotterie-Einstellungen gespeichert', 'success');
 }
-
+                                                    
+// ──-───────────────────────────────────────────────────────────────────────
+// ── TIBERIUS ──  
 function renderTiberiusSettings() {
   const minInput = document.getElementById('tiberius-min-pins');
   const maxInput = document.getElementById('tiberius-max-pins');
@@ -8511,7 +8577,7 @@ function renderTiberiusSettings() {
   }
 }
 
-function saveTiberiusSettings() {
+function saveTiberiusSettings(showToastMessage = true) {
   const minInput = document.getElementById('tiberius-min-pins');
   const maxInput = document.getElementById('tiberius-max-pins');
 
@@ -8524,13 +8590,14 @@ function saveTiberiusSettings() {
   renderTiberiusSettings();
   persistState();
 
-  showToast('✅ Tiberius-Einstellungen gespeichert', 'success');
+  if (showToastMessage) {
+    showToast('✅ Tiberius-Einstellungen gespeichert', 'success');
+  }
 }
     
-// ──-───────────────────────────────────────────────────────────────────────
-// ── TIBERIUS ──   
 function startTiberiusGame() {
   ensureTiberiusState();
+  saveTiberiusSettings(false);
 
   const players = getActivePlayersForSoloGame();
   if (!players.length) {
@@ -8557,6 +8624,13 @@ function startTiberiusGame() {
   showToast('🏛️ Tiberius gestartet', 'success');
 }
 
+function getTiberiusCurrentAmount() {
+  ensureTiberiusState();
+
+  return getActivePlayersForSoloGame()
+    .reduce((sum, p) => sum + getTiberiusPenaltyForPerson(p.name), 0);
+}
+    
 function resetTiberiusGame() {
   if (!confirm('Tiberius wirklich neu starten?')) return;
 
@@ -8940,6 +9014,12 @@ function renderTiberius() {
   const board = document.getElementById('tiberius-board');
   if (!board) return;
 
+    const startCard = document.getElementById('tiberius-start-card');
+    const livePanel = document.getElementById('tiberius-live-panel');
+
+    if (startCard) startCard.classList.toggle('hidden', !!tiberiusState.active);
+    if (livePanel) livePanel.classList.toggle('hidden', !tiberiusState.active);
+    
   const onTopCheck = document.getElementById('tiberius-ontop-check');
   if (onTopCheck) onTopCheck.checked = !!tiberiusState.onTop;
 
@@ -8948,10 +9028,16 @@ function renderTiberius() {
     randomBtn.classList.toggle('hidden', !!tiberiusState.targetsGenerated);
   }
 
-  const scoreDisplay = document.getElementById('tiberius-score-display');
-  if (scoreDisplay) {
-    scoreDisplay.textContent = `Aktueller Punktestand: ${tiberiusState.score || 0}`;
-  }
+    const scoreDisplay = document.getElementById('tiberius-score-display');
+    const amountDisplay = document.getElementById('tiberius-current-amount');
+
+    if (scoreDisplay) {
+      scoreDisplay.textContent = tiberiusState.score || 0;
+    }
+
+    if (amountDisplay) {
+      amountDisplay.textContent = euros(getTiberiusCurrentAmount());
+    }
 
   const players = getActivePlayersForSoloGame();
 
