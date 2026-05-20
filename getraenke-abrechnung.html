@@ -5234,7 +5234,7 @@ async function generateStrafenPDF(snapshot) {
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
 
   const usableWidth = pageWidth - margin * 2;
-  const nameWidth = 35;
+  const nameWidth = 45;
   const sumWidth = 30;
   const strafeCount = Math.max(1, (snapshot.strafen || []).length);
   const strafeWidth = (usableWidth - nameWidth - (4 * sumWidth)) / strafeCount;
@@ -5601,7 +5601,7 @@ async function generateDrinksPDF(snapshot) {
   const teamLabel = t => t === 'T1' ? 'Wand' : t === 'T2' ? 'TV' : t || '-';
 
   const usableWidth = pageWidth - margin * 2;
-  const nameWidth = 35;
+  const nameWidth = 45;
   const sumWidth = 29;
   const drinkCount = Math.max(1, (snapshot.drinks || []).length);
   const drinkWidth = (usableWidth - nameWidth - (5 * sumWidth)) / drinkCount;
