@@ -2861,6 +2861,8 @@ tbody td:first-child {
   border-radius: 10px;
   background: var(--surface2);
   font-weight: 900;
+    min-height: clamp(42px, 5.6vh, 58px);
+  padding: 6px 5px;
   cursor: pointer;
 }
 
@@ -2879,6 +2881,11 @@ tbody td:first-child {
   font-weight: 900;
   color: var(--accent2);
   margin-top: 3px;
+}
+
+.game-table th,
+.game-table td {
+  padding: clamp(6px, 1.1vh, 12px) 8px;
 }
       
 </style>
@@ -3064,12 +3071,13 @@ tbody td:first-child {
     <div class="sub-tab" data-sub="getraenke-abrechnung" onclick="showSubTab('getraenke','getraenke-abrechnung',this)">Abrechnung</div>
   </div>
     
-  <div class="sub-tabs hidden" id="subtabs-spiele">
-    <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
-    <div class="sub-tab" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
-    <div class="sub-tab" data-sub="lotterie" onclick="showSubTab('spiele','lotterie',this)">🎰 Lotterie</div>
-    <div class="sub-tab" data-sub="tiberius" onclick="showSubTab('spiele','tiberius',this)">🏛️ Tiberius</div>
-  </div>
+    <div class="sub-tabs hidden" id="subtabs-spiele">
+      <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
+      <div class="sub-tab" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
+      <div class="sub-tab" data-sub="lotterie" onclick="showSubTab('spiele','lotterie',this)">🎰 Lotterie</div>
+      <div class="sub-tab" data-sub="tiberius" onclick="showSubTab('spiele','tiberius',this)">🏛️ Tiberius</div>
+      <div class="sub-tab" data-sub="spiele-einstellungen" onclick="showSubTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</div>
+    </div>
 
   <!-- Untertabs Strafen -->
     <div class="sub-tabs hidden" id="subtabs-strafen">
@@ -3420,9 +3428,12 @@ tbody td:first-child {
               <button class="save-prices-btn" onclick="startTiberiusGame()">🏛️ Tiberius starten</button>
               <button class="round-btn" onclick="generateTiberiusTargets()" id="tiberius-random-btn">🎲 Zufällige Zielzahlen</button>
               <button class="modal-cancel" onclick="resetTiberiusGame()">↻ Tiberius neu starten</button>
+                <button class="add-btn" onclick="openTiberiusThrowModal()">🎳 Wurf eingeben</button>
             </div>
           </div>
-
+            
+            <div class="darts-buffer" id="tiberius-score-display">Aktueller Punktestand: 0</div>        
+            
           <div id="tiberius-board"></div>
 
           <div style="margin-top:14px;">
@@ -3431,6 +3442,36 @@ tbody td:first-child {
 
           <div class="section-title">Tiberius Verlauf</div>
           <div id="tiberius-history-list" class="spiele-list"></div>
+        </div>
+        
+        <div id="tab-spiele-einstellungen" class="hidden">
+          <div class="section-title">Spiel-Einstellungen</div>
+
+          <div class="section-title">Lotterie</div>
+          <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+            <div class="modal-input-row" style="margin-bottom:0;">
+              <label>Min. Betrag (€)</label>
+              <input type="number" step="0.10" min="0" id="lotterie-min-amount" class="modal-euro-input" onchange="saveLotterieSettings()">
+            </div>
+
+            <div class="modal-input-row" style="margin-bottom:0;">
+              <label>Max. Betrag (€)</label>
+              <input type="number" step="0.10" min="0" id="lotterie-max-amount" class="modal-euro-input" onchange="saveLotterieSettings()">
+            </div>
+          </div>
+
+          <div class="section-title">Tiberius</div>
+          <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+            <div class="modal-input-row" style="margin-bottom:0;">
+              <label>Min. Zielzahl</label>
+              <input type="number" step="1" min="1" id="tiberius-min-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
+            </div>
+
+            <div class="modal-input-row" style="margin-bottom:0;">
+              <label>Max. Zielzahl</label>
+              <input type="number" step="1" min="1" id="tiberius-max-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
+            </div>
+          </div>
         </div>
         
     </div>
@@ -3573,73 +3614,6 @@ tbody td:first-child {
         💾 Strafen-Deckelung speichern
       </button>
     </div>
-                
-    <div class="section-title">Tannenbaum Einstellungen</div>
-
-    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-      <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
-        Lege fest, wie oft jede Zahl pro Team gestrichen werden muss.
-      </div>
-
-      <div class="tannenbaum-settings-grid" id="tannenbaum-settings-grid"></div>
-
-      <label class="modal-check" style="margin-bottom:0;">
-        <input type="checkbox" id="tannenbaum-hard-rule-check" onchange="saveTannenbaumSettings()">
-        <span>Harte Regel aktiv: Wenn beide Teams eine Zahl weg haben, wird sie beim nächsten Treffer wieder aufgeschrieben.</span>
-      </label>
-
-      <button class="save-prices-btn" onclick="saveTannenbaumSettings()">
-        💾 Tannenbaum speichern
-      </button>
-
-      <button class="modal-cancel" onclick="resetTannenbaumSettings()" style="width:100%;">
-        ↻ Standardwerte wiederherstellen
-      </button>
-    </div>
-        
-    <div class="section-title">Darts Einstellungen</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-          <div style="font-size:0.8rem;color:var(--muted);line-height:1.4;">
-            Lege fest, wie viele Punkte jeder Treffer zählt.
-          </div>
-
-          <div class="darts-settings-grid" id="darts-settings-grid"></div>
-
-          <button class="save-prices-btn" onclick="saveDartsSettings()">
-            💾 Darts-Wertung speichern
-          </button>
-
-          <button class="modal-cancel" onclick="resetDartsSettings()" style="width:100%;">
-            ↻ Standardwertung wiederherstellen
-          </button>
-        </div> 
-    
-    <div class="section-title">Lotterie</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-          <div class="modal-input-row" style="margin-bottom:0;">
-            <label>Min. Betrag (€)</label>
-            <input type="number" step="0.10" min="0" id="lotterie-min-amount" class="modal-euro-input" onchange="saveLotterieSettings()">
-          </div>
-
-          <div class="modal-input-row" style="margin-bottom:0;">
-            <label>Max. Betrag (€)</label>
-            <input type="number" step="0.10" min="0" id="lotterie-max-amount" class="modal-euro-input" onchange="saveLotterieSettings()">
-          </div>
-        </div>
-
-        <div class="section-title">Tiberius</div>
-
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-          <div class="modal-input-row" style="margin-bottom:0;">
-            <label>Min. Zielzahl</label>
-            <input type="number" step="1" min="1" id="tiberius-min-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
-          </div>
-
-          <div class="modal-input-row" style="margin-bottom:0;">
-            <label>Max. Zielzahl</label>
-            <input type="number" step="1" min="1" id="tiberius-max-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
-          </div>
-        </div>    
     
 </div> 
         
@@ -3798,18 +3772,35 @@ tbody td:first-child {
       </div>
     </div>
 
-    <div class="modal-overlay hidden" id="tiberius-throw-modal">
-      <div class="modal" style="max-width:430px;">
-        <h3 id="tiberius-throw-title">Tiberius Wurf</h3>
-        <div class="modal-sub">Wurf eintragen</div>
+<div class="modal-overlay hidden" id="tiberius-throw-modal">
+  <div class="modal" style="max-width:430px;">
+    <h3>Tiberius Wurf</h3>
+    <div class="modal-sub">Wurf zum Gesamtstand addieren</div>
 
-        <div class="darts-number-grid" id="tiberius-number-grid"></div>
+    <div id="tiberius-number-grid" class="darts-number-grid"></div>
 
-        <div class="modal-btns" style="margin-top:14px;">
-          <button class="modal-cancel" onclick="closeTiberiusThrowModal()">Abbrechen</button>
-        </div>
-      </div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="modal-cancel" onclick="closeTiberiusThrowModal()">Abbrechen</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="tiberius-hit-modal">
+  <div class="modal" style="max-width:430px;">
+    <h3 id="tiberius-hit-title">Ziel erreicht</h3>
+    <div class="modal-sub" id="tiberius-hit-sub">Wer hat den letzten Wurf gemacht?</div>
+
+    <div class="modal-input-row">
+      <label>Spieler</label>
+      <select id="tiberius-hit-person-select" class="modal-select"></select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeTiberiusHitModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmTiberiusHitPenalty()">✓ Bestätigen</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
        
@@ -6927,7 +6918,10 @@ function createTiberiusState() {
     onTop: false,
     targetsGenerated: false,
     targets: [],
-    throws: {},
+    score: 0,
+    throws: [],
+    penalties: {},
+    pendingHit: null,
     finished: false,
     history: []
   };
@@ -6994,9 +6988,13 @@ function ensureLotterieState() {
 
 function ensureTiberiusState() {
   if (!tiberiusState) tiberiusState = createTiberiusState();
+
   if (!Array.isArray(tiberiusState.targets)) tiberiusState.targets = [];
-  if (!tiberiusState.throws) tiberiusState.throws = {};
+  if (!Array.isArray(tiberiusState.throws)) tiberiusState.throws = [];
+  if (!tiberiusState.penalties) tiberiusState.penalties = {};
   if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
+
+  tiberiusState.score = parseInt(tiberiusState.score || 0, 10) || 0;
   tiberiusState.active = !!tiberiusState.active;
   tiberiusState.onTop = !!tiberiusState.onTop;
   tiberiusState.targetsGenerated = !!tiberiusState.targetsGenerated;
@@ -8088,15 +8086,29 @@ function confirmLotterieThrow(value) {
 
   lotterieState.throws[personName][colIndex] = value;
 
-  if (value === 0) {
-    const p = persons.find(x => x.name === personName);
-    const gosseKey = getGosseStrafeKey();
+    if (value === 0) {
+      const p = persons.find(x => x.name === personName);
+      const gosseKey = getGosseStrafeKey();
 
-    if (p && gosseKey) {
-      if (!p.strafen) p.strafen = {};
-      p.strafen[gosseKey] = (p.strafen[gosseKey] || 0) + 1;
+      if (p && gosseKey) {
+        if (!p.strafen) p.strafen = {};
+        p.strafen[gosseKey] = (p.strafen[gosseKey] || 0) + 1;
+      }
     }
-  }
+
+    if (value === 9 || value === 12) {
+      const kranzKey = getKranzStrafeKey();
+
+      if (kranzKey) {
+        persons.forEach(p => {
+          if (!p.present || p.left) return;
+          if (p.name === personName) return;
+
+          if (!p.strafen) p.strafen = {};
+          p.strafen[kranzKey] = (p.strafen[kranzKey] || 0) + 1;
+        });
+      }
+    }
 
   closeLotterieThrowModal();
   renderAll();
@@ -10157,7 +10169,7 @@ function deletePerson(name) {
   const subTabMap = {
     organisation: ['anwesenheit', 'gruppen'],
     getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-    spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius'],
+    spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius', 'spiele-einstellungen'],
     strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-abrechnung'],
     verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
   };
