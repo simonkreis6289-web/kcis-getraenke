@@ -2797,6 +2797,90 @@ tbody td:first-child {
   color: var(--accent2);
 }
       
+.game-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.game-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.game-table th,
+.game-table td {
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.game-table th {
+  background: var(--surface2);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.game-table .sticky-name {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--table-sticky-bg);
+  text-align: left;
+  min-width: 130px;
+  width: 130px;
+  box-shadow: 6px 0 10px rgba(0,0,0,0.04);
+}
+
+.game-table thead .sticky-name {
+  z-index: 5;
+}
+
+.game-amount-input {
+  width: 72px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 6px;
+  font-weight: 800;
+  text-align: center;
+  background: var(--surface);
+}
+
+.game-cell-btn {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.game-cell-btn.empty {
+  opacity: 0.55;
+}
+
+.game-cell-btn.loser {
+  background: var(--warn_bg);
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.game-live-total {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--accent2);
+  margin-top: 3px;
+}
+      
 </style>
     
 </head>
@@ -2980,10 +3064,12 @@ tbody td:first-child {
     <div class="sub-tab" data-sub="getraenke-abrechnung" onclick="showSubTab('getraenke','getraenke-abrechnung',this)">Abrechnung</div>
   </div>
     
-    <div class="sub-tabs hidden" id="subtabs-spiele">
-      <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
-        <div class="sub-tab" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
-    </div>
+  <div class="sub-tabs hidden" id="subtabs-spiele">
+    <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
+    <div class="sub-tab" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
+    <div class="sub-tab" data-sub="lotterie" onclick="showSubTab('spiele','lotterie',this)">🎰 Lotterie</div>
+    <div class="sub-tab" data-sub="tiberius" onclick="showSubTab('spiele','tiberius',this)">🏛️ Tiberius</div>
+  </div>
 
   <!-- Untertabs Strafen -->
     <div class="sub-tabs hidden" id="subtabs-strafen">
@@ -3204,9 +3290,9 @@ tbody td:first-child {
       
     <!-- SPIELE -->
     <div id="main-spiele" class="main-panel hidden">
+        
       <div id="tab-tannenbaum">
         <div class="section-title">Tannenbaum</div>
-          
             <div class="tannenbaum-game">
               <div class="tannenbaum-input-row">
                 <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">
@@ -3230,6 +3316,7 @@ tbody td:first-child {
               </div>
             </div>
       </div>
+        
      <div id="tab-darts" class="hidden">
           <div class="section-title">Darts</div>
 
@@ -3293,6 +3380,59 @@ tbody td:first-child {
             <div id="darts-history-list" class="spiele-list"></div>
           </div>
         </div>
+        
+        <div id="tab-lotterie" class="hidden">
+          <div class="section-title">Lotterie</div>
+
+          <div class="darts-start-card">
+            <label class="modal-check" style="margin-bottom:0;">
+              <input type="checkbox" id="lotterie-ontop-check" onchange="toggleLotterieOnTop()">
+              <span>Lotterie-Strafen On Top buchen</span>
+            </label>
+
+            <div class="modal-btns">
+              <button class="save-prices-btn" onclick="startLotterieGame()">🎰 Lotterie starten</button>
+              <button class="round-btn" onclick="generateLotterieAmounts()" id="lotterie-random-btn">🎲 Zufällige Beträge</button>
+              <button class="modal-cancel" onclick="resetLotterieGame()">↻ Lotterie neu starten</button>
+            </div>
+          </div>
+
+          <div id="lotterie-board"></div>
+
+          <div style="margin-top:14px;">
+            <button class="save-prices-btn" onclick="finishLotterieGame()">✅ Lotterie abschließen</button>
+          </div>
+
+          <div class="section-title">Lotterie Verlauf</div>
+          <div id="lotterie-history-list" class="spiele-list"></div>
+        </div>
+
+        <div id="tab-tiberius" class="hidden">
+          <div class="section-title">Tiberius</div>
+
+          <div class="darts-start-card">
+            <label class="modal-check" style="margin-bottom:0;">
+              <input type="checkbox" id="tiberius-ontop-check" onchange="toggleTiberiusOnTop()">
+              <span>Tiberius-Strafen On Top buchen</span>
+            </label>
+
+            <div class="modal-btns">
+              <button class="save-prices-btn" onclick="startTiberiusGame()">🏛️ Tiberius starten</button>
+              <button class="round-btn" onclick="generateTiberiusTargets()" id="tiberius-random-btn">🎲 Zufällige Zielzahlen</button>
+              <button class="modal-cancel" onclick="resetTiberiusGame()">↻ Tiberius neu starten</button>
+            </div>
+          </div>
+
+          <div id="tiberius-board"></div>
+
+          <div style="margin-top:14px;">
+            <button class="save-prices-btn" onclick="finishTiberiusGame()">✅ Tiberius abschließen</button>
+          </div>
+
+          <div class="section-title">Tiberius Verlauf</div>
+          <div id="tiberius-history-list" class="spiele-list"></div>
+        </div>
+        
     </div>
 
     <!-- VERWALTUNG -->
@@ -3473,6 +3613,34 @@ tbody td:first-child {
             ↻ Standardwertung wiederherstellen
           </button>
         </div> 
+    
+    <div class="section-title">Lotterie</div>
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+          <div class="modal-input-row" style="margin-bottom:0;">
+            <label>Min. Betrag (€)</label>
+            <input type="number" step="0.10" min="0" id="lotterie-min-amount" class="modal-euro-input" onchange="saveLotterieSettings()">
+          </div>
+
+          <div class="modal-input-row" style="margin-bottom:0;">
+            <label>Max. Betrag (€)</label>
+            <input type="number" step="0.10" min="0" id="lotterie-max-amount" class="modal-euro-input" onchange="saveLotterieSettings()">
+          </div>
+        </div>
+
+        <div class="section-title">Tiberius</div>
+
+        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+          <div class="modal-input-row" style="margin-bottom:0;">
+            <label>Min. Zielzahl</label>
+            <input type="number" step="1" min="1" id="tiberius-min-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
+          </div>
+
+          <div class="modal-input-row" style="margin-bottom:0;">
+            <label>Max. Zielzahl</label>
+            <input type="number" step="1" min="1" id="tiberius-max-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
+          </div>
+        </div>    
+    
 </div> 
         
     </div>
@@ -3616,6 +3784,32 @@ tbody td:first-child {
     </div>
   </div>
 </div>
+    
+    <div class="modal-overlay hidden" id="lotterie-throw-modal">
+      <div class="modal" style="max-width:430px;">
+        <h3 id="lotterie-throw-title">Lotterie Wurf</h3>
+        <div class="modal-sub">Wurf eintragen</div>
+
+        <div class="darts-number-grid" id="lotterie-number-grid"></div>
+
+        <div class="modal-btns" style="margin-top:14px;">
+          <button class="modal-cancel" onclick="closeLotterieThrowModal()">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="tiberius-throw-modal">
+      <div class="modal" style="max-width:430px;">
+        <h3 id="tiberius-throw-title">Tiberius Wurf</h3>
+        <div class="modal-sub">Wurf eintragen</div>
+
+        <div class="darts-number-grid" id="tiberius-number-grid"></div>
+
+        <div class="modal-btns" style="margin-top:14px;">
+          <button class="modal-cancel" onclick="closeTiberiusThrowModal()">Abbrechen</button>
+        </div>
+      </div>
+    </div>
 
 <div id="toast"></div>
        
@@ -3732,8 +3926,31 @@ let dartsState = createDartsState();
 let dartsThrowTeam = null;
 
 let tannenbaumState = createTannenbaumState();
+let lotterieState = createLotterieState();
+let tiberiusState = createTiberiusState();
 
+let lotterieSettings = {
+  minAmount: 0.10,
+  maxAmount: 10.00
+};
+
+let tiberiusSettings = {
+  minPins: 10,
+  maxPins: 300
+};
+
+let lotterieEdit = {
+  person: null,
+  colIndex: null
+};
+
+let tiberiusEdit = {
+  person: null,
+  colIndex: null
+};    
+    
 let strafenHistory = [];
+    
 
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
@@ -3892,6 +4109,10 @@ function getSerializableState() {
     TANNENBAUM_BASE,
     tannenbaumHardRule,
     dartsState,
+      lotterieState,
+    tiberiusState,
+    lotterieSettings,
+    tiberiusSettings,
       strafenHistory,
     bahnTimerStart,
     bahnTimerRunning,
@@ -3946,6 +4167,10 @@ function getFirestoreState() {
       TANNENBAUM_BASE,
       tannenbaumHardRule,
       dartsState,
+      lotterieState,
+        tiberiusState,
+        lotterieSettings,
+        tiberiusSettings,
       STRAFEN,
       STRAFEN_LIMIT,
       strafPrices,
@@ -3974,6 +4199,22 @@ function applyLoadedState(state) {
   bahnTimerRunning = !!state.bahnTimerRunning;
     dartsState = state.dartsState || createDartsState();
     ensureDartsState();
+    
+    lotterieState = state.lotterieState || createLotterieState();
+    tiberiusState = state.tiberiusState || createTiberiusState();
+
+    lotterieSettings = state.lotterieSettings || {
+      minAmount: 0.10,
+      maxAmount: 10.00
+    };
+
+    tiberiusSettings = state.tiberiusSettings || {
+      minPins: 10,
+      maxPins: 300
+    };
+
+    ensureLotterieState();
+    ensureTiberiusState();
 
   teamStopwatchActive = !!state.teamStopwatchActive;
   teamStopwatchRunning = !!state.teamStopwatchRunning;
@@ -5521,7 +5762,8 @@ function startNewKegelabend() {
 
   tannenbaumState = createTannenbaumState();
     dartsState = createDartsState();
-
+    lotterieState = createLotterieState();
+    tiberiusState = createTiberiusState();
   renderAll();
   persistState();
 
@@ -5645,6 +5887,16 @@ function createEmptyClubData() {
       TANNENBAUM_BASE: { ...TANNENBAUM_DEFAULT_BASE },
       tannenbaumHardRule: true,
       dartsState: createDartsState(),
+        lotterieState: createLotterieState(),
+        tiberiusState: createTiberiusState(),
+        lotterieSettings: {
+          minAmount: 0.10,
+          maxAmount: 10.00
+        },
+        tiberiusSettings: {
+          minPins: 10,
+          maxPins: 300
+        },
     STRAFEN_LIMIT: 30,
       strafenHistory: [],
       lastLocalChangeAt: 0
@@ -5681,6 +5933,10 @@ function syncCurrentClubToStore() {
       strafenHistory: JSON.parse(JSON.stringify(strafenHistory)),
     tannenbaumState: JSON.parse(JSON.stringify(tannenbaumState)),
       TANNENBAUM_BASE: JSON.parse(JSON.stringify(TANNENBAUM_BASE)),
+        lotterieState: JSON.parse(JSON.stringify(lotterieState)),
+        tiberiusState: JSON.parse(JSON.stringify(tiberiusState)),
+        lotterieSettings: JSON.parse(JSON.stringify(lotterieSettings)),
+        tiberiusSettings: JSON.parse(JSON.stringify(tiberiusSettings)),
       tannenbaumHardRule,
     STRAFEN_LIMIT,
       dartsState: JSON.parse(JSON.stringify(dartsState))
@@ -5846,6 +6102,21 @@ async function selectClub(clubName) {
     tannenbaumHardRule = localClub.tannenbaumHardRule !== undefined ? !!localClub.tannenbaumHardRule : true;
   tannenbaumState = JSON.parse(JSON.stringify(localClub.tannenbaumState || createTannenbaumState()));
   ensureTannenbaumState();
+    lotterieState = JSON.parse(JSON.stringify(localClub.lotterieState || createLotterieState()));
+    tiberiusState = JSON.parse(JSON.stringify(localClub.tiberiusState || createTiberiusState()));
+
+    lotterieSettings = JSON.parse(JSON.stringify(localClub.lotterieSettings || {
+      minAmount: 0.10,
+      maxAmount: 10.00
+    }));
+
+    tiberiusSettings = JSON.parse(JSON.stringify(localClub.tiberiusSettings || {
+      minPins: 10,
+      maxPins: 300
+    }));
+
+    ensureLotterieState();
+    ensureTiberiusState();
  strafenHistory = JSON.parse(JSON.stringify(localClub.strafenHistory || []));
     
     dartsState = JSON.parse(JSON.stringify(localClub.dartsState || createDartsState()));
@@ -6536,7 +6807,8 @@ function restartTeamStopwatch() {
   persistState();
 }     
   
-  function createTannenbaumState() {
+// ── CREATE GAME ──
+function createTannenbaumState() {
   return {
     teams: {
       T1: {
@@ -6556,6 +6828,50 @@ function restartTeamStopwatch() {
   };
 }
 
+function createDartsState() {
+  return {
+    active: false,
+    startValue: 301,
+    scores: {
+      T1: 301,
+      T2: 301
+    },
+    roundThrows: {
+      T1: [],
+      T2: []
+    },
+    valueMap: { ...DARTS_DEFAULT_VALUES },
+    buffer: 0,
+    winner: null,
+    history: []
+  };
+}
+
+function createLotterieState() {
+  return {
+    active: false,
+    onTop: false,
+    amountsGenerated: false,
+    columns: [],
+    throws: {},
+    finished: false,
+    history: []
+  };
+}
+
+function createTiberiusState() {
+  return {
+    active: false,
+    onTop: false,
+    targetsGenerated: false,
+    targets: [],
+    throws: {},
+    finished: false,
+    history: []
+  };
+}
+
+// ── ENSURE GAME ──    
 function ensureTannenbaumState() {
   if (!tannenbaumState || !tannenbaumState.teams) {
     tannenbaumState = createTannenbaumState();
@@ -6588,6 +6904,42 @@ function ensureTannenbaumState() {
     tannenbaumState.history = [];
   }
 }
+
+function ensureDartsState() {
+  if (!dartsState) dartsState = createDartsState();
+
+  if (!dartsState.scores) dartsState.scores = { T1: 301, T2: 301 };
+  if (!dartsState.roundThrows) dartsState.roundThrows = { T1: [], T2: [] };
+  if (!dartsState.roundThrows.T1) dartsState.roundThrows.T1 = [];
+  if (!dartsState.roundThrows.T2) dartsState.roundThrows.T2 = [];
+  if (!dartsState.valueMap) dartsState.valueMap = { ...DARTS_DEFAULT_VALUES };
+  if (!Array.isArray(dartsState.history)) dartsState.history = [];
+  if (dartsState.buffer === undefined) dartsState.buffer = 0;
+  if (!dartsState.startValue) dartsState.startValue = 301;
+}
+    
+function ensureLotterieState() {
+  if (!lotterieState) lotterieState = createLotterieState();
+  if (!Array.isArray(lotterieState.columns)) lotterieState.columns = [];
+  if (!lotterieState.throws) lotterieState.throws = {};
+  if (!Array.isArray(lotterieState.history)) lotterieState.history = [];
+  lotterieState.active = !!lotterieState.active;
+  lotterieState.onTop = !!lotterieState.onTop;
+  lotterieState.amountsGenerated = !!lotterieState.amountsGenerated;
+  lotterieState.finished = !!lotterieState.finished;
+}
+
+function ensureTiberiusState() {
+  if (!tiberiusState) tiberiusState = createTiberiusState();
+  if (!Array.isArray(tiberiusState.targets)) tiberiusState.targets = [];
+  if (!tiberiusState.throws) tiberiusState.throws = {};
+  if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
+  tiberiusState.active = !!tiberiusState.active;
+  tiberiusState.onTop = !!tiberiusState.onTop;
+  tiberiusState.targetsGenerated = !!tiberiusState.targetsGenerated;
+  tiberiusState.finished = !!tiberiusState.finished;
+}
+    
 
 function getOtherTeam(team) {
   return team === 'T1' ? 'T2' : 'T1';
@@ -7020,26 +7372,7 @@ function resetTannenbaumGame() {
 
   showToast('↻ Tannenbaum zurückgesetzt', 'success');
 }
-    
-    function createDartsState() {
-  return {
-    active: false,
-    startValue: 301,
-    scores: {
-      T1: 301,
-      T2: 301
-    },
-    roundThrows: {
-      T1: [],
-      T2: []
-    },
-    valueMap: { ...DARTS_DEFAULT_VALUES },
-    buffer: 0,
-    winner: null,
-    history: []
-  };
-}
-    
+        
 function renderTannenbaumSettings() {
   const grid = document.getElementById('tannenbaum-settings-grid');
   const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
@@ -7100,19 +7433,6 @@ function resetTannenbaumSettings() {
   persistState();
 
   showToast('↻ Tannenbaum-Standardwerte wiederhergestellt', 'success');
-}
-
-function ensureDartsState() {
-  if (!dartsState) dartsState = createDartsState();
-
-  if (!dartsState.scores) dartsState.scores = { T1: 301, T2: 301 };
-  if (!dartsState.roundThrows) dartsState.roundThrows = { T1: [], T2: [] };
-  if (!dartsState.roundThrows.T1) dartsState.roundThrows.T1 = [];
-  if (!dartsState.roundThrows.T2) dartsState.roundThrows.T2 = [];
-  if (!dartsState.valueMap) dartsState.valueMap = { ...DARTS_DEFAULT_VALUES };
-  if (!Array.isArray(dartsState.history)) dartsState.history = [];
-  if (dartsState.buffer === undefined) dartsState.buffer = 0;
-  if (!dartsState.startValue) dartsState.startValue = 301;
 }
 
 function startDartsGame() {
@@ -7561,7 +7881,10 @@ function renderAll() {
   renderRoundReasonsKatalog();
 
   renderStrafenHistory();
-
+    renderLotterie();
+    renderTiberius();
+    renderLotterieSettings();
+    renderTiberiusSettings();
   renderDarts();
   renderTannenbaumSettings();
   renderDartsSettings();
@@ -8748,7 +9071,7 @@ function deletePerson(name) {
   const subTabMap = {
     organisation: ['anwesenheit', 'gruppen'],
     getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-    spiele: ['tannenbaum','darts'],
+    spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius'],
     strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-abrechnung'],
     verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
   };
