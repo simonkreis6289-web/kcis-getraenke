@@ -9059,6 +9059,7 @@ function finishTiberiusGame() {
 
   players.forEach(p => {
     const amount = getTiberiusPenaltyForPerson(p.name);
+
     if (amount <= 0) return;
 
     const id = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -9138,72 +9139,6 @@ function renderTiberiusHistory() {
       </div>
     `;
   }).join('');
-}
-
-function finishTiberiusGame() {
-  ensureTiberiusState();
-
-  if (!tiberiusState.active) {
-    showToast('Tiberius wurde noch nicht gestartet', 'error');
-    return;
-  }
-
-  const players = getActivePlayersForSoloGame();
-  const assignedTo = [];
-
-  players.forEach(p => {
-    const amount = getTiberiusLivePenalty(p.name);
-
-    if (amount <= 0) return;
-
-    const id = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-
-    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
-
-    p.freeStrafen.push({
-      id,
-      reason: 'Tiberius',
-      amount,
-      onTop: !!tiberiusState.onTop,
-      createdAt: new Date().toISOString()
-    });
-
-    assignedTo.push({
-      id,
-      name: p.name,
-      amount,
-      onTop: !!tiberiusState.onTop
-    });
-  });
-
-  if (!assignedTo.length) {
-    showToast('Keine Tiberius-Strafen zu buchen', 'error');
-    return;
-  }
-
-  const historyId = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-
-  const entry = {
-    id: historyId,
-    type: 'tiberius',
-    createdAt: new Date().toISOString(),
-    onTop: !!tiberiusState.onTop,
-    targets: JSON.parse(JSON.stringify(tiberiusState.targets)),
-    throws: JSON.parse(JSON.stringify(tiberiusState.throws)),
-    assignedTo
-  };
-
-  if (!Array.isArray(strafenHistory)) strafenHistory = [];
-  strafenHistory.unshift(entry);
-
-  tiberiusState.history.unshift(entry);
-  tiberiusState.finished = true;
-  tiberiusState.active = false;
-
-  renderAll();
-  persistState();
-
-  showToast('✅ Tiberius abgeschlossen und Strafen gebucht', 'success');
 }
 
 function renderTiberiusHistory() {
