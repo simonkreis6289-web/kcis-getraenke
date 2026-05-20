@@ -8454,17 +8454,9 @@ function startTiberiusGame() {
     return tiberiusState.targets[i] || 0;
   });
 
-  players.forEach(p => {
-    if (!tiberiusState.throws[p.name]) {
-      tiberiusState.throws[p.name] = Array.from({ length: colCount }, () => []);
-    }
-
-    tiberiusState.throws[p.name] = Array.from({ length: colCount }, (_, i) => {
-      return Array.isArray(tiberiusState.throws[p.name][i])
-        ? tiberiusState.throws[p.name][i]
-        : [];
-    });
-  });
+  tiberiusState.score = parseInt(tiberiusState.score || 0, 10) || 0;
+  tiberiusState.throws = Array.isArray(tiberiusState.throws) ? tiberiusState.throws : [];
+  tiberiusState.penalties = tiberiusState.penalties || {};
 
   renderTiberius();
   persistState();
@@ -8549,21 +8541,15 @@ function updateTiberiusTarget(index, value) {
   persistState();
 }
 
-function openTiberiusThrowModal(personName, colIndex) {
+function openTiberiusThrowModal() {
   ensureTiberiusState();
 
-  tiberiusEdit = {
-    person: personName,
-    colIndex
-  };
-
-  const title = document.getElementById('tiberius-throw-title');
-  const grid = document.getElementById('tiberius-number-grid');
-
-  if (title) {
-    title.textContent = `Tiberius: ${personName} · Spalte ${colIndex + 1}`;
+  if (!tiberiusState.active) {
+    showToast('Bitte zuerst Tiberius starten', 'error');
+    return;
   }
 
+  const grid = document.getElementById('tiberius-number-grid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -8572,14 +8558,14 @@ function openTiberiusThrowModal(personName, colIndex) {
     const btn = document.createElement('button');
     btn.className = 'darts-number-btn';
     btn.textContent = n === 0 ? '0 / Gosse' : String(n);
-    btn.onclick = () => confirmTiberiusThrow(n);
+    btn.onclick = () => handleTiberiusThrow(n);
     grid.appendChild(btn);
   }
 
   const kranzBtn = document.createElement('button');
   kranzBtn.className = 'darts-number-btn kranz';
   kranzBtn.textContent = 'Kranz / 12';
-  kranzBtn.onclick = () => confirmTiberiusThrow(12);
+  kranzBtn.onclick = () => handleTiberiusThrow(12);
   grid.appendChild(kranzBtn);
 
   document.getElementById('tiberius-throw-modal').classList.remove('hidden');
@@ -8587,121 +8573,168 @@ function openTiberiusThrowModal(personName, colIndex) {
 
 function closeTiberiusThrowModal() {
   document.getElementById('tiberius-throw-modal').classList.add('hidden');
-  tiberiusEdit = {
-    person: null,
-    colIndex: null
-  };
 }
 
-function confirmTiberiusThrow(value) {
+function handleTiberiusThrow(value) {
   ensureTiberiusState();
 
-  const personName = tiberiusEdit.person;
-  const colIndex = tiberiusEdit.colIndex;
+  const oldScore = parseInt(tiberiusState.score || 0, 10) || 0;
+  const newScore = oldScore + value;
 
-  if (!personName || colIndex === null || colIndex === undefined) return;
+  tiberiusState.score = newScore;
 
-  if (!tiberiusState.throws[personName]) {
-    tiberiusState.throws[personName] = [];
-  }
-
-  if (!Array.isArray(tiberiusState.throws[personName][colIndex])) {
-    tiberiusState.throws[personName][colIndex] = [];
-  }
-
-  tiberiusState.throws[personName][colIndex].push(value);
-
-  if (value === 0) {
-    const p = persons.find(x => x.name === personName);
-    const gosseKey = getGosseStrafeKey();
-
-    if (p && gosseKey) {
-      if (!p.strafen) p.strafen = {};
-      p.strafen[gosseKey] = (p.strafen[gosseKey] || 0) + 1;
-    }
-  }
+  tiberiusState.throws.push({
+    value,
+    oldScore,
+    newScore,
+    createdAt: new Date().toISOString()
+  });
 
   closeTiberiusThrowModal();
+
+  if (value === 0) {
+    openTiberiusGossePersonModal();
+    return;
+  }
+
+  const hit = getTiberiusHitForScore(oldScore, newScore);
+
+  if (hit) {
+    tiberiusState.pendingHit = {
+      target: hit.target,
+      colIndex: hit.colIndex,
+      oldScore,
+      newScore,
+      value,
+      mode: newScore === hit.target ? 'exact' : 'over',
+      createdAt: new Date().toISOString()
+    };
+
+    openTiberiusHitModal();
+  } else {
+    renderAll();
+    persistState();
+    showToast(value === 12 ? '👑 Kranz addiert' : `🎳 +${value} Pins`, 'success');
+  }
+}
+
+function getTiberiusHitForScore(oldScore, newScore) {
+  ensureTiberiusState();
+
+  const candidates = (tiberiusState.targets || [])
+    .map((target, colIndex) => ({
+      target: parseInt(target || 0, 10) || 0,
+      colIndex
+    }))
+    .filter(x => x.target > 0)
+    .filter(x => !tiberiusState.penalties[x.colIndex])
+    .filter(x => oldScore < x.target && newScore >= x.target)
+    .sort((a, b) => a.target - b.target);
+
+  return candidates[0] || null;
+}
+
+function openTiberiusHitModal() {
+  ensureTiberiusState();
+
+  const pending = tiberiusState.pendingHit;
+  if (!pending) return;
+
+  const title = document.getElementById('tiberius-hit-title');
+  const sub = document.getElementById('tiberius-hit-sub');
+  const select = document.getElementById('tiberius-hit-person-select');
+
+  if (title) {
+    title.textContent = pending.mode === 'exact'
+      ? `Ziel ${pending.target} genau erreicht`
+      : `Ziel ${pending.target} überschritten`;
+  }
+
+  if (sub) {
+    sub.textContent = pending.mode === 'exact'
+      ? 'Wer hat den letzten Wurf gemacht? Alle anderen zahlen.'
+      : 'Wer hat den letzten Wurf gemacht? Diese Person zahlt.';
+  }
+
+  if (select) {
+    select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+    getActivePlayersForSoloGame().forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name;
+      select.appendChild(opt);
+    });
+  }
+
+  document.getElementById('tiberius-hit-modal').classList.remove('hidden');
+}
+
+function closeTiberiusHitModal() {
+  document.getElementById('tiberius-hit-modal').classList.add('hidden');
+}
+
+function confirmTiberiusHitPenalty() {
+  ensureTiberiusState();
+
+  const pending = tiberiusState.pendingHit;
+  if (!pending) return;
+
+  const select = document.getElementById('tiberius-hit-person-select');
+  const throwerName = select?.value || '';
+
+  if (!throwerName) {
+    showToast('Bitte Spieler auswählen', 'error');
+    return;
+  }
+
+  const players = getActivePlayersForSoloGame();
+  const amount = (parseInt(pending.target || 0, 10) || 0) * 0.01;
+
+  let payers = [];
+
+  if (pending.mode === 'exact') {
+    payers = players
+      .filter(p => p.name !== throwerName)
+      .map(p => p.name);
+  } else {
+    payers = [throwerName];
+  }
+
+  tiberiusState.penalties[pending.colIndex] = {
+    target: pending.target,
+    colIndex: pending.colIndex,
+    mode: pending.mode,
+    thrower: throwerName,
+    payers,
+    amount,
+    createdAt: new Date().toISOString()
+  };
+
+  tiberiusState.pendingHit = null;
+
+  closeTiberiusHitModal();
   renderAll();
   persistState();
 
-  showToast(value === 12 ? '👑 Kranz eingetragen' : `🎳 ${value} Pins eingetragen`, 'success');
-}
-
-function getTiberiusCellTotal(personName, colIndex) {
-  ensureTiberiusState();
-
-  const throws = tiberiusState.throws[personName]?.[colIndex];
-  if (!Array.isArray(throws)) return 0;
-
-  return throws.reduce((sum, v) => sum + (parseInt(v || 0, 10) || 0), 0);
+  showToast(
+    pending.mode === 'exact'
+      ? `🏛️ Genau getroffen: alle außer ${throwerName} zahlen`
+      : `🏛️ Drüber: ${throwerName} zahlt`,
+    'success'
+  );
 }
 
 function getTiberiusPenaltyForPerson(personName) {
   ensureTiberiusState();
 
-  let total = 0;
-
-  (tiberiusState.targets || []).forEach((target, colIndex) => {
-    const targetValue = parseInt(target || 0, 10) || 0;
-    if (targetValue <= 0) return;
-
-    const current = getTiberiusCellTotal(personName, colIndex);
-    if (current <= 0) return;
-
-    const amount = targetValue * 0.01;
-
-    if (current === targetValue) {
-      total += amount;
+  return Object.values(tiberiusState.penalties || {}).reduce((sum, item) => {
+    if ((item.payers || []).includes(personName)) {
+      return sum + (parseFloat(item.amount || 0) || 0);
     }
 
-    if (current > targetValue) {
-      total += amount;
-    }
-  });
-
-  return total;
-}
-
-function getTiberiusAllPlayersPenaltyForColumn(colIndex) {
-  ensureTiberiusState();
-
-  const players = getActivePlayersForSoloGame();
-  const target = parseInt(tiberiusState.targets[colIndex] || 0, 10) || 0;
-  if (target <= 0) return false;
-
-  return players.some(p => getTiberiusCellTotal(p.name, colIndex) === target);
-}
-
-function getTiberiusLivePenalty(personName) {
-  ensureTiberiusState();
-
-  const players = getActivePlayersForSoloGame();
-
-  let total = 0;
-
-  (tiberiusState.targets || []).forEach((target, colIndex) => {
-    const targetValue = parseInt(target || 0, 10) || 0;
-    if (targetValue <= 0) return;
-
-    const amount = targetValue * 0.01;
-    const current = getTiberiusCellTotal(personName, colIndex);
-
-    const exactHitBySomeone = players.some(p => {
-      return getTiberiusCellTotal(p.name, colIndex) === targetValue;
-    });
-
-    if (exactHitBySomeone) {
-      total += amount;
-      return;
-    }
-
-    if (current > targetValue) {
-      total += amount;
-    }
-  });
-
-  return total;
+    return sum;
+  }, 0);
 }
 
 function renderTiberius() {
@@ -8716,6 +8749,11 @@ function renderTiberius() {
   const randomBtn = document.getElementById('tiberius-random-btn');
   if (randomBtn) {
     randomBtn.classList.toggle('hidden', !!tiberiusState.targetsGenerated);
+  }
+
+  const scoreDisplay = document.getElementById('tiberius-score-display');
+  if (scoreDisplay) {
+    scoreDisplay.textContent = `Aktueller Punktestand: ${tiberiusState.score || 0}`;
   }
 
   const players = getActivePlayersForSoloGame();
@@ -8746,16 +8784,6 @@ function renderTiberius() {
     tiberiusState.targets = Array.from({ length: colCount }, (_, i) => tiberiusState.targets[i] || 0);
   }
 
-  players.forEach(p => {
-    if (!tiberiusState.throws[p.name]) tiberiusState.throws[p.name] = [];
-
-    tiberiusState.throws[p.name] = Array.from({ length: colCount }, (_, i) => {
-      return Array.isArray(tiberiusState.throws[p.name][i])
-        ? tiberiusState.throws[p.name][i]
-        : [];
-    });
-  });
-
   const headerCols = tiberiusState.targets.map((target, index) => `
     <th>
       <div>Ziel ${index + 1}</div>
@@ -8775,33 +8803,19 @@ function renderTiberius() {
 
   const bodyRows = players.map(p => {
     const cells = tiberiusState.targets.map((target, colIndex) => {
-      const throws = tiberiusState.throws[p.name]?.[colIndex] || [];
-      const total = getTiberiusCellTotal(p.name, colIndex);
-      const targetValue = parseInt(target || 0, 10) || 0;
-
-      const exactHitBySomeone = getTiberiusAllPlayersPenaltyForColumn(colIndex);
-      const isPenalty =
-        (exactHitBySomeone && targetValue > 0) ||
-        (targetValue > 0 && total > targetValue);
-
-      const throwText = throws.length
-        ? throws.map(v => v === 12 ? 'K' : v).join(' + ')
-        : '—';
+      const penalty = tiberiusState.penalties[colIndex];
+      const hasPenalty = penalty && (penalty.payers || []).includes(p.name);
 
       return `
         <td>
-          <button
-            class="game-cell-btn ${throws.length ? '' : 'empty'} ${isPenalty ? 'loser' : ''}"
-            onclick="openTiberiusThrowModal('${escapeForJs(p.name)}', ${colIndex})"
-          >
-            <div>${throwText}</div>
-            <div style="font-size:0.7rem;opacity:0.75;">Summe: ${total}</div>
-          </button>
+          <div class="game-cell-btn ${hasPenalty ? 'loser' : 'empty'}" style="display:flex;align-items:center;justify-content:center;">
+            ${hasPenalty ? 'X' : '—'}
+          </div>
         </td>
       `;
     }).join('');
 
-    const live = getTiberiusLivePenalty(p.name);
+    const live = getTiberiusPenaltyForPerson(p.name);
 
     return `
       <tr>
@@ -8833,6 +8847,104 @@ function renderTiberius() {
   `;
 
   renderTiberiusHistory();
+}
+
+function finishTiberiusGame() {
+  ensureTiberiusState();
+
+  if (!tiberiusState.active) {
+    showToast('Tiberius wurde noch nicht gestartet', 'error');
+    return;
+  }
+
+  const players = getActivePlayersForSoloGame();
+  const assignedTo = [];
+
+  players.forEach(p => {
+    const amount = getTiberiusPenaltyForPerson(p.name);
+
+    if (amount <= 0) return;
+
+    const id = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+
+    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+
+    p.freeStrafen.push({
+      id,
+      reason: 'Tiberius',
+      amount,
+      onTop: !!tiberiusState.onTop,
+      createdAt: new Date().toISOString()
+    });
+
+    assignedTo.push({
+      id,
+      name: p.name,
+      amount,
+      onTop: !!tiberiusState.onTop
+    });
+  });
+
+  if (!assignedTo.length) {
+    showToast('Keine Tiberius-Strafen zu buchen', 'error');
+    return;
+  }
+
+  const historyId = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+
+  const entry = {
+    id: historyId,
+    type: 'tiberius',
+    createdAt: new Date().toISOString(),
+    onTop: !!tiberiusState.onTop,
+    score: tiberiusState.score,
+    targets: JSON.parse(JSON.stringify(tiberiusState.targets)),
+    throws: JSON.parse(JSON.stringify(tiberiusState.throws)),
+    penalties: JSON.parse(JSON.stringify(tiberiusState.penalties)),
+    assignedTo
+  };
+
+  if (!Array.isArray(strafenHistory)) strafenHistory = [];
+  strafenHistory.unshift(entry);
+
+  tiberiusState.history.unshift(entry);
+  tiberiusState.finished = true;
+  tiberiusState.active = false;
+
+  renderAll();
+  persistState();
+
+  showToast('✅ Tiberius abgeschlossen und Strafen gebucht', 'success');
+}
+
+function renderTiberiusHistory() {
+  const el = document.getElementById('tiberius-history-list');
+  if (!el) return;
+
+  const entries = Array.isArray(tiberiusState.history) ? tiberiusState.history : [];
+
+  if (!entries.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">Noch kein Tiberius-Verlauf</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(entry => {
+    const assigned = (entry.assignedTo || [])
+      .map(x => `${x.name}: ${euros(x.amount)}${x.onTop ? ' · On Top' : ''}`)
+      .join('<br>');
+
+    return `
+      <div class="spiel-card">
+        <div class="spiel-info">
+          <div class="spiel-verlierer round">🏛️ Tiberius abgeschlossen</div>
+          <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
+          <div class="spiel-detail">Endstand: ${entry.score || 0}</div>
+          <div class="spiel-detail"><strong>Gebucht:</strong><br>${assigned || '—'}</div>
+        </div>
+        <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
+      </div>
+    `;
+  }).join('');
 }
 
 function finishTiberiusGame() {
