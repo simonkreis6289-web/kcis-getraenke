@@ -3802,6 +3802,23 @@ tbody td:first-child {
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="tiberius-thrower-modal">
+  <div class="modal" style="max-width:430px;">
+    <h3 id="tiberius-thrower-title">Wer hat geworfen?</h3>
+    <div class="modal-sub" id="tiberius-thrower-sub">Wähle den Spieler für diesen Wurf</div>
+
+    <div class="modal-input-row">
+      <label>Spieler</label>
+      <select id="tiberius-thrower-select" class="modal-select"></select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeTiberiusThrowerModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmTiberiusThrower()">✓ Bestätigen</button>
+    </div>
+  </div>
+</div>
+    
 <div id="toast"></div>
        
 <script>
@@ -3851,6 +3868,7 @@ let appReady = false;
 let lastLocalChangeAt = 0;
 let lastRemoteChangeAt = 0;
 let isApplyingRemoteState = false;
+let tiberiusPendingThrower = null;
 
 const CLIENT_ID_KEY = 'kcis_client_id_v1';
 const CLIENT_ID = localStorage.getItem(CLIENT_ID_KEY) || (
@@ -8574,6 +8592,121 @@ function openTiberiusThrowModal() {
 function closeTiberiusThrowModal() {
   document.getElementById('tiberius-throw-modal').classList.add('hidden');
 }
+    
+    function openTiberiusThrowerModal() {
+  const pending = tiberiusPendingThrower;
+  if (!pending) return;
+
+  const title = document.getElementById('tiberius-thrower-title');
+  const sub = document.getElementById('tiberius-thrower-sub');
+  const select = document.getElementById('tiberius-thrower-select');
+
+  if (title) {
+    if (pending.value === 0) title.textContent = 'Gosse geworfen';
+    else if (pending.value === 9) title.textContent = '9er geworfen';
+    else if (pending.value === 12) title.textContent = 'Kranz geworfen';
+    else title.textContent = 'Wer hat geworfen?';
+  }
+
+  if (sub) {
+    if (pending.value === 0) sub.textContent = 'Wer bekommt die Gosse-Strafe?';
+    else sub.textContent = 'Wer ist straffrei? Alle anderen bekommen 9er/Kranz.';
+  }
+
+  if (select) {
+    select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+    getActivePlayersForSoloGame().forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name;
+      select.appendChild(opt);
+    });
+  }
+
+  document.getElementById('tiberius-thrower-modal').classList.remove('hidden');
+}
+
+function closeTiberiusThrowerModal() {
+  document.getElementById('tiberius-thrower-modal').classList.add('hidden');
+}
+
+function confirmTiberiusThrower() {
+  const select = document.getElementById('tiberius-thrower-select');
+  const personName = select?.value || '';
+
+  if (!personName) {
+    showToast('Bitte Spieler auswählen', 'error');
+    return;
+  }
+
+  if (!tiberiusPendingThrower) return;
+
+  const value = tiberiusPendingThrower.value;
+
+  if (value === 0) {
+    const p = persons.find(x => x.name === personName);
+    const gosseKey = getGosseStrafeKey();
+
+    if (p && gosseKey) {
+      if (!p.strafen) p.strafen = {};
+      p.strafen[gosseKey] = (p.strafen[gosseKey] || 0) + 1;
+    }
+  }
+
+  if (value === 9 || value === 12) {
+    const kranzKey = getKranzStrafeKey();
+
+    if (kranzKey) {
+      persons.forEach(p => {
+        if (!p.present || p.left) return;
+        if (p.name === personName) return;
+
+        if (!p.strafen) p.strafen = {};
+        p.strafen[kranzKey] = (p.strafen[kranzKey] || 0) + 1;
+      });
+    }
+  }
+
+  closeTiberiusThrowerModal();
+  continueTiberiusAfterThrower(personName);
+}
+
+function continueTiberiusAfterThrower(personName = '') {
+  ensureTiberiusState();
+
+  const pendingThrow = tiberiusPendingThrower;
+  if (!pendingThrow) return;
+
+  const hit = getTiberiusHitForScore(pendingThrow.oldScore, pendingThrow.newScore);
+
+  tiberiusPendingThrower = null;
+
+  if (hit) {
+    tiberiusState.pendingHit = {
+      target: hit.target,
+      colIndex: hit.colIndex,
+      oldScore: pendingThrow.oldScore,
+      newScore: pendingThrow.newScore,
+      value: pendingThrow.value,
+      thrower: personName || '',
+      mode: pendingThrow.newScore === hit.target ? 'exact' : 'over',
+      createdAt: new Date().toISOString()
+    };
+
+    openTiberiusHitModal();
+  } else {
+    renderAll();
+    persistState();
+
+    showToast(
+      pendingThrow.value === 12
+        ? '👑 Kranz addiert (+12)'
+        : `🎳 +${pendingThrow.value} Pins`,
+      'success'
+    );
+  }
+}
 
 function handleTiberiusThrow(value) {
   ensureTiberiusState();
@@ -8583,39 +8716,28 @@ function handleTiberiusThrow(value) {
 
   tiberiusState.score = newScore;
 
-  tiberiusState.throws.push({
+  const throwEntry = {
     value,
     oldScore,
     newScore,
     createdAt: new Date().toISOString()
-  });
+  };
+
+  tiberiusState.throws.push(throwEntry);
 
   closeTiberiusThrowModal();
 
-  if (value === 0) {
-    openTiberiusGossePersonModal();
+  tiberiusPendingThrower = {
+    ...throwEntry,
+    needsThrower: value === 0 || value === 9 || value === 12
+  };
+
+  if (tiberiusPendingThrower.needsThrower) {
+    openTiberiusThrowerModal();
     return;
   }
 
-  const hit = getTiberiusHitForScore(oldScore, newScore);
-
-  if (hit) {
-    tiberiusState.pendingHit = {
-      target: hit.target,
-      colIndex: hit.colIndex,
-      oldScore,
-      newScore,
-      value,
-      mode: newScore === hit.target ? 'exact' : 'over',
-      createdAt: new Date().toISOString()
-    };
-
-    openTiberiusHitModal();
-  } else {
-    renderAll();
-    persistState();
-    showToast(value === 12 ? '👑 Kranz addiert' : `🎳 +${value} Pins`, 'success');
-  }
+  continueTiberiusAfterThrower();
 }
 
 function getTiberiusHitForScore(oldScore, newScore) {
