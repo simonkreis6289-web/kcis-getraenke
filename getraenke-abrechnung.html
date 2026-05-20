@@ -4613,9 +4613,15 @@ function renderStrafen() {
       .filter(x => String(x.reason || '') === 'Tiberius')
       .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 
-    const freeTotal = calcFreeStrafenTotal(p) || 0;
+    const manualFreeStrafen = p.freeStrafen.filter(item => {
+      const reason = String(item.reason || '');
+      return reason !== 'Lotterie' && reason !== 'Tiberius';
+    });
 
-    const freeDetails = p.freeStrafen
+    const freeTotal = manualFreeStrafen
+      .reduce((sum, item) => sum + (parseFloat(item.amount || 0) || 0), 0);
+
+    const freeDetails = manualFreeStrafen
       .map(item =>
         `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`
       )
@@ -5361,47 +5367,92 @@ async function generateStrafenPDF(snapshot) {
   y += 6;
   doc.text(`Strafen gesamt: ${formatEuro(snapshot.total)}`, margin, y);
 
-  if (snapshot.history && snapshot.history.length) {
-    y += 10;
-    ensureSpace(20);
+if (snapshot.history && snapshot.history.length) {
+  y += 10;
+  ensureSpace(20);
 
-    doc.setFontSize(13);
-    doc.text("Historie", margin, y);
-    y += 7;
+  doc.setFontSize(13);
+  doc.text("Historie", margin, y);
+  y += 7;
 
-    doc.setFontSize(9);
+  doc.setFontSize(9);
 
-    snapshot.history.forEach((entry, idx) => {
-      ensureSpace(16);
+  snapshot.history.forEach((entry, idx) => {
+    ensureSpace(18);
 
-      if (entry.type === 'tannenbaum') {
-        doc.text(`${idx + 1}. Tannenbaum abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
-        y += 5;
-        doc.text(`Wand: ${formatEuro(entry.totals?.T1 || 0)} | TV: ${formatEuro(entry.totals?.T2 || 0)}`, margin + 6, y);
-        y += 5;
+    if (entry.type === 'tannenbaum') {
+      doc.text(`${idx + 1}. Tannenbaum abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
+      y += 5;
 
-        const assigned = (entry.assignedTo || [])
-          .map(a => `${a.name}: ${formatEuro(a.amount)}`)
-          .join(', ');
+      doc.text(
+        `Wand: ${formatEuro(entry.totals?.T1 || 0)} | TV: ${formatEuro(entry.totals?.T2 || 0)}`,
+        margin + 6,
+        y
+      );
+      y += 5;
 
-        doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, {
-          maxWidth: pageWidth - margin * 2 - 6
-        });
-        y += 7;
-      }
+      const assigned = (entry.assignedTo || [])
+        .map(a => `${a.name}: ${formatEuro(a.amount)}`)
+        .join(', ');
 
-      if (entry.type === 'free') {
-        doc.text(`${idx + 1}. Freier Betrag | ${formatDateTime(entry.createdAt)}`, margin, y);
-        y += 5;
-        doc.text(
-          `${entry.person || '-'}: ${entry.reason || '-'} | ${formatEuro(entry.amount)}${entry.onTop ? ' | On Top' : ''}`,
-          margin + 6,
-          y
-        );
-        y += 7;
-      }
-    });
-  }
+      doc.text(`Zugeordnet: ${assigned || '-'}`, margin + 6, y, {
+        maxWidth: pageWidth - margin * 2 - 6
+      });
+
+      y += 8;
+      return;
+    }
+
+    if (entry.type === 'free') {
+      doc.text(`${idx + 1}. Freier Betrag | ${formatDateTime(entry.createdAt)}`, margin, y);
+      y += 5;
+
+      doc.text(
+        `${entry.person || '-'}: ${entry.reason || '-'} | ${formatEuro(entry.amount)}${entry.onTop ? ' | On Top' : ''}`,
+        margin + 6,
+        y,
+        { maxWidth: pageWidth - margin * 2 - 6 }
+      );
+
+      y += 8;
+      return;
+    }
+
+    if (entry.type === 'lotterie') {
+      doc.text(`${idx + 1}. Lotterie abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
+      y += 5;
+
+      const assigned = (entry.assignedTo || [])
+        .map(a => `${a.name}: ${formatEuro(a.amount)}${a.onTop ? ' On Top' : ''}`)
+        .join(', ');
+
+      doc.text(`Gebucht: ${assigned || '-'}`, margin + 6, y, {
+        maxWidth: pageWidth - margin * 2 - 6
+      });
+
+      y += 8;
+      return;
+    }
+
+    if (entry.type === 'tiberius') {
+      doc.text(`${idx + 1}. Tiberius abgeschlossen | ${formatDateTime(entry.createdAt)}`, margin, y);
+      y += 5;
+
+      doc.text(`Endstand: ${entry.score || 0}`, margin + 6, y);
+      y += 5;
+
+      const assigned = (entry.assignedTo || [])
+        .map(a => `${a.name}: ${formatEuro(a.amount)}${a.onTop ? ' On Top' : ''}`)
+        .join(', ');
+
+      doc.text(`Gebucht: ${assigned || '-'}`, margin + 6, y, {
+        maxWidth: pageWidth - margin * 2 - 6
+      });
+
+      y += 8;
+    }
+  });
+}
 
   return doc;
 }
@@ -9008,7 +9059,6 @@ function finishTiberiusGame() {
 
   players.forEach(p => {
     const amount = getTiberiusPenaltyForPerson(p.name);
-
     if (amount <= 0) return;
 
     const id = 'tiberius_' + Date.now() + '_' + Math.random().toString(36).slice(2);
