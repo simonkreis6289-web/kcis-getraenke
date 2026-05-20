@@ -3493,6 +3493,21 @@ tbody td:first-child {
               <input type="checkbox" id="tiberius-ontop-check" onchange="toggleTiberiusOnTop()">
               <span>Tiberius-Strafen On Top buchen</span>
             </label>
+              
+              <div class="modal-input-row" style="margin-bottom:0;">
+                  <label>Spaltenanzahl</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    id="tiberius-column-count"
+                    class="modal-euro-input"
+                    placeholder="z. B. 8"
+                    onchange="prepareTiberiusColumns()"
+                  >
+                </div>
+
+                <div id="tiberius-target-editor" class="team-drinks-grid"></div>
 
             <div class="modal-btns">
               <button class="save-prices-btn" onclick="startTiberiusGame()">🏛️ Tiberius starten</button>
@@ -7091,6 +7106,7 @@ function createTiberiusState() {
     active: false,
     onTop: false,
     targetsGenerated: false,
+    columnCount: 0,
     targets: [],
     score: 0,
     throws: [],
@@ -7168,6 +7184,7 @@ function ensureTiberiusState() {
   if (!tiberiusState.penalties) tiberiusState.penalties = {};
   if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
 
+  tiberiusState.columnCount = parseInt(tiberiusState.columnCount || 0, 10) || 0;
   tiberiusState.score = parseInt(tiberiusState.score || 0, 10) || 0;
   tiberiusState.active = !!tiberiusState.active;
   tiberiusState.onTop = !!tiberiusState.onTop;
@@ -8612,6 +8629,81 @@ function saveTiberiusSettings(showToastMessage = true) {
   }
 }
     
+function getTiberiusColumnCountInput() {
+  const input = document.getElementById('tiberius-column-count');
+  return Math.max(1, parseInt(input?.value || '0', 10) || 0);
+}
+
+function prepareTiberiusColumns() {
+  ensureTiberiusState();
+
+  if (tiberiusState.active) return;
+
+  const count = getTiberiusColumnCountInput();
+
+  tiberiusState.columnCount = count;
+  tiberiusState.targets = Array.from({ length: count }, (_, i) => {
+    return parseInt(tiberiusState.targets[i] || 0, 10) || 0;
+  });
+
+  tiberiusState.targetsGenerated = tiberiusState.targets.some(v => v > 0);
+
+  renderTiberiusTargetEditor();
+  persistState();
+}
+
+function renderTiberiusTargetEditor() {
+  ensureTiberiusState();
+
+  const input = document.getElementById('tiberius-column-count');
+  const editor = document.getElementById('tiberius-target-editor');
+
+  if (!editor) return;
+
+  if (input && document.activeElement !== input) {
+    input.value = tiberiusState.columnCount || '';
+  }
+
+  if (tiberiusState.active) {
+    editor.innerHTML = '';
+    return;
+  }
+
+  if (!tiberiusState.columnCount) {
+    editor.innerHTML = `
+      <div style="color:var(--muted);font-size:0.85rem;">
+        Bitte zuerst die Spaltenanzahl eingeben.
+      </div>
+    `;
+    return;
+  }
+
+  editor.innerHTML = tiberiusState.targets.map((target, index) => `
+    <div class="team-drink-row">
+      <span class="team-drink-name">Ziel ${index + 1}</span>
+      <input
+        type="number"
+        min="1"
+        step="1"
+        class="price-input"
+        value="${parseInt(target || 0, 10) || ''}"
+        onchange="updateTiberiusPreStartTarget(${index}, this.value)"
+      >
+    </div>
+  `).join('');
+}
+
+function updateTiberiusPreStartTarget(index, value) {
+  ensureTiberiusState();
+
+  if (tiberiusState.active) return;
+
+  tiberiusState.targets[index] = parseInt(value || '0', 10) || 0;
+  tiberiusState.targetsGenerated = tiberiusState.targets.some(v => v > 0);
+
+  persistState();
+}
+    
 function startTiberiusGame() {
   ensureTiberiusState();
   saveTiberiusSettings(false);
@@ -8622,18 +8714,33 @@ function startTiberiusGame() {
     return;
   }
 
-  tiberiusState.active = true;
-  tiberiusState.finished = false;
+  const colCount = tiberiusState.columnCount || getTiberiusColumnCountInput();
 
-  const colCount = players.length;
+  if (!colCount || colCount < 1) {
+    showToast('Bitte Spaltenanzahl eingeben', 'error');
+    return;
+  }
+
+  tiberiusState.columnCount = colCount;
 
   tiberiusState.targets = Array.from({ length: colCount }, (_, i) => {
-    return tiberiusState.targets[i] || 0;
+    return parseInt(tiberiusState.targets[i] || 0, 10) || 0;
   });
 
-  tiberiusState.score = parseInt(tiberiusState.score || 0, 10) || 0;
-  tiberiusState.throws = Array.isArray(tiberiusState.throws) ? tiberiusState.throws : [];
-  tiberiusState.penalties = tiberiusState.penalties || {};
+  const missingTargets = tiberiusState.targets.some(v => !v || v <= 0);
+
+  if (missingTargets) {
+    showToast('Bitte alle Zielwerte eingeben oder zufällig erzeugen', 'error');
+    return;
+  }
+
+  tiberiusState.active = true;
+  tiberiusState.finished = false;
+  tiberiusState.score = 0;
+  tiberiusState.throws = [];
+  tiberiusState.penalties = {};
+  tiberiusState.pendingHit = null;
+  tiberiusState.targetsGenerated = true;
 
   renderTiberius();
   persistState();
@@ -8670,17 +8777,20 @@ function toggleTiberiusOnTop() {
 function generateTiberiusTargets() {
   ensureTiberiusState();
 
-  const players = getActivePlayersForSoloGame();
-  if (!players.length) {
-    showToast('Keine anwesenden Spieler', 'error');
+  if (tiberiusState.active) {
+    showToast('Zielzahlen können nach Spielstart nicht mehr geändert werden', 'error');
     return;
   }
 
-  if (!tiberiusState.active) {
-    startTiberiusGame();
+  let colCount = tiberiusState.columnCount || getTiberiusColumnCountInput();
+
+  if (!colCount) {
+    showToast('Bitte zuerst Spaltenanzahl eingeben', 'error');
+    return;
   }
 
-  const colCount = players.length;
+  tiberiusState.columnCount = colCount;
+
   const min = parseInt(tiberiusSettings.minPins || 10, 10) || 10;
   const max = parseInt(tiberiusSettings.maxPins || min, 10) || min;
 
@@ -8709,6 +8819,7 @@ function generateTiberiusTargets() {
 
   tiberiusState.targetsGenerated = true;
 
+  renderTiberiusTargetEditor();
   renderTiberius();
   persistState();
 
@@ -9031,30 +9142,31 @@ function renderTiberius() {
   const board = document.getElementById('tiberius-board');
   if (!board) return;
 
-    const startCard = document.getElementById('tiberius-start-card');
-    const livePanel = document.getElementById('tiberius-live-panel');
-
-    if (startCard) startCard.classList.toggle('hidden', !!tiberiusState.active);
-    if (livePanel) livePanel.classList.toggle('hidden', !tiberiusState.active);
-    
+  const startCard = document.getElementById('tiberius-start-card');
+  const livePanel = document.getElementById('tiberius-live-panel');
   const onTopCheck = document.getElementById('tiberius-ontop-check');
+  const randomBtn = document.getElementById('tiberius-random-btn');
+  const scoreDisplay = document.getElementById('tiberius-score-display');
+  const amountDisplay = document.getElementById('tiberius-current-amount');
+
+  if (startCard) startCard.classList.toggle('hidden', !!tiberiusState.active);
+  if (livePanel) livePanel.classList.toggle('hidden', !tiberiusState.active);
+
   if (onTopCheck) onTopCheck.checked = !!tiberiusState.onTop;
 
-  const randomBtn = document.getElementById('tiberius-random-btn');
   if (randomBtn) {
-    randomBtn.classList.toggle('hidden', !!tiberiusState.targetsGenerated);
+    randomBtn.classList.toggle('hidden', !!tiberiusState.active);
   }
 
-    const scoreDisplay = document.getElementById('tiberius-score-display');
-    const amountDisplay = document.getElementById('tiberius-current-amount');
+  renderTiberiusTargetEditor();
 
-    if (scoreDisplay) {
-      scoreDisplay.textContent = tiberiusState.score || 0;
-    }
+  if (scoreDisplay) {
+    scoreDisplay.textContent = tiberiusState.score || 0;
+  }
 
-    if (amountDisplay) {
-      amountDisplay.textContent = euros(getTiberiusCurrentAmount());
-    }
+  if (amountDisplay) {
+    amountDisplay.textContent = euros(getTiberiusCurrentAmount());
+  }
 
   const players = getActivePlayersForSoloGame();
 
@@ -9064,6 +9176,7 @@ function renderTiberius() {
         Tiberius noch nicht gestartet.
       </div>
     `;
+
     renderTiberiusHistory();
     return;
   }
@@ -9074,41 +9187,54 @@ function renderTiberius() {
         Keine anwesenden Spieler.
       </div>
     `;
+
     renderTiberiusHistory();
     return;
   }
 
-  const colCount = players.length;
+  const targets = Array.isArray(tiberiusState.targets)
+    ? tiberiusState.targets
+    : [];
 
-  if (tiberiusState.targets.length !== colCount) {
-    tiberiusState.targets = Array.from({ length: colCount }, (_, i) => tiberiusState.targets[i] || 0);
+  if (!targets.length) {
+    board.innerHTML = `
+      <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--muted);">
+        Keine Zielwerte vorhanden. Bitte Tiberius neu starten und Zielwerte festlegen.
+      </div>
+    `;
+
+    renderTiberiusHistory();
+    return;
   }
 
-  const headerCols = tiberiusState.targets.map((target, index) => `
-    <th>
-      <div>Ziel ${index + 1}</div>
-      <input
-        class="game-amount-input"
-        type="number"
-        step="1"
-        min="1"
-        value="${parseInt(target || 0, 10) || 0}"
-        onchange="updateTiberiusTarget(${index}, this.value)"
-      >
-      <div style="font-size:0.65rem;color:var(--accent2);font-weight:900;margin-top:3px;">
-        ${euros((parseInt(target || 0, 10) || 0) * 0.01)}
-      </div>
-    </th>
-  `).join('');
+  const headerCols = targets.map((target, index) => {
+    const targetValue = parseInt(target || 0, 10) || 0;
+    const penalty = (targetValue * 0.01);
+
+    return `
+      <th>
+        <div>Ziel ${index + 1}</div>
+        <div style="font-size:1rem;font-weight:900;margin-top:4px;">
+          ${targetValue}
+        </div>
+        <div style="font-size:0.65rem;color:var(--accent2);font-weight:900;margin-top:3px;">
+          ${euros(penalty)}
+        </div>
+      </th>
+    `;
+  }).join('');
 
   const bodyRows = players.map(p => {
-    const cells = tiberiusState.targets.map((target, colIndex) => {
-      const penalty = tiberiusState.penalties[colIndex];
+    const cells = targets.map((target, colIndex) => {
+      const penalty = tiberiusState.penalties?.[colIndex];
       const hasPenalty = penalty && (penalty.payers || []).includes(p.name);
 
       return `
         <td>
-          <div class="game-cell-btn ${hasPenalty ? 'loser' : 'empty'}" style="display:flex;align-items:center;justify-content:center;">
+          <div
+            class="game-cell-btn ${hasPenalty ? 'loser' : 'empty'}"
+            style="display:flex;align-items:center;justify-content:center;"
+          >
             ${hasPenalty ? 'X' : '—'}
           </div>
         </td>
