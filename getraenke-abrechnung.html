@@ -3696,6 +3696,30 @@ tbody td:first-child {
                 >
               </div>
             </div>
+              
+              <div class="section-title">Verspätung / Früh gegangen</div>
+
+                <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+                  <div class="modal-input-row" style="margin-bottom:0;">
+                    <label>Startzeit</label>
+                    <input
+                      type="time"
+                      id="penalty-start-time"
+                      class="modal-text-input"
+                      onchange="saveTimePenaltySettings()"
+                    >
+                  </div>
+
+                  <div class="modal-input-row" style="margin-bottom:0;">
+                    <label>Endzeit</label>
+                    <input
+                      type="time"
+                      id="penalty-end-time"
+                      class="modal-text-input"
+                      onchange="saveTimePenaltySettings()"
+                    >
+                  </div>
+                </div>
 
             <div class="modal-input-row" style="margin-bottom:0;">
               <label>Max. Zielzahl</label>
@@ -4066,6 +4090,50 @@ tbody td:first-child {
   </div>
 </div>
     
+<div class="modal-overlay hidden" id="arrival-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>Ankunftszeit</h3>
+    <div class="modal-sub" id="arrival-modal-sub">Wann ist die Person angekommen?</div>
+
+    <label class="modal-check">
+      <input type="checkbox" id="arrival-now-check" checked onchange="toggleArrivalTimeInput()">
+      <span>Jetzt</span>
+    </label>
+
+    <div class="modal-input-row" id="arrival-time-row" style="display:none;">
+      <label>Uhrzeit</label>
+      <input type="time" id="arrival-time-input" class="modal-text-input">
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeArrivalModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmArrivalTime()">OK</button>
+    </div>
+  </div>
+</div>
+    
+<div class="modal-overlay hidden" id="left-early-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>Gehzeit</h3>
+    <div class="modal-sub" id="left-early-modal-sub">Wann ist die Person gegangen?</div>
+
+    <label class="modal-check">
+      <input type="checkbox" id="left-early-now-check" checked onchange="toggleLeftEarlyTimeInput()">
+      <span>Jetzt</span>
+    </label>
+
+    <div class="modal-input-row" id="left-early-time-row" style="display:none;">
+      <label>Uhrzeit</label>
+      <input type="time" id="left-early-time-input" class="modal-text-input">
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeLeftEarlyModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmLeftEarlyTime()">OK</button>
+    </div>
+  </div>
+</div>
+    
 <div id="toast"></div>
        
 <script>
@@ -4215,6 +4283,9 @@ let timePenaltySettings = {
   startTime: '20:00',
   endTime: '23:00'
 };
+    
+let arrivalEditPerson = null;
+let leftEarlyEditPerson = null;
     
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
@@ -4918,6 +4989,9 @@ function renderStrafen() {
     const freeDetails = manualFree
       .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`)
       .join('<br>');
+      
+      const latePenalty = getLatePenaltyDisplay(p);
+      const earlyPenalty = getEarlyPenaltyDisplay(p);
 
     const extrasHtml = `
       ${tannenbaumNormal > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🌲 Tannenbaum +${euros(tannenbaumNormal)}</div>` : ''}
@@ -4928,6 +5002,17 @@ function renderStrafen() {
 
       ${tiberiusNormal > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🏛️ Tiberius +${euros(tiberiusNormal)}</div>` : ''}
       ${tiberiusOnTop > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🏛️ Tiberius +${euros(tiberiusOnTop)} 🔥</div>` : ''}
+        ${latePenalty ? `
+          <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+            ⏰ ${latePenalty.label}: ${latePenalty.count}× +${euros(latePenalty.amount)}
+          </div>
+        ` : ''}
+
+        ${earlyPenalty ? `
+          <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
+            🚪 ${earlyPenalty.label}: ${earlyPenalty.count}× +${euros(earlyPenalty.amount)}
+          </div>
+        ` : ''}
     `;
 
     let html = `
@@ -4973,6 +5058,103 @@ function renderStrafen() {
     tr.innerHTML = html;
     body.appendChild(tr);
   });
+}
+    
+function openArrivalModal(person) {
+  arrivalEditPerson = person;
+
+  const sub = document.getElementById('arrival-modal-sub');
+  const nowCheck = document.getElementById('arrival-now-check');
+  const timeInput = document.getElementById('arrival-time-input');
+
+  if (sub) sub.textContent = `${person.name} ist angekommen.`;
+  if (nowCheck) nowCheck.checked = true;
+  if (timeInput) timeInput.value = getNowTimeString();
+
+  toggleArrivalTimeInput();
+
+  document.getElementById('arrival-modal')?.classList.remove('hidden');
+}
+
+function closeArrivalModal() {
+  document.getElementById('arrival-modal')?.classList.add('hidden');
+  arrivalEditPerson = null;
+}
+
+function toggleArrivalTimeInput() {
+  const nowCheck = document.getElementById('arrival-now-check');
+  const row = document.getElementById('arrival-time-row');
+
+  if (row) {
+    row.style.display = nowCheck?.checked ? 'none' : 'block';
+  }
+}
+
+function confirmArrivalTime() {
+  if (!arrivalEditPerson) return;
+
+  const nowCheck = document.getElementById('arrival-now-check');
+  const timeInput = document.getElementById('arrival-time-input');
+
+  arrivalEditPerson.arrivalTime = nowCheck?.checked
+    ? getNowTimeString()
+    : (timeInput?.value || getNowTimeString());
+
+  closeArrivalModal();
+  renderAll();
+  persistState();
+
+  showToast(`✅ Ankunftszeit gespeichert: ${arrivalEditPerson.arrivalTime}`, 'success');
+}
+
+function openLeftEarlyModal(person) {
+  leftEarlyEditPerson = person;
+
+  const sub = document.getElementById('left-early-modal-sub');
+  const nowCheck = document.getElementById('left-early-now-check');
+  const timeInput = document.getElementById('left-early-time-input');
+
+  if (sub) sub.textContent = `${person.name} geht.`;
+  if (nowCheck) nowCheck.checked = true;
+  if (timeInput) timeInput.value = getNowTimeString();
+
+  toggleLeftEarlyTimeInput();
+
+  document.getElementById('left-early-modal')?.classList.remove('hidden');
+}
+
+function closeLeftEarlyModal() {
+  document.getElementById('left-early-modal')?.classList.add('hidden');
+  leftEarlyEditPerson = null;
+}
+
+function toggleLeftEarlyTimeInput() {
+  const nowCheck = document.getElementById('left-early-now-check');
+  const row = document.getElementById('left-early-time-row');
+
+  if (row) {
+    row.style.display = nowCheck?.checked ? 'none' : 'block';
+  }
+}
+
+function confirmLeftEarlyTime() {
+  if (!leftEarlyEditPerson) return;
+
+  const nowCheck = document.getElementById('left-early-now-check');
+  const timeInput = document.getElementById('left-early-time-input');
+
+  leftEarlyEditPerson.leftEarlyAt = nowCheck?.checked
+    ? getNowTimeString()
+    : (timeInput?.value || getNowTimeString());
+
+  leftEarlyEditPerson.left = true;
+  leftEarlyEditPerson.leftAt = new Date().toISOString();
+
+  closeLeftEarlyModal();
+  renderAll();
+  persistState();
+
+  showToast(`✅ Gehzeit gespeichert: ${leftEarlyEditPerson.leftEarlyAt}`, 'success');
 }
 
 function renderStrafenHistory() {
@@ -5086,13 +5268,24 @@ function calcNormalStrafenRaw(p) {
     return sum + ((p.strafen[s.key] || 0) * (strafPrices[s.key] || 0));
   }, 0);
 
+    const lateKey = getLateStrafeKey();
+    const earlyKey = getEarlyLeaveStrafeKey();
+
+    const lateAmount = lateKey
+      ? calcLateCount(p) * (strafPrices[lateKey] || 0)
+      : 0;
+
+    const earlyAmount = earlyKey
+      ? calcLeftEarlyCount(p) * (strafPrices[earlyKey] || 0)
+      : 0;
+
   const freeNormal = p.freeStrafen
     .filter(x => !x.onTop)
     .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 
   const tannenbaum = getPersonTannenbaumTotal(p) || 0;
 
-  return counted + freeNormal + tannenbaum;
+return counted + lateAmount + earlyAmount + freeNormal + tannenbaum;
 }
 
 function calcOnTopStrafenTotal(p) {
@@ -5386,7 +5579,10 @@ function getStrafenSnapshot() {
       tannenbaumCharges: Array.isArray(p.tannenbaumCharges) ? [...p.tannenbaumCharges] : [],
       normalRaw: calcNormalStrafenRaw(p),
       onTop: calcOnTopStrafenTotal(p),
-      total: calcPersonStrafenTotalCapped(p)
+      total: calcPersonStrafenTotalCapped(p),
+        arrivalTime: p.arrivalTime || '',
+        leftEarlyAt: p.leftEarlyAt || '',
+        boughtThrows: p.boughtThrows || 0
     })),
     absentMembers: absentMembers.map(p => ({
       name: p.name,
@@ -5620,6 +5816,17 @@ async function generateStrafenPDF(snapshot) {
 
     if (freeManualNormal > 0) detailLines.push(`Freie Beträge: +${formatEuro(freeManualNormal)}`);
     if (freeManualOnTop > 0) detailLines.push(`Freie Beträge: +${formatEuro(freeManualOnTop)} On Top`);
+
+    const latePenalty = getLatePenaltyDisplay(p);
+    const earlyPenalty = getEarlyPenaltyDisplay(p);
+
+    if (latePenalty) {
+      detailLines.push(`Verspätet: ${latePenalty.count}x +${formatEuro(latePenalty.amount)}`);
+    }
+
+    if (earlyPenalty) {
+      detailLines.push(`Zu früh weg: ${earlyPenalty.count}x +${formatEuro(earlyPenalty.amount)}`);
+    }
 
     const dynamicRowHeight = rowHeight + detailLines.length * 4;
 
@@ -9898,6 +10105,7 @@ function renderAll() {
   renderDartsSettings();
   renderStrafen();
   renderStrafpreisEditor();
+    renderTimePenaltySettings();
                                     
   updateStrafenLimitInput();
 }
@@ -9927,6 +10135,88 @@ function updateStats() {
       gosseKingEl.textContent = kings.length ? kings.join(', ') : '—';
     }
 
+}
+
+function renderTimePenaltySettings() {
+  const startInput = document.getElementById('penalty-start-time');
+  const endInput = document.getElementById('penalty-end-time');
+
+  if (startInput && document.activeElement !== startInput) {
+    startInput.value = timePenaltySettings.startTime || '20:00';
+  }
+
+  if (endInput && document.activeElement !== endInput) {
+    endInput.value = timePenaltySettings.endTime || '23:00';
+  }
+}
+
+function getLateStrafeKey() {
+  const found = STRAFEN.find(s => {
+    const label = String(s.label || '').toLowerCase();
+    return label.includes('verspät') || label.includes('verspaet');
+  });
+
+  return found ? found.key : null;
+}
+
+function getEarlyLeaveStrafeKey() {
+  const found = STRAFEN.find(s => {
+    const label = String(s.label || '').toLowerCase();
+    return label.includes('früh') || label.includes('frueh') || label.includes('zu früh') || label.includes('zu frueh');
+  });
+
+  return found ? found.key : null;
+}
+
+function timeStringToMinutes(timeStr) {
+  if (!timeStr) return null;
+
+  const [h, m] = String(timeStr).split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+
+  return h * 60 + m;
+}
+
+function getNowTimeString() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function calcStartedQuarterHours(minutesDiff) {
+  if (minutesDiff <= 0) return 0;
+  return Math.ceil(minutesDiff / 15);
+}
+
+function calcLateCount(p) {
+  const start = timeStringToMinutes(timePenaltySettings.startTime || '20:00');
+  const arrival = timeStringToMinutes(p.arrivalTime || '');
+
+  if (start === null || arrival === null) return 0;
+
+  return calcStartedQuarterHours(arrival - start);
+}
+
+function calcLeftEarlyCount(p) {
+  const end = timeStringToMinutes(timePenaltySettings.endTime || '23:00');
+  const left = timeStringToMinutes(p.leftEarlyAt || '');
+
+  if (end === null || left === null) return 0;
+
+  return calcStartedQuarterHours(end - left);
+}
+
+function saveTimePenaltySettings() {
+  const startInput = document.getElementById('penalty-start-time');
+  const endInput = document.getElementById('penalty-end-time');
+
+  timePenaltySettings.startTime = startInput?.value || '20:00';
+  timePenaltySettings.endTime = endInput?.value || '23:00';
+
+  renderTimePenaltySettings();
+  renderStrafen();
+  persistState();
+
+  showToast('✅ Zeiten gespeichert', 'success');
 }
 
 function renderWurfSettings() {
@@ -9990,9 +10280,10 @@ c.onclick = () => {
 
   p.present = !p.present;
 
-  if (!wasPresent && p.present) {
-    playSound(sounds.welcome);
-  }
+if (!wasPresent && p.present) {
+  playSound(sounds.welcome);
+  openArrivalModal(p);
+}
 
     if (!p.present) {
       p.tisch = '';
@@ -10814,6 +11105,40 @@ function updateModalRest() {
   }
 }
 
+function getLatePenaltyDisplay(p) {
+  const key = getLateStrafeKey();
+  if (!key) return null;
+
+  const count = calcLateCount(p);
+  const price = strafPrices[key] || 0;
+  const amount = count * price;
+
+  if (count <= 0 || amount <= 0) return null;
+
+  return {
+    label: 'Verspätet',
+    count,
+    amount
+  };
+}
+
+function getEarlyPenaltyDisplay(p) {
+  const key = getEarlyLeaveStrafeKey();
+  if (!key) return null;
+
+  const count = calcLeftEarlyCount(p);
+  const price = strafPrices[key] || 0;
+  const amount = count * price;
+
+  if (count <= 0 || amount <= 0) return null;
+
+  return {
+    label: 'Zu früh weg',
+    count,
+    amount
+  };
+}
+
 function confirmPayment() {
   if (!modalPerson) return;
 
@@ -10826,7 +11151,11 @@ function confirmPayment() {
   modalPerson.paid = newPaid;
   modalPerson.left = newLeft;
 
-  if (!oldLeft && newLeft) modalPerson.leftAt = new Date().toISOString();
+    if (!oldLeft && newLeft) {
+      closeModal();
+      openLeftEarlyModal(modalPerson);
+      return;
+    }
   if (oldLeft && !newLeft) modalPerson.leftAt = '';
 
   closeModal();
