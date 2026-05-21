@@ -3040,7 +3040,7 @@ tbody td:first-child {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface2);
-  font-weight: 800;
+  font-weight: 500;
   font-size: 0.72rem;
   cursor: pointer;
 }
@@ -3077,6 +3077,18 @@ tbody td:first-child {
 }
 
 .game-start-card .secondary-btn {
+  background: var(--surface2);
+  color: var(--text);
+}
+      
+#tab-lotterie > div[style*="margin-top:14px"] .secondary-btn,
+#tab-tiberius > div[style*="margin-top:14px"] .secondary-btn {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid var(--border);
   background: var(--surface2);
   color: var(--text);
 }
@@ -3659,7 +3671,7 @@ tbody td:first-child {
         <div id="tab-tiberius" class="hidden">
           <div class="section-title">Tiberius</div>
 
-          <div class="darts-start-card" id="tiberius-start-card">
+          <div class="game-start-card" id="tiberius-start-card">
             <label class="modal-check" style="margin-bottom:0;">
               <input type="checkbox" id="tiberius-ontop-check" onchange="toggleTiberiusOnTop()">
               <span>Tiberius-Strafen On Top buchen</span>
@@ -3680,11 +3692,32 @@ tbody td:first-child {
 
                 <div id="tiberius-target-editor" class="team-drinks-grid"></div>
 
-            <div class="modal-btns">
-              <button class="save-prices-btn" onclick="startTiberiusGame()">🏛️ Tiberius starten</button>
-              <button class="round-btn" onclick="generateTiberiusTargets()" id="tiberius-random-btn">🎲 Zufällige Zielzahlen</button>
-              <button class="modal-cancel" onclick="resetTiberiusGame()">↻ Tiberius neu starten</button>
-            </div>
+                    <div class="modal-btns" style="margin-top:14px;">
+                      <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="generateTiberiusTargets()"
+                        id="tiberius-random-btn"
+                      >
+                        🎲 Zufällige Zielzahlen
+                      </button>
+
+                      <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="resetTiberiusGame()"
+                      >
+                        ↻ Tiberius neu starten
+                      </button>
+
+                      <button
+                        type="button"
+                        class="primary-btn"
+                        onclick="startTiberiusGame()"
+                      >
+                        🏛️ Tiberius starten
+                      </button>
+                    </div>
           </div>
             
           <div class="tiberius-live-panel hidden" id="tiberius-live-panel">
@@ -3703,9 +3736,15 @@ tbody td:first-child {
             
           <div id="tiberius-board"></div>
 
-          <div style="margin-top:14px;">
-            <button class="save-prices-btn" onclick="finishTiberiusGame()">✅ Tiberius abschließen</button>
-          </div>
+        <div style="margin-top:14px;display:flex;gap:10px;">
+          <button class="secondary-btn tiberius-reset-live-btn hidden" onclick="resetTiberiusGame()">
+            ↻ Neustart
+          </button>
+
+          <button class="save-prices-btn hidden" onclick="finishTiberiusGame()">
+            ✅ Tiberius abschließen
+          </button>
+        </div>
 
           <div class="section-title">Tiberius Verlauf</div>
           <div id="tiberius-history-list" class="spiele-list"></div>
@@ -9964,11 +10003,21 @@ function renderTiberius() {
   const onTopCheck = document.getElementById('tiberius-ontop-check');
   const randomBtn = document.getElementById('tiberius-random-btn');
   const scoreDisplay = document.getElementById('tiberius-score-display');
-  const amountDisplay = document.getElementById('tiberius-current-amount');
-
+      const amountDisplay = document.getElementById('tiberius-current-amount');
+    const finishBtn = document.querySelector('#tab-tiberius .save-prices-btn');
+    const resetBtn = document.querySelector('#tab-tiberius .tiberius-reset-live-btn');
+    
   if (startCard) startCard.classList.toggle('hidden', !!tiberiusState.active);
   if (livePanel) livePanel.classList.toggle('hidden', !tiberiusState.active);
 
+    if (finishBtn) {
+      finishBtn.classList.toggle('hidden', !tiberiusState.active);
+    }
+
+    if (resetBtn) {
+      resetBtn.classList.toggle('hidden', !tiberiusState.active);
+    }
+    
   if (onTopCheck) onTopCheck.checked = !!tiberiusState.onTop;
 
   if (randomBtn) {
