@@ -2940,7 +2940,7 @@ tbody td:first-child {
 
 .tiberius-live-value {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(4.5rem, 0vw, 7.5rem);
+  font-size: clamp(4.5rem, 10vw, 7.5rem);
   line-height: 0.85;
   color: #000;
 }
@@ -3000,16 +3000,6 @@ tbody td:first-child {
   flex-direction: column;
   gap: 14px;
   margin-top: 14px;
-}
-
-#lotterie-amount-editor {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
-}
-
-#lotterie-amount-editor .team-drink-row {
-  margin: 0;
 }
       
 .wurf-dots {
@@ -3123,18 +3113,19 @@ tbody td:first-child {
   opacity: 0.55;
   font-style: italic;
 }
-      
+ #lotterie-amount-editor,
 #tiberius-target-editor {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 10px;
   align-items: stretch;
 }
 
+#lotterie-amount-editor .team-drink-row,
 #tiberius-target-editor .team-drink-row {
   margin: 0;
   display: grid;
-  grid-template-columns: 90px 1fr;
+  grid-template-columns: 90px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   padding: 10px;
@@ -3143,19 +3134,28 @@ tbody td:first-child {
   border: 1px solid var(--border);
 }
 
+#lotterie-amount-editor .team-drink-name,
 #tiberius-target-editor .team-drink-name {
   font-size: 0.78rem;
   font-weight: 900;
   color: var(--text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+#lotterie-amount-editor .price-input,
 #tiberius-target-editor .price-input {
   width: 100%;
   min-width: 0;
-  text-align: center;
+  text-align: right;
   font-weight: 900;
 }
+
+.game-ontop-check {
+  margin: 0;
+  min-height: auto;
+}     
       
 </style>
     
@@ -3664,8 +3664,7 @@ tbody td:first-child {
           <div class="section-title">Lotterie</div>
 
             <div class="game-start-card" id="lotterie-setup-card">
-              <div class="modal-input-row">
-                <label class="modal-check">
+                <label class="modal-check game-ontop-check">
                   <input type="checkbox" id="lotterie-ontop-check">
                   <span>Lotterie-Strafen On Top buchen</span>
                 </label>
@@ -3700,14 +3699,6 @@ tbody td:first-child {
 
                 <button
                   type="button"
-                  class="secondary-btn"
-                  onclick="resetLotterieGame()"
-                >
-                  ↻ Lotterie neu starten
-                </button>
-
-                <button
-                  type="button"
                   class="primary-btn"
                   onclick="startLotterieGame()"
                 >
@@ -3736,7 +3727,7 @@ tbody td:first-child {
           <div class="section-title">Tiberius</div>
 
           <div class="game-start-card" id="tiberius-start-card">
-            <label class="modal-check" style="margin-bottom:0;">
+           <label class="modal-check game-ontop-check">
               <input type="checkbox" id="tiberius-ontop-check" onchange="toggleTiberiusOnTop()">
               <span>Tiberius-Strafen On Top buchen</span>
             </label>
@@ -3764,14 +3755,6 @@ tbody td:first-child {
                         id="tiberius-random-btn"
                       >
                         🎲 Zufällige Zielzahlen
-                      </button>
-
-                      <button
-                        type="button"
-                        class="secondary-btn"
-                        onclick="resetTiberiusGame()"
-                      >
-                        ↻ Tiberius neu starten
                       </button>
 
                       <button
@@ -10591,7 +10574,7 @@ function renderPersonCards(targetId, list) {
           class="mini-action-btn"
           onclick="event.stopPropagation(); openLeftEarlyModalByName('${escapeForJs(p.name)}')"
         >
-          🚪 Gehzeit setzen
+          🚪 Gehzeit
         </button>
       ` : ''}
 
