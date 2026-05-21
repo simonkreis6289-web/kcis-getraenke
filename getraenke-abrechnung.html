@@ -3092,6 +3092,66 @@ tbody td:first-child {
   background: var(--surface2);
   color: var(--text);
 }
+    
+.strafen-extra-cell {
+  min-width: 150px;
+  max-width: 190px;
+  text-align: left;
+}
+
+.strafen-extra-lines {
+  font-family: 'DM Sans';
+  font-size: 0.66rem;
+  color: var(--muted);
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.strafen-extra-lines .ontop {
+  color: var(--accent2);
+}
+      
+.person-times {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.35;
+  min-height: 28px;
+}
+
+.person-times.empty {
+  opacity: 0.55;
+  font-style: italic;
+}
+      
+#tiberius-target-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 140px));
+  gap: 10px;
+  align-items: start;
+}
+
+#tiberius-target-editor .team-drink-row {
+  margin: 0;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+#tiberius-target-editor .team-drink-name {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+#tiberius-target-editor .price-input {
+  width: 100%;
+  text-align: center;
+  font-weight: 900;
+}
       
 </style>
     
@@ -3772,22 +3832,6 @@ tbody td:first-child {
               <label>Min. Zielzahl</label>
               <input type="number" step="1" min="1" id="tiberius-min-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
             </div>
-              
-              <div class="section-title">Würfe kaufen</div>
-
-            <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-              <div class="modal-input-row" style="margin-bottom:0;">
-                <label>Anzahl kaufbare Würfe</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  id="wurf-max-buys"
-                  class="modal-euro-input"
-                  onchange="saveWurfSettings()"
-                >
-              </div>
-            </div>
 
             <div class="modal-input-row" style="margin-bottom:0;">
               <label>Max. Zielzahl</label>
@@ -3936,6 +3980,22 @@ tbody td:first-child {
         💾 Strafen-Deckelung speichern
       </button>
     </div>
+                  
+    <div class="section-title">Würfe kaufen</div>
+
+            <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+              <div class="modal-input-row" style="margin-bottom:0;">
+                <label>Anzahl kaufbare Würfe</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  id="wurf-max-buys"
+                  class="modal-euro-input"
+                  onchange="saveWurfSettings()"
+                >
+              </div>
+            </div>
     
                   <div class="section-title">Verspätung / Früh gegangen</div>
 
@@ -5137,11 +5197,11 @@ function renderStrafen() {
 
     if (hasExtraPenaltyColumn) {
       html += `
-        <td class="total-cell">
+        <td class="total-cell strafen-extra-cell">
           ${
             extraLines.length
               ? `
-                <div style="font-family:'DM Sans';font-size:0.62rem;color:var(--muted);line-height:1.35;text-align:left;">
+                <div class="strafen-extra-lines">
                   ${extraLines.join('<br>')}
                 </div>
               `
@@ -10476,6 +10536,8 @@ function saveWurfSettings() {
 
 function renderPersonCards(targetId, list) {
   const g = document.getElementById(targetId);
+  if (!g) return;
+
   g.innerHTML = '';
 
   const sorted = list.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
@@ -10485,65 +10547,78 @@ function renderPersonCards(targetId, list) {
     return;
   }
 
-sorted.forEach(p => {
-  const c = document.createElement('div');
-  c.className = 'person-card' + (p.present ? ' present' : ' absent') + (p.isGuest ? ' guest' : '');
-  const avatarHtml = getAvatarHtml(p.name);
+  sorted.forEach(p => {
+    const c = document.createElement('div');
+    c.className = 'person-card' + (p.present ? ' present' : ' absent') + (p.isGuest ? ' guest' : '');
 
-  let badgeClass = p.present ? 'present-badge' : 'absent-badge';
-  let badgeText = p.present ? 'DA' : 'FEHLT';
+    let badgeClass = p.present ? 'present-badge' : 'absent-badge';
+    let badgeText = p.present ? 'DA' : 'FEHLT';
 
-  if (p.present && p.left) {
-    badgeClass = 'left-badge';
-    badgeText = 'RAUS';
-  }
+    if (p.present && p.left) {
+      badgeClass = 'left-badge';
+      badgeText = 'RAUS';
+    }
 
-  c.innerHTML = `
-    <button class="person-delete-btn" onclick="deletePerson('${escapeForJs(p.name)}'); event.stopPropagation();">✕</button>
-    ${avatarHtml}
-    <div class="person-name">${p.name}</div>
-    <div class="person-role">${p.isGuest ? 'Gastkegler' : 'Mitglied'}</div>
-        <div style="font-size:0.68rem;color:var(--muted);line-height:1.25;margin-top:3px;">
-          ${p.arrivalTime ? `⏰ Ankunft: ${p.arrivalTime}` : ''}
-          ${p.leftEarlyAt ? `<br>🚪 Weg: ${p.leftEarlyAt}` : ''}
+    const timeHtml = (p.arrivalTime || p.leftEarlyAt)
+      ? `
+        <div class="person-times">
+          ${p.arrivalTime ? `<div>⏰ Ankunft: <strong>${p.arrivalTime}</strong></div>` : ''}
+          ${p.leftEarlyAt ? `<div>🚪 Weg: <strong>${p.leftEarlyAt}</strong></div>` : ''}
         </div>
-    ${p.present ? `
+      `
+      : `<div class="person-times empty">Keine Zeit gesetzt</div>`;
+
+    c.innerHTML = `
       <button
-        type="button"
-        class="mini-action-btn"
-        onclick="event.stopPropagation(); openLeftEarlyModalByName('${escapeForJs(p.name)}')"
-      >
-        🚪 Gehzeit
-      </button>
-    ` : ''}
-    <div class="${badgeClass}">${badgeText}</div>
-  `;
+        class="person-delete-btn"
+        onclick="deletePerson('${escapeForJs(p.name)}'); event.stopPropagation();"
+      >✕</button>
 
-c.onclick = () => {
-  const wasPresent = !!p.present;
-  p.present = !p.present;
+      ${getAvatarHtml(p.name)}
 
-  if (!p.present) {
-    p.tisch = '';
-    p.left = false;
-    p.leftAt = '';
-    p.arrivalTime = '';
-    p.leftEarlyAt = '';
-  }
+      <div class="person-name">${p.name}</div>
+      <div class="person-role">${p.isGuest ? 'Gastkegler' : 'Mitglied'}</div>
 
-  if (!wasPresent && p.present) {
-    playSound(sounds.welcome);
+      ${timeHtml}
 
-    renderAll();
-    persistState();
+      ${p.present ? `
+        <button
+          type="button"
+          class="mini-action-btn"
+          onclick="event.stopPropagation(); openLeftEarlyModalByName('${escapeForJs(p.name)}')"
+        >
+          🚪 Gehzeit setzen
+        </button>
+      ` : ''}
 
-    openArrivalModal(p);
-    return;
-  }
+      <div class="${badgeClass}">${badgeText}</div>
+    `;
 
-  renderAll();
-  persistState();
-};
+    c.onclick = () => {
+      const wasPresent = !!p.present;
+      p.present = !p.present;
+
+      if (!p.present) {
+        p.tisch = '';
+        p.left = false;
+        p.leftAt = '';
+        p.arrivalTime = '';
+        p.leftEarlyAt = '';
+      }
+
+      if (!wasPresent && p.present) {
+        playSound(sounds.welcome);
+
+        renderAll();
+        persistState();
+
+        openArrivalModal(p);
+        return;
+      }
+
+      renderAll();
+      persistState();
+    };
 
     g.appendChild(c);
   });
