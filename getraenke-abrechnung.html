@@ -4210,6 +4210,11 @@ let strafenHistory = [];
 let wurfSettings = {
   maxBuys: 3
 };
+
+let timePenaltySettings = {
+  startTime: '20:00',
+  endTime: '23:00'
+};
     
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
@@ -4380,6 +4385,7 @@ function getSerializableState() {
     teamStopwatchStart,
     teamCountdownDuration,
     teamCountdownRemainingBefore,
+      timePenaltySettings,
       STRAFEN,
       STRAFEN_LIMIT,
     strafPrices,
@@ -4416,6 +4422,7 @@ function getFirestoreState() {
     bahnPreisProStunde,
     bahnTimerStart,
     bahnTimerRunning,
+      timePenaltySettings,
 
     teamStopwatchActive,
     teamStopwatchRunning,
@@ -4467,6 +4474,11 @@ function applyLoadedState(state) {
     lotterieSettings = state.lotterieSettings || {
       minAmount: 0.10,
       maxAmount: 10.00
+    };
+    
+    timePenaltySettings = state.timePenaltySettings || {
+      startTime: '20:00',
+      endTime: '23:00'
     };
 
     tiberiusSettings = state.tiberiusSettings || {
@@ -4595,6 +4607,8 @@ function hydrateState() {
     p.paid = parseFloat(p.paid || 0) || 0;
     p.left = !!p.left;
     p.leftAt = p.leftAt || '';
+      p.arrivalTime = p.arrivalTime || '';
+      p.leftEarlyAt = p.leftEarlyAt || '';
       p.boughtThrows = parseInt(p.boughtThrows || 0, 10) || 0;
   });
     STRAFEN.forEach(s => {
@@ -6204,6 +6218,8 @@ function startNewKegelabend() {
     p.tisch = '';
     p.left = false;
     p.leftAt = '';
+    p.arrivalTime = '';
+    p.leftEarlyAt = '';
     p.paid = 0;
 
     p.teamExtra = 0;
@@ -6446,6 +6462,10 @@ function createEmptyClubData() {
         wurfSettings: {
           maxBuys: 3
         },
+        timePenaltySettings: {
+          startTime: '20:00',
+          endTime: '23:00'
+        },
     STRAFEN_LIMIT: 30,
       strafenHistory: [],
       lastLocalChangeAt: 0
@@ -6488,6 +6508,7 @@ function syncCurrentClubToStore() {
         tiberiusSettings: JSON.parse(JSON.stringify(tiberiusSettings)),
       tannenbaumHardRule,
     wurfSettings: JSON.parse(JSON.stringify(wurfSettings)),
+timePenaltySettings: JSON.parse(JSON.stringify(timePenaltySettings)),
     STRAFEN_LIMIT,
       dartsState: JSON.parse(JSON.stringify(dartsState))
   };
@@ -6658,6 +6679,10 @@ async function selectClub(clubName) {
     lotterieSettings = JSON.parse(JSON.stringify(localClub.lotterieSettings || {
       minAmount: 0.10,
       maxAmount: 10.00
+    }));
+    timePenaltySettings = JSON.parse(JSON.stringify(localClub.timePenaltySettings || {
+      startTime: '20:00',
+      endTime: '23:00'
     }));
 
     tiberiusSettings = JSON.parse(JSON.stringify(localClub.tiberiusSettings || {
@@ -9969,11 +9994,13 @@ c.onclick = () => {
     playSound(sounds.welcome);
   }
 
-  if (!p.present) {
-    p.tisch = '';
-    p.left = false;
-    p.leftAt = '';
-  }
+    if (!p.present) {
+      p.tisch = '';
+      p.left = false;
+      p.leftAt = '';
+      p.arrivalTime = '';
+      p.leftEarlyAt = '';
+    }
 
   renderAll();
   persistState();
@@ -11056,6 +11083,8 @@ persons.push({
   rounds: [],
   left: false,
   leftAt: '',
+    arrivalTime: '',
+    leftEarlyAt: '',
   boughtThrows: 0
 });
 
