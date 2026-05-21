@@ -8873,6 +8873,7 @@ function resetLotterieGame() {
   lotterieState = createLotterieState();
 
   renderLotterie();
+  renderLotterieAmountEditor();
   persistState();
 
   showToast('↻ Lotterie zurückgesetzt', 'success');
@@ -9485,6 +9486,21 @@ function saveTiberiusSettings(showToastMessage = true) {
   }
 }
     
+function initTiberiusDefaultsIfNeeded() {
+  ensureTiberiusState();
+
+  if (tiberiusState.active) return;
+
+  const playersCount = getActivePlayersForSoloGame().length;
+
+  if (!tiberiusState.columnCount && playersCount > 0) {
+    tiberiusState.columnCount = playersCount;
+    tiberiusState.targets = Array.from({ length: playersCount }, (_, i) => {
+      return parseInt(tiberiusState.targets?.[i] || 0, 10) || 0;
+    });
+  }
+}
+                                                    
 function getTiberiusColumnCountInput() {
   const input = document.getElementById('tiberius-column-count');
   return Math.max(1, parseInt(input?.value || '0', 10) || 0);
@@ -9511,13 +9527,13 @@ function prepareTiberiusColumns() {
 function renderTiberiusTargetEditor() {
   ensureTiberiusState();
 
-  const input = document.getElementById('tiberius-column-count');
+  const countInput = document.getElementById('tiberius-column-count');
   const editor = document.getElementById('tiberius-target-editor');
 
   if (!editor) return;
 
-  if (input && document.activeElement !== input) {
-    input.value = tiberiusState.columnCount || '';
+  if (countInput && document.activeElement !== countInput) {
+    countInput.value = tiberiusState.columnCount || '';
   }
 
   if (tiberiusState.active) {
@@ -9528,7 +9544,7 @@ function renderTiberiusTargetEditor() {
   if (!tiberiusState.columnCount) {
     editor.innerHTML = `
       <div style="color:var(--muted);font-size:0.85rem;">
-        Bitte zuerst die Spaltenanzahl eingeben.
+        Bitte Spaltenanzahl eingeben.
       </div>
     `;
     return;
@@ -9542,8 +9558,8 @@ function renderTiberiusTargetEditor() {
         min="1"
         step="1"
         class="price-input"
-        value="${parseInt(target || 0, 10) || ''}"
-        onchange="updateTiberiusPreStartTarget(${index}, this.value)"
+        value="${target || ''}"
+        onchange="updateTiberiusTarget(${index}, this.value)"
       >
     </div>
   `).join('');
@@ -9617,6 +9633,7 @@ function resetTiberiusGame() {
   tiberiusState = createTiberiusState();
 
   renderTiberius();
+  renderTiberiusTargetEditor();
   persistState();
 
   showToast('↻ Tiberius zurückgesetzt', 'success');
@@ -9994,6 +10011,7 @@ function getTiberiusPenaltyForPerson(personName) {
 
 function renderTiberius() {
   ensureTiberiusState();
+    initTiberiusDefaultsIfNeeded();
 
   const board = document.getElementById('tiberius-board');
   if (!board) return;
