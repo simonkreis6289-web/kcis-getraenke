@@ -2970,6 +2970,47 @@ tbody td:first-child {
   color: var(--accent2);
   margin-top: 4px;
 }
+     
+.gosse-king-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.gosse-king-wrap.is-king::before {
+  content: "👑";
+  position: absolute;
+  top: -17px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  font-size: 1.05rem;
+  z-index: 5;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25));
+}
+
+.gosse-king-wrap.is-king .table-avatar {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px rgba(245,166,35,0.35),
+    0 0 12px rgba(245,166,35,0.65);
+}
+      
+.lotterie-setup-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+#lotterie-amount-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+#lotterie-amount-editor .team-drink-row {
+  margin: 0;
+}
       
 </style>
     
@@ -3190,6 +3231,7 @@ tbody td:first-child {
       <div class="stat"><span class="stat-val" id="stat-ueberschuss" style="color:var(--purple)">0,00 €</span><span class="stat-label">Überschuss</span></div>
       <div class="stat"><span class="stat-val" id="stat-gesamt" style="color:var(--red)">0,00 €</span><span class="stat-label">Getränke</span></div>
       <div class="stat"><span class="stat-val" id="stat-strafen" style="color:var(--accent2)">0,00 €</span><span class="stat-label">Strafen</span></div>
+      <div class="stat"><span class="stat-val" id="stat-gosseking" style="color:var(--accent)">—</span><span class="stat-label">Gossenkönig</span></div>
     </div>
 
     <div id="team-stopwatch-global" class="team-stopwatch-global hidden">
@@ -3475,17 +3517,16 @@ tbody td:first-child {
         <div id="tab-lotterie" class="hidden">
           <div class="section-title">Lotterie</div>
 
-          <div class="darts-start-card">
-            <label class="modal-check" style="margin-bottom:0;">
-              <input type="checkbox" id="lotterie-ontop-check" onchange="toggleLotterieOnTop()">
-              <span>Lotterie-Strafen On Top buchen</span>
-            </label>
+            <div class="game-start-card" id="lotterie-setup-card">
+              <div class="modal-input-row">
+                <label class="modal-check">
+                  <input type="checkbox" id="lotterie-ontop-check">
+                  <span>Lotterie-Strafen On Top buchen</span>
+                </label>
+              </div>
 
-            <div class="modal-btns">
-              <button class="save-prices-btn" onclick="startLotterieGame()">🎰 Lotterie starten</button>
-              <button class="round-btn" onclick="generateLotterieAmounts()" id="lotterie-random-btn">🎲 Zufällige Beträge</button>
-              <button class="modal-cancel" onclick="resetLotterieGame()">↻ Lotterie neu starten</button>
-                <div class="modal-input-row" style="margin-bottom:0;">
+              <div class="lotterie-setup-grid">
+                <div class="modal-input-row">
                   <label>Spaltenanzahl</label>
                   <input
                     type="number"
@@ -3497,9 +3538,37 @@ tbody td:first-child {
                     onchange="prepareLotterieColumns()"
                   >
                 </div>
-                <div id="lotterie-amount-editor" class="team-drinks-grid"></div>
+
+                <div id="lotterie-amount-editor"></div>
+              </div>
+
+              <div class="modal-btns" style="margin-top:14px;">
+                <button
+                  type="button"
+                  class="secondary-btn"
+                  onclick="generateLotterieAmounts()"
+                  id="lotterie-random-btn"
+                >
+                  🎲 Zufällige Beträge
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary-btn"
+                  onclick="resetLotterieGame()"
+                >
+                  ↻ Lotterie neu starten
+                </button>
+
+                <button
+                  type="button"
+                  class="primary-btn"
+                  onclick="startLotterieGame()"
+                >
+                  🎰 Lotterie starten
+                </button>
+              </div>
             </div>
-          </div>
 
           <div id="lotterie-board"></div>
 
@@ -4771,7 +4840,9 @@ function renderStrafen() {
       <td class="sticky-col">
         <div class="person-cell">
           <div class="table-person-inline">
-            ${getAvatarHtml(p.name).replace('class="person-avatar"', 'class="table-avatar"')}
+                <div class="gosse-king-wrap ${isGosseKing(p.name) ? 'is-king' : ''}">
+                  ${getAvatarHtml(p.name).replace('class="person-avatar"', 'class="table-avatar"')}
+                </div>
             <div style="min-width:0;">
               <span class="pname">${p.name}</span>
               ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
@@ -5040,6 +5111,30 @@ function deleteStrafenHistoryEntry(id) {
   persistState();
 
   showToast('🗑️ Historien-Eintrag gelöscht', 'success');
+}
+
+function getGosseKings() {
+  const gosseKey = getGosseStrafeKey();
+  if (!gosseKey) return [];
+
+  const candidates = persons
+    .filter(p => p.present)
+    .map(p => ({
+      name: p.name,
+      count: (p.strafen && p.strafen[gosseKey]) || 0
+    }));
+
+  const max = Math.max(0, ...candidates.map(x => x.count));
+
+  if (max <= 0) return [];
+
+  return candidates
+    .filter(x => x.count === max)
+    .map(x => x.name);
+}
+
+function isGosseKing(personName) {
+  return getGosseKings().includes(personName);
 }
 
 function saveStrafPrices() {
@@ -8438,14 +8533,16 @@ function prepareLotterieColumns() {
 
   if (lotterieState.active) return;
 
-  const count = getLotterieColumnCountInput();
+  const count = Math.max(
+    1,
+    parseInt(document.getElementById('lotterie-column-count')?.value || '0', 10) || 0
+  );
 
   lotterieState.columnCount = count;
+
   lotterieState.columns = Array.from({ length: count }, (_, i) => {
     return roundTo10Cent(lotterieState.columns[i] || 0);
   });
-
-  lotterieState.amountsGenerated = lotterieState.columns.some(v => v > 0);
 
   renderLotterieAmountEditor();
   persistState();
@@ -8454,14 +8551,8 @@ function prepareLotterieColumns() {
 function renderLotterieAmountEditor() {
   ensureLotterieState();
 
-  const input = document.getElementById('lotterie-column-count');
   const editor = document.getElementById('lotterie-amount-editor');
-
   if (!editor) return;
-
-  if (input && document.activeElement !== input) {
-    input.value = lotterieState.columnCount || '';
-  }
 
   if (lotterieState.active) {
     editor.innerHTML = '';
@@ -8471,7 +8562,7 @@ function renderLotterieAmountEditor() {
   if (!lotterieState.columnCount) {
     editor.innerHTML = `
       <div style="color:var(--muted);font-size:0.85rem;">
-        Bitte zuerst die Spaltenanzahl eingeben.
+        Bitte Spaltenanzahl eingeben.
       </div>
     `;
     return;
@@ -8509,13 +8600,13 @@ function renderLotterie() {
   const board = document.getElementById('lotterie-board');
   if (!board) return;
 
-  const startCard = document.getElementById('lotterie-start-card');
+const setupCard = document.getElementById('lotterie-setup-card');
   const onTopCheck = document.getElementById('lotterie-ontop-check');
   const randomBtn = document.getElementById('lotterie-random-btn');
 
-  if (startCard) {
-    startCard.classList.toggle('hidden', !!lotterieState.active);
-  }
+if (setupCard) {
+  setupCard.classList.toggle('hidden', !!lotterieState.active);
+}
     
     renderLotterieAmountEditor();
 
@@ -9651,6 +9742,13 @@ function updateStats() {
   document.getElementById('stat-bezahlt').textContent = euros(bezahlt);
   document.getElementById('stat-ueberschuss').textContent = euros(ueberschuss);
   document.getElementById('stat-gesamt').textContent = euros(gesamt);
+
+    const gosseKingEl = document.getElementById('stat-gosseking');
+    if (gosseKingEl) {
+      const kings = getGosseKings();
+      gosseKingEl.textContent = kings.length ? kings.join(', ') : '—';
+    }
+
 }
 
 function renderPersonCards(targetId, list) {
