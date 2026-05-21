@@ -2958,6 +2958,19 @@ tbody td:first-child {
   }
 }
       
+.game-throw-big {
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.game-name-amount {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--accent2);
+  margin-top: 4px;
+}
+      
 </style>
     
 </head>
@@ -3472,6 +3485,19 @@ tbody td:first-child {
               <button class="save-prices-btn" onclick="startLotterieGame()">🎰 Lotterie starten</button>
               <button class="round-btn" onclick="generateLotterieAmounts()" id="lotterie-random-btn">🎲 Zufällige Beträge</button>
               <button class="modal-cancel" onclick="resetLotterieGame()">↻ Lotterie neu starten</button>
+                <div class="modal-input-row" style="margin-bottom:0;">
+                  <label>Spaltenanzahl</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    id="lotterie-column-count"
+                    class="modal-euro-input"
+                    placeholder="z. B. 8"
+                    onchange="prepareLotterieColumns()"
+                  >
+                </div>
+                <div id="lotterie-amount-editor" class="team-drinks-grid"></div>
             </div>
           </div>
 
@@ -7129,6 +7155,7 @@ function createLotterieState() {
     active: false,
     onTop: false,
     amountsGenerated: false,
+    columnCount: 0,
     columns: [],
     throws: {},
     finished: false,
@@ -7206,6 +7233,7 @@ function ensureLotterieState() {
   if (!lotterieState.throws) lotterieState.throws = {};
   if (!Array.isArray(lotterieState.history)) lotterieState.history = [];
   lotterieState.active = !!lotterieState.active;
+    lotterieState.columnCount = parseInt(lotterieState.columnCount || 0, 10) || 0;
   lotterieState.onTop = !!lotterieState.onTop;
   lotterieState.amountsGenerated = !!lotterieState.amountsGenerated;
   lotterieState.finished = !!lotterieState.finished;
@@ -8145,6 +8173,7 @@ function getLotteriePlayerCount() {
 
 function startLotterieGame() {
   ensureLotterieState();
+  saveLotterieSettings(false);
 
   const players = getActivePlayersForSoloGame();
   if (!players.length) {
@@ -8152,23 +8181,33 @@ function startLotterieGame() {
     return;
   }
 
-  lotterieState.active = true;
-  lotterieState.finished = false;
+  const colCount = lotterieState.columnCount || getLotterieColumnCountInput();
 
-  const colCount = players.length;
+  if (!colCount || colCount < 1) {
+    showToast('Bitte Spaltenanzahl eingeben', 'error');
+    return;
+  }
+
+  lotterieState.columnCount = colCount;
 
   lotterieState.columns = Array.from({ length: colCount }, (_, i) => {
-    return lotterieState.columns[i] || 0;
+    return roundTo10Cent(lotterieState.columns[i] || 0);
   });
 
-  players.forEach(p => {
-    if (!lotterieState.throws[p.name]) {
-      lotterieState.throws[p.name] = Array.from({ length: colCount }, () => null);
-    }
+  const missingAmounts = lotterieState.columns.some(v => !v || v <= 0);
 
-    lotterieState.throws[p.name] = Array.from({ length: colCount }, (_, i) => {
-      return lotterieState.throws[p.name][i] ?? null;
-    });
+  if (missingAmounts) {
+    showToast('Bitte alle Beträge eingeben oder zufällig erzeugen', 'error');
+    return;
+  }
+
+  lotterieState.active = true;
+  lotterieState.finished = false;
+  lotterieState.throws = {};
+  lotterieState.amountsGenerated = true;
+
+  players.forEach(p => {
+    lotterieState.throws[p.name] = Array.from({ length: colCount }, () => null);
   });
 
   renderLotterie();
@@ -8199,17 +8238,20 @@ function toggleLotterieOnTop() {
 function generateLotterieAmounts() {
   ensureLotterieState();
 
-  const players = getActivePlayersForSoloGame();
-  if (!players.length) {
-    showToast('Keine anwesenden Spieler', 'error');
+  if (lotterieState.active) {
+    showToast('Beträge können nach Spielstart nicht mehr geändert werden', 'error');
     return;
   }
 
-  if (!lotterieState.active) {
-    startLotterieGame();
+  const colCount = lotterieState.columnCount || getLotterieColumnCountInput();
+
+  if (!colCount) {
+    showToast('Bitte zuerst Spaltenanzahl eingeben', 'error');
+    return;
   }
 
-  const colCount = getLotteriePlayerCount();
+  lotterieState.columnCount = colCount;
+
   const min = roundTo10Cent(lotterieSettings.minAmount || 0.10);
   const max = roundTo10Cent(lotterieSettings.maxAmount || min);
 
@@ -8238,6 +8280,7 @@ function generateLotterieAmounts() {
 
   lotterieState.amountsGenerated = true;
 
+  renderLotterieAmountEditor();
   renderLotterie();
   persistState();
 
@@ -8384,19 +8427,104 @@ function getLotterieLivePenalty(personName) {
     return sum;
   }, 0);
 }
+        
+function getLotterieColumnCountInput() {
+  const input = document.getElementById('lotterie-column-count');
+  return Math.max(1, parseInt(input?.value || '0', 10) || 0);
+}
 
+function prepareLotterieColumns() {
+  ensureLotterieState();
+
+  if (lotterieState.active) return;
+
+  const count = getLotterieColumnCountInput();
+
+  lotterieState.columnCount = count;
+  lotterieState.columns = Array.from({ length: count }, (_, i) => {
+    return roundTo10Cent(lotterieState.columns[i] || 0);
+  });
+
+  lotterieState.amountsGenerated = lotterieState.columns.some(v => v > 0);
+
+  renderLotterieAmountEditor();
+  persistState();
+}
+
+function renderLotterieAmountEditor() {
+  ensureLotterieState();
+
+  const input = document.getElementById('lotterie-column-count');
+  const editor = document.getElementById('lotterie-amount-editor');
+
+  if (!editor) return;
+
+  if (input && document.activeElement !== input) {
+    input.value = lotterieState.columnCount || '';
+  }
+
+  if (lotterieState.active) {
+    editor.innerHTML = '';
+    return;
+  }
+
+  if (!lotterieState.columnCount) {
+    editor.innerHTML = `
+      <div style="color:var(--muted);font-size:0.85rem;">
+        Bitte zuerst die Spaltenanzahl eingeben.
+      </div>
+    `;
+    return;
+  }
+
+  editor.innerHTML = lotterieState.columns.map((amount, index) => `
+    <div class="team-drink-row">
+      <span class="team-drink-name">Betrag ${index + 1}</span>
+      <input
+        type="number"
+        min="0"
+        step="0.10"
+        class="price-input"
+        value="${amount ? amount.toFixed(2) : ''}"
+        onchange="updateLotteriePreStartAmount(${index}, this.value)"
+      >
+    </div>
+  `).join('');
+}
+
+function updateLotteriePreStartAmount(index, value) {
+  ensureLotterieState();
+
+  if (lotterieState.active) return;
+
+  lotterieState.columns[index] = roundTo10Cent(String(value).replace(',', '.'));
+  lotterieState.amountsGenerated = lotterieState.columns.some(v => v > 0);
+
+  persistState();
+}
+    
 function renderLotterie() {
   ensureLotterieState();
 
   const board = document.getElementById('lotterie-board');
   if (!board) return;
 
+  const startCard = document.getElementById('lotterie-start-card');
   const onTopCheck = document.getElementById('lotterie-ontop-check');
-  if (onTopCheck) onTopCheck.checked = !!lotterieState.onTop;
-
   const randomBtn = document.getElementById('lotterie-random-btn');
+
+  if (startCard) {
+    startCard.classList.toggle('hidden', !!lotterieState.active);
+  }
+    
+    renderLotterieAmountEditor();
+
+  if (onTopCheck) {
+    onTopCheck.checked = !!lotterieState.onTop;
+  }
+
   if (randomBtn) {
-    randomBtn.classList.toggle('hidden', !!lotterieState.amountsGenerated);
+    randomBtn.classList.toggle('hidden', !!lotterieState.active);
   }
 
   const players = getActivePlayersForSoloGame();
@@ -8407,6 +8535,7 @@ function renderLotterie() {
         Lotterie noch nicht gestartet.
       </div>
     `;
+
     renderLotterieHistory();
     return;
   }
@@ -8417,34 +8546,39 @@ function renderLotterie() {
         Keine anwesenden Spieler.
       </div>
     `;
+
     renderLotterieHistory();
     return;
   }
 
-  const colCount = players.length;
+  const colCount = lotterieState.columns.length;
 
-  if (lotterieState.columns.length !== colCount) {
-    lotterieState.columns = Array.from({ length: colCount }, (_, i) => lotterieState.columns[i] || 0);
+  if (!colCount) {
+    board.innerHTML = `
+      <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--muted);">
+        Keine Beträge vorhanden. Bitte Lotterie neu starten und Beträge festlegen.
+      </div>
+    `;
+
+    renderLotterieHistory();
+    return;
   }
 
   players.forEach(p => {
-    if (!lotterieState.throws[p.name]) lotterieState.throws[p.name] = [];
+    if (!lotterieState.throws[p.name]) {
+      lotterieState.throws[p.name] = [];
+    }
+
     lotterieState.throws[p.name] = Array.from({ length: colCount }, (_, i) => {
       return lotterieState.throws[p.name][i] ?? null;
     });
   });
 
-  const headerCols = lotterieState.columns.map((amount, index) => `
+  const headerCols = lotterieState.columns.map(amount => `
     <th>
-      <div>Spalte ${index + 1}</div>
-      <input
-        class="game-amount-input"
-        type="number"
-        step="0.10"
-        min="0"
-        value="${(parseFloat(amount || 0) || 0).toFixed(2)}"
-        onchange="updateLotterieAmount(${index}, this.value)"
-      >
+      <div style="font-size:1.05rem;font-weight:900;color:var(--accent2);">
+        ${euros(amount)}
+      </div>
     </th>
   `).join('');
 
@@ -8453,7 +8587,13 @@ function renderLotterie() {
       const value = lotterieState.throws[p.name]?.[colIndex];
       const losers = getLotterieColumnLosers(colIndex);
       const isLoser = losers.includes(p.name);
-      const label = value === null || value === undefined ? '—' : (value === 12 ? 'Kranz' : value);
+
+      const label =
+        value === null || value === undefined
+          ? '—'
+          : value === 12
+            ? 'K'
+            : value;
 
       return `
         <td>
@@ -8461,7 +8601,7 @@ function renderLotterie() {
             class="game-cell-btn ${value === null || value === undefined ? 'empty' : ''} ${isLoser ? 'loser' : ''}"
             onclick="openLotterieThrowModal('${escapeForJs(p.name)}', ${colIndex})"
           >
-            ${label}
+            <span class="game-throw-big">${label}</span>
           </button>
         </td>
       `;
@@ -8473,8 +8613,8 @@ function renderLotterie() {
       <tr>
         <td class="sticky-name">
           <strong>${p.name}</strong>
-          <div class="game-live-total">
-            Live: ${euros(live)}${lotterieState.onTop ? ' · On Top' : ''}
+          <div class="game-name-amount">
+            ${euros(live)}
           </div>
         </td>
         ${cells}
@@ -8615,7 +8755,7 @@ function renderLotterieSettings() {
   }
 }
 
-function saveLotterieSettings() {
+function saveLotterieSettings(showToastMessage = true) {
   const minInput = document.getElementById('lotterie-min-amount');
   const maxInput = document.getElementById('lotterie-max-amount');
 
@@ -8628,7 +8768,9 @@ function saveLotterieSettings() {
   renderLotterieSettings();
   persistState();
 
-  showToast('✅ Lotterie-Einstellungen gespeichert', 'success');
+  if (showToastMessage) {
+    showToast('✅ Lotterie-Einstellungen gespeichert', 'success');
+  }
 }
                                                     
 // ──-───────────────────────────────────────────────────────────────────────
@@ -9242,22 +9384,17 @@ function renderTiberius() {
     return;
   }
 
-  const headerCols = targets.map((target, index) => {
-    const targetValue = parseInt(target || 0, 10) || 0;
-    const penalty = (targetValue * 0.01);
+    const headerCols = targets.map((target) => {
+      const targetValue = parseInt(target || 0, 10) || 0;
 
-    return `
-      <th>
-        <div>Ziel ${index + 1}</div>
-        <div style="font-size:1rem;font-weight:900;margin-top:4px;">
-          ${targetValue}
-        </div>
-        <div style="font-size:0.65rem;color:var(--accent2);font-weight:900;margin-top:3px;">
-          ${euros(penalty)}
-        </div>
-      </th>
-    `;
-  }).join('');
+      return `
+        <th>
+          <div style="font-size:1.25rem;font-weight:900;">
+            ${targetValue}
+          </div>
+        </th>
+      `;
+    }).join('');
 
   const bodyRows = players.map(p => {
     const cells = targets.map((target, colIndex) => {
@@ -9282,9 +9419,9 @@ function renderTiberius() {
       <tr>
         <td class="sticky-name">
           <strong>${p.name}</strong>
-          <div class="game-live-total">
-            Live: ${euros(live)}${tiberiusState.onTop ? ' · On Top' : ''}
-          </div>
+            <div class="game-name-amount">
+              ${euros(live)}
+            </div>
         </td>
         ${cells}
       </tr>
