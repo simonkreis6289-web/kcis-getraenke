@@ -3643,7 +3643,7 @@ tbody td:first-child {
           <div id="lotterie-board"></div>
 
           <div style="margin-top:14px;">
-            <button class="save-prices-btn" onclick="finishLotterieGame()">✅ Lotterie abschließen</button>
+            <button class="save-prices-btn hidden" onclick="finishLotterieGame()">✅ Lotterie abschließen</button>
           </div>
 
           <div class="section-title">Lotterie Verlauf</div>
@@ -9131,6 +9131,7 @@ function renderLotterie() {
     initLotterieDefaultsIfNeeded();
 
   const board = document.getElementById('lotterie-board');
+    const finishBtn = document.querySelector('#tab-lotterie .save-prices-btn');
   if (!board) return;
 
 const setupCard = document.getElementById('lotterie-setup-card');
@@ -9139,6 +9140,9 @@ const setupCard = document.getElementById('lotterie-setup-card');
 
 if (setupCard) {
   setupCard.classList.toggle('hidden', !!lotterieState.active);
+}
+    if (finishBtn) {
+  finishBtn.classList.toggle('hidden', !lotterieState.active);
 }
     
     renderLotterieAmountEditor();
