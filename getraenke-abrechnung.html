@@ -3642,8 +3642,14 @@ tbody td:first-child {
 
           <div id="lotterie-board"></div>
 
-          <div style="margin-top:14px;">
-            <button class="save-prices-btn hidden" onclick="finishLotterieGame()">✅ Lotterie abschließen</button>
+          <div style="margin-top:14px;display:flex;gap:10px;">
+            <button class="secondary-btn lotterie-reset-live-btn hidden" onclick="resetLotterieGame()">
+              ↻ Neustart
+            </button>
+
+            <button class="save-prices-btn hidden" onclick="finishLotterieGame()">
+              ✅ Lotterie abschließen
+            </button>
           </div>
 
           <div class="section-title">Lotterie Verlauf</div>
@@ -9132,6 +9138,7 @@ function renderLotterie() {
 
   const board = document.getElementById('lotterie-board');
     const finishBtn = document.querySelector('#tab-lotterie .save-prices-btn');
+    const resetBtn = document.querySelector('#tab-lotterie .lotterie-reset-live-btn');
   if (!board) return;
 
 const setupCard = document.getElementById('lotterie-setup-card');
@@ -9141,8 +9148,13 @@ const setupCard = document.getElementById('lotterie-setup-card');
 if (setupCard) {
   setupCard.classList.toggle('hidden', !!lotterieState.active);
 }
-    if (finishBtn) {
+    
+if (finishBtn) {
   finishBtn.classList.toggle('hidden', !lotterieState.active);
+}
+
+if (resetBtn) {
+  resetBtn.classList.toggle('hidden', !lotterieState.active);
 }
     
     renderLotterieAmountEditor();
