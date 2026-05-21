@@ -3012,6 +3012,28 @@ tbody td:first-child {
   margin: 0;
 }
       
+.wurf-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.wurf-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.wurf-dot.free {
+  background: #17c964;
+  box-shadow: 0 0 8px rgba(23,201,100,0.45);
+}
+
+.wurf-dot.used {
+  background: #ff4d4f;
+}      
+      
 </style>
     
 </head>
@@ -3396,6 +3418,7 @@ tbody td:first-child {
             <div class="getraenke-toolbar">
                 <button class="add-btn" onclick="openKranzModal()" style="margin-bottom:14px;"   >🎯 9er/Kranz geworfen</button>
                 <button class="add-btn" onclick="openFreeStrafeModal()" style="margin-bottom:14px;"> 💸 Freie Beträge</button>
+                <button class="add-btn" onclick="openBuyThrowModal()">🎳 Würfe kaufen</button>
             </div>
 
              <div class="drinks-table-wrap">
@@ -3656,6 +3679,22 @@ tbody td:first-child {
             <div class="modal-input-row" style="margin-bottom:0;">
               <label>Min. Zielzahl</label>
               <input type="number" step="1" min="1" id="tiberius-min-pins" class="modal-euro-input" onchange="saveTiberiusSettings()">
+            </div>
+              
+              <div class="section-title">Würfe kaufen</div>
+
+            <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+              <div class="modal-input-row" style="margin-bottom:0;">
+                <label>Anzahl kaufbare Würfe</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  id="wurf-max-buys"
+                  class="modal-euro-input"
+                  onchange="saveWurfSettings()"
+                >
+              </div>
             </div>
 
             <div class="modal-input-row" style="margin-bottom:0;">
@@ -4010,6 +4049,23 @@ tbody td:first-child {
   </div>
 </div>
     
+<div class="modal-overlay hidden" id="buy-throw-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>Würfe kaufen</h3>
+    <div class="modal-sub">Eine Person kauft einen zusätzlichen Wurf</div>
+
+    <div class="modal-input-row">
+      <label>Person</label>
+      <select id="buy-throw-person" class="modal-select"></select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeBuyThrowModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmBuyThrow()">🎳 Wurf kaufen</button>
+    </div>
+  </div>
+</div>
+    
 <div id="toast"></div>
        
 <script>
@@ -4151,7 +4207,10 @@ let tiberiusEdit = {
     
 let strafenHistory = [];
     
-
+let wurfSettings = {
+  maxBuys: 3
+};
+    
 function triggerClubAvatarUpload(clubName) {
   pendingClubAvatarName = clubName;
   const input = document.getElementById('club-avatar-upload');
@@ -4324,6 +4383,7 @@ function getSerializableState() {
       STRAFEN,
       STRAFEN_LIMIT,
     strafPrices,
+      wurfsettings,
     lastLocalChangeAt
   };
 }
@@ -4375,6 +4435,7 @@ function getFirestoreState() {
       STRAFEN_LIMIT,
       strafPrices,
       strafenHistory,
+      wurfSettings,
 
     updatedFrom: 'app',
     updatedClientAt: lastLocalChangeAt,
@@ -4411,6 +4472,10 @@ function applyLoadedState(state) {
     tiberiusSettings = state.tiberiusSettings || {
       minPins: 10,
       maxPins: 300
+    };
+    
+    wurfSettings = state.wurfSettings || {
+      maxBuys: 3
     };
 
     ensureLotterieState();
@@ -4484,7 +4549,21 @@ async function manualSaveAll() {
   saveClubSystem();
   await saveToFirestore(true);
 }
+    
+function renderBoughtThrowsDots(person) {
+  const max = Math.max(0, parseInt(wurfSettings.maxBuys || 3, 10) || 3);
+  const used = Math.max(0, parseInt(person.boughtThrows || 0, 10) || 0);
 
+  let html = '<div class="wurf-dots">';
+
+  for (let i = 0; i < max; i++) {
+    html += `<span class="wurf-dot ${i < used ? 'used' : 'free'}"></span>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+    
 function hydrateState() {
   DRINKS.forEach(d => {
     if (prices[d.key] === undefined) prices[d.key] = 0;
@@ -4516,6 +4595,7 @@ function hydrateState() {
     p.paid = parseFloat(p.paid || 0) || 0;
     p.left = !!p.left;
     p.leftAt = p.leftAt || '';
+      p.boughtThrows = parseInt(p.boughtThrows || 0, 10) || 0;
   });
     STRAFEN.forEach(s => {
       if (strafPrices[s.key] === undefined) strafPrices[s.key] = 0;
@@ -4848,6 +4928,7 @@ function renderStrafen() {
               ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
               <span class="ptisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</span>
               ${extrasHtml}
+                ${renderBoughtThrowsDots(p)}
             </div>
           </div>
         </div>
@@ -6140,6 +6221,7 @@ function startNewKegelabend() {
     STRAFEN.forEach(s => {
       p.strafen[s.key] = 0;
     });
+    p.boughtThrows = 0;
   });
 
   spiele = [];
@@ -6165,6 +6247,73 @@ function startNewKegelabend() {
   persistState();
 
   showToast('🆕 Neuer Kegelabend gestartet', 'success');
+}
+
+function openBuyThrowModal() {
+  const select = document.getElementById('buy-throw-person');
+  if (!select) return;
+
+  const max = Math.max(0, parseInt(wurfSettings.maxBuys || 3, 10) || 3);
+
+  const active = persons
+    .filter(p => p.present && !p.left)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+  active.forEach(p => {
+    const used = Math.max(0, parseInt(p.boughtThrows || 0, 10) || 0);
+    const left = Math.max(0, max - used);
+
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = `${p.name} (${left} frei)`;
+
+    if (left <= 0) {
+      opt.disabled = true;
+      opt.textContent = `${p.name} (keine Würfe frei)`;
+    }
+
+    select.appendChild(opt);
+  });
+
+  document.getElementById('buy-throw-modal')?.classList.remove('hidden');
+}
+
+function closeBuyThrowModal() {
+  document.getElementById('buy-throw-modal')?.classList.add('hidden');
+}
+
+function confirmBuyThrow() {
+  const select = document.getElementById('buy-throw-person');
+  const personName = select?.value || '';
+
+  if (!personName) {
+    showToast('Bitte Person auswählen', 'error');
+    return;
+  }
+
+  const p = persons.find(x => x.name === personName);
+  if (!p) {
+    showToast('Person nicht gefunden', 'error');
+    return;
+  }
+
+  const max = Math.max(0, parseInt(wurfSettings.maxBuys || 3, 10) || 3);
+  p.boughtThrows = Math.max(0, parseInt(p.boughtThrows || 0, 10) || 0);
+
+  if (p.boughtThrows >= max) {
+    showToast('Keine Würfe mehr verfügbar', 'error');
+    return;
+  }
+
+  p.boughtThrows += 1;
+
+  closeBuyThrowModal();
+  renderAll();
+  persistState();
+
+  showToast(`🎳 ${p.name} hat einen Wurf gekauft`, 'success');
 }
     
 // ── HELPERS ──
@@ -6294,6 +6443,9 @@ function createEmptyClubData() {
           minPins: 10,
           maxPins: 300
         },
+        wurfSettings: {
+          maxBuys: 3
+        },
     STRAFEN_LIMIT: 30,
       strafenHistory: [],
       lastLocalChangeAt: 0
@@ -6335,6 +6487,7 @@ function syncCurrentClubToStore() {
         lotterieSettings: JSON.parse(JSON.stringify(lotterieSettings)),
         tiberiusSettings: JSON.parse(JSON.stringify(tiberiusSettings)),
       tannenbaumHardRule,
+    wurfSettings: JSON.parse(JSON.stringify(wurfSettings)),
     STRAFEN_LIMIT,
       dartsState: JSON.parse(JSON.stringify(dartsState))
   };
@@ -6501,7 +6654,7 @@ async function selectClub(clubName) {
   ensureTannenbaumState();
     lotterieState = JSON.parse(JSON.stringify(localClub.lotterieState || createLotterieState()));
     tiberiusState = JSON.parse(JSON.stringify(localClub.tiberiusState || createTiberiusState()));
-
+    wurfSettings = JSON.parse(JSON.stringify(localClub.wurfSettings || {maxBuys: 3}));
     lotterieSettings = JSON.parse(JSON.stringify(localClub.lotterieSettings || {
       minAmount: 0.10,
       maxAmount: 10.00
@@ -9709,7 +9862,7 @@ function renderAll() {
   renderSpieleKatalog();
   renderRoundReasonSelect();
   renderRoundReasonsKatalog();
-
+    renderWurfSettings();
     renderLotterie();
     renderTiberius();
     renderLotterieSettings();
@@ -9749,6 +9902,30 @@ function updateStats() {
       gosseKingEl.textContent = kings.length ? kings.join(', ') : '—';
     }
 
+}
+
+function renderWurfSettings() {
+  const input = document.getElementById('wurf-max-buys');
+  if (!input) return;
+
+  if (document.activeElement !== input) {
+    input.value = parseInt(wurfSettings.maxBuys || 3, 10) || 3;
+  }
+}
+
+function saveWurfSettings() {
+  const input = document.getElementById('wurf-max-buys');
+
+  wurfSettings.maxBuys = Math.max(
+    0,
+    parseInt(input?.value || '3', 10) || 3
+  );
+
+  renderWurfSettings();
+  renderStrafen();
+  persistState();
+
+  showToast('✅ Würfe-Einstellung gespeichert', 'success');
 }
 
 function renderPersonCards(targetId, list) {
@@ -10878,7 +11055,8 @@ persons.push({
   roundExtra: 0,
   rounds: [],
   left: false,
-  leftAt: ''
+  leftAt: '',
+  boughtThrows: 0
 });
 
   input.value = '';
