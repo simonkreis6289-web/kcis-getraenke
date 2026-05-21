@@ -3014,14 +3014,14 @@ tbody td:first-child {
       
 .wurf-dots {
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 6px;
   align-items: center;
 }
 
 .wurf-dot {
-  width: 10px;
-  height: 10px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
 }
 
@@ -3418,7 +3418,7 @@ tbody td:first-child {
             <div class="getraenke-toolbar">
                 <button class="add-btn" onclick="openKranzModal()" style="margin-bottom:14px;"   >🎯 9er/Kranz geworfen</button>
                 <button class="add-btn" onclick="openFreeStrafeModal()" style="margin-bottom:14px;"> 💸 Freie Beträge</button>
-                <button class="add-btn" onclick="openBuyThrowModal()">🎳 Würfe kaufen</button>
+                <button class="add-btn" onclick="openBuyThrowModal()" style="margin-bottom:14px;">🎳 Würfe kaufen</button>
             </div>
 
              <div class="drinks-table-wrap">
@@ -3696,30 +3696,6 @@ tbody td:first-child {
                 >
               </div>
             </div>
-              
-              <div class="section-title">Verspätung / Früh gegangen</div>
-
-                <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
-                  <div class="modal-input-row" style="margin-bottom:0;">
-                    <label>Startzeit</label>
-                    <input
-                      type="time"
-                      id="penalty-start-time"
-                      class="modal-text-input"
-                      onchange="saveTimePenaltySettings()"
-                    >
-                  </div>
-
-                  <div class="modal-input-row" style="margin-bottom:0;">
-                    <label>Endzeit</label>
-                    <input
-                      type="time"
-                      id="penalty-end-time"
-                      class="modal-text-input"
-                      onchange="saveTimePenaltySettings()"
-                    >
-                  </div>
-                </div>
 
             <div class="modal-input-row" style="margin-bottom:0;">
               <label>Max. Zielzahl</label>
@@ -3868,6 +3844,30 @@ tbody td:first-child {
         💾 Strafen-Deckelung speichern
       </button>
     </div>
+    
+                  <div class="section-title">Verspätung / Früh gegangen</div>
+
+                <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+                  <div class="modal-input-row" style="margin-bottom:0;">
+                    <label>Startzeit</label>
+                    <input
+                      type="time"
+                      id="penalty-start-time"
+                      class="modal-text-input"
+                      onchange="saveTimePenaltySettings()"
+                    >
+                  </div>
+
+                  <div class="modal-input-row" style="margin-bottom:0;">
+                    <label>Endzeit</label>
+                    <input
+                      type="time"
+                      id="penalty-end-time"
+                      class="modal-text-input"
+                      onchange="saveTimePenaltySettings()"
+                    >
+                  </div>
+                </div>
     
 </div> 
         
@@ -4924,11 +4924,7 @@ function renderStrafen() {
   const body = document.getElementById('strafen-body');
   if (!header || !body) return;
 
-  let headerHtml = '<th class="sticky-col name-col">Name</th>';
-  headerHtml += STRAFEN.map(s => `<th class="drink-col">${s.label}</th>`).join('');
-  headerHtml += '<th class="drink-col">Freie Beträge</th>';
-  headerHtml += '<th class="sum-col">Gesamt</th>';
-  header.innerHTML = headerHtml;
+  const visibleStrafen = getVisibleStrafen();
 
   const present = persons
     .filter(p => p.present)
@@ -4937,11 +4933,30 @@ function renderStrafen() {
       return a.name.localeCompare(b.name, 'de');
     });
 
-  const totalCols = 1 + STRAFEN.length + 2;
+  const hasExtraPenaltyColumn = present.some(p => getPersonPenaltyExtraLines(p).length > 0);
+
+  let headerHtml = '<th class="sticky-col name-col">Name</th>';
+  headerHtml += visibleStrafen.map(s => `<th class="drink-col">${s.label}</th>`).join('');
+  headerHtml += '<th class="drink-col">Freie Beträge</th>';
+
+  if (hasExtraPenaltyColumn) {
+    headerHtml += '<th class="drink-col">Extras</th>';
+  }
+
+  headerHtml += '<th class="sum-col">Gesamt</th>';
+  header.innerHTML = headerHtml;
+
+  const totalCols = 1 + visibleStrafen.length + 2 + (hasExtraPenaltyColumn ? 1 : 0);
   body.innerHTML = '';
 
   if (!present.length) {
-    body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
+    body.innerHTML = `
+      <tr>
+        <td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">
+          Niemand anwesend
+        </td>
+      </tr>
+    `;
     return;
   }
 
@@ -4953,30 +4968,6 @@ function renderStrafen() {
     const tr = document.createElement('tr');
     tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
 
-    const tannenbaumNormal = p.tannenbaumCharges
-      .filter(x => !x.onTop)
-      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-    const tannenbaumOnTop = p.tannenbaumCharges
-      .filter(x => x.onTop)
-      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-    const lotterieNormal = p.freeStrafen
-      .filter(x => String(x.reason || '') === 'Lotterie' && !x.onTop)
-      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-    const lotterieOnTop = p.freeStrafen
-      .filter(x => String(x.reason || '') === 'Lotterie' && x.onTop)
-      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-    const tiberiusNormal = p.freeStrafen
-      .filter(x => String(x.reason || '') === 'Tiberius' && !x.onTop)
-      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-    const tiberiusOnTop = p.freeStrafen
-      .filter(x => String(x.reason || '') === 'Tiberius' && x.onTop)
-      .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
     const manualFree = p.freeStrafen.filter(item => {
       const reason = String(item.reason || '');
       return reason !== 'Lotterie' && reason !== 'Tiberius';
@@ -4987,62 +4978,51 @@ function renderStrafen() {
     }, 0);
 
     const freeDetails = manualFree
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`)
+      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥' : ''}`)
       .join('<br>');
-      
-      const latePenalty = getLatePenaltyDisplay(p);
-      const earlyPenalty = getEarlyPenaltyDisplay(p);
 
-    const extrasHtml = `
-      ${tannenbaumNormal > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🌲 Tannenbaum +${euros(tannenbaumNormal)}</div>` : ''}
-      ${tannenbaumOnTop > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🌲 Tannenbaum +${euros(tannenbaumOnTop)} 🔥</div>` : ''}
-
-      ${lotterieNormal > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🎰 Lotterie +${euros(lotterieNormal)}</div>` : ''}
-      ${lotterieOnTop > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🎰 Lotterie +${euros(lotterieOnTop)} 🔥</div>` : ''}
-
-      ${tiberiusNormal > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🏛️ Tiberius +${euros(tiberiusNormal)}</div>` : ''}
-      ${tiberiusOnTop > 0 ? `<div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">🏛️ Tiberius +${euros(tiberiusOnTop)} 🔥</div>` : ''}
-        ${latePenalty ? `
-          <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
-            ⏰ ${latePenalty.label}: ${latePenalty.count}× +${euros(latePenalty.amount)}
-          </div>
-        ` : ''}
-
-        ${earlyPenalty ? `
-          <div style="font-size:0.58rem;line-height:1.25;margin-top:2px;color:var(--accent2);font-weight:800;">
-            🚪 ${earlyPenalty.label}: ${earlyPenalty.count}× +${euros(earlyPenalty.amount)}
-          </div>
-        ` : ''}
-    `;
+    const extraLines = getPersonPenaltyExtraLines(p);
 
     let html = `
       <td class="sticky-col">
         <div class="person-cell">
           <div class="table-person-inline">
-                <div class="gosse-king-wrap ${isGosseKing(p.name) ? 'is-king' : ''}">
-                  ${getAvatarHtml(p.name).replace('class="person-avatar"', 'class="table-avatar"')}
-                </div>
+            <div class="gosse-king-wrap ${isGosseKing(p.name) ? 'is-king' : ''}">
+              ${getAvatarHtml(p.name).replace('class="person-avatar"', 'class="table-avatar"')}
+            </div>
+
             <div style="min-width:0;">
               <span class="pname">${p.name}</span>
               ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
-              <span class="ptisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</span>
-              ${extrasHtml}
-                ${renderBoughtThrowsDots(p)}
+              <span class="ptisch">
+                ${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}
+              </span>
+              ${renderBoughtThrowsDots(p)}
             </div>
           </div>
         </div>
       </td>
     `;
 
-    STRAFEN.forEach(s => {
+    visibleStrafen.forEach(s => {
       const v = p.strafen[s.key] || 0;
 
       html += `
         <td>
           <div class="counter">
-            <button type="button" class="counter-btn minus" onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)">−</button>
+            <button
+              type="button"
+              class="counter-btn minus"
+              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',-1)"
+            >−</button>
+
             <span class="counter-val">${v}</span>
-            <button type="button" class="counter-btn plus" onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)">+</button>
+
+            <button
+              type="button"
+              class="counter-btn plus"
+              onclick="changeStrafe('${escapeForJs(p.name)}','${escapeForJs(s.key)}',1)"
+            >+</button>
           </div>
         </td>
       `;
@@ -5050,9 +5030,39 @@ function renderStrafen() {
 
     html += `
       <td class="total-cell">
-        ${freeTotal > 0 ? `+${euros(freeTotal)}<div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">${freeDetails}</div>` : '—'}
+        ${
+          freeTotal > 0
+            ? `
+              +${euros(freeTotal)}
+              <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
+                ${freeDetails}
+              </div>
+            `
+            : '—'
+        }
       </td>
-      <td class="total-cell">${euros(calcPersonStrafenTotalCapped(p))}</td>
+    `;
+
+    if (hasExtraPenaltyColumn) {
+      html += `
+        <td class="total-cell">
+          ${
+            extraLines.length
+              ? `
+                <div style="font-family:'DM Sans';font-size:0.62rem;color:var(--muted);line-height:1.35;text-align:left;">
+                  ${extraLines.join('<br>')}
+                </div>
+              `
+              : '—'
+          }
+        </td>
+      `;
+    }
+
+    html += `
+      <td class="total-cell">
+        ${euros(calcPersonStrafenTotalCapped(p))}
+      </td>
     `;
 
     tr.innerHTML = html;
@@ -5617,10 +5627,12 @@ async function generateStrafenPDF(snapshot) {
 
   const formatEuro = v => (v || 0).toFixed(2).replace('.', ',') + ' €';
 
+  const visiblePdfStrafen = (snapshot.strafen || []).filter(s => !isAutoTimeStrafeKey(s.key));
+
   const usableWidth = pageWidth - margin * 2;
   const nameWidth = 45;
   const sumWidth = 30;
-  const strafeCount = Math.max(1, (snapshot.strafen || []).length);
+  const strafeCount = Math.max(1, visiblePdfStrafen.length);
   const strafeWidth = (usableWidth - nameWidth - (3 * sumWidth)) / strafeCount;
 
   const headerHeight = 34;
@@ -5698,7 +5710,7 @@ async function generateStrafenPDF(snapshot) {
     doc.text("Name", x + 2, top + headerHeight - 5);
     x += nameWidth;
 
-    (snapshot.strafen || []).forEach(s => {
+    visiblePdfStrafen.forEach(s => {
       const price = getStrafPrice(s);
 
       drawCell(x, top, strafeWidth, headerHeight, {
@@ -5777,56 +5789,32 @@ async function generateStrafenPDF(snapshot) {
       .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 
     const freeManualNormal = (p.freeStrafen || [])
-      .filter(x =>
-        !x.onTop &&
-        !['Lotterie', 'Tiberius'].includes(String(x.reason || ''))
-      )
+      .filter(x => !x.onTop && !['Lotterie', 'Tiberius'].includes(String(x.reason || '')))
       .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 
     const freeManualOnTop = (p.freeStrafen || [])
-      .filter(x =>
-        x.onTop &&
-        !['Lotterie', 'Tiberius'].includes(String(x.reason || ''))
-      )
+      .filter(x => x.onTop && !['Lotterie', 'Tiberius'].includes(String(x.reason || '')))
       .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 
-    const gamesNormal =
-      tannenbaumNormal +
-      lotterieNormal +
-      tiberiusNormal;
-
-    const gamesOnTop =
-      tannenbaumOnTop +
-      lotterieOnTop +
-      tiberiusOnTop;
-
-    const pdfFreeNormal = freeManualNormal + gamesNormal;
-    const pdfOnTop = freeManualOnTop + gamesOnTop;
+    const pdfFreeNormal = freeManualNormal + tannenbaumNormal + lotterieNormal + tiberiusNormal;
+    const pdfOnTop = freeManualOnTop + tannenbaumOnTop + lotterieOnTop + tiberiusOnTop;
 
     const detailLines = [];
 
     if (tannenbaumNormal > 0) detailLines.push(`Tannenbaum: +${formatEuro(tannenbaumNormal)}`);
     if (tannenbaumOnTop > 0) detailLines.push(`Tannenbaum: +${formatEuro(tannenbaumOnTop)} On Top`);
-
     if (lotterieNormal > 0) detailLines.push(`Lotterie: +${formatEuro(lotterieNormal)}`);
     if (lotterieOnTop > 0) detailLines.push(`Lotterie: +${formatEuro(lotterieOnTop)} On Top`);
-
     if (tiberiusNormal > 0) detailLines.push(`Tiberius: +${formatEuro(tiberiusNormal)}`);
     if (tiberiusOnTop > 0) detailLines.push(`Tiberius: +${formatEuro(tiberiusOnTop)} On Top`);
-
     if (freeManualNormal > 0) detailLines.push(`Freie Beträge: +${formatEuro(freeManualNormal)}`);
     if (freeManualOnTop > 0) detailLines.push(`Freie Beträge: +${formatEuro(freeManualOnTop)} On Top`);
 
     const latePenalty = getLatePenaltyDisplay(p);
     const earlyPenalty = getEarlyPenaltyDisplay(p);
 
-    if (latePenalty) {
-      detailLines.push(`Verspätet: ${latePenalty.count}x +${formatEuro(latePenalty.amount)}`);
-    }
-
-    if (earlyPenalty) {
-      detailLines.push(`Zu früh weg: ${earlyPenalty.count}x +${formatEuro(earlyPenalty.amount)}`);
-    }
+    if (latePenalty) detailLines.push(`Verspätet: ${latePenalty.count}x +${formatEuro(latePenalty.amount)}`);
+    if (earlyPenalty) detailLines.push(`Zu früh weg: ${earlyPenalty.count}x +${formatEuro(earlyPenalty.amount)}`);
 
     const dynamicRowHeight = rowHeight + detailLines.length * 4;
 
@@ -5855,7 +5843,7 @@ async function generateStrafenPDF(snapshot) {
 
     x += nameWidth;
 
-    (snapshot.strafen || []).forEach(s => {
+    visiblePdfStrafen.forEach(s => {
       drawCell(x, top, strafeWidth, dynamicRowHeight, {
         bottom: true,
         thickBottom: isLast
@@ -5894,6 +5882,31 @@ async function generateStrafenPDF(snapshot) {
   });
 
   y += 10;
+
+  const personsWithTimes = (snapshot.presentPersons || [])
+    .filter(p => p.arrivalTime || p.leftEarlyAt);
+
+  if (personsWithTimes.length) {
+    ensureSpace(14 + personsWithTimes.length * 6);
+
+    doc.setFontSize(13);
+    doc.text("Ankunfts- und Gehzeiten", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+
+    personsWithTimes.forEach(p => {
+      ensureSpace(7);
+
+      const arrival = p.arrivalTime || "—";
+      const left = p.leftEarlyAt || "—";
+
+      doc.text(`${p.name}: Ankunft ${arrival} | Weg ${left}`, margin, y);
+      y += 6;
+    });
+
+    y += 4;
+  }
 
   if (snapshot.absentMembers && snapshot.absentMembers.length) {
     ensureSpace(12 + snapshot.absentMembers.length * 6);
@@ -6542,6 +6555,61 @@ function confirmBuyThrow() {
 // ── HELPERS ──
 function euros(val) {
   return (val || 0).toFixed(2).replace('.', ',') + ' €';
+}
+
+function isAutoTimeStrafeKey(key) {
+  return key === getLateStrafeKey() || key === getEarlyLeaveStrafeKey();
+}
+
+function getPersonPenaltyExtraLines(p) {
+  if (!p) return [];
+
+  const lines = [];
+
+  const tannenbaumNormal = (p.tannenbaumCharges || [])
+    .filter(x => !x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const tannenbaumOnTop = (p.tannenbaumCharges || [])
+    .filter(x => x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const lotterieNormal = (p.freeStrafen || [])
+    .filter(x => String(x.reason || '') === 'Lotterie' && !x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const lotterieOnTop = (p.freeStrafen || [])
+    .filter(x => String(x.reason || '') === 'Lotterie' && x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const tiberiusNormal = (p.freeStrafen || [])
+    .filter(x => String(x.reason || '') === 'Tiberius' && !x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const tiberiusOnTop = (p.freeStrafen || [])
+    .filter(x => String(x.reason || '') === 'Tiberius' && x.onTop)
+    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
+
+  const latePenalty = getLatePenaltyDisplay(p);
+  const earlyPenalty = getEarlyPenaltyDisplay(p);
+
+  if (tannenbaumNormal > 0) lines.push(`🌲 Tannenbaum +${euros(tannenbaumNormal)}`);
+  if (tannenbaumOnTop > 0) lines.push(`🌲 Tannenbaum +${euros(tannenbaumOnTop)} 🔥`);
+
+  if (lotterieNormal > 0) lines.push(`🎰 Lotterie +${euros(lotterieNormal)}`);
+  if (lotterieOnTop > 0) lines.push(`🎰 Lotterie +${euros(lotterieOnTop)} 🔥`);
+
+  if (tiberiusNormal > 0) lines.push(`🏛️ Tiberius +${euros(tiberiusNormal)}`);
+  if (tiberiusOnTop > 0) lines.push(`🏛️ Tiberius +${euros(tiberiusOnTop)} 🔥`);
+
+  if (latePenalty) lines.push(`⏰ ${latePenalty.count}× +${euros(latePenalty.amount)}`);
+  if (earlyPenalty) lines.push(`🚪 ${earlyPenalty.count}× +${euros(earlyPenalty.amount)}`);
+
+  return lines;
+}
+
+function getVisibleStrafen() {
+  return STRAFEN.filter(s => !isAutoTimeStrafeKey(s.key));
 }
     
 async function saveClubMetaToFirestore(clubName) {
@@ -10272,26 +10340,34 @@ sorted.forEach(p => {
     ${avatarHtml}
     <div class="person-name">${p.name}</div>
     <div class="person-role">${p.isGuest ? 'Gastkegler' : 'Mitglied'}</div>
+        <div style="font-size:0.68rem;color:var(--muted);line-height:1.25;margin-top:3px;">
+          ${p.arrivalTime ? `⏰ Ankunft: ${p.arrivalTime}` : ''}
+          ${p.leftEarlyAt ? `<br>🚪 Weg: ${p.leftEarlyAt}` : ''}
+        </div>
     <div class="${badgeClass}">${badgeText}</div>
   `;
 
 c.onclick = () => {
   const wasPresent = !!p.present;
-
   p.present = !p.present;
 
-if (!wasPresent && p.present) {
-  playSound(sounds.welcome);
-  openArrivalModal(p);
-}
+  if (!p.present) {
+    p.tisch = '';
+    p.left = false;
+    p.leftAt = '';
+    p.arrivalTime = '';
+    p.leftEarlyAt = '';
+  }
 
-    if (!p.present) {
-      p.tisch = '';
-      p.left = false;
-      p.leftAt = '';
-      p.arrivalTime = '';
-      p.leftEarlyAt = '';
-    }
+  if (!wasPresent && p.present) {
+    playSound(sounds.welcome);
+
+    renderAll();
+    persistState();
+
+    openArrivalModal(p);
+    return;
+  }
 
   renderAll();
   persistState();
