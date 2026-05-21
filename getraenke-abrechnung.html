@@ -864,15 +864,7 @@ tbody td:first-child {
   user-select: none;
   line-height: 1;
 }
-
-.counter-val {
-  min-width: 24px;
-  text-align: center;
-  font-weight: 800;
-  font-size: 0.9rem;
-  color: #000000;
-}
-      
+  
     .counter-btn.minus {
       background: var(--btn-minus-bg);
       color: var(--btn-minus-fg);
@@ -3155,7 +3147,23 @@ tbody td:first-child {
 .game-ontop-check {
   margin: 0;
   min-height: auto;
-}     
+} 
+     
+#tab-lotterie .save-prices-btn,
+#tab-tiberius .save-prices-btn {
+  width: auto;
+  margin-top: 0;
+}
+
+#tab-lotterie > div[style*="display:flex"],
+#tab-tiberius > div[style*="display:flex"] {
+  flex-wrap: wrap;
+}
+    
+.strafen-action-btn {
+  min-height: 42px;
+  margin-bottom: 0;
+}
       
 </style>
     
@@ -3539,9 +3547,9 @@ tbody td:first-child {
         <div class="section-title">Strafen Übersicht</div>
           
             <div class="getraenke-toolbar">
-                <button class="add-btn" onclick="openKranzModal()" style="margin-bottom:14px;"   >🎯 9er/Kranz geworfen</button>
-                <button class="add-btn" onclick="openFreeStrafeModal()" style="margin-bottom:14px;"> 💸 Freie Beträge</button>
-                <button class="add-btn" onclick="openBuyThrowModal()" style="margin-bottom:14px;">🎳 Würfe kaufen</button>
+                <button class="add-btn strafen-action-btn" onclick="openKranzModal()">🎯 9er/Kranz geworfen</button>
+                <button class="add-btn strafen-action-btn" onclick="openFreeStrafeModal()">💸 Freie Beträge</button>
+                <button class="add-btn strafen-action-btn" onclick="openBuyThrowModal()">🎳 Würfe kaufen</button>
             </div>
 
              <div class="drinks-table-wrap">
@@ -3660,68 +3668,58 @@ tbody td:first-child {
           </div>
         </div>
         
-        <div id="tab-lotterie" class="hidden">
-          <div class="section-title">Lotterie</div>
+<div id="tab-lotterie" class="hidden">
+  <div class="section-title">Lotterie</div>
 
-            <div class="game-start-card" id="lotterie-setup-card">
-                <label class="modal-check game-ontop-check">
-                  <input type="checkbox" id="lotterie-ontop-check">
-                  <span>Lotterie-Strafen On Top buchen</span>
-                </label>
-              </div>
+  <div class="game-start-card" id="lotterie-setup-card">
+    <label class="modal-check game-ontop-check">
+      <input type="checkbox" id="lotterie-ontop-check" onchange="toggleLotterieOnTop()">
+      <span>Lotterie-Strafen On Top buchen</span>
+    </label>
 
-              <div class="lotterie-setup-grid">
-                <div class="modal-input-row">
-                  <label>Spaltenanzahl</label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    id="lotterie-column-count"
-                    class="modal-euro-input"
-                    placeholder="z. B. 8"
-                    onchange="prepareLotterieColumns()"
-                  >
-                </div>
+    <div class="lotterie-setup-grid">
+      <div class="modal-input-row" style="margin-bottom:0;">
+        <label>Spaltenanzahl</label>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          id="lotterie-column-count"
+          class="modal-euro-input"
+          placeholder="z. B. 8"
+          onchange="prepareLotterieColumns()"
+        >
+      </div>
 
-                <div id="lotterie-amount-editor"></div>
-              </div>
+      <div id="lotterie-amount-editor"></div>
+    </div>
 
-              <div class="modal-btns" style="margin-top:14px;">
-                <button
-                  type="button"
-                  class="secondary-btn"
-                  onclick="generateLotterieAmounts()"
-                  id="lotterie-random-btn"
-                >
-                  🎲 Zufällige Beträge
-                </button>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="secondary-btn" onclick="generateLotterieAmounts()" id="lotterie-random-btn">
+        🎲 Zufällige Beträge
+      </button>
 
-                <button
-                  type="button"
-                  class="primary-btn"
-                  onclick="startLotterieGame()"
-                >
-                  🎰 Lotterie starten
-                </button>
-              </div>
-            </div>
+      <button type="button" class="primary-btn" onclick="startLotterieGame()">
+        🎰 Lotterie starten
+      </button>
+    </div>
+  </div>
 
-          <div id="lotterie-board"></div>
+  <div id="lotterie-board"></div>
 
-          <div style="margin-top:14px;display:flex;gap:10px;">
-            <button class="secondary-btn lotterie-reset-live-btn hidden" onclick="resetLotterieGame()">
-              ↻ Neustart
-            </button>
+  <div style="margin-top:14px;display:flex;gap:10px;">
+    <button class="secondary-btn lotterie-reset-live-btn hidden" onclick="resetLotterieGame()">
+      ↻ Neustart
+    </button>
 
-            <button class="save-prices-btn hidden" onclick="finishLotterieGame()">
-              ✅ Lotterie abschließen
-            </button>
-          </div>
+    <button class="save-prices-btn hidden" onclick="finishLotterieGame()">
+      ✅ Lotterie abschließen
+    </button>
+  </div>
 
-          <div class="section-title">Lotterie Verlauf</div>
-          <div id="lotterie-history-list" class="spiele-list"></div>
-        </div>
+  <div class="section-title">Lotterie Verlauf</div>
+  <div id="lotterie-history-list" class="spiele-list"></div>
+</div>
 
         <div id="tab-tiberius" class="hidden">
           <div class="section-title">Tiberius</div>
