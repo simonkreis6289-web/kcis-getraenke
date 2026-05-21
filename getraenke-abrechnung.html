@@ -3032,7 +3032,54 @@ tbody td:first-child {
 
 .wurf-dot.used {
   background: #ff4d4f;
-}      
+} 
+      
+.mini-action-btn {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font-weight: 800;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+   
+.game-start-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.game-start-card .modal-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.game-start-card .primary-btn,
+.game-start-card .secondary-btn {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.game-start-card .primary-btn {
+  background: #00c800;
+  color: #001400;
+}
+
+.game-start-card .secondary-btn {
+  background: var(--surface2);
+  color: var(--text);
+}
       
 </style>
     
@@ -4700,7 +4747,7 @@ function persistState() {
   }
 }
     
-    function getKranzStrafeKey() {
+function getKranzStrafeKey() {
   const found = STRAFEN.find(s =>
     String(s.label || '').toLowerCase().includes('9er') ||
     String(s.label || '').toLowerCase().includes('kranz')
@@ -6559,6 +6606,17 @@ function euros(val) {
 
 function isAutoTimeStrafeKey(key) {
   return key === getLateStrafeKey() || key === getEarlyLeaveStrafeKey();
+}
+
+function openLeftEarlyModalByName(personName) {
+  const p = persons.find(x => x.name === personName);
+
+  if (!p) {
+    showToast('Person nicht gefunden', 'error');
+    return;
+  }
+
+  openLeftEarlyModal(p);
 }
 
 function getPersonPenaltyExtraLines(p) {
@@ -9001,11 +9059,32 @@ function prepareLotterieColumns() {
   persistState();
 }
 
+function initLotterieDefaultsIfNeeded() {
+  ensureLotterieState();
+
+  if (lotterieState.active) return;
+
+  const playersCount = getActivePlayersForSoloGame().length;
+
+  if (!lotterieState.columnCount && playersCount > 0) {
+    lotterieState.columnCount = playersCount;
+    lotterieState.columns = Array.from({ length: playersCount }, (_, i) => {
+      return roundTo10Cent(lotterieState.columns[i] || 0);
+    });
+  }
+}
+
 function renderLotterieAmountEditor() {
   ensureLotterieState();
 
+  const input = document.getElementById('lotterie-column-count');
   const editor = document.getElementById('lotterie-amount-editor');
+
   if (!editor) return;
+
+  if (input && document.activeElement !== input) {
+    input.value = lotterieState.columnCount || '';
+  }
 
   if (lotterieState.active) {
     editor.innerHTML = '';
@@ -9049,6 +9128,7 @@ function updateLotteriePreStartAmount(index, value) {
     
 function renderLotterie() {
   ensureLotterieState();
+    initLotterieDefaultsIfNeeded();
 
   const board = document.getElementById('lotterie-board');
   if (!board) return;
@@ -10344,6 +10424,15 @@ sorted.forEach(p => {
           ${p.arrivalTime ? `⏰ Ankunft: ${p.arrivalTime}` : ''}
           ${p.leftEarlyAt ? `<br>🚪 Weg: ${p.leftEarlyAt}` : ''}
         </div>
+    ${p.present ? `
+      <button
+        type="button"
+        class="mini-action-btn"
+        onclick="event.stopPropagation(); openLeftEarlyModalByName('${escapeForJs(p.name)}')"
+      >
+        🚪 Gehzeit
+      </button>
+    ` : ''}
     <div class="${badgeClass}">${badgeText}</div>
   `;
 
