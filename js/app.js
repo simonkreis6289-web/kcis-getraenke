@@ -7682,9 +7682,7 @@ updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 bahnTimerInterval = setInterval(updateBahnDisplay, 1000);
 teamStopwatchInterval = setInterval(updateTeamStopwatchDisplay, 1000);
-</script>
 
-<script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
