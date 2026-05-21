@@ -3026,58 +3026,6 @@ tbody td:first-child {
   font-size: 0.72rem;
   cursor: pointer;
 }
-   
-.game-start-card {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  display: grid;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.game-start-card .modal-btns {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.game-start-card .primary-btn,
-.game-start-card .secondary-btn {
-  min-height: 42px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-weight: 900;
-  cursor: pointer;
-  border: 1px solid var(--border);
-}
-
-.game-start-card .primary-btn {
-    background-color: rgba(22, 190, 0, 0.35);
-    border-color: #000000;
-    color: #000000;
-    font-weight: 400;
-}
-
-.game-start-card .secondary-btn {
-    background-color: rgba(255, 255, 0, 0.24);
-    border-color: #000000;
-    color: #000000;
-    font-weight: 400;
-}
-      
-#tab-lotterie > div[style*="margin-top:14px"] .secondary-btn,
-#tab-tiberius > div[style*="margin-top:14px"] .secondary-btn {
-  min-height: 42px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-weight: 900;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text);
-}
     
 .strafen-extra-cell {
   min-width: 150px;
@@ -3109,7 +3057,75 @@ tbody td:first-child {
   opacity: 0.55;
   font-style: italic;
 }
- #lotterie-amount-editor,
+    
+.strafen-action-btn {
+  min-height: 42px;
+  margin-bottom: 0;
+}
+    
+.game-start-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.game-ontop-check {
+  margin: 0 !important;
+  min-height: auto;
+}
+
+.game-setup-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 0;
+}
+
+.game-start-card .modal-input-row {
+  margin-bottom: 0;
+}
+
+.game-start-card .modal-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 0 !important;
+}
+
+.primary-btn,
+.secondary-btn,
+.game-start-card .primary-btn,
+.game-start-card .secondary-btn {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid #000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.primary-btn,
+.game-start-card .primary-btn {
+  background: rgba(22, 190, 0, 0.35);
+  color: #000;
+}
+
+.secondary-btn,
+.game-start-card .secondary-btn {
+  background: rgba(255, 255, 0, 0.24);
+  color: #000;
+}
+
+#lotterie-amount-editor,
 #tiberius-target-editor {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -3146,27 +3162,6 @@ tbody td:first-child {
   min-width: 0;
   text-align: right;
   font-weight: 900;
-}
-
-.game-ontop-check {
-  margin: 0;
-  min-height: auto;
-} 
-     
-#tab-lotterie .save-prices-btn,
-#tab-tiberius .save-prices-btn {
-  width: auto;
-  margin-top: 0;
-}
-
-#tab-lotterie > div[style*="display:flex"],
-#tab-tiberius > div[style*="display:flex"] {
-  flex-wrap: wrap;
-}
-    
-.strafen-action-btn {
-  min-height: 42px;
-  margin-bottom: 0;
 }
       
 </style>
@@ -3681,7 +3676,7 @@ tbody td:first-child {
       <span>Lotterie-Strafen On Top buchen</span>
     </label>
 
-    <div class="lotterie-setup-grid">
+    <div class="game-setup-grid">
       <div class="modal-input-row" style="margin-bottom:0;">
         <label>Spaltenanzahl</label>
         <input
@@ -3734,20 +3729,22 @@ tbody td:first-child {
               <span>Tiberius-Strafen On Top buchen</span>
             </label>
               
-              <div class="modal-input-row" style="margin-bottom:0;">
-                  <label>Spaltenanzahl</label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    id="tiberius-column-count"
-                    class="modal-euro-input"
-                    placeholder="z. B. 8"
-                    onchange="prepareTiberiusColumns()"
-                  >
-                </div>
+                <div class="game-setup-grid">
+                  <div class="modal-input-row">
+                    <label>Spaltenanzahl</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      id="tiberius-column-count"
+                      class="modal-euro-input"
+                      placeholder="z. B. 8"
+                      onchange="prepareTiberiusColumns()"
+                    >
+                  </div>
 
-                <div id="tiberius-target-editor" class="team-drinks-grid"></div>
+                  <div id="tiberius-target-editor"></div>
+                </div>
 
                     <div class="modal-btns" style="margin-top:14px;">
                       <button
