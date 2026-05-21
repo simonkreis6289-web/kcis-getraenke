@@ -4,7 +4,6 @@ const APPVersionSelf = '2.0.0.00, © Simon Kreis';
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
     
-    
 let DRINKS = [
   { key: 'kl_bier',  label: 'Kl. Bier' },
   { key: 'gr_bier',  label: 'Gr. Bier' },
