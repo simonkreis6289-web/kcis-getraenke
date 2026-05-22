@@ -833,14 +833,19 @@ function renderStrafen() {
       return reason !== 'Lotterie' && reason !== 'Tiberius';
     });
 
-    const freeTotal = manualFree.reduce((sum, item) => {
-      return sum + (parseFloat(item.amount || 0) || 0);
-    }, 0);
+    const freeNormalTotal = manualFree
+      .filter(item => !item.onTop)
+      .reduce((sum, item) => sum + (parseFloat(item.amount || 0) || 0), 0);
+
+    const freeOnTopTotal = manualFree
+      .filter(item => item.onTop)
+      .reduce((sum, item) => sum + (parseFloat(item.amount || 0) || 0), 0);
 
     const freeDetails = manualFree
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥' : ''}`)
+      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`)
       .join('<br>');
 
+    const freeDisplayTotal = freeNormalTotal + freeOnTopTotal;
     const extraLines = getPersonPenaltyExtraLines(p);
 
     let html = `
@@ -891,9 +896,10 @@ function renderStrafen() {
     html += `
       <td class="total-cell">
         ${
-          freeTotal > 0
+          freeDisplayTotal > 0
             ? `
-              +${euros(freeTotal)}
+              +${euros(freeDisplayTotal)}
+              ${freeOnTopTotal > 0 ? `<div style="color:var(--accent2);font-size:0.62rem;font-weight:800;">🔥 On Top: +${euros(freeOnTopTotal)}</div>` : ''}
               <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
                 ${freeDetails}
               </div>
