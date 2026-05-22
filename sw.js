@@ -1,10 +1,10 @@
-const CACHE_NAME = 'kcis-cache-v14';
+const CACHE_NAME = 'kcis-cache-v15';
 
 const ASSETS = [
   './',
-  './manifest.json?v=20260318-v10',
-  './icon-192.png?v=20260318-v10',
-  './icon-512.png?v=20260318-v10'
+  './manifest.json?v=20260318-v15',
+  './icon-192.png?v=20260318-v15',
+  './icon-512.png?v=20260318-v15'
 ];
 
 self.addEventListener('install', event => {
