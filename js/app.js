@@ -5237,35 +5237,6 @@ function renderTiberiusHistory() {
   }).join('');
 }
 
-function renderTiberiusHistory() {
-  const el = document.getElementById('tiberius-history-list');
-  if (!el) return;
-
-  const entries = Array.isArray(tiberiusState.history) ? tiberiusState.history : [];
-
-  if (!entries.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">Noch kein Tiberius-Verlauf</div>';
-    return;
-  }
-
-  el.innerHTML = entries.map(entry => {
-    const assigned = (entry.assignedTo || [])
-      .map(x => `${x.name}: ${euros(x.amount)}${x.onTop ? ' · On Top' : ''}`)
-      .join('<br>');
-
-    return `
-      <div class="spiel-card">
-        <div class="spiel-info">
-          <div class="spiel-verlierer round">🏛️ Tiberius abgeschlossen</div>
-          <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
-          <div class="spiel-detail"><strong>Gebucht:</strong><br>${assigned || '—'}</div>
-        </div>
-        <button class="del-spiel-btn" onclick="deleteStrafenHistoryEntry('${escapeForJs(entry.id)}')">✕</button>
-      </div>
-    `;
-  }).join('');
-}    
-    
 // ──-───────────────────────────────────────────────────────────────────────
 // ── STRAFENLIMIT ──       
 function saveStrafenLimit() {
