@@ -654,6 +654,26 @@
         
         <div id="tab-spiele-einstellungen" class="hidden">
           <div class="section-title">Spiel-Einstellungen</div>
+            
+            <div class="section-title">Tannenbaum</div>
+                <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
+
+                  <label class="modal-check game-ontop-check">
+                    <input type="checkbox" id="tannenbaum-ontop-check" onchange="saveTannenbaumSettings()">
+                    <span>Tannenbaum-Strafen On Top buchen</span>
+                  </label>
+
+                  <label class="modal-check game-ontop-check">
+                    <input type="checkbox" id="tannenbaum-hard-rule-check" onchange="saveTannenbaumSettings()">
+                    <span>Harte Regel aktivieren</span>
+                  </label>
+
+                  <div id="tannenbaum-settings-grid" class="game-setup-grid"></div>
+
+                  <button class="secondary-btn" onclick="resetTannenbaumSettings()">
+                    ↻ Tannenbaum-Standardwerte
+                  </button>
+                </div>
 
           <div class="section-title">Lotterie</div>
           <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
