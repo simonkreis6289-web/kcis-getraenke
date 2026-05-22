@@ -182,6 +182,7 @@ function finishTannenbaumGame() {
       id: historyEntry.id,
       amount: teamTotals.T1,
       reason: 'Tannenbaum',
+        onTop: !!tannenbaumOnTop,
       createdAt: historyEntry.createdAt
     });
 
@@ -199,6 +200,7 @@ function finishTannenbaumGame() {
       id: historyEntry.id,
       amount: teamTotals.T2,
       reason: 'Tannenbaum',
+        onTop: !!tannenbaumOnTop,
       createdAt: historyEntry.createdAt
     });
 
@@ -486,10 +488,11 @@ function renderTannenbaumPriceCard(team) {
     </div>
   `;
 }
-        
+
 function renderTannenbaumSettings() {
   const grid = document.getElementById('tannenbaum-settings-grid');
   const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
+  const onTopCheck = document.getElementById('tannenbaum-ontop-check');
 
   if (!grid) return;
 
@@ -512,9 +515,8 @@ function renderTannenbaumSettings() {
     grid.appendChild(card);
   }
 
-  if (hardCheck) {
-    hardCheck.checked = !!tannenbaumHardRule;
-  }
+  if (hardCheck) hardCheck.checked = !!tannenbaumHardRule;
+  if (onTopCheck) onTopCheck.checked = !!tannenbaumOnTop;
 }
 
 function saveTannenbaumSettings() {
@@ -524,6 +526,9 @@ function saveTannenbaumSettings() {
       TANNENBAUM_BASE[n] = Math.max(0, parseInt(input.value || '0', 10) || 0);
     }
   }
+    
+const onTopCheck = document.getElementById('tannenbaum-ontop-check');
+tannenbaumOnTop = !!onTopCheck?.checked;
 
   const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
   tannenbaumHardRule = !!hardCheck?.checked;
