@@ -2217,17 +2217,17 @@ function getPersonPenaltyExtraLines(p) {
   const latePenalty = getLatePenaltyDisplay(p);
   const earlyPenalty = getEarlyPenaltyDisplay(p);
 
-  if (tannenbaumNormal > 0) lines.push(`🌲 Tannenbaum +${euros(tannenbaumNormal)}`);
-  if (tannenbaumOnTop > 0) lines.push(`🌲 Tannenbaum +${euros(tannenbaumOnTop)} 🔥`);
+  if (tannenbaumNormal > 0) lines.push(`🌲 +${euros(tannenbaumNormal)}`);
+  if (tannenbaumOnTop > 0) lines.push(`🌲 +${euros(tannenbaumOnTop)} 🔥`);
 
-  if (lotterieNormal > 0) lines.push(`🎰 Lotterie +${euros(lotterieNormal)}`);
-  if (lotterieOnTop > 0) lines.push(`🎰 Lotterie +${euros(lotterieOnTop)} 🔥`);
+  if (lotterieNormal > 0) lines.push(`🎰 +${euros(lotterieNormal)}`);
+  if (lotterieOnTop > 0) lines.push(`🎰 +${euros(lotterieOnTop)} 🔥`);
 
-  if (tiberiusNormal > 0) lines.push(`🏛️ Tiberius +${euros(tiberiusNormal)}`);
-  if (tiberiusOnTop > 0) lines.push(`🏛️ Tiberius +${euros(tiberiusOnTop)} 🔥`);
+  if (tiberiusNormal > 0) lines.push(`🏛️ +${euros(tiberiusNormal)}`);
+  if (tiberiusOnTop > 0) lines.push(`🏛️ +${euros(tiberiusOnTop)} 🔥`);
 
-  if (latePenalty) lines.push(`⏰ ${latePenalty.count}× +${euros(latePenalty.amount)}`);
-  if (earlyPenalty) lines.push(`🚪 ${earlyPenalty.count}× +${euros(earlyPenalty.amount)}`);
+  if (latePenalty) lines.push(`⏰ ${euros(latePenalty.amount)}`);
+  if (earlyPenalty) lines.push(`🚪 ${euros(earlyPenalty.amount)}`);
 
   return lines;
 }
