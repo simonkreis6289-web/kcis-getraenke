@@ -1,5 +1,5 @@
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '2.0.0.01, © Simon Kreis';
+const APPVersionSelf = '2.0.0.02, © Simon Kreis';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -2419,10 +2419,6 @@ function confirmBuyThrow() {
 }
     
 // ── HELPERS ──
-function euros(val) {
-  return (val || 0).toFixed(2).replace('.', ',') + ' €';
-}
-
 function isAutoTimeStrafeKey(key) {
   return key === getLateStrafeKey() || key === getEarlyLeaveStrafeKey();
 }
@@ -2969,25 +2965,6 @@ function updateVersionInfo() {
 
   el.textContent = 'Version: ' + APPVersionSelf;
 }
-	
-function formatDateTime(dt) {
-  if (!dt) return '';
-  const d = new Date(dt);
-  if (isNaN(d)) return '';
-  return d.toLocaleString('de-DE', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-}
-
-function formatTime(dt) {
-  if (!dt) return '';
-  const d = new Date(dt);
-  if (isNaN(d)) return '';
-  return d.toLocaleTimeString('de-DE', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-}
 
 function updateHeaderDateTime() {
   const el = document.getElementById('header-datetime');
@@ -3044,10 +3021,6 @@ function columnLetter(colNum) {
     n = Math.floor((n - 1) / 26);
   }
   return temp;
-}
-
-function escapeForJs(str) {
-  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 function describeRoundDrinks(drinksObj) {
@@ -7530,18 +7503,6 @@ function deletePerson(name) {
   }
     
 // ── RESET / UNDO ──
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  clearTimeout(toastTimer);
-  t.textContent = msg;
-  t.className = type ? `show ${type}` : 'show';
-
-  toastTimer = setTimeout(() => {
-    t.className = '';
-    setTimeout(() => { t.textContent = ''; }, 250);
-  }, 2600);
-}
-
 function showUndoToast() {
   const t = document.getElementById('toast');
   clearTimeout(toastTimer);
