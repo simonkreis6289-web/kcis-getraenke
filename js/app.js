@@ -593,7 +593,7 @@ function renderStrafen() {
       .reduce((sum, item) => sum + (parseFloat(item.amount || 0) || 0), 0);
 
     const freeDetails = manualFree
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥 On Top' : ''}`)
+      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥' : ''}`)
       .join('<br>');
 
     const freeDisplayTotal = freeNormalTotal + freeOnTopTotal;
@@ -650,7 +650,6 @@ function renderStrafen() {
           freeDisplayTotal > 0
             ? `
               +${euros(freeDisplayTotal)}
-              ${freeOnTopTotal > 0 ? `<div style="color:var(--accent2);font-size:0.62rem;font-weight:800;">🔥 On Top: +${euros(freeOnTopTotal)}</div>` : ''}
               <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
                 ${freeDetails}
               </div>
