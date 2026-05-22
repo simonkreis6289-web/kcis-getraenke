@@ -4,6 +4,8 @@ window.euros = function euros(val) {
 
 window.showToast = function showToast(msg, type = '') {
   const t = document.getElementById('toast');
+  if (!t) return;
+
   clearTimeout(window.toastTimer);
 
   t.textContent = msg;
