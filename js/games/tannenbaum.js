@@ -287,3 +287,264 @@ function handleTannenbaumThrow(number) {
   persistState();
   showToast(action, 'success');
 }
+
+function getOtherTeam(team) {
+  return team === 'T1' ? 'T2' : 'T1';
+}
+
+function getTeamLabel(team) {
+  return team === 'T1' ? '⚫ Wand' : '🔴 TV';
+}
+
+function isTannenbaumTeamEmpty(team) {
+  ensureTannenbaumState();
+  return Object.keys(TANNENBAUM_BASE).every(n => {
+    return (tannenbaumState.teams[team].remaining[n] || 0) <= 0;
+  });
+}
+
+function getTannenbaumTeamTotal(team) {
+  ensureTannenbaumState();
+
+  const data = tannenbaumState.teams[team];
+
+  const strikesTotal = data.strikes.reduce((sum, s) => {
+    return sum + (parseFloat(s.amount || 0) || 0);
+  }, 0);
+
+  return strikesTotal + (data.bonus || 0);
+}
+
+function bookTannenbaumTeamCharge(team, total) {
+  if (total <= 0) return;
+
+  const members = persons.filter(p =>
+    p.present &&
+    !p.left &&
+    p.tisch === team
+  );
+
+  if (!members.length) return;
+
+  const amountPerPerson = total / members.length;
+
+  members.forEach(p => {
+    if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
+
+    p.tannenbaumCharges.push({
+      reason: 'Tannenbaum',
+      team,
+      amount: amountPerPerson,
+      total,
+      members: members.map(m => m.name),
+      createdAt: new Date().toISOString()
+    });
+  });
+}
+
+function getTannenbaumOpenNumbersTotal(team) {
+  ensureTannenbaumState();
+
+  const data = tannenbaumState.teams[team];
+  let total = 0;
+  const details = [];
+
+  Object.keys(TANNENBAUM_BASE).forEach(n => {
+    const openCount = parseInt(data.remaining[n] || 0, 10) || 0;
+    if (openCount <= 0) return;
+
+    const amount = Number(n) * 0.10 * openCount;
+    total += amount;
+
+    details.push({
+      number: Number(n),
+      count: openCount,
+      amount
+    });
+  });
+
+  return { total, details };
+}
+
+function getPersonTannenbaumTotal(p) {
+  return (p.tannenbaumCharges || []).reduce((sum, item) => {
+    return sum + (parseFloat(item.amount || 0) || 0);
+  }, 0);
+}
+
+function renderTannenbaumNumberCells(team, number, sideClass) {
+  const data = tannenbaumState.teams[team];
+  const baseCount = TANNENBAUM_BASE[number];
+  const remaining = data.remaining[number] || 0;
+  const visibleCount = Math.max(baseCount, remaining);
+
+  const cells = [];
+
+  for (let i = 0; i < visibleCount; i++) {
+    const crossed = team === 'T1'
+      ? i < (visibleCount - remaining)
+      : i >= remaining;
+
+    cells.push(`
+      <span class="tannenbaum-number ${crossed ? 'crossed' : ''}">
+        ${number}
+      </span>
+    `);
+  }
+
+  return `
+    <div class="tannenbaum-side ${sideClass}">
+      ${cells.join('')}
+    </div>
+  `;
+}
+
+function renderTannenbaumStrikeMarks(team, number) {
+  const data = tannenbaumState.teams[team];
+  const strikes = data.strikes.filter(s => String(s.number) === String(number));
+
+  if (!strikes.length) {
+    return '<span class="tannenbaum-zero">0</span>';
+  }
+
+  let html = '';
+  strikes.forEach((_, index) => {
+    html += '|';
+    if ((index + 1) % 5 === 0) html += ' ';
+  });
+
+  return html;
+}
+
+function renderTannenbaumPriceTable() {
+  return `
+    <div class="tannenbaum-price-grid">
+      ${renderTannenbaumPriceCard('T1')}
+      ${renderTannenbaumPriceCard('T2')}
+    </div>
+  `;
+}
+
+function renderTannenbaumPriceCard(team) {
+  const data = tannenbaumState.teams[team];
+  const grouped = {};
+
+  data.strikes.forEach(s => {
+    const n = String(s.number);
+    if (!grouped[n]) grouped[n] = { count: 0, total: 0 };
+
+    grouped[n].count += 1;
+    grouped[n].total += parseFloat(s.amount || 0) || 0;
+  });
+
+  const rows = Object.keys(grouped)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(n => `
+      <tr>
+        <td>${grouped[n].count}×</td>
+        <td>Strich auf ${n}</td>
+        <td>${euros(grouped[n].total)}</td>
+      </tr>
+    `).join('');
+
+  const bonus = data.bonus || 0;
+  const total = getTannenbaumTeamTotal(team);
+
+  return `
+    <div class="tannenbaum-price-card ${team === 'T1' ? 'wand' : 'tv'}">
+      <div class="tannenbaum-price-title">${getTeamLabel(team)}</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Anzahl</th>
+            <th>Grund</th>
+            <th>Betrag</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || `
+            <tr>
+              <td colspan="3">Noch keine Striche</td>
+            </tr>
+          `}
+          ${bonus > 0 ? `
+            <tr>
+              <td>1×</td>
+              <td>Leer-Bonus Gegner</td>
+              <td>${euros(bonus)}</td>
+            </tr>
+          ` : ''}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Gesamt</td>
+            <td>${euros(total)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+}
+        
+function renderTannenbaumSettings() {
+  const grid = document.getElementById('tannenbaum-settings-grid');
+  const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
+
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  for (let n = 1; n <= 9; n++) {
+    const card = document.createElement('div');
+    card.className = 'tannenbaum-setting-card';
+    card.innerHTML = `
+      <label>Zahl ${n}</label>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        id="tannenbaum-count-${n}"
+        value="${TANNENBAUM_BASE[n] || 0}"
+        onchange="saveTannenbaumSettings()"
+      >
+    `;
+    grid.appendChild(card);
+  }
+
+  if (hardCheck) {
+    hardCheck.checked = !!tannenbaumHardRule;
+  }
+}
+
+function saveTannenbaumSettings() {
+  for (let n = 1; n <= 9; n++) {
+    const input = document.getElementById('tannenbaum-count-' + n);
+    if (input) {
+      TANNENBAUM_BASE[n] = Math.max(0, parseInt(input.value || '0', 10) || 0);
+    }
+  }
+
+  const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
+  tannenbaumHardRule = !!hardCheck?.checked;
+
+  tannenbaumState = createTannenbaumState();
+
+  renderAll();
+  persistState();
+
+  showToast('🌲 Tannenbaum-Einstellungen gespeichert', 'success');
+}
+
+function resetTannenbaumSettings() {
+  if (!confirm('Tannenbaum-Einstellungen auf Standard zurücksetzen? Das aktuelle Tannenbaum-Spiel wird neu gestartet.')) return;
+
+  TANNENBAUM_BASE = { ...TANNENBAUM_DEFAULT_BASE };
+  tannenbaumHardRule = true;
+  tannenbaumState = createTannenbaumState();
+
+  renderAll();
+  persistState();
+
+  showToast('↻ Tannenbaum-Standardwerte wiederhergestellt', 'success');
+}
