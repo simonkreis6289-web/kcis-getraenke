@@ -3137,3 +3137,23 @@ tbody td:first-child {
   text-align: right;
   font-weight: 900;
 }
+
+/* VIEW ONLY MODE */
+body.view-only button,
+body.view-only input,
+body.view-only select,
+body.view-only textarea {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Navigation weiterhin klickbar */
+body.view-only .main-tab,
+body.view-only .sub-tab,
+body.view-only .club-card,
+body.view-only #clubBackBtn {
+  pointer-events: auto;
+  opacity: 1;
+  cursor: pointer;
+}
