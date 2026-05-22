@@ -38,7 +38,7 @@ async function startApp() {
     showToast('☁️ Clubs aus Firestore geladen', 'success');
   }
 
-	  document.body.classList.add('view-only');
+	 // document.body.classList.add('view-only');
 }
 
 // ── LOCAL STORAGE ──
