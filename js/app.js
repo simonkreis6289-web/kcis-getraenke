@@ -1,5 +1,5 @@
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '2.0.0.00, © Simon Kreis';
+const APPVersionSelf = '2.0.0.01, © Simon Kreis';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
