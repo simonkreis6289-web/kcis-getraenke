@@ -57,6 +57,7 @@ function getSerializableState() {
     TANNENBAUM_BASE,
     tannenbaumHardRule,
     dartsState,
+      kegelAbende,
       lotterieState,
     tiberiusState,
     lotterieSettings,
@@ -109,7 +110,7 @@ function getFirestoreState() {
     bahnTimerRunning,
       timePenaltySettings,
       penaltyStatsLog,
-
+      kegelAbende,
     teamStopwatchActive,
     teamStopwatchRunning,
     teamStopwatchStart,
@@ -199,12 +200,45 @@ function applyLoadedState(state) {
   tannenbaumState = state.tannenbaumState || createTannenbaumState();
   ensureTannenbaumState();
     
+    kegelAbende = Array.isArray(state.kegelAbende)
+  ? state.kegelAbende
+  : [];
+    
   if (state.updatedClientAt) {
     lastRemoteChangeAt = Number(state.updatedClientAt || 0);
   }
     
   hydrateState();
   return true;
+}
+
+function archiveCurrentKegelabendForStats() {
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (!Array.isArray(kegelAbende)) kegelAbende = [];
+
+  const attendees = persons
+    .filter(p => p.present && !p.isGuest)
+    .map(p => p.name);
+
+  if (!attendees.length) return;
+
+  const existing = kegelAbende.find(x => x.date === today);
+
+  if (existing) {
+    existing.attendees = attendees;
+    existing.updatedAt = new Date().toISOString();
+    return;
+  }
+
+  kegelAbende.unshift({
+    id: 'abend_' + today,
+    date: today,
+    club: ACTIVE_CLUB || '',
+    attendees,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 async function loadFromFirestore() {
@@ -2073,6 +2107,8 @@ async function archiveEvent(snapshot) {
 }
 
 function startNewKegelabend() {
+    archiveCurrentKegelabendForStats();
+
   persons.forEach(p => {
     p.present = false;
     p.tisch = '';
@@ -6552,18 +6588,37 @@ function renderPenaltyStats() {
   if (!body) return;
 
   const { from, to } = getPenaltyStatsRange();
-
   const rows = {};
 
   persons.forEach(p => {
     rows[p.name] = {
       name: p.name,
+      anwesend: 0,
       '9er': 0,
       kranz: 0,
       durchgeworfen: 0,
       gosse: 0
     };
   });
+
+  (kegelAbende || [])
+    .filter(abend => isPenaltyStatsEntryInRange({ eventDate: abend.date }, from, to))
+    .forEach(abend => {
+      (abend.attendees || []).forEach(name => {
+        if (!rows[name]) {
+          rows[name] = {
+            name,
+            anwesend: 0,
+            '9er': 0,
+            kranz: 0,
+            durchgeworfen: 0,
+            gosse: 0
+          };
+        }
+
+        rows[name].anwesend++;
+      });
+    });
 
   (penaltyStatsLog || [])
     .filter(entry => isPenaltyStatsEntryInRange(entry, from, to))
@@ -6574,6 +6629,7 @@ function renderPenaltyStats() {
       if (!rows[thrower]) {
         rows[thrower] = {
           name: thrower,
+          anwesend: 0,
           '9er': 0,
           kranz: 0,
           durchgeworfen: 0,
@@ -6588,6 +6644,10 @@ function renderPenaltyStats() {
 
   const sortedRows = Object.values(rows)
     .sort((a, b) => {
+      if ((b.anwesend || 0) !== (a.anwesend || 0)) {
+        return (b.anwesend || 0) - (a.anwesend || 0);
+      }
+
       const totalA = a['9er'] + a.kranz + a.durchgeworfen + a.gosse;
       const totalB = b['9er'] + b.kranz + b.durchgeworfen + b.gosse;
 
@@ -6606,20 +6666,16 @@ function renderPenaltyStats() {
     return;
   }
 
-  body.innerHTML = sortedRows.map(row => {
-    const total = row['9er'] + row.kranz + row.durchgeworfen + row.gosse;
-
-    return `
-      <tr>
-        <td class="sticky-col">${row.name}</td>
-        <td>${row['9er']}</td>
-        <td>${row.kranz}</td>
-        <td>${row.durchgeworfen}</td>
-        <td>${row.gosse}</td>
-        <td class="total-cell">${total}</td>
-      </tr>
-    `;
-  }).join('');
+  body.innerHTML = sortedRows.map(row => `
+    <tr>
+      <td class="sticky-col">${row.name}</td>
+      <td>${row.anwesend || 0}</td>
+      <td>${row['9er']}</td>
+      <td>${row.kranz}</td>
+      <td>${row.durchgeworfen}</td>
+      <td>${row.gosse}</td>
+    </tr>
+  `).join('');
 }
 
 function setPenaltyStatsRangeToday() {
