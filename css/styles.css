@@ -3305,3 +3305,27 @@ body.view-only #clubBackBtn {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Sidebar immer im Vordergrund */
+.side-nav {
+  z-index: 3000;
+}
+
+.side-menu-item {
+  position: relative;
+  z-index: 3001;
+}
+
+.side-menu-item.expanded {
+  z-index: 3002;
+}
+
+.side-submenu {
+  position: relative;
+  z-index: 3003;
+}
+
+.app-content {
+  position: relative;
+  z-index: 1;
+}
