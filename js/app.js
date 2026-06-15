@@ -6462,15 +6462,31 @@ function confirmQuickPenalty() {
     return;
   }
 
-  const p = persons.find(x => x.name === personName);
-  if (!p) return;
+  const type = String(quickPenaltyType || '').toLowerCase();
+  const active = persons.filter(p => p.present && !p.left);
 
-  if (!p.strafen) p.strafen = {};
-  p.strafen[key] = (p.strafen[key] || 0) + 1;
+  if (type === 'gosse') {
+    const p = persons.find(x => x.name === personName);
+    if (!p) return;
+
+    if (!p.strafen) p.strafen = {};
+    p.strafen[key] = (p.strafen[key] || 0) + 1;
+  } else {
+    active.forEach(p => {
+      if (p.name === personName) return;
+
+      if (!p.strafen) p.strafen = {};
+      p.strafen[key] = (p.strafen[key] || 0) + 1;
+    });
+  }
+
+  const bookedText = type === 'gosse'
+    ? `${quickPenaltyType} für ${personName} gebucht`
+    : `${personName} ist straffrei, alle anderen +1`;
 
   closeQuickPenaltyModal();
   renderAll();
   persistState();
 
-  showToast(`✅ ${quickPenaltyType} für ${personName} gebucht`, 'success');
+  showToast(`✅ ${bookedText}`, 'success');
 }
