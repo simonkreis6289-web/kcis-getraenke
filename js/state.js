@@ -114,6 +114,7 @@ const DARTS_DEFAULT_VALUES = {
 };
 
 let penaltyStatsLog = [];
+let kegelAbende = [];
 
 let dartsState = null;
 let dartsThrowTeam = null;
