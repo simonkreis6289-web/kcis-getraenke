@@ -500,8 +500,37 @@
         
         <div id="tab-strafen-statistik" class="hidden">
           <div class="section-title">Strafen Statistik</div>
-          <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-            Hier kommt die Statistik für 9er, Kränze und durchgeworfen rein.
+
+          <div class="stats-filter-card">
+            <div class="modal-input-row">
+              <label>Von</label>
+              <input type="date" id="penalty-stats-from" class="modal-text-input" onchange="renderPenaltyStats()">
+            </div>
+
+            <div class="modal-input-row">
+              <label>Bis</label>
+              <input type="date" id="penalty-stats-to" class="modal-text-input" onchange="renderPenaltyStats()">
+            </div>
+
+            <button class="secondary-btn" onclick="setPenaltyStatsRangeToday()">Heute</button>
+            <button class="secondary-btn" onclick="setPenaltyStatsRangeMonth()">Dieser Monat</button>
+            <button class="secondary-btn" onclick="setPenaltyStatsRangeAll()">Alles</button>
+          </div>
+
+          <div class="drinks-table-wrap">
+            <table class="drinks-table">
+              <thead>
+                <tr>
+                  <th class="sticky-col name-col">Name</th>
+                  <th class="drink-col">9er</th>
+                  <th class="drink-col">Kranz</th>
+                  <th class="drink-col">Durchgeworfen</th>
+                  <th class="drink-col">Gosse</th>
+                  <th class="sum-col">Gesamt</th>
+                </tr>
+              </thead>
+              <tbody id="penalty-stats-body"></tbody>
+            </table>
           </div>
         </div>
         
