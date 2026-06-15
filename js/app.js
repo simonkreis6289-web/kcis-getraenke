@@ -6146,6 +6146,9 @@ function toggleOverlayMenu() {
 }
 
 function toggleSideMenu(mainKey) {
+  const nav = document.querySelector('.side-nav');
+  if (nav) nav.classList.add('menu-open');
+
   document.querySelectorAll('.side-menu-item').forEach(item => {
     const isTarget = item.dataset.main === mainKey;
     item.classList.toggle('expanded', isTarget);
@@ -6153,13 +6156,6 @@ function toggleSideMenu(mainKey) {
     const submenu = item.querySelector('.side-submenu');
     if (submenu) submenu.classList.toggle('hidden', !isTarget);
   });
-
-  const targetSubKey = defaultSubTab[mainKey];
-  const targetBtn = document.querySelector(
-    `.side-menu-item[data-main="${mainKey}"] .side-submenu button`
-  );
-
-  showSideTab(mainKey, targetSubKey, targetBtn);
 }
 
 function showSideTab(mainKey, subKey, el) {
