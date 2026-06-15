@@ -6392,10 +6392,21 @@ function getPenaltyKeyByType(type) {
   return STRAFEN.find(s => {
     const label = String(s.label || '').toLowerCase();
 
-    if (search === '9er') return label.includes('9er');
-    if (search === 'kranz') return label.includes('kranz');
-    if (search === 'durchgeworfen') return label.includes('durchgeworfen');
-    if (search === 'gosse') return label.includes('gosse') || label.includes('pudel');
+    if (search === '9er') {
+      return label.includes('9er') || label.includes('kranz') || label.includes('durchgeworfen');
+    }
+
+    if (search === 'kranz') {
+      return label.includes('9er') || label.includes('kranz') || label.includes('durchgeworfen');
+    }
+
+    if (search === 'durchgeworfen') {
+      return label.includes('9er') || label.includes('kranz') || label.includes('durchgeworfen');
+    }
+
+    if (search === 'gosse') {
+      return label.includes('gosse') || label.includes('pudel');
+    }
 
     return false;
   })?.key || null;
