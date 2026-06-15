@@ -6114,58 +6114,76 @@ function deletePerson(name) {
   persistState();
 }
 
-// ── TABS ──
-  const subTabMap = {
-    organisation: ['anwesenheit', 'gruppen'],
-    getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-    spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius', 'spiele-einstellungen'],
-    strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-abrechnung'],
-    verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
-  };
+// ── SIDEBAR / TABS ──
+const subTabMap = {
+  organisation: ['anwesenheit', 'gruppen', 'gruppen-einstellungen'],
+  getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
+  spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius', 'spiele-einstellungen'],
+  strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
+  verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
+};
 
-  const defaultSubTab = {
-    organisation: 'anwesenheit',
-    getraenke: 'getraenke-uebersicht',
-      spiele: 'tannenbaum',
-    strafen: 'strafen-uebersicht',
-    verwaltung: 'spiele'
-  };
+const defaultSubTab = {
+  organisation: 'anwesenheit',
+  getraenke: 'getraenke-uebersicht',
+  spiele: 'tannenbaum',
+  strafen: 'strafen-uebersicht',
+  verwaltung: 'spiele'
+};
 
-  function showMainTab(mainKey, el) {
-    document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
-    if (el) el.classList.add('active');
+function toggleSideMenu(mainKey) {
+  document.querySelectorAll('.side-menu-item').forEach(item => {
+    const isTarget = item.dataset.main === mainKey;
+    item.classList.toggle('expanded', isTarget);
 
-    document.querySelectorAll('.main-panel').forEach(panel => panel.classList.add('hidden'));
-    document.querySelectorAll('.sub-tabs').forEach(panel => panel.classList.add('hidden'));
+    const submenu = item.querySelector('.side-submenu');
+    if (submenu) submenu.classList.toggle('hidden', !isTarget);
+  });
 
-    const mainPanel = document.getElementById('main-' + mainKey);
-    const subTabs = document.getElementById('subtabs-' + mainKey);
+  const targetSubKey = defaultSubTab[mainKey];
+  const targetBtn = document.querySelector(
+    `.side-menu-item[data-main="${mainKey}"] .side-submenu button`
+  );
 
-    if (mainPanel) mainPanel.classList.remove('hidden');
-    if (subTabs) subTabs.classList.remove('hidden');
+  showSideTab(mainKey, targetSubKey, targetBtn);
+}
 
-    const targetSubKey = defaultSubTab[mainKey];
-    const targetBtn = document.querySelector('#subtabs-' + mainKey + ' .sub-tab[data-sub="' + targetSubKey + '"]');
+function showSideTab(mainKey, subKey, el) {
+  document.querySelectorAll('.main-panel').forEach(panel => {
+    panel.classList.add('hidden');
+  });
 
-    showSubTab(mainKey, targetSubKey, targetBtn);
-  }
+  const mainPanel = document.getElementById('main-' + mainKey);
+  if (mainPanel) mainPanel.classList.remove('hidden');
 
-  function showSubTab(mainKey, subKey, el) {
-    document.querySelectorAll('#subtabs-' + mainKey + ' .sub-tab').forEach(tab => {
-      tab.classList.remove('active');
-    });
+  document.querySelectorAll('.side-menu-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.main === mainKey);
+  });
 
-    if (el) el.classList.add('active');
+  document.querySelectorAll('.side-submenu button').forEach(btn => {
+    btn.classList.remove('active');
+  });
 
-    subTabMap[mainKey].forEach(id => {
-      const node = document.getElementById('tab-' + id);
-      if (node) node.classList.add('hidden');
-    });
+  if (el) el.classList.add('active');
 
-    const activeNode = document.getElementById('tab-' + subKey);
-    if (activeNode) activeNode.classList.remove('hidden');
-  }
-    
+  Object.values(subTabMap).flat().forEach(id => {
+    const node = document.getElementById('tab-' + id);
+    if (node) node.classList.add('hidden');
+  });
+
+  const activeNode = document.getElementById('tab-' + subKey);
+  if (activeNode) activeNode.classList.remove('hidden');
+}
+
+// Rückwärtskompatibilität, falls irgendwo noch alte onclicks stehen
+function showMainTab(mainKey, el) {
+  toggleSideMenu(mainKey);
+}
+
+function showSubTab(mainKey, subKey, el) {
+  showSideTab(mainKey, subKey, el);
+}
+
 // ── RESET / UNDO ──
 function showUndoToast() {
   const t = document.getElementById('toast');
