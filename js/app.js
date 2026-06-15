@@ -6131,6 +6131,20 @@ const defaultSubTab = {
   verwaltung: 'spiele'
 };
 
+function toggleOverlayMenu() {
+  const nav = document.querySelector('.side-nav');
+  if (!nav) return;
+
+  nav.classList.toggle('menu-open');
+
+  document.querySelectorAll('.side-menu-item').forEach(item => {
+    item.classList.remove('expanded');
+
+    const submenu = item.querySelector('.side-submenu');
+    if (submenu) submenu.classList.add('hidden');
+  });
+}
+
 function toggleSideMenu(mainKey) {
   document.querySelectorAll('.side-menu-item').forEach(item => {
     const isTarget = item.dataset.main === mainKey;
@@ -6181,6 +6195,8 @@ document.querySelectorAll('.side-menu-item').forEach(item => {
   const submenu = item.querySelector('.side-submenu');
   if (submenu) submenu.classList.add('hidden');
 });
+
+document.querySelector('.side-nav')?.classList.remove('menu-open');
     
 }
 
