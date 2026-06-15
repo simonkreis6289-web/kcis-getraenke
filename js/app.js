@@ -4745,7 +4745,7 @@ function renderAll() {
   updateStats();
   updateBahnDisplay();
   updateTeamStopwatchDisplay();
-
+    renderPenaltyStats();
   renderTannenbaum();
   renderAnwesenheit();
   renderGruppen();
@@ -6519,4 +6519,132 @@ function confirmQuickPenalty() {
       : `✅ ${personName} ist straffrei, alle anderen +1`,
     'success'
   );
+}
+function normalizePenaltyStatsType(type) {
+  const t = String(type || '').toLowerCase();
+
+  if (t.includes('9')) return '9er';
+  if (t.includes('kranz')) return 'kranz';
+  if (t.includes('durch')) return 'durchgeworfen';
+  if (t.includes('gosse') || t.includes('pudel')) return 'gosse';
+
+  return t;
+}
+
+function getPenaltyStatsRange() {
+  const from = document.getElementById('penalty-stats-from')?.value || '';
+  const to = document.getElementById('penalty-stats-to')?.value || '';
+
+  return { from, to };
+}
+
+function isPenaltyStatsEntryInRange(entry, from, to) {
+  const date = entry.eventDate || String(entry.createdAt || '').slice(0, 10);
+
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+
+  return true;
+}
+
+function renderPenaltyStats() {
+  const body = document.getElementById('penalty-stats-body');
+  if (!body) return;
+
+  const { from, to } = getPenaltyStatsRange();
+
+  const rows = {};
+
+  persons.forEach(p => {
+    rows[p.name] = {
+      name: p.name,
+      '9er': 0,
+      kranz: 0,
+      durchgeworfen: 0,
+      gosse: 0
+    };
+  });
+
+  (penaltyStatsLog || [])
+    .filter(entry => isPenaltyStatsEntryInRange(entry, from, to))
+    .forEach(entry => {
+      const type = normalizePenaltyStatsType(entry.type);
+      const thrower = entry.thrower;
+
+      if (!rows[thrower]) {
+        rows[thrower] = {
+          name: thrower,
+          '9er': 0,
+          kranz: 0,
+          durchgeworfen: 0,
+          gosse: 0
+        };
+      }
+
+      if (rows[thrower][type] !== undefined) {
+        rows[thrower][type]++;
+      }
+    });
+
+  const sortedRows = Object.values(rows)
+    .sort((a, b) => {
+      const totalA = a['9er'] + a.kranz + a.durchgeworfen + a.gosse;
+      const totalB = b['9er'] + b.kranz + b.durchgeworfen + b.gosse;
+
+      if (totalA !== totalB) return totalB - totalA;
+      return a.name.localeCompare(b.name, 'de');
+    });
+
+  if (!sortedRows.length) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">
+          Keine Statistikdaten vorhanden
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  body.innerHTML = sortedRows.map(row => {
+    const total = row['9er'] + row.kranz + row.durchgeworfen + row.gosse;
+
+    return `
+      <tr>
+        <td class="sticky-col">${row.name}</td>
+        <td>${row['9er']}</td>
+        <td>${row.kranz}</td>
+        <td>${row.durchgeworfen}</td>
+        <td>${row.gosse}</td>
+        <td class="total-cell">${total}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function setPenaltyStatsRangeToday() {
+  const today = new Date().toISOString().slice(0, 10);
+
+  document.getElementById('penalty-stats-from').value = today;
+  document.getElementById('penalty-stats-to').value = today;
+
+  renderPenaltyStats();
+}
+
+function setPenaltyStatsRangeMonth() {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+
+  document.getElementById('penalty-stats-from').value = first;
+  document.getElementById('penalty-stats-to').value = today;
+
+  renderPenaltyStats();
+}
+
+function setPenaltyStatsRangeAll() {
+  document.getElementById('penalty-stats-from').value = '';
+  document.getElementById('penalty-stats-to').value = '';
+
+  renderPenaltyStats();
 }
