@@ -180,53 +180,79 @@
     </div>
   </header>
 
-  <!-- Hauptnavigation -->
-  <div class="main-tabs">
-    <div class="main-tab active" onclick="showMainTab('organisation', this)">👥 Organisation</div>
-    <div class="main-tab" onclick="showMainTab('getraenke', this)">🍺 Getränke</div>
-    <div class="main-tab" onclick="showMainTab('spiele', this)">🎲 Spiele</div>
-    <div class="main-tab" onclick="showMainTab('strafen', this)">🚨 Strafen</div>
-    <div class="main-tab" onclick="showMainTab('verwaltung', this)">⚙️ Verwaltung</div>
-  </div>
+    <div class="app-shell">
+  <aside class="side-nav">
 
-  <!-- Untertabs Organisation -->
-  <div class="sub-tabs" id="subtabs-organisation">
-    <div class="sub-tab active" data-sub="anwesenheit" onclick="showSubTab('organisation','anwesenheit',this)">Anwesenheit</div>
-    <div class="sub-tab" data-sub="gruppen" onclick="showSubTab('organisation','gruppen',this)">Gruppen</div>
-  </div>
-
-  <!-- Untertabs Getränke -->
-  <div class="sub-tabs hidden" id="subtabs-getraenke">
-    <div class="sub-tab active" data-sub="getraenke-uebersicht" onclick="showSubTab('getraenke','getraenke-uebersicht',this)">Übersicht</div>
-    <div class="sub-tab" data-sub="teamspiele" onclick="showSubTab('getraenke','teamspiele',this)">Teamspiele</div>
-    <div class="sub-tab" data-sub="runden" onclick="showSubTab('getraenke','runden',this)">Runden</div>
-    <div class="sub-tab" data-sub="getraenke-abrechnung" onclick="showSubTab('getraenke','getraenke-abrechnung',this)">Abrechnung</div>
-  </div>
-    
-    <div class="sub-tabs hidden" id="subtabs-spiele">
-      <div class="sub-tab active" data-sub="tannenbaum" onclick="showSubTab('spiele','tannenbaum',this)">🌲 Tannenbaum</div>
-      <div class="sub-tab" data-sub="darts" onclick="showSubTab('spiele','darts',this)">🎯 Darts</div>
-      <div class="sub-tab" data-sub="lotterie" onclick="showSubTab('spiele','lotterie',this)">🎰 Lotterie</div>
-      <div class="sub-tab" data-sub="tiberius" onclick="showSubTab('spiele','tiberius',this)">🏛️ Tiberius</div>
-      <div class="sub-tab" data-sub="spiele-einstellungen" onclick="showSubTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</div>
+    <div class="side-menu-item active" data-main="organisation">
+      <button class="side-menu-head" onclick="toggleSideMenu('organisation')">
+        <span>👥</span>
+        <strong>Organisation</strong>
+      </button>
+      <div class="side-submenu">
+        <button class="active" onclick="showSideTab('organisation','anwesenheit',this)">Anwesenheit</button>
+        <button onclick="showSideTab('organisation','gruppen',this)">Gruppen</button>
+        <button onclick="showSideTab('organisation','gruppen-einstellungen',this)">Gruppen einstellen</button>
+      </div>
     </div>
 
-  <!-- Untertabs Strafen -->
-    <div class="sub-tabs hidden" id="subtabs-strafen">
-      <div class="sub-tab active" data-sub="strafen-uebersicht" onclick="showSubTab('strafen','strafen-uebersicht',this)">Übersicht</div>
-      <div class="sub-tab" data-sub="strafen-historie" onclick="showSubTab('strafen','strafen-historie',this)">Historie</div>
-      <div class="sub-tab" data-sub="strafen-abrechnung" onclick="showSubTab('strafen','strafen-abrechnung',this)">Abrechnung</div>
+    <div class="side-menu-item" data-main="getraenke">
+      <button class="side-menu-head" onclick="toggleSideMenu('getraenke')">
+        <span>🍺</span>
+        <strong>Getränke</strong>
+      </button>
+      <div class="side-submenu hidden">
+        <button onclick="showSideTab('getraenke','getraenke-uebersicht',this)">Übersicht</button>
+        <button onclick="showSideTab('getraenke','teamspiele',this)">Teamspiele</button>
+        <button onclick="showSideTab('getraenke','runden',this)">Runden</button>
+        <button onclick="showSideTab('getraenke','getraenke-abrechnung',this)">Abrechnung</button>
+      </div>
     </div>
 
-  <!-- Untertabs Verwaltung -->
-  <div class="sub-tabs hidden" id="subtabs-verwaltung">
-    <div class="sub-tab active" data-sub="spiele" onclick="showSubTab('verwaltung','spiele',this)">Spiele</div>
-    <div class="sub-tab" data-sub="getraenkepreise" onclick="showSubTab('verwaltung','getraenkepreise',this)">Getränkepreise</div>
-    <div class="sub-tab" data-sub="strafpreise" onclick="showSubTab('verwaltung','strafpreise',this)">Strafpreise</div>
-    <div class="sub-tab" data-sub="termine" onclick="showSubTab('verwaltung','termine',this)">Termine</div>
-    <div class="sub-tab" data-sub="einstellungen" onclick="showSubTab('verwaltung','einstellungen',this)">Einstellungen</div>
-  </div>
+    <div class="side-menu-item" data-main="spiele">
+      <button class="side-menu-head" onclick="toggleSideMenu('spiele')">
+        <span>🎲</span>
+        <strong>Spiele</strong>
+      </button>
+      <div class="side-submenu hidden">
+        <button onclick="showSideTab('spiele','tannenbaum',this)">Tannenbaum</button>
+        <button onclick="showSideTab('spiele','darts',this)">Darts</button>
+        <button onclick="showSideTab('spiele','lotterie',this)">Lotterie</button>
+        <button onclick="showSideTab('spiele','tiberius',this)">Tiberius</button>
+        <button onclick="showSideTab('spiele','spiele-einstellungen',this)">Einstellungen</button>
+      </div>
+    </div>
 
+    <div class="side-menu-item" data-main="strafen">
+      <button class="side-menu-head" onclick="toggleSideMenu('strafen')">
+        <span>🚨</span>
+        <strong>Strafen</strong>
+      </button>
+      <div class="side-submenu hidden">
+        <button onclick="showSideTab('strafen','strafen-uebersicht',this)">Übersicht</button>
+        <button onclick="showSideTab('strafen','strafen-historie',this)">Historie</button>
+        <button onclick="showSideTab('strafen','strafen-statistik',this)">Statistik</button>
+        <button onclick="showSideTab('strafen','strafen-abrechnung',this)">Abrechnung</button>
+      </div>
+    </div>
+
+    <div class="side-menu-item" data-main="verwaltung">
+      <button class="side-menu-head" onclick="toggleSideMenu('verwaltung')">
+        <span>⚙️</span>
+        <strong>Verwaltung</strong>
+      </button>
+      <div class="side-submenu hidden">
+        <button onclick="showSideTab('verwaltung','spiele',this)">Spiele</button>
+        <button onclick="showSideTab('verwaltung','getraenkepreise',this)">Getränkepreise</button>
+        <button onclick="showSideTab('verwaltung','strafpreise',this)">Strafpreise</button>
+        <button onclick="showSideTab('verwaltung','termine',this)">Termine</button>
+        <button onclick="showSideTab('verwaltung','einstellungen',this)">Einstellungen</button>
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="app-content">
+      
   <main>
     <div class="status-bar">
       <div class="stat"><span class="stat-val" id="stat-anwesend" style="color:var(--statusBarFontColor)">0</span><span class="stat-label">Anwesend</span></div>
@@ -313,6 +339,34 @@
             <div class="gruppe-persons" id="gruppe-t2"></div>
           </div>
         </div>
+      </div>
+    </div>
+      
+      <div id="tab-gruppen-einstellungen" class="hidden">
+  <div class="section-title">Gruppen einstellen</div>
+
+    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
+        <div class="modal-input-row">
+          <label>Gruppe 1 Name</label>
+          <input type="text" id="group-t1-name" class="modal-text-input" placeholder="z. B. Wand">
+        </div>
+
+        <div class="modal-input-row">
+          <label>Gruppe 1 Farbe</label>
+          <input type="color" id="group-t1-color" class="modal-text-input">
+        </div>
+
+        <div class="modal-input-row">
+          <label>Gruppe 2 Name</label>
+          <input type="text" id="group-t2-name" class="modal-text-input" placeholder="z. B. TV">
+        </div>
+
+        <div class="modal-input-row">
+          <label>Gruppe 2 Farbe</label>
+          <input type="color" id="group-t2-color" class="modal-text-input">
+        </div>
+
+        <button class="save-prices-btn" onclick="saveGroupSettings()">💾 Gruppen speichern</button>
       </div>
     </div>
 
@@ -887,6 +941,7 @@
         
     </div>
   </main>
+</div>
 </div>
 
 <div class="modal-overlay hidden" id="reset-modal">
