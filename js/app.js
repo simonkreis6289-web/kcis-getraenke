@@ -6379,3 +6379,7 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
+
+function openPenaltyQuick(type) {
+  showToast(`Noch nicht eingebaut: ${type}`, 'error');
+}
