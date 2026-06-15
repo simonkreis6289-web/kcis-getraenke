@@ -4825,6 +4825,7 @@ function renderAll() {
   renderStrafen();
   renderStrafpreisEditor();
     renderTimePenaltySettings();
+    renderGroupSettings();
                                     
   updateStrafenLimitInput();
 }
@@ -4854,6 +4855,34 @@ function updateStats() {
       gosseKingEl.textContent = kings.length ? kings.join(', ') : '—';
     }
 
+}
+
+function renderGroupSettings() {
+  const t1Name = document.getElementById('group-t1-name');
+  const t1Color = document.getElementById('group-t1-color');
+  const t2Name = document.getElementById('group-t2-name');
+  const t2Color = document.getElementById('group-t2-color');
+
+  if (!groupSettings) return;
+
+  if (t1Name && document.activeElement !== t1Name) t1Name.value = groupSettings.T1?.name || 'Wand';
+  if (t1Color && document.activeElement !== t1Color) t1Color.value = groupSettings.T1?.color || '#111111';
+
+  if (t2Name && document.activeElement !== t2Name) t2Name.value = groupSettings.T2?.name || 'TV';
+  if (t2Color && document.activeElement !== t2Color) t2Color.value = groupSettings.T2?.color || '#d62828';
+}
+
+function saveGroupSettings() {
+  groupSettings.T1.name = document.getElementById('group-t1-name')?.value.trim() || 'Wand';
+  groupSettings.T1.color = document.getElementById('group-t1-color')?.value || '#111111';
+
+  groupSettings.T2.name = document.getElementById('group-t2-name')?.value.trim() || 'TV';
+  groupSettings.T2.color = document.getElementById('group-t2-color')?.value || '#d62828';
+
+  renderAll();
+  persistState();
+
+  showToast('✅ Gruppen gespeichert', 'success');
 }
 
 function renderTimePenaltySettings() {
