@@ -6384,6 +6384,82 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+let quickPenaltyType = '';
+
+function getPenaltyKeyByType(type) {
+  const search = String(type || '').toLowerCase();
+
+  return STRAFEN.find(s => {
+    const label = String(s.label || '').toLowerCase();
+
+    if (search === '9er') return label.includes('9er');
+    if (search === 'kranz') return label.includes('kranz');
+    if (search === 'durchgeworfen') return label.includes('durchgeworfen');
+    if (search === 'gosse') return label.includes('gosse') || label.includes('pudel');
+
+    return false;
+  })?.key || null;
+}
+
 function openPenaltyQuick(type) {
-  showToast(`Noch nicht eingebaut: ${type}`, 'error');
+  quickPenaltyType = type;
+
+  const key = getPenaltyKeyByType(type);
+
+  if (!key) {
+    showToast(`Bitte zuerst eine Strafe "${type}" anlegen`, 'error');
+    return;
+  }
+
+  const select = document.getElementById('quick-penalty-person-select');
+  const title = document.getElementById('quick-penalty-title');
+
+  if (title) title.textContent = `${type} eintragen`;
+
+  const active = persons
+    .filter(p => p.present && !p.left)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+  active.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+
+  document.getElementById('quick-penalty-modal')?.classList.remove('hidden');
+}
+
+function closeQuickPenaltyModal() {
+  document.getElementById('quick-penalty-modal')?.classList.add('hidden');
+  quickPenaltyType = '';
+}
+
+function confirmQuickPenalty() {
+  const personName = document.getElementById('quick-penalty-person-select')?.value || '';
+  const key = getPenaltyKeyByType(quickPenaltyType);
+
+  if (!personName) {
+    showToast('Bitte Person auswählen', 'error');
+    return;
+  }
+
+  if (!key) {
+    showToast('Strafe nicht gefunden', 'error');
+    return;
+  }
+
+  const p = persons.find(x => x.name === personName);
+  if (!p) return;
+
+  if (!p.strafen) p.strafen = {};
+  p.strafen[key] = (p.strafen[key] || 0) + 1;
+
+  closeQuickPenaltyModal();
+  renderAll();
+  persistState();
+
+  showToast(`✅ ${quickPenaltyType} für ${personName} gebucht`, 'success');
 }
