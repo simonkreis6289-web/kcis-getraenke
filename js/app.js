@@ -45,6 +45,7 @@ async function startApp() {
 function getSerializableState() {
   return {
     persons,
+      groupSettings,
     spiele,
     DRINKS,
     prices,
@@ -100,6 +101,7 @@ function getFirestoreState() {
     persons,
     spiele,
     DRINKS,
+      groupSettings,
     prices,
     SPIELE_KATALOG,
     RUNDEN_GRUENDE,
@@ -167,7 +169,12 @@ function applyLoadedState(state) {
       startTime: '20:00',
       endTime: '23:00'
     };
-
+    
+    groupSettings = state.groupSettings || {
+      T1: { name: 'Wand', color: '#111111', emoji: '⚫' },
+      T2: { name: 'TV', color: '#d62828', emoji: '🔴' }
+    };
+    
     tiberiusSettings = state.tiberiusSettings || {
       minPins: 10,
       maxPins: 300
@@ -239,6 +246,14 @@ function archiveCurrentKegelabendForStats() {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+}
+
+function getGroupLabel(teamKey) {
+  const g = groupSettings?.[teamKey];
+
+  if (!g) return teamKey === 'T1' ? '⚫ Wand' : '🔴 TV';
+
+  return `${g.emoji || ''} ${g.name || teamKey}`.trim();
 }
 
 async function loadFromFirestore() {
@@ -5112,7 +5127,7 @@ function renderDrinkRows(list, body, startIndex = 0) {
     const leftEmoji = p.left ? '<span class="left-emoji">🏡</span>' : '';
 
     const tl = p.tisch
-      ? `<span class="ptisch ${p.tisch.toLowerCase()}">${p.tisch === 'T1' ? '⚫ Wand' : '🔴 TV'}</span>`
+      ? `<span class="ptisch ${p.tisch.toLowerCase()}">${getGroupLabel(p.tisch)}</span>`
       : `<span class="ptisch">Kein Team</span>`;
 
     const avatarHtml = getAvatarHtml(p.name)
@@ -5473,7 +5488,7 @@ function updateTeamInfoBox() {
   }
 
   const members = getActiveTeamMembers(selectedLoser);
-  const teamName = selectedLoser === 'T1' ? '⚫ Wand' : '🔴 TV';
+  const teamName = selectedLoser === 'T1' ? getGroupLabel('T1') : getGroupLabel('T2');
 
   box.innerHTML = `<strong>${teamName}</strong><br>Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name).join(', ') : 'niemand'}`;
 }
@@ -5519,7 +5534,7 @@ function renderTeamspiele() {
     c.className = 'spiel-card';
     c.innerHTML = `
       <div class="spiel-info">
-        <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? '⚫ Wand' : '🔴 TV'} hat verloren</div>
+        <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? getGroupLabel('T1') : getGroupLabel('T2')} hat verloren</div>
         <div class="spiel-detail"><strong>${getSpielDisplayName(s)}</strong></div>
         <div class="spiel-detail">${di || 'Keine Getränke'}</div>
         <div class="spiel-detail">Aufgeteilt auf: ${displayMembers || '?'}</div>
@@ -5641,7 +5656,7 @@ c.className = 'abrech-card '
     ${p.isGuest ? '<div class="abrech-role">Gastkegler</div>' : ''}
   </div>
 </div>
-      <div class="abrech-tisch">${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}</div>
+      <div class="abrech-tisch">${p.tisch === 'T1' ? getGroupLabel('T1') : p.tisch === 'T2' ? getGroupLabel('T2') : 'Kein Team'}</div>
       <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
       ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
       ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
