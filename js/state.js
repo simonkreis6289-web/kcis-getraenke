@@ -100,6 +100,11 @@ const TANNENBAUM_DEFAULT_BASE = {
 let TANNENBAUM_BASE = { ...TANNENBAUM_DEFAULT_BASE };
 let tannenbaumHardRule = true;
 
+let groupSettings = {
+  T1: { name: 'Wand', color: '#111111', emoji: '⚫' },
+  T2: { name: 'TV', color: '#d62828', emoji: '🔴' }
+};
+
 const DARTS_DEFAULT_VALUES = {
   1: 1,
   2: 2,
