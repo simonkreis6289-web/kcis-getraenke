@@ -1232,6 +1232,23 @@
   </div>
 </div>
     
+    <div class="modal-overlay hidden" id="quick-penalty-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="quick-penalty-title">Strafe eintragen</h3>
+    <div class="modal-sub">Wähle die Person aus.</div>
+
+    <div class="modal-input-row">
+      <label>Person</label>
+      <select id="quick-penalty-person-select" class="modal-select"></select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeQuickPenaltyModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmQuickPenalty()">✓ Buchen</button>
+    </div>
+  </div>
+</div>
+    
 <div id="toast"></div>
        
 <input
