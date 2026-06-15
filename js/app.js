@@ -6135,7 +6135,8 @@ function toggleOverlayMenu() {
   const nav = document.querySelector('.side-nav');
   if (!nav) return;
 
-  nav.classList.toggle('menu-open');
+  const willOpen = !nav.classList.contains('menu-open');
+  nav.classList.toggle('menu-open', willOpen);
 
   document.querySelectorAll('.side-menu-item').forEach(item => {
     item.classList.remove('expanded');
@@ -6147,10 +6148,13 @@ function toggleOverlayMenu() {
 
 function toggleSideMenu(mainKey) {
   const nav = document.querySelector('.side-nav');
-  if (nav) nav.classList.add('menu-open');
+  if (!nav) return;
+
+  nav.classList.add('menu-open');
 
   document.querySelectorAll('.side-menu-item').forEach(item => {
     const isTarget = item.dataset.main === mainKey;
+
     item.classList.toggle('expanded', isTarget);
 
     const submenu = item.querySelector('.side-submenu');
