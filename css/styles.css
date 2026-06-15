@@ -3432,3 +3432,24 @@ body.view-only #clubBackBtn {
   border-color: var(--accent);
   background: rgba(245,166,35,0.16);
 }
+
+.stats-filter-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stats-filter-card .modal-input-row {
+  margin-bottom: 0;
+}
+
+.stats-filter-card .secondary-btn {
+  width: auto;
+  margin-top: 0;
+}
