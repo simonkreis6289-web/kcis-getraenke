@@ -256,6 +256,10 @@ function getGroupLabel(teamKey) {
   return `${g.emoji || ''} ${g.name || teamKey}`.trim();
 }
 
+function getTeamLabel(teamKey) {
+  return getGroupLabel(teamKey);
+}
+
 async function loadFromFirestore() {
   if (!window.firestoreApi || !ACTIVE_CLUB) return false;
 
@@ -684,7 +688,7 @@ function renderStrafen() {
               <span class="pname">${p.name}</span>
               ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
               <span class="ptisch">
-                ${p.tisch === 'T1' ? '⚫ Wand' : p.tisch === 'T2' ? '🔴 TV' : 'Kein Team'}
+                ${p.tisch ? getGroupLabel(p.tisch) : 'Kein Team'}
               </span>
               ${renderBoughtThrowsDots(p)}
             </div>
@@ -2316,9 +2320,9 @@ function openAssignModal(personName) {
 
   assignPerson = p;
 
-  let current = 'aktuell nicht zugewiesen';
-  if (p.tisch === 'T1') current = 'aktuell bei ⚫ Wand';
-  if (p.tisch === 'T2') current = 'aktuell bei 🔴 TV';
+let current = 'aktuell nicht zugewiesen';
+    if (p.tisch === 'T1') current = `aktuell bei ${getGroupLabel('T1')}`;
+    if (p.tisch === 'T2') current = `aktuell bei ${getGroupLabel('T2')}`;
 
   document.getElementById('assign-modal-sub').textContent = `${p.name} ist ${current}`;
   document.getElementById('assign-modal').classList.remove('hidden');
