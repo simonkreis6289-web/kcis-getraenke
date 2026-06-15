@@ -276,8 +276,6 @@
   </aside>
 
   <main class="app-content">
-      
-  <main>
     <div class="status-bar">
       <div class="stat"><span class="stat-val" id="stat-anwesend" style="color:var(--statusBarFontColor)">0</span><span class="stat-label">Anwesend</span></div>
       <div class="stat"><span class="stat-val" id="stat-bahnzeit" style="color:var(--statusBarFontColor)">00:00:00</span><span class="stat-label">Bahnzeit</span></div>
@@ -363,8 +361,7 @@
             <div class="gruppe-persons" id="gruppe-t2"></div>
           </div>
         </div>
-      </div>
-    </div>
+      </div>      
       
       <div id="tab-gruppen-einstellungen" class="hidden">
   <div class="section-title">Gruppen einstellen</div>
@@ -393,7 +390,8 @@
         <button class="save-prices-btn" onclick="saveGroupSettings()">💾 Gruppen speichern</button>
       </div>
     </div>
-
+    </div>
+      
     <!-- GETRÄNKE -->
     <div id="main-getraenke" class="main-panel hidden">
       <div id="tab-getraenke-uebersicht">
@@ -498,6 +496,13 @@
         <div id="tab-strafen-historie" class="hidden">
           <div class="section-title">Strafen Historie</div>
           <div class="spiele-list" id="strafen-history-list"></div>
+        </div>
+        
+        <div id="tab-strafen-statistik" class="hidden">
+          <div class="section-title">Strafen Statistik</div>
+          <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
+            Hier kommt die Statistik für 9er, Kränze und durchgeworfen rein.
+          </div>
         </div>
         
       <div id="tab-strafen-abrechnung" class="hidden">
