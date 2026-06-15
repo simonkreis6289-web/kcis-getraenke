@@ -3309,3 +3309,126 @@ body.view-only #clubBackBtn {
     width: min(260px, calc(100vw - 16px));
   }
 }
+
+/* ── QUICK BAR EINHEITLICH ── */
+.quick-penalty-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 95px;
+  z-index: 2500;
+}
+
+.quick-penalty-bar button,
+.menu-toggle-btn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* ── OVERLAY MENÜ FIX ── */
+.app-shell {
+  display: block;
+}
+
+.app-content {
+  width: 100%;
+}
+
+.side-nav {
+  position: fixed;
+  top: 150px;
+  left: 16px;
+  z-index: 4000;
+  width: auto;
+  overflow: visible;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.side-nav.menu-open {
+  display: flex;
+}
+
+.side-menu-item {
+  width: 76px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+}
+
+.side-menu-item.expanded {
+  width: 240px;
+}
+
+.side-menu-head {
+  width: 100%;
+  height: 56px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 900;
+  font-size: 1.25rem;
+}
+
+.side-menu-head strong {
+  display: none;
+}
+
+.side-menu-item.expanded .side-menu-head {
+  justify-content: flex-start;
+  padding: 0 14px;
+}
+
+.side-menu-item.expanded .side-menu-head strong {
+  display: block;
+}
+
+.side-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+
+.side-submenu.hidden {
+  display: none !important;
+}
+
+.side-submenu button {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.side-submenu button.active {
+  border-color: var(--accent);
+  background: rgba(245,166,35,0.16);
+}
