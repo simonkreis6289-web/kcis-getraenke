@@ -113,6 +113,8 @@ const DARTS_DEFAULT_VALUES = {
   kranz: 50
 };
 
+let penaltyStatsLog = [];
+
 let dartsState = null;
 let dartsThrowTeam = null;
 
