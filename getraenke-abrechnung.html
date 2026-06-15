@@ -363,33 +363,34 @@
         </div>
       </div>      
       
-      <div id="tab-gruppen-einstellungen" class="hidden">
-  <div class="section-title">Gruppen einstellen</div>
+    <div id="tab-gruppen-einstellungen" class="hidden">
+      <div class="section-title">Gruppen einstellen</div>
 
-    <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;">
+      <div class="settings-card">
+        <h3>Gruppe 1</h3>
         <div class="modal-input-row">
-          <label>Gruppe 1 Name</label>
-          <input type="text" id="group-t1-name" class="modal-text-input" placeholder="z. B. Wand">
+          <label>Name</label>
+          <input id="group-t1-name" class="modal-text-input" type="text">
         </div>
-
         <div class="modal-input-row">
-          <label>Gruppe 1 Farbe</label>
-          <input type="color" id="group-t1-color" class="modal-text-input">
+          <label>Farbe</label>
+          <input id="group-t1-color" class="modal-text-input" type="color">
         </div>
-
-        <div class="modal-input-row">
-          <label>Gruppe 2 Name</label>
-          <input type="text" id="group-t2-name" class="modal-text-input" placeholder="z. B. TV">
-        </div>
-
-        <div class="modal-input-row">
-          <label>Gruppe 2 Farbe</label>
-          <input type="color" id="group-t2-color" class="modal-text-input">
-        </div>
-
-        <button class="save-prices-btn" onclick="saveGroupSettings()">💾 Gruppen speichern</button>
       </div>
-    </div>
+
+      <div class="settings-card">
+        <h3>Gruppe 2</h3>
+        <div class="modal-input-row">
+          <label>Name</label>
+          <input id="group-t2-name" class="modal-text-input" type="text">
+        </div>
+        <div class="modal-input-row">
+          <label>Farbe</label>
+          <input id="group-t2-color" class="modal-text-input" type="color">
+        </div>
+      </div>
+
+      <button class="save-prices-btn" onclick="saveGroupSettings()">💾 Gruppen speichern</button>
     </div>
       
     <!-- GETRÄNKE -->
