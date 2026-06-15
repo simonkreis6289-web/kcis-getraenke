@@ -70,6 +70,7 @@ function getSerializableState() {
     teamCountdownDuration,
     teamCountdownRemainingBefore,
       timePenaltySettings,
+      penaltyStatsLog,
       STRAFEN,
       STRAFEN_LIMIT,
     strafPrices,
@@ -107,6 +108,7 @@ function getFirestoreState() {
     bahnTimerStart,
     bahnTimerRunning,
       timePenaltySettings,
+      penaltyStatsLog,
 
     teamStopwatchActive,
     teamStopwatchRunning,
@@ -173,6 +175,10 @@ function applyLoadedState(state) {
     wurfSettings = state.wurfSettings || {
       maxBuys: 3
     };
+    
+    penaltyStatsLog = Array.isArray(state.penaltyStatsLog)
+      ? state.penaltyStatsLog
+      : [];
 
     ensureLotterieState();
     ensureTiberiusState();
@@ -467,6 +473,22 @@ const amount = parseFloat(String(document.getElementById('free-strafe-amount')?.
   persistState();
 
   showToast('💸 Freier Betrag gebucht', 'success');
+}
+
+function addPenaltyStatsEntry(type, throwerName, punishedNames) {
+  if (!Array.isArray(penaltyStatsLog)) penaltyStatsLog = [];
+
+  const now = new Date();
+
+  penaltyStatsLog.unshift({
+    id: 'penalty_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+    type,
+    thrower: throwerName,
+    punished: punishedNames || [],
+    club: ACTIVE_CLUB || '',
+    createdAt: now.toISOString(),
+    eventDate: now.toISOString().slice(0, 10)
+  });
 }
     
 function deleteFreeStrafe(personName, freeId) {
@@ -6464,6 +6486,7 @@ function confirmQuickPenalty() {
 
   const type = String(quickPenaltyType || '').toLowerCase();
   const active = persons.filter(p => p.present && !p.left);
+  let punishedNames = [];
 
   if (type === 'gosse') {
     const p = persons.find(x => x.name === personName);
@@ -6471,22 +6494,29 @@ function confirmQuickPenalty() {
 
     if (!p.strafen) p.strafen = {};
     p.strafen[key] = (p.strafen[key] || 0) + 1;
+
+    punishedNames = [personName];
   } else {
     active.forEach(p => {
       if (p.name === personName) return;
 
       if (!p.strafen) p.strafen = {};
       p.strafen[key] = (p.strafen[key] || 0) + 1;
+
+      punishedNames.push(p.name);
     });
   }
 
-  const bookedText = type === 'gosse'
-    ? `${quickPenaltyType} für ${personName} gebucht`
-    : `${personName} ist straffrei, alle anderen +1`;
+  addPenaltyStatsEntry(quickPenaltyType, personName, punishedNames);
 
   closeQuickPenaltyModal();
   renderAll();
   persistState();
 
-  showToast(`✅ ${bookedText}`, 'success');
+  showToast(
+    type === 'gosse'
+      ? `✅ Gosse für ${personName} gebucht`
+      : `✅ ${personName} ist straffrei, alle anderen +1`,
+    'success'
+  );
 }
