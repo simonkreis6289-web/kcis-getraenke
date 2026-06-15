@@ -6173,6 +6173,15 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
+    
+// Nach Auswahl wieder einklappen
+document.querySelectorAll('.side-menu-item').forEach(item => {
+  item.classList.remove('expanded');
+
+  const submenu = item.querySelector('.side-submenu');
+  if (submenu) submenu.classList.add('hidden');
+});
+    
 }
 
 // Rückwärtskompatibilität, falls irgendwo noch alte onclicks stehen
