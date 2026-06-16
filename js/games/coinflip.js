@@ -32,14 +32,18 @@ function runCoinFlip() {
   if (result) result.textContent = 'Die Münze fliegt...';
 
   let ticks = 0;
-  const frames = ['🪙', '✨', '🌀', '🪙'];
+     const frames = [
+      getGroupEmoji('T1'),
+      getGroupEmoji('T2')
+    ];
 
   const timer = setInterval(() => {
     ticks++;
 
     if (coin) {
-      coin.textContent = frames[ticks % frames.length];
-      coin.style.transform = `rotate(${ticks * 90}deg) scale(${1 + (ticks % 2) * 0.08})`;
+      coin.textContent = frames[ticks % 2];
+      coin.style.transform =
+        `rotate(${ticks * 180}deg) scale(${1 + (ticks % 2) * 0.08})`;
     }
 
     if (ticks >= 14) {
@@ -53,7 +57,8 @@ function runCoinFlip() {
       }
 
       if (result) {
-        result.textContent = `${getGroupLabel(winner)} beginnt`;
+        result.textContent =
+        `${getGroupEmoji(winner)} ${getGroupLabel(winner)} beginnt`;
       }
 
       coinFlipRunning = false;
