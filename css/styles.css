@@ -2660,16 +2660,6 @@ tbody td:first-child {
   background: var(--surface);
 }
 
-.darts-score-card.t1 {
-  border-color: var(--t1b);
-  background: rgba(199, 199, 199, 0.4);
-}
-
-.darts-score-card.t2 {
-  border-color: var(--t2b);
-  background: rgba(199, 199, 199, 0.4);
-}
-
 .darts-team-title {
   font-size: 0.85rem;
   font-weight: 900;
@@ -3452,4 +3442,29 @@ body.view-only #clubBackBtn {
 .stats-filter-card .secondary-btn {
   width: auto;
   margin-top: 0;
+}
+
+.group-color-select {
+  min-height: 42px;
+  cursor: pointer;
+}
+
+.gruppe-box.t1 {
+  border-color: var(--t1b);
+  background: var(--t1b_bg);
+}
+
+.gruppe-box.t2 {
+  border-color: var(--t2b);
+  background: var(--t2b_bg);
+}
+
+.darts-score-card.t1 {
+  border-color: var(--t1b);
+  background: var(--t1b_bg);
+}
+
+.darts-score-card.t2 {
+  border-color: var(--t2b);
+  background: var(--t2b_bg);
 }
