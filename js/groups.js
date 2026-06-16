@@ -278,3 +278,7 @@ function randomAssignUnassignedPeople() {
   showToast('🎲 Personen zufällig verteilt', 'success');
 }
    
+function getGroupEmoji(teamKey) {
+  const g = groupSettings?.[teamKey];
+  return getGroupTheme(g?.color).emoji;
+}
