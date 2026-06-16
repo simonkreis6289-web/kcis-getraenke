@@ -360,6 +360,58 @@ function resetDartsSettings() {
   showToast('↻ Darts-Standardwertung wiederhergestellt', 'success');
 }
 
+function openDartsScoreSetupModal() {
+  ensureDartsState();
+
+  const t1Input = document.getElementById('darts-score-setup-t1');
+  const t2Input = document.getElementById('darts-score-setup-t2');
+
+  const t1Label = document.getElementById('darts-score-setup-t1-label');
+  const t2Label = document.getElementById('darts-score-setup-t2-label');
+
+  if (t1Input) t1Input.value = dartsState.scores?.T1 ?? dartsState.startValue ?? 301;
+  if (t2Input) t2Input.value = dartsState.scores?.T2 ?? dartsState.startValue ?? 301;
+
+  if (t1Label) t1Label.textContent = getTeamLabel('T1');
+  if (t2Label) t2Label.textContent = getTeamLabel('T2');
+
+  document.getElementById('darts-score-setup-modal')?.classList.remove('hidden');
+}
+
+function closeDartsScoreSetupModal() {
+  document.getElementById('darts-score-setup-modal')?.classList.add('hidden');
+}
+
+function confirmDartsScoreSetup() {
+  ensureDartsState();
+
+  const t1Value = Math.max(
+    0,
+    parseInt(document.getElementById('darts-score-setup-t1')?.value || '0', 10) || 0
+  );
+
+  const t2Value = Math.max(
+    0,
+    parseInt(document.getElementById('darts-score-setup-t2')?.value || '0', 10) || 0
+  );
+
+  dartsState.active = true;
+  dartsState.winner = null;
+  dartsState.scores.T1 = t1Value;
+  dartsState.scores.T2 = t2Value;
+  dartsState.startValue = Math.max(t1Value, t2Value, dartsState.startValue || 301);
+
+  dartsState.roundThrows.T1 = [];
+  dartsState.roundThrows.T2 = [];
+
+  closeDartsScoreSetupModal();
+  renderDarts();
+  persistState();
+
+  showToast('🎯 Darts-Startstand gesetzt', 'success');
+}
+  
+
 function renderDartsRoundList() {
   const el = document.getElementById('darts-round-list');
   if (!el) return;
