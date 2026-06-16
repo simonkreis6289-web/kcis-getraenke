@@ -4954,6 +4954,12 @@ function renderTeamspiele() {
   g.innerHTML = '';
 
   updateTeamInfoBox();
+    
+    const btnT1 = document.getElementById('team-btn-t1');
+    const btnT2 = document.getElementById('team-btn-t2');
+
+    if (btnT1) btnT1.textContent = `${getGroupLabel('T1')} verloren`;
+    if (btnT2) btnT2.textContent = `${getGroupLabel('T2')} verloren`;
 
   DRINKS.forEach(d => {
     const v = teamDrinks[d.key] || 0;
