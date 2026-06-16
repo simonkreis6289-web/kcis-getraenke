@@ -97,6 +97,15 @@ function renderGroupLabelsEverywhere() {
   document.querySelectorAll('#assign-modal button[onclick="setAssignTarget(\'T2\')"]').forEach(btn => {
     btn.textContent = getGroupLabel('T2');
   });
+
+    document.querySelectorAll('#tab-darts .tannenbaum-throw-btn.t1').forEach(btn => {
+      btn.textContent = `${getGroupLabel('T1')} Wurf`;
+    });
+
+    document.querySelectorAll('#tab-darts .tannenbaum-throw-btn.t2').forEach(btn => {
+      btn.textContent = `${getGroupLabel('T2')} Wurf`;
+    });
+
 }
 
 function renderGroupSettings() {
