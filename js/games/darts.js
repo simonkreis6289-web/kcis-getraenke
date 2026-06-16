@@ -1,5 +1,4 @@
 // ── DARTS ──   
-
 function createDartsState() {
   return {
     active: false,
@@ -378,19 +377,62 @@ function renderDartsRoundList() {
   });
 
   if (!entries.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">Noch keine Würfe in dieser Runde</div>';
+    el.innerHTML = `
+      <div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:16px;">
+        Noch keine Würfe in dieser Runde
+      </div>
+    `;
     return;
   }
 
   el.innerHTML = entries.map(entry => `
     <div class="spiel-card">
       <div class="spiel-info">
-        <div class="spiel-verlierer ${entry.team.toLowerCase()}">${getTeamLabel(entry.team)}</div>
-        <div class="spiel-detail">Wurf: ${entry.hit === 'kranz' ? 'Kranz' : entry.hit}</div>
+        <div class="spiel-verlierer ${entry.team.toLowerCase()}">
+          ${getTeamLabel(entry.team)}
+        </div>
+
+        <div class="spiel-detail">
+          Wurf: ${entry.hit === 'kranz' ? 'Kranz' : entry.hit}
+        </div>
       </div>
-      <div class="spiel-betrag">${entry.value}</div>
+
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="spiel-betrag">${entry.value}</div>
+
+        <button
+          class="secondary-btn"
+          style="padding:4px 8px;min-height:auto;"
+          onclick="deleteDartsThrow('${entry.team}', ${entry.index})"
+        >
+          🗑️
+        </button>
+      </div>
     </div>
   `).join('');
+}
+
+function deleteDartsThrow(team, index) {
+  ensureDartsState();
+
+  if (!dartsState.roundThrows?.[team]?.[index]) return;
+
+  const entry = dartsState.roundThrows[team][index];
+
+  if (
+    !confirm(
+      `Wurf "${entry.hit === 'kranz' ? 'Kranz' : entry.hit}" (${entry.value} Punkte) löschen?`
+    )
+  ) {
+    return;
+  }
+
+  dartsState.roundThrows[team].splice(index, 1);
+
+  renderDarts();
+  persistState();
+
+  showToast('🗑️ Wurf gelöscht', 'success');
 }
 
 function renderDartsHistory() {
