@@ -10,7 +10,15 @@ function openCoinFlipModal(context = '') {
   const result = document.getElementById('coinflip-result');
 
   if (sub) sub.textContent = context ? `Münzwurf für ${context}` : 'Wer beginnt?';
-  if (coin) coin.textContent = '🪙';
+  
+const modal = document.querySelector('#coinflip-modal .modal');
+
+if (modal) {
+  modal.style.background = '';
+  modal.style.borderColor = '';
+}
+
+if (coin) coin.textContent = getGroupEmoji('T1');
   if (result) result.textContent = '';
 
   document.getElementById('coinflip-modal')?.classList.remove('hidden');
@@ -50,6 +58,13 @@ function runCoinFlip() {
       clearInterval(timer);
 
       const winner = Math.random() < 0.5 ? 'T1' : 'T2';
+        
+        const modal = document.querySelector('#coinflip-modal .modal');
+
+        if (modal) {
+          modal.style.background = getGroupBg(winner);
+          modal.style.borderColor = getGroupColor(winner);
+        }
 
       if (coin) {
         coin.textContent = '🪙';
@@ -57,8 +72,7 @@ function runCoinFlip() {
       }
 
       if (result) {
-        result.textContent =
-        `${getGroupEmoji(winner)} ${getGroupLabel(winner)} beginnt`;
+        result.textContent = `${getGroupLabel(winner)} beginnt`;
       }
 
       coinFlipRunning = false;
