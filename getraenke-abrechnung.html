@@ -612,6 +612,9 @@
             <button class="save-prices-btn" onclick="startDartsGame()">
               🎯 Darts starten
             </button>
+              <button class="secondary-btn" onclick="openDartsScoreSetupModal()">
+              ⚙ Startstand setzen
+            </button>
           </div>
 
           <div id="darts-game-area" class="hidden">
@@ -1299,6 +1302,27 @@
     </div>
   </div>
 </div>
+    
+    <div id="darts-score-setup-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>🎯 Darts-Startstand</h2>
+
+        <div class="modal-input-row">
+          <label id="darts-score-setup-t1-label">Team 1</label>
+          <input id="darts-score-setup-t1" class="modal-euro-input" type="number" min="0" step="1">
+        </div>
+
+        <div class="modal-input-row">
+          <label id="darts-score-setup-t2-label">Team 2</label>
+          <input id="darts-score-setup-t2" class="modal-euro-input" type="number" min="0" step="1">
+        </div>
+
+        <div class="modal-actions">
+          <button class="secondary-btn" onclick="closeDartsScoreSetupModal()">Abbrechen</button>
+          <button class="primary-btn" onclick="confirmDartsScoreSetup()">Übernehmen</button>
+        </div>
+      </div>
+    </div>
     
 <div id="toast"></div>
        
