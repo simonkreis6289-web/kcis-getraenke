@@ -620,6 +620,9 @@
               <button class="secondary-btn" onclick="openDartsScoreSetupModal()">
               ⚙ Startstand setzen
             </button>
+            <button class="secondary-btn" onclick="openCoinFlipModal('Darts')">
+              🪙 Münzwurf
+            </button>
           </div>
 
           <div id="darts-game-area" class="hidden">
@@ -1329,6 +1332,21 @@
       </div>
     </div>
     
+    <div class="modal-overlay hidden" id="coinflip-modal">
+      <div class="modal" style="max-width:420px;text-align:center;">
+        <h3>🪙 Münzwurf</h3>
+        <div class="modal-sub" id="coinflip-sub">Wer beginnt?</div>
+
+        <div id="coinflip-coin" style="font-size:4rem;margin:18px 0;">🪙</div>
+        <div id="coinflip-result" style="font-weight:900;font-size:1.15rem;margin-bottom:14px;"></div>
+
+        <div class="modal-btns">
+          <button class="modal-cancel" onclick="closeCoinFlipModal()">Schließen</button>
+          <button class="modal-ok" onclick="runCoinFlip()">🪙 Werfen</button>
+        </div>
+      </div>
+    </div>
+    
 <div id="toast"></div>
        
 <input
@@ -1343,6 +1361,7 @@
 <script src="js/clubs.js?v=20260522-v28"></script>
 <script src="js/games/tannenbaum.js?v=20260522-v28"></script>
 <script src="js/games/darts.js?v=20260522-v29"></script>
+<script src="js/games/coinflip.js?v=20260522-v29"></script>
 <script src="js/groups.js?v=20260522-v28"></script>
 <script type="module" src="js/firebase.js?v=20260522-v28"></script>
 <script src="js/app.js?v=20260522-v28"></script>
