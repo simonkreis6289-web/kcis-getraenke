@@ -2660,6 +2660,11 @@ function updateTeamStopwatchDisplay() {
     persistState();
   }
     updateCountdownFixedPosition();
+    
+    if (typeof updateTannenbaumCountdownSummary === 'function') {
+      updateTannenbaumCountdownSummary();
+    }
+
 }
 
 function toggleTeamStopwatchActive() {
