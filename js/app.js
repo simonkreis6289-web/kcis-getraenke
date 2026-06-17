@@ -2616,7 +2616,7 @@ function getTeamCountdownRemainingSeconds() {
 }
                                          
 function toggleTeamStopwatch() {
-  if (teamStopwatch.running) {
+  if (teamStopwatchRunning) {
     pauseTeamStopwatch();
   } else {
     startTeamStopwatch();
