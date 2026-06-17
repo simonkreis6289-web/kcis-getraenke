@@ -3288,8 +3288,8 @@ body.view-only #clubBackBtn {
   border-radius: 16px;
   background: var(--countdown-bg);
   display: grid;
-  grid-template-columns: 150px minmax(170px, 320px) 220px minmax(170px, 320px) 150px;
-    justify-content: space-between;
+  grid-template-columns: 150px 160px 1fr 160px 150px;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
