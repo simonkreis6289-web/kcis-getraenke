@@ -200,30 +200,6 @@
   margin-top: 4px;
   opacity: 0.7;
 }
-	  
-    .tabs {
-      display: flex;
-      background: var(--tabs_bg);
-      border-bottom: 1px solid var(--border);
-      padding: 0 8px;
-      gap: 2px;
-      overflow-x: auto;
-    }
-
-    .tab {
-      padding: 10px 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      white-space: nowrap;
-    }
-
-    .tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
 
     main {
       width: 100%;
@@ -242,54 +218,6 @@
       flex-wrap: wrap;
       align-items: center;
     }
-      
-.main-tabs {
-  display: flex;
-  background: var(--bg-MainTabs);
-  border-bottom: 1px solid var(--border);
-  padding: 0 8px;
-  gap: 4px;
-  overflow-x: auto;
-}
-
-.main-tab {
-  padding: 12px 14px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.72);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  white-space: nowrap;
-}
-
-.main-tab.active {
-  color: var(--title_fc);
-  border-bottom-color: var(--accent);
-}
-
-.sub-tabs {
-  display: flex;
-  background: var(--tabs_bg);
-  border-bottom: 1px solid var(--border);
-  padding: 0 8px;
-  gap: 2px;
-  overflow-x: auto;
-}
-
-.sub-tab {
-  padding: 10px 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  white-space: nowrap;
-}
-
-.sub-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
 
 .main-panel {
   width: 100%;
@@ -501,16 +429,6 @@
       border-radius: 12px;
       padding: 12px;
       min-height: 100px;
-    }
-
-    .gruppe-box.t1 {
-      border-color: var(--t1b);
-      background: rgba(52, 152, 219, 0.06);
-    }
-
-    .gruppe-box.t2 {
-      border-color: var(--t2b);
-      background: rgba(232, 65, 42, 0.06);
     }
 
     .gruppe-title {
@@ -2191,25 +2109,6 @@ tbody td:first-child {
   color: var(--bahn-stop-text) !important;
 }
     
-
-.team-stopwatch-global {
-  position: sticky;
-  top: 0;
-  z-index: 999;
-
-  width: 100%;
-  margin-bottom: 18px;
-  padding: 8px 10px;
-  border: 2px solid var(--border);
-  border-radius: 16px;
-  background: var(--countdown-bg);
-
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-}
-    
 .team-stopwatch-placeholder {
   display: none;
 }
@@ -2286,24 +2185,6 @@ tbody td:first-child {
   background: var(--surface2);
   color: var(--text);
   border-color: var(--border);
-}
-
-@media (max-width: 760px) {
-  .team-stopwatch-global {
-    top: 0;
-    grid-template-columns: auto 1fr auto;
-    gap: 6px;
-    padding: 7px;
-  }
-
-  .team-stopwatch-time {
-    font-size: clamp(2.4rem, 12vw, 4rem);
-  }
-
-  .team-stopwatch-btn {
-    font-size: 0.68rem;
-    padding: 6px 7px;
-  }
 }
      
 .modal-countdown-input { text-align: left; }
@@ -3148,158 +3029,6 @@ body.view-only #clubBackBtn {
   cursor: pointer;
 }
 
-/* Sidebar immer im Vordergrund */
-.side-nav {
-  z-index: 3000;
-}
-
-.side-menu-item {
-  position: relative;
-  z-index: 3001;
-}
-
-.side-menu-item.expanded {
-  z-index: 3002;
-}
-
-.side-submenu {
-  position: relative;
-  z-index: 3003;
-}
-
-.app-content {
-  position: relative;
-  z-index: 1;
-}
-
-/* ── OVERLAY SIDEBAR ── */
-.app-shell {
-  display: block;
-}
-
-.app-content {
-  width: 100%;
-  min-width: 0;
-}
-
-.side-nav {
-  position: fixed;
-  top: 118px;
-  left: 12px;
-  z-index: 3000;
-
-  width: 76px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  pointer-events: none;
-}
-
-.side-nav.menu-open {
-  width: 170px;
-}
-
-.side-menu-item {
-  width: 76px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
-  display: none;
-}
-
-.side-nav.menu-open .side-menu-item {
-  display: block;
-}
-
-.side-menu-item.expanded {
-  width: 230px;
-}
-
-.side-menu-head {
-  width: 100%;
-  height: 56px;
-  border: none;
-  background: var(--surface2);
-  color: var(--text);
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 900;
-  font-size: 1.25rem;
-}
-
-.side-menu-head strong {
-  display: none;
-  font-size: 0.9rem;
-}
-
-.side-menu-item.expanded .side-menu-head {
-  justify-content: flex-start;
-  padding: 0 14px;
-}
-
-.side-menu-item.expanded .side-menu-head strong {
-  display: block;
-}
-
-.side-submenu {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-}
-
-.side-submenu button {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text);
-  padding: 9px 10px;
-  text-align: left;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.side-submenu button.active {
-  border-color: var(--accent);
-  background: rgba(245,166,35,0.16);
-  color: #000;
-}
-
-.menu-toggle-btn {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text);
-  padding: 9px 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-@media (max-width: 900px) {
-  .side-nav {
-    top: 145px;
-    left: 8px;
-  }
-
-  .side-menu-item.expanded {
-    width: min(260px, calc(100vw - 16px));
-  }
-}
-
 /* ── QUICK BAR EINHEITLICH ── */
 .quick-penalty-bar {
   display: flex;
@@ -3324,103 +3053,6 @@ body.view-only #clubBackBtn {
   font-size: 0.82rem;
   font-weight: 900;
   cursor: pointer;
-}
-
-/* ── OVERLAY MENÜ FIX ── */
-.app-shell {
-  display: block;
-}
-
-.app-content {
-  width: 100%;
-}
-
-.side-nav {
-  position: fixed;
-  top: 150px;
-  left: 16px;
-  z-index: 4000;
-  width: auto;
-  overflow: visible;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.side-nav.menu-open {
-  display: flex;
-}
-
-.side-menu-item {
-  width: 76px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
-}
-
-.side-menu-item.expanded {
-  width: 240px;
-}
-
-.side-menu-head {
-  width: 100%;
-  height: 56px;
-  border: none;
-  background: var(--surface2);
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 900;
-  font-size: 1.25rem;
-}
-
-.side-menu-head strong {
-  display: none;
-}
-
-.side-menu-item.expanded .side-menu-head {
-  justify-content: flex-start;
-  padding: 0 14px;
-}
-
-.side-menu-item.expanded .side-menu-head strong {
-  display: block;
-}
-
-.side-submenu {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-}
-
-.side-submenu.hidden {
-  display: none !important;
-}
-
-.side-submenu button {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text);
-  padding: 10px;
-  text-align: left;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.side-submenu button.active {
-  border-color: var(--accent);
-  background: rgba(245,166,35,0.16);
 }
 
 .stats-filter-card {
@@ -3527,52 +3159,148 @@ body.view-only #clubBackBtn {
   }
 }
 
-.side-nav.menu-open {
-  width: 170px;
+/* ── OVERLAY MENÜ SAUBER ── */
+.app-shell {
+  display: block;
 }
 
-.side-nav.menu-open .side-menu-head {
-  width: 150px;
-  min-height: 72px;
+.app-content {
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.side-nav {
+  position: fixed;
+  top: 150px;
+  left: 16px;
+  z-index: 4000;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  width: auto;
+  overflow: visible;
+}
+
+.side-nav.menu-open {
+  display: flex;
+}
+
+.side-menu-item {
+  width: 118px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: visible;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+}
+
+.side-menu-item.expanded {
+  width: 240px;
+}
+
+.side-menu-head {
+  width: 100%;
+  min-height: 76px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
   display: grid;
   grid-template-columns: 1fr;
   justify-items: center;
+  align-content: center;
   gap: 4px;
   text-align: center;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 900;
 }
 
-.side-nav.menu-open .side-menu-head span {
+.side-menu-head span {
   font-size: 1.45rem;
   line-height: 1;
 }
 
-.side-nav.menu-open .side-menu-head strong {
+.side-menu-head strong {
   display: block;
   font-size: 0.72rem;
   line-height: 1.1;
 }
 
-.side-nav.menu-open .side-submenu {
-  width: 150px;
+.side-menu-item.expanded .side-menu-head {
+  min-height: 64px;
 }
 
-.side-nav.menu-open .side-submenu button {
+.side-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+
+.side-submenu.hidden {
+  display: none !important;
+}
+
+.side-submenu button {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px;
   text-align: left;
-  justify-content: flex-start;
-  padding: 9px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.side-menu-head strong {
-  display: none;
+.side-submenu button.active {
+  border-color: var(--accent);
+  background: rgba(245,166,35,0.16);
 }
 
-.side-nav.menu-open .side-menu-head strong {
-  display: block;
+@media (max-width: 900px) {
+  .side-nav {
+    top: 145px;
+    left: 8px;
+  }
+
+  .side-menu-item {
+    width: 112px;
+  }
+
+  .side-menu-item.expanded {
+    width: min(260px, calc(100vw - 16px));
+  }
 }
 
+.side-menu-item.expanded {
+  width: 260px;
+  z-index: 4100;
+}
+
+.side-submenu {
+  background: var(--surface);
+  border-radius: 0 0 16px 16px;
+}
+
+/* ── COUNTDOWN SAUBER ── */
 .team-stopwatch-global {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px 10px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--countdown-bg);
   display: grid;
-  grid-template-columns: 140px 1fr 220px 1fr 140px;
+  grid-template-columns: 150px minmax(170px, 320px) 220px minmax(170px, 320px) 150px;
+    justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
@@ -3601,6 +3329,14 @@ body.view-only #clubBackBtn {
 .tannenbaum-countdown-side {
   width: 100%;
   min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  font-weight: 800;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
