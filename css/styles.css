@@ -3468,3 +3468,15 @@ body.view-only #clubBackBtn {
   border-color: var(--t2b);
   background: var(--t2b_bg);
 }
+
+.tannenbaum-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .tannenbaum-action-row {
+    grid-template-columns: 1fr;
+  }
+}
