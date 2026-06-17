@@ -3165,11 +3165,35 @@ body.view-only #clubBackBtn {
   top: 150px;
   left: 16px;
   z-index: 4000;
+
   display: none;
   flex-direction: column;
   gap: 10px;
+
   width: auto;
-  overflow: visible;
+
+  max-height: calc(100vh - 170px);
+  overflow-y: auto;
+  overflow-x: visible;
+
+  padding-right: 4px;
+}
+
+.side-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+  .side-nav {
+    top: 145px;
+    left: 8px;
+    max-height: calc(100vh - 155px);
+  }
 }
 
 .side-nav.menu-open {
