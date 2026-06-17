@@ -115,11 +115,11 @@ function renderTannenbaum() {
       <table class="tannenbaum-table">
         <thead>
           <tr>
-            <th>Striche Wand</th>
-            <th class="wand">⚫ Wand</th>
+            <th>Striche ${getGroupLabel('T1')}</th>
+            <th class="wand">${getGroupLabel('T1')}</th>
             <th>Zahl</th>
-            <th class="tv">🔴 TV</th>
-            <th>Striche TV</th>
+            <th class="tv">${getGroupLabel('T2')}</th>
+            <th>Striche ${getGroupLabel('T2')}</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -130,8 +130,89 @@ function renderTannenbaum() {
       ${renderTannenbaumPriceTable()}
     </div>
   `;
+    
+    updateTannenbaumCountdownSummary();
 }
 
+function openTannenbaumRestoreModal() {
+  const teamSelect = document.getElementById('tannenbaum-restore-team');
+  const numberSelect = document.getElementById('tannenbaum-restore-number');
+
+  if (!teamSelect || !numberSelect) return;
+
+  teamSelect.innerHTML = `
+    <option value="T1">${getGroupLabel('T1')}</option>
+    <option value="T2">${getGroupLabel('T2')}</option>
+  `;
+
+  numberSelect.innerHTML = '';
+
+  for (let n = 1; n <= 9; n++) {
+    numberSelect.innerHTML += `<option value="${n}">${n}</option>`;
+  }
+
+  document.getElementById('tannenbaum-restore-modal')?.classList.remove('hidden');
+}
+
+function closeTannenbaumRestoreModal() {
+  document.getElementById('tannenbaum-restore-modal')?.classList.add('hidden');
+}
+
+function confirmTannenbaumRestore() {
+  ensureTannenbaumState();
+
+  const team = document.getElementById('tannenbaum-restore-team')?.value;
+  const number = document.getElementById('tannenbaum-restore-number')?.value;
+
+  if (!team || !number) return;
+
+  const data = tannenbaumState.teams[team];
+  data.remaining[number] = (data.remaining[number] || 0) + 1;
+  data.finished = false;
+
+  tannenbaumState.history.unshift({
+    team,
+    number: Number(number),
+    action: `${getGroupLabel(team)} bekommt ${number} manuell zurück`,
+    type: 'manual-restore',
+    createdAt: new Date().toISOString()
+  });
+
+  closeTannenbaumRestoreModal();
+  renderTannenbaum();
+  persistState();
+
+  showToast(`➕ ${getGroupLabel(team)} bekommt ${number} zurück`, 'success');
+}
+
+function updateTannenbaumCountdownSummary() {
+  ensureTannenbaumState();
+
+  const elT1 = document.getElementById('tannenbaum-countdown-t1');
+  const elT2 = document.getElementById('tannenbaum-countdown-t2');
+
+  if (!elT1 || !elT2) return;
+
+  const isTannenbaumVisible =
+    !document.getElementById('tab-tannenbaum')?.classList.contains('hidden');
+
+  elT1.classList.toggle('hidden', !isTannenbaumVisible);
+  elT2.classList.toggle('hidden', !isTannenbaumVisible);
+
+  if (!isTannenbaumVisible) return;
+
+  ['T1', 'T2'].forEach(team => {
+    const el = team === 'T1' ? elT1 : elT2;
+    const current = getTannenbaumTeamTotal(team);
+    const open = getTannenbaumOpenNumbersTotal(team).total;
+
+    el.innerHTML = `
+      <div class="tannenbaum-countdown-label">${getGroupLabel(team)}</div>
+      <div class="tannenbaum-countdown-main">${euros(current)}</div>
+      <div class="tannenbaum-countdown-open">offen: ${euros(open)}</div>
+    `;
+  });
+}
 
 function finishTannenbaumGame() {
   ensureTannenbaumState();
@@ -277,25 +358,71 @@ function handleTannenbaumThrow(number) {
     action += ` · ${getTeamLabel(team)} ist leer! ${getTeamLabel(otherTeam)} +5,00 €`;
   }
 
-  tannenbaumState.history.unshift({
-    team,
-    number,
-    action,
-    createdAt: new Date().toISOString()
-  });
+    tannenbaumState.history.unshift({
+      team,
+      number,
+      action,
+      type:
+        (own.remaining[n] || 0) >= 0
+          ? (
+              action.includes('streicht')
+                ? 'strike-own'
+                : action.includes('bekommt Strich')
+                  ? 'enemy-strike'
+                  : 'restore'
+            )
+          : 'unknown',
+      createdAt: new Date().toISOString()
+    });
 
-  closeTannenbaumThrowModal();
+      closeTannenbaumThrowModal();
+      renderTannenbaum();
+      persistState();
+      showToast(action, 'success');
+    }
+
+function undoLastTannenbaumThrow() {
+  ensureTannenbaumState();
+
+  const last = tannenbaumState.history?.[0];
+
+  if (!last) {
+    showToast('Keine Würfe vorhanden', 'error');
+    return;
+  }
+
+  const team = last.team;
+  const otherTeam = getOtherTeam(team);
+  const n = String(last.number);
+
+  const own = tannenbaumState.teams[team];
+  const other = tannenbaumState.teams[otherTeam];
+
+  if (last.action.includes('streicht')) {
+    own.remaining[n]++;
+  }
+
+  else if (last.action.includes('bekommt Strich')) {
+    const strikeIndex =
+      other.strikes.findIndex(
+        s => String(s.number) === n
+      );
+
+    if (strikeIndex >= 0) {
+      other.strikes.splice(strikeIndex, 1);
+    }
+  }
+
+  tannenbaumState.history.shift();
+
   renderTannenbaum();
   persistState();
-  showToast(action, 'success');
+
+  showToast('↩ Letzter Wurf rückgängig', 'success');
 }
 
 function getOtherTeam(team) {
   return team === 'T1' ? 'T2' : 'T1';
-}
-
-function getTeamLabel(team) {
-  return team === 'T1' ? '⚫ Wand' : '🔴 TV';
 }
 
 function isTannenbaumTeamEmpty(team) {
