@@ -2614,6 +2614,14 @@ function getTeamCountdownRemainingSeconds() {
 
   return Math.max(0, remaining);
 }
+                                         
+function toggleTeamStopwatch() {
+  if (teamStopwatch.running) {
+    pauseTeamStopwatch();
+  } else {
+    startTeamStopwatch();
+  }
+}
 
 function formatStopwatch(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -2633,7 +2641,7 @@ function updateTeamStopwatchDisplay() {
   const check = document.getElementById('team-stopwatch-active-check');
   const settings = document.getElementById('team-countdown-settings');
   const input = document.getElementById('team-countdown-minutes');
-  const startBtn = document.getElementById('teamStopwatchStartBtn');
+  const toggleBtn = document.getElementById('team-stopwatch-toggle-btn');
 
   const remaining = getTeamCountdownRemainingSeconds();
 
@@ -2643,28 +2651,38 @@ function updateTeamStopwatchDisplay() {
   if (check) check.checked = !!teamStopwatchActive;
 
   if (input && document.activeElement !== input) {
-    input.value = teamCountdownDuration > 0 ? String(Math.ceil(teamCountdownDuration / 60)) : '';
-  }
-
-  if (startBtn) {
-    startBtn.textContent = teamStopwatchRunning ? '▶ Läuft' : '▶ Start';
-    startBtn.disabled = !!teamStopwatchRunning || remaining <= 0;
-    startBtn.style.opacity = startBtn.disabled ? '0.55' : '1';
+    input.value =
+      teamCountdownDuration > 0
+        ? String(Math.ceil(teamCountdownDuration / 60))
+        : '';
   }
 
   if (teamStopwatchRunning && remaining <= 0) {
     teamStopwatchRunning = false;
     teamStopwatchStart = null;
     teamCountdownRemainingBefore = 0;
+
     showToast('⏰ Tannenbaum-Countdown abgelaufen', 'success');
     persistState();
   }
-    updateCountdownFixedPosition();
-    
-    if (typeof updateTannenbaumCountdownSummary === 'function') {
-      updateTannenbaumCountdownSummary();
-    }
 
+  if (toggleBtn) {
+    if (teamStopwatchRunning) {
+      toggleBtn.textContent = '⏸ Pause';
+      toggleBtn.classList.remove('start');
+      toggleBtn.classList.add('pause');
+    } else {
+      toggleBtn.textContent = '▶ Start';
+      toggleBtn.classList.remove('pause');
+      toggleBtn.classList.add('start');
+    }
+  }
+
+  updateCountdownFixedPosition();
+
+  if (typeof updateTannenbaumCountdownSummary === 'function') {
+    updateTannenbaumCountdownSummary();
+  }
 }
 
 function toggleTeamStopwatchActive() {
