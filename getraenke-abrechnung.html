@@ -651,6 +651,16 @@
                   Team 2 Wurf
                 </button>
             </div>
+              
+            <div class="tannenbaum-action-row">
+              <button class="secondary-btn" onclick="undoLastTannenbaumThrow()">
+                ↩ Letzten Wurf rückgängig
+              </button>
+
+              <button class="secondary-btn" onclick="openTannenbaumRestoreModal()">
+                ➕ Zahl wieder hinzufügen
+              </button>
+            </div>
 
             <button class="save-prices-btn" onclick="finishDartsRound()">
               Runde abschließen
@@ -1346,6 +1356,28 @@
         </div>
       </div>
     </div>
+
+<div class="modal-overlay hidden" id="tannenbaum-restore-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>🌲 Zahl wieder hinzufügen</h3>
+    <div class="modal-sub">Team und Zahl auswählen.</div>
+
+    <div class="modal-input-row">
+      <label>Team</label>
+      <select id="tannenbaum-restore-team" class="modal-select"></select>
+    </div>
+
+    <div class="modal-input-row">
+      <label>Zahl</label>
+      <select id="tannenbaum-restore-number" class="modal-select"></select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeTannenbaumRestoreModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmTannenbaumRestore()">✓ Wieder hinzufügen</button>
+    </div>
+  </div>
+</div>
     
 <div id="toast"></div>
        
