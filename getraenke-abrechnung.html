@@ -576,86 +576,21 @@
     <!-- SPIELE -->
     <div id="main-spiele" class="main-panel hidden">
         
-      <div id="tab-tannenbaum">
-        <div class="section-title">Tannenbaum</div>
-            <div class="tannenbaum-game">
-              <div class="tannenbaum-input-row">
-                <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">
-                  ⚫ Wurf Wand
-                </button>
+        <div id="tab-tannenbaum">
+          <div class="section-title">Tannenbaum</div>
 
-                <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">
-                  🔴 Wurf TV
-                </button>
-              </div>
-
-              <div id="tannenbaum-board"></div>
-
-              <div style="margin-top:14px;">
-                <button class="save-prices-btn" onclick="finishTannenbaumGame()">
-                  ✅ Tannenbaum abschließen
-                </button>
-                <button class="save-prices-btn" onclick="resetTannenbaumGame()">
-                  ↻ Tannenbaum neu starten
-                </button>
-              </div>
-            </div>
-      </div>
-        
-     <div id="tab-darts" class="hidden">
-          <div class="section-title">Darts</div>
-
-          <div class="darts-start-card">
-            <div class="modal-input-row" style="margin-bottom:0;">
-              <label>Startwert</label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                id="darts-start-input"
-                class="modal-euro-input"
-                placeholder="301"
-              >
-            </div>
-
-            <button class="save-prices-btn" onclick="startDartsGame()">
-              🎯 Darts starten
-            </button>
-              <button class="secondary-btn" onclick="openDartsScoreSetupModal()">
-              ⚙ Startstand setzen
-            </button>
-            <button class="secondary-btn" onclick="openCoinFlipModal('Darts')">
-              🪙 Münzwurf
-            </button>
-          </div>
-
-          <div id="darts-game-area" class="hidden">
-            <div class="darts-score-grid">
-              <div class="darts-score-card t1">
-                <div class="darts-team-title">⚫ Wand</div>
-                <div class="darts-score" id="darts-score-t1">301</div>
-                <div class="darts-round-score" id="darts-round-t1">Runde: 0</div>
-              </div>
-
-              <div class="darts-score-card t2">
-                <div class="darts-team-title">🔴 TV</div>
-                <div class="darts-score" id="darts-score-t2">301</div>
-                <div class="darts-round-score" id="darts-round-t2">Runde: 0</div>
-              </div>
-            </div>
-
-            <div class="darts-buffer" id="darts-buffer-display">Puffer: 0 Punkte</div>
+          <div class="tannenbaum-game">
 
             <div class="tannenbaum-input-row">
-                <button class="tannenbaum-throw-btn t1" onclick="openDartsThrowModal('T1')">
-                  Team 1 Wurf
-                </button>
+              <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">
+                ⚫ Wurf Wand
+              </button>
 
-                <button class="tannenbaum-throw-btn t2" onclick="openDartsThrowModal('T2')">
-                  Team 2 Wurf
-                </button>
+              <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">
+                🔴 Wurf TV
+              </button>
             </div>
-              
+
             <div class="tannenbaum-action-row">
               <button class="secondary-btn" onclick="undoLastTannenbaumThrow()">
                 ↩ Letzten Wurf rückgängig
@@ -664,23 +599,100 @@
               <button class="secondary-btn" onclick="openTannenbaumRestoreModal()">
                 ➕ Zahl wieder hinzufügen
               </button>
+
+              <button class="secondary-btn" onclick="openCoinFlipModal('Tannenbaum')">
+                🪙 Münzwurf
+              </button>
             </div>
 
-            <button class="save-prices-btn" onclick="finishDartsRound()">
-              Runde abschließen
-            </button>
+            <div id="tannenbaum-board"></div>
 
-            <button class="modal-cancel" style="width:100%;margin-top:10px;" onclick="resetDartsGame()">
-              ↻ Darts neu starten
-            </button>
+            <div style="margin-top:14px;">
+              <button class="save-prices-btn" onclick="finishTannenbaumGame()">
+                ✅ Tannenbaum abschließen
+              </button>
 
-            <div class="section-title">Würfe dieser Runde</div>
-            <div id="darts-round-list" class="spiele-list"></div>
+              <button class="save-prices-btn" onclick="resetTannenbaumGame()">
+                ↻ Tannenbaum neu starten
+              </button>
+            </div>
 
-            <div class="section-title">Rundenverlauf</div>
-            <div id="darts-history-list" class="spiele-list"></div>
           </div>
         </div>
+        
+    <div id="tab-darts" class="hidden">
+      <div class="section-title">Darts</div>
+
+      <div class="darts-start-card">
+        <div class="modal-input-row" style="margin-bottom:0;">
+          <label>Startwert</label>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            id="darts-start-input"
+            class="modal-euro-input"
+            placeholder="301"
+          >
+        </div>
+
+        <button class="save-prices-btn" onclick="startDartsGame()">
+          🎯 Darts starten
+        </button>
+
+        <button class="secondary-btn" onclick="openDartsScoreSetupModal()">
+          ⚙ Startstand setzen
+        </button>
+
+        <button class="secondary-btn" onclick="openCoinFlipModal('Darts')">
+          🪙 Münzwurf
+        </button>
+      </div>
+
+      <div id="darts-game-area" class="hidden">
+        <div class="darts-score-grid">
+          <div class="darts-score-card t1">
+            <div class="darts-team-title">Team 1</div>
+            <div class="darts-score" id="darts-score-t1">301</div>
+            <div class="darts-round-score" id="darts-round-t1">Runde: 0</div>
+          </div>
+
+          <div class="darts-score-card t2">
+            <div class="darts-team-title">Team 2</div>
+            <div class="darts-score" id="darts-score-t2">301</div>
+            <div class="darts-round-score" id="darts-round-t2">Runde: 0</div>
+          </div>
+        </div>
+
+        <div class="darts-buffer" id="darts-buffer-display">
+          Puffer: 0 Punkte
+        </div>
+
+        <div class="tannenbaum-input-row">
+          <button class="tannenbaum-throw-btn t1" onclick="openDartsThrowModal('T1')">
+            Team 1 Wurf
+          </button>
+
+          <button class="tannenbaum-throw-btn t2" onclick="openDartsThrowModal('T2')">
+            Team 2 Wurf
+          </button>
+        </div>
+
+        <button class="save-prices-btn" onclick="finishDartsRound()">
+          Runde abschließen
+        </button>
+
+        <button class="modal-cancel" style="width:100%;margin-top:10px;" onclick="resetDartsGame()">
+          ↻ Darts neu starten
+        </button>
+
+        <div class="section-title">Würfe dieser Runde</div>
+        <div id="darts-round-list" class="spiele-list"></div>
+
+        <div class="section-title">Rundenverlauf</div>
+        <div id="darts-history-list" class="spiele-list"></div>
+      </div>
+    </div>
         
 <div id="tab-lotterie" class="hidden">
   <div class="section-title">Lotterie</div>
