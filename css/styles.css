@@ -3113,18 +3113,6 @@ body.view-only #clubBackBtn {
   }
 }
 
-.tannenbaum-countdown-side {
-  min-width: 130px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  font-size: 0.72rem;
-  line-height: 1.25;
-  font-weight: 800;
-  text-align: center;
-}
-
 #tannenbaum-countdown-t1 {
   border-color: var(--t1b);
   box-shadow: 0 0 12px var(--t1b_bg);
@@ -3328,11 +3316,18 @@ body.view-only #clubBackBtn {
 
 .tannenbaum-countdown-side {
   width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
+  height: 82px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 8px 12px;
+
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
+
   font-size: 0.72rem;
   line-height: 1.25;
   font-weight: 800;
