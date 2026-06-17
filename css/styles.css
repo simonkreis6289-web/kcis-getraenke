@@ -3176,23 +3176,24 @@ body.view-only #clubBackBtn {
 }
 
 .side-menu-item {
-  width: 118px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  width: 130px;
+  background: #fff8cc;
+  border: 2px solid var(--border);
   border-radius: 16px;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 8px 22px rgba(0,0,0,0.18);
 }
 
 .side-menu-item.expanded {
-  width: 240px;
+  width: 280px;
+  z-index: 4100;
 }
 
 .side-menu-head {
   width: 100%;
   min-height: 76px;
   border: none;
-  background: var(--surface2);
+  background: #fff8cc;
   color: var(--text);
   cursor: pointer;
   display: grid;
@@ -3203,6 +3204,11 @@ body.view-only #clubBackBtn {
   text-align: center;
   font-family: 'DM Sans', sans-serif;
   font-weight: 900;
+}
+
+.side-menu-item.expanded .side-menu-head {
+  border-radius: 14px 14px 0 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .side-menu-head span {
@@ -3233,9 +3239,9 @@ body.view-only #clubBackBtn {
 
 .side-submenu button {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: 10px;
-  background: var(--surface);
+  background: #ffffff;
   color: var(--text);
   padding: 10px;
   text-align: left;
@@ -3261,17 +3267,12 @@ body.view-only #clubBackBtn {
   }
 
   .side-menu-item.expanded {
-    width: min(260px, calc(100vw - 16px));
+    width: min(280px, calc(100vw - 16px));
   }
 }
 
-.side-menu-item.expanded {
-  width: 260px;
-  z-index: 4100;
-}
-
 .side-submenu {
-  background: var(--surface);
+  background: #fff8cc;
   border-radius: 0 0 16px 16px;
 }
 
@@ -3351,4 +3352,19 @@ body.view-only #clubBackBtn {
     grid-column: 1 / -1;
     order: -1;
   }
+}
+
+.team-stopwatch-controls-wrap.left {
+  height: 82px;
+  display: flex;
+}
+
+.team-stopwatch-controls-wrap.left .team-stopwatch-controls {
+  width: 100%;
+}
+
+#team-stopwatch-toggle-btn {
+  width: 100%;
+  height: 100%;
+  min-height: 70px;
 }
