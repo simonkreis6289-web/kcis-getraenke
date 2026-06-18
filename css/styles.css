@@ -3031,28 +3031,43 @@ body.view-only #clubBackBtn {
 
 /* ── QUICK BAR EINHEITLICH ── */
 .quick-penalty-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 128px repeat(5, 118px);
   gap: 8px;
-  flex-wrap: wrap;
-  padding: 8px 16px;
-  background: var(--surface);
+  align-items: center;
+  justify-content: start;
+
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 95px;
-  z-index: 2500;
+  background: rgba(255, 248, 204, 0.55);
 }
 
-.quick-penalty-bar button,
-.menu-toggle-btn {
-  border: 1px solid var(--border);
+.quick-penalty-bar button {
+  min-height: 42px;
+  padding: 8px 10px;
+
+  border: 1.5px solid var(--border);
   border-radius: 10px;
-  background: var(--surface2);
+  background: var(--surface);
   color: var(--text);
-  padding: 9px 12px;
+
   font-family: 'DM Sans', sans-serif;
   font-size: 0.82rem;
   font-weight: 900;
   cursor: pointer;
+}
+
+.quick-penalty-bar button:not(.quick-menu-btn) {
+  background: #fffdf0;
+}
+
+.quick-menu-btn {
+  background: #fff1a8 !important;
+  border-color: var(--accent) !important;
+}
+
+.quick-penalty-bar button:hover {
+  transform: translateY(-1px);
 }
 
 .stats-filter-card {
