@@ -1,4 +1,7 @@
-// ── DARTS ──   
+// ── DARTS ── 
+
+let pendingDartsPenalty = null;
+
 function createDartsState() {
   return {
     active: false,
@@ -82,7 +85,12 @@ function openDartsThrowModal(team) {
     const btn = document.createElement('button');
     btn.className = 'darts-number-btn';
     btn.innerHTML = `${n}<br><span style="font-size:0.72rem;">${value} Punkte</span>`;
-    btn.onclick = () => handleDartsThrow(String(n));
+
+    if (n === 9) {
+      btn.onclick = () => openDartsPenaltyPlayerModal('9er', team, value);
+    } else {
+      btn.onclick = () => handleDartsThrow(String(n));
+    }
 
     grid.appendChild(btn);
   }
@@ -92,9 +100,19 @@ function openDartsThrowModal(team) {
   const kranzBtn = document.createElement('button');
   kranzBtn.className = 'darts-number-btn kranz';
   kranzBtn.innerHTML = `Kranz<br><span style="font-size:0.72rem;">${kranzValue} Punkte</span>`;
-  kranzBtn.onclick = () => handleDartsThrow('kranz');
-
+  kranzBtn.onclick = () => openDartsPenaltyPlayerModal('kranz', team, kranzValue);
   grid.appendChild(kranzBtn);
+
+  [
+    { label: '🎳 Durchgeworfen', type: 'durchgeworfen', points: 0 },
+    { label: '💀 Gosse', type: 'gosse', points: 0 }
+  ].forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'darts-number-btn kranz';
+    btn.innerHTML = `${item.label}<br><span style="font-size:0.72rem;">0 Punkte</span>`;
+    btn.onclick = () => openDartsPenaltyPlayerModal(item.type, team, item.points);
+    grid.appendChild(btn);
+  });
 
   document.getElementById('darts-throw-modal').classList.remove('hidden');
 }
@@ -102,6 +120,104 @@ function openDartsThrowModal(team) {
 function closeDartsThrowModal() {
   document.getElementById('darts-throw-modal').classList.add('hidden');
   dartsThrowTeam = null;
+}
+
+function openDartsPenaltyPlayerModal(type, team, points) {
+  pendingDartsPenalty = { type, team, points };
+
+  const title = document.getElementById('darts-penalty-player-title');
+  const sub = document.getElementById('darts-penalty-player-sub');
+  const select = document.getElementById('darts-penalty-player-select');
+
+  if (title) title.textContent = `${type} geworfen`;
+  if (sub) sub.textContent = 'Wer hat geworfen?';
+
+  if (select) {
+    select.innerHTML = '<option value="">Bitte Person wählen</option>';
+
+    persons
+      .filter(p => p.present && !p.left)
+      .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+      .forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name;
+        opt.textContent = p.name;
+        select.appendChild(opt);
+      });
+  }
+
+  document.getElementById('darts-throw-modal')?.classList.add('hidden');
+  document.getElementById('darts-penalty-player-modal')?.classList.remove('hidden');
+}
+
+function closeDartsPenaltyPlayerModal() {
+  document.getElementById('darts-penalty-player-modal')?.classList.add('hidden');
+  pendingDartsPenalty = null;
+}
+
+function confirmDartsPenaltyPlayer() {
+  if (!pendingDartsPenalty) return;
+
+  const personName = document.getElementById('darts-penalty-player-select')?.value || '';
+
+  if (!personName) {
+    showToast('Bitte Person auswählen', 'error');
+    return;
+  }
+
+  const { type, team, points } = pendingDartsPenalty;
+  const key = getPenaltyKeyByType(type);
+
+  if (!key) {
+    showToast(`Strafe "${type}" nicht gefunden`, 'error');
+    return;
+  }
+
+  const active = persons.filter(p => p.present && !p.left);
+  let punishedNames = [];
+
+  if (type === 'gosse') {
+    const p = persons.find(x => x.name === personName);
+
+    if (p) {
+      if (!p.strafen) p.strafen = {};
+      p.strafen[key] = (p.strafen[key] || 0) + 1;
+      punishedNames = [personName];
+    }
+  } else {
+    active.forEach(p => {
+      if (p.name === personName) return;
+
+      if (!p.strafen) p.strafen = {};
+      p.strafen[key] = (p.strafen[key] || 0) + 1;
+      punishedNames.push(p.name);
+    });
+  }
+
+  addPenaltyStatsEntry(type, personName, punishedNames);
+
+  if (!dartsState.roundThrows[team]) dartsState.roundThrows[team] = [];
+
+  dartsState.roundThrows[team].push({
+    hit: type,
+    value: points,
+    thrower: personName,
+    createdAt: new Date().toISOString()
+  });
+
+  closeDartsPenaltyPlayerModal();
+
+  renderDarts();
+  renderStrafen();
+  updateStats();
+  persistState();
+
+  showToast(
+    type === 'gosse'
+      ? `💀 Gosse für ${personName} gebucht`
+      : `✅ ${type}: ${personName} ist straffrei`,
+    'success'
+  );
 }
 
 function handleDartsThrow(hitKey) {
