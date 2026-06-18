@@ -3422,3 +3422,10 @@ body.view-only #clubBackBtn {
 .tiberius-live-money {
   min-height: 82px;
 }
+
+.tiberius-live-next {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+}
