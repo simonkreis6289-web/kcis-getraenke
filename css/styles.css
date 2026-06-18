@@ -3429,3 +3429,17 @@ body.view-only #clubBackBtn {
   color: var(--muted);
   font-weight: 600;
 }
+
+.tiberius-live-next-target {
+  flex-direction: column;
+  text-align: center;
+}
+
+.tiberius-live-next-target .tiberius-live-label {
+  margin-bottom: 6px;
+}
+
+.tiberius-live-next-target .tiberius-live-value {
+  font-size: 2.2rem;
+  line-height: 1;
+}
