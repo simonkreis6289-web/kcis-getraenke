@@ -3411,7 +3411,7 @@ body.view-only #clubBackBtn {
 
 .tiberius-live-panel {
   display: grid;
-  grid-template-columns: 300px 300px 1fr 1fr 300px;
+  grid-template-columns: 280px 280px 1fr 1fr 300px;
   gap: 10px;
   align-items: stretch;
   margin-bottom: 14px;
