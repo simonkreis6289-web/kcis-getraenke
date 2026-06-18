@@ -732,71 +732,98 @@
   <div id="lotterie-history-list" class="spiele-list"></div>
 </div>
 
-        <div id="tab-tiberius" class="hidden">
-          <div class="section-title">Tiberius</div>
+<div id="tab-tiberius" class="hidden">
+  <div class="section-title">Tiberius</div>
 
-          <div class="game-start-card" id="tiberius-start-card">
-           <label class="modal-check game-ontop-check">
-              <input type="checkbox" id="tiberius-ontop-check" onchange="toggleTiberiusOnTop()">
-              <span>Tiberius-Strafen On Top buchen</span>
-            </label>
-              
-                <div class="game-setup-grid">
-                  <div class="modal-input-row">
-                    <label>Spaltenanzahl</label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      id="tiberius-column-count"
-                      class="modal-euro-input"
-                      placeholder="z. B. 8"
-                      onchange="prepareTiberiusColumns()"
-                    >
-                  </div>
+  <div class="game-start-card" id="tiberius-start-card">
+    <label class="modal-check game-ontop-check">
+      <input
+        type="checkbox"
+        id="tiberius-ontop-check"
+        onchange="toggleTiberiusOnTop()"
+      >
+      <span>Tiberius-Strafen On Top buchen</span>
+    </label>
 
-                  <div id="tiberius-target-editor"></div>
-                </div>
+    <div class="game-setup-grid">
+      <div class="modal-input-row">
+        <label>Spaltenanzahl</label>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          id="tiberius-column-count"
+          class="modal-euro-input"
+          placeholder="z. B. 8"
+          onchange="prepareTiberiusColumns()"
+        >
+      </div>
 
-                    <div class="modal-btns" style="margin-top:14px;">
-                      <button
-                        type="button"
-                        class="secondary-btn"
-                        onclick="generateTiberiusTargets()"
-                        id="tiberius-random-btn"
-                      >
-                        🎲 Zufällige Zielzahlen
-                      </button>
+      <div id="tiberius-target-editor"></div>
+    </div>
 
-                      <button
-                        type="button"
-                        class="primary-btn"
-                        onclick="startTiberiusGame()"
-                      >
-                        🏛️ Tiberius starten
-                      </button>
-                    </div>
-          </div>
-            
-          <div class="tiberius-live-panel hidden" id="tiberius-live-panel">
-              <button class="add-btn" onclick="openTiberiusThrowModal()">🎳 Wurf eingeben</button>
-              <button class="secondary-btn" onclick="undoLastTiberiusThrow()">
-                  ↩ Letzten Wurf rückgängig
-                </button>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="generateTiberiusTargets()"
+        id="tiberius-random-btn"
+      >
+        🎲 Zufällige Zielzahlen
+      </button>
 
-              <div class="tiberius-live-score">
-                <div class="tiberius-live-label">Punktestand</div>
-                <div class="tiberius-live-value" id="tiberius-score-display">0</div>
-              </div>
+      <button
+        type="button"
+        class="primary-btn"
+        onclick="startTiberiusGame()"
+      >
+        🏛️ Tiberius starten
+      </button>
+    </div>
+  </div>
 
-              <div class="tiberius-live-money">
-                <div class="tiberius-live-label">Aktueller Betrag</div>
-                <div class="tiberius-live-amount" id="tiberius-current-amount">0,00 €</div>
-              </div>
-            </div>       
-            
-          <div id="tiberius-board"></div>
+  <div class="tiberius-live-panel hidden" id="tiberius-live-panel">
 
+    <button
+      class="add-btn"
+      onclick="openTiberiusThrowModal()"
+    >
+      🎳 Wurf eingeben
+    </button>
+
+    <button
+      class="secondary-btn"
+      onclick="undoLastTiberiusThrow()"
+    >
+      ↩ Rückgängig
+    </button>
+
+    <div class="tiberius-live-score">
+      <div class="tiberius-live-label">Punktestand</div>
+      <div
+        class="tiberius-live-value"
+        id="tiberius-score-display"
+      >
+        0
+      </div>
+    </div>
+
+    <div class="tiberius-live-money">
+      <div class="tiberius-live-label">
+        Aktueller Betrag
+      </div>
+      <div
+        class="tiberius-live-amount"
+        id="tiberius-current-amount"
+      >
+        0,00 €
+      </div>
+    </div>
+
+  </div>
+
+  <div id="tiberius-board"></div>
+</div>
         <div style="margin-top:14px;display:flex;gap:10px;">
           <button class="secondary-btn tiberius-reset-live-btn hidden" onclick="resetTiberiusGame()">
             ↻ Neustart
