@@ -4119,6 +4119,7 @@ function renderTiberius() {
   const onTopCheck = document.getElementById('tiberius-ontop-check');
   const randomBtn = document.getElementById('tiberius-random-btn');
   const scoreDisplay = document.getElementById('tiberius-score-display');
+    const nextTargetDisplay = document.getElementById('tiberius-next-target-display');
       const amountDisplay = document.getElementById('tiberius-current-amount');
     const finishBtn = document.querySelector('#tab-tiberius .save-prices-btn');
     const resetBtn = document.querySelector('#tab-tiberius .tiberius-reset-live-btn');
@@ -4145,6 +4146,21 @@ function renderTiberius() {
   if (scoreDisplay) {
     scoreDisplay.textContent = tiberiusState.score || 0;
   }
+    
+    if (nextTargetDisplay) {
+      const nextTarget = (tiberiusState.targets || [])
+        .map(x => parseInt(x || 0, 10))
+        .filter(x => x > tiberiusState.score)
+        .sort((a, b) => a - b)[0];
+
+      if (!nextTarget) {
+        nextTargetDisplay.textContent =
+          '🏁 Alle Ziele erreicht';
+      } else {
+        nextTargetDisplay.textContent =
+          `Noch ${nextTarget - tiberiusState.score} bis ${nextTarget}`;
+      }
+    }
 
   if (amountDisplay) {
     amountDisplay.textContent = euros(getTiberiusCurrentAmount());
