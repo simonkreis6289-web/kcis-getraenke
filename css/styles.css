@@ -3032,7 +3032,7 @@ body.view-only #clubBackBtn {
 /* ── QUICK BAR EINHEITLICH ── */
 .quick-penalty-bar {
   display: grid;
-  grid-template-columns: 128px repeat(5, 118px);
+  grid-template-columns: 180px repeat(5, 150px);
   gap: 8px;
   align-items: center;
   justify-content: start;
