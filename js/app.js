@@ -4158,7 +4158,7 @@ function renderTiberius() {
           '🏁 Alle Ziele erreicht';
       } else {
         nextTargetDisplay.textContent =
-          `Noch ${nextTarget - tiberiusState.score} bis ${nextTarget}`;
+          `${nextTarget - tiberiusState.score} bis ${nextTarget}`;
       }
     }
 
