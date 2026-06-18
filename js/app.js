@@ -2803,6 +2803,7 @@ function createTiberiusState() {
     targets: [],
     score: 0,
     throws: [],
+    undoStack: [],
     penalties: {},
     pendingHit: null,
     finished: false,
@@ -2833,6 +2834,7 @@ function ensureTiberiusState() {
 
   if (!Array.isArray(tiberiusState.targets)) tiberiusState.targets = [];
   if (!Array.isArray(tiberiusState.throws)) tiberiusState.throws = [];
+    if (!Array.isArray(tiberiusState.undoStack)) tiberiusState.undoStack = [];
   if (!tiberiusState.penalties) tiberiusState.penalties = {};
   if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
 
@@ -3651,6 +3653,7 @@ function startTiberiusGame() {
   tiberiusState.finished = false;
   tiberiusState.score = 0;
   tiberiusState.throws = [];
+    tiberiusState.undoStack = [];
   tiberiusState.penalties = {};
   tiberiusState.pendingHit = null;
   tiberiusState.targetsGenerated = true;
@@ -3901,6 +3904,20 @@ function continueTiberiusAfterThrower(personName = '') {
 
 function handleTiberiusThrow(value) {
   ensureTiberiusState();
+    
+    tiberiusState.undoStack.push({
+      score: tiberiusState.score,
+      throws: JSON.parse(JSON.stringify(tiberiusState.throws || [])),
+      penalties: JSON.parse(JSON.stringify(tiberiusState.penalties || {})),
+      pendingHit: tiberiusState.pendingHit
+        ? JSON.parse(JSON.stringify(tiberiusState.pendingHit))
+        : null,
+      personsStrafen: persons.map(p => ({
+        name: p.name,
+        strafen: JSON.parse(JSON.stringify(p.strafen || {}))
+      })),
+      penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog || []))
+    });
 
   const oldScore = parseInt(tiberiusState.score || 0, 10) || 0;
   const newScore = oldScore + value;
@@ -3929,6 +3946,46 @@ function handleTiberiusThrow(value) {
   }
 
   continueTiberiusAfterThrower();
+}
+
+function undoLastTiberiusThrow() {
+  ensureTiberiusState();
+
+  const last = tiberiusState.undoStack?.pop();
+
+  if (!last) {
+    showToast('Kein Tiberius-Wurf zum Rückgängig machen', 'error');
+    return;
+  }
+
+  tiberiusState.score = last.score || 0;
+  tiberiusState.throws = Array.isArray(last.throws) ? last.throws : [];
+  tiberiusState.penalties = last.penalties || {};
+  tiberiusState.pendingHit = last.pendingHit || null;
+
+  if (Array.isArray(last.personsStrafen)) {
+    last.personsStrafen.forEach(snapshot => {
+      const p = persons.find(x => x.name === snapshot.name);
+      if (p) {
+        p.strafen = snapshot.strafen || {};
+      }
+    });
+  }
+
+  penaltyStatsLog = Array.isArray(last.penaltyStatsLog)
+    ? last.penaltyStatsLog
+    : [];
+
+  tiberiusPendingThrower = null;
+
+  closeTiberiusThrowModal();
+  closeTiberiusThrowerModal();
+  closeTiberiusHitModal();
+
+  renderAll();
+  persistState();
+
+  showToast('↩️ Letzter Tiberius-Wurf rückgängig', 'success');
 }
 
 function getTiberiusHitForScore(oldScore, newScore) {
