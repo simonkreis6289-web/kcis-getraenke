@@ -1155,6 +1155,23 @@
   </div>
 </div>
     
+<div class="modal-overlay hidden" id="darts-penalty-player-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="darts-penalty-player-title">Wer hat geworfen?</h3>
+    <div class="modal-sub" id="darts-penalty-player-sub">Spieler auswählen</div>
+
+    <div class="modal-input-row">
+      <label>Spieler</label>
+      <select id="darts-penalty-player-select" class="modal-select"></select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeDartsPenaltyPlayerModal()">Abbrechen</button>
+      <button class="modal-ok" onclick="confirmDartsPenaltyPlayer()">✓ Buchen</button>
+    </div>
+  </div>
+</div>
+    
 <div class="modal-overlay hidden" id="free-strafe-modal">
   <div class="modal" style="max-width:520px;">
     <h3>Freie Beträge</h3>
