@@ -2795,6 +2795,25 @@ tbody td:first-child {
     font-size: 0.62rem;
   }
 }
+
+.tannenbaum-number-btn.special {
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.tannenbaum-number-btn.special span {
+  font-size: 0.78rem;
+}
+
+.tannenbaum-number-btn.kranz {
+  background: rgba(245, 166, 35, 0.18);
+  border-color: var(--accent);
+}
+
+.tannenbaum-number-btn.gosse {
+  background: rgba(232, 65, 42, 0.14);
+  border-color: var(--accent2);
+}
      
 .darts-start-card {
   padding: 16px;
