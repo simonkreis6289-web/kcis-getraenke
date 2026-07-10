@@ -2438,51 +2438,6 @@ tbody td:first-child {
   }
 }
 
-.tannenbaum-table {
-  min-width: 680px !important;
-  table-layout: fixed !important;
-}
-
-.tannenbaum-table th:nth-child(1),
-.tannenbaum-table td:nth-child(1),
-.tannenbaum-table th:nth-child(5),
-.tannenbaum-table td:nth-child(5) {
-  width: 170px !important;
-}
-
-.tannenbaum-table th:nth-child(2),
-.tannenbaum-table td:nth-child(2),
-.tannenbaum-table th:nth-child(4),
-.tannenbaum-table td:nth-child(4) {
-  width: 190px !important;
-}
-
-.tannenbaum-table th:nth-child(3),
-.tannenbaum-table td:nth-child(3) {
-  width: 44px !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.tannenbaum-box-cell {
-  padding-left: 4px !important;
-  padding-right: 4px !important;
-}
-
-.tannenbaum-middle {
-  width: 44px !important;
-  padding: 0 !important;
-  text-align: center !important;
-}
-
-.tannenbaum-side.wand {
-  justify-content: flex-end !important;
-}
-
-.tannenbaum-side.tv {
-  justify-content: flex-start !important;
-}
-
 /* =========================================================
    TANNENBAUM – NEUES TABLET-LAYOUT
    ========================================================= */
