@@ -2513,10 +2513,10 @@ tbody td:first-child {
   display: grid;
 
   /* Seitenlisten schmal, Tabelle bekommt den Hauptplatz */
-  grid-template-columns:
-    minmax(125px, 0.72fr)
-    minmax(420px, 2.6fr)
-    minmax(125px, 0.72fr);
+    grid-template-columns:
+      105px
+      minmax(420px, 1fr)
+      105px;
 
   gap: 12px;
   align-items: start;
@@ -2565,7 +2565,7 @@ tbody td:first-child {
 
 .tannenbaum-throws-title {
   overflow: hidden;
-  font-size: 0.86rem;
+  font-size: 0.72rem;
   font-weight: 900;
   line-height: 1.15;
   text-align: center;
@@ -2574,8 +2574,8 @@ tbody td:first-child {
 }
 
 .tannenbaum-throws-subtitle {
-  margin: 3px 0 8px;
-  font-size: 0.66rem;
+  margin: 2px 0 6px;
+  font-size: 0.55rem;
   font-weight: 800;
   color: var(--muted);
   text-align: center;
@@ -2633,25 +2633,12 @@ tbody td:first-child {
   white-space: nowrap;
 }
 
-.tannenbaum-history-text small {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
 .tannenbaum-throw-empty {
   padding: 12px 5px;
   font-size: 0.72rem;
   color: var(--muted);
   text-align: center;
 }
-
-
-/* =========================================================
-   TABELLE ETWAS KOMPAKTER
-   ========================================================= */
 
 .tannenbaum-main-layout .tannenbaum-scroll {
   width: 100%;
@@ -2768,6 +2755,69 @@ tbody td:first-child {
 .tannenbaum-number-btn.gosse {
   background: rgba(232, 65, 42, 0.14);
   border-color: var(--accent2);
+}
+
+.tannenbaum-throws-panel {
+  min-width: 0;
+  padding: 7px 5px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-sizing: border-box;
+}
+
+.tannenbaum-history-entry {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 5px;
+  align-items: center;
+
+  min-width: 0;
+  padding: 5px;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.tannenbaum-history-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 34px;
+
+  border-radius: 7px;
+  background: var(--surface);
+
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.tannenbaum-history-text {
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.05;
+}
+
+.tannenbaum-history-action {
+  overflow: hidden;
+  font-size: 0.57rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tannenbaum-history-thrower {
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
      
 .darts-start-card {
