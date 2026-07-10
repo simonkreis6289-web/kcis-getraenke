@@ -1023,8 +1023,29 @@ function renderTannenbaumNumberCells(team, number, sideClass) {
   const data = tannenbaumState.teams[team];
   const baseCount = TANNENBAUM_BASE[number];
   const remaining = data.remaining[number] || 0;
-  const visibleCount = Math.max(baseCount, remaining);
 
+  const teamIsEmpty = isTannenbaumTeamEmpty(team);
+
+  if (teamIsEmpty) {
+    return `
+      <div class="tannenbaum-side ${sideClass} winner-side">
+        ${
+          Number(number) === 5
+            ? `
+              <div class="tannenbaum-winner-mark">
+                <div class="tannenbaum-winner-emoji">🏆</div>
+                <div class="tannenbaum-winner-team">
+                  ${getTannenbaumTeamDisplay(team)}
+                </div>
+              </div>
+            `
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  const visibleCount = Math.max(baseCount, remaining);
   const cells = [];
 
   for (let i = 0; i < visibleCount; i++) {
