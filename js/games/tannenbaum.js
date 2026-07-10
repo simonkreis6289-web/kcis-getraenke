@@ -1,4 +1,5 @@
 let pendingTannenbaumPenaltyThrow = null;
+let pendingTannenbaumKranzChoice = null;
 
 function createTannenbaumState() {
   return {
@@ -169,33 +170,12 @@ function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
     ?.classList.remove('hidden');
 }
   
-function confirmTannenbaumPenaltyPlayer() {
-  ensureTannenbaumState();
-
-  if (!pendingTannenbaumPenaltyThrow) return;
-
-  const select = document.getElementById(
-    'tannenbaum-penalty-player-select'
-  );
-
-  const personName = select?.value || '';
-
-  if (!personName) {
-    showToast('Bitte Person auswählen', 'error');
-    return;
-  }
-
-  const {
-    type,
-    team,
-    number
-  } = pendingTannenbaumPenaltyThrow;
-
+function bookTannenbaumPenalty(type, personName) {
   const penaltyKey = getPenaltyKeyByType(type);
 
   if (!penaltyKey) {
     showToast(`Strafe "${type}" nicht gefunden`, 'error');
-    return;
+    return null;
   }
 
   const activePlayers = persons.filter(
@@ -205,12 +185,13 @@ function confirmTannenbaumPenaltyPlayer() {
   const punishedNames = [];
 
   if (type === 'gosse') {
-    // Bei Gosse zahlt nur die werfende Person
-    const thrower = persons.find(p => p.name === personName);
+    const thrower = persons.find(
+      p => p.name === personName
+    );
 
     if (!thrower) {
       showToast('Person nicht gefunden', 'error');
-      return;
+      return null;
     }
 
     if (!thrower.strafen) {
@@ -222,7 +203,6 @@ function confirmTannenbaumPenaltyPlayer() {
 
     punishedNames.push(personName);
   } else {
-    // Bei 9er und Kranz zahlen alle außer der werfenden Person
     activePlayers.forEach(person => {
       if (person.name === personName) return;
 
@@ -245,40 +225,157 @@ function confirmTannenbaumPenaltyPlayer() {
     );
   }
 
-  // Modal schließen, ohne Team schon zu löschen
+  return {
+    penaltyKey,
+    punishedNames
+  };
+}
+  
+function confirmTannenbaumPenaltyPlayer() {
+  ensureTannenbaumState();
+
+  if (!pendingTannenbaumPenaltyThrow) return;
+
+  const select = document.getElementById(
+    'tannenbaum-penalty-player-select'
+  );
+
+  const personName = select?.value || '';
+
+  if (!personName) {
+    showToast('Bitte Person auswählen', 'error');
+    return;
+  }
+
+  const {
+    type,
+    team,
+    number
+  } = pendingTannenbaumPenaltyThrow;
+
   document
     .getElementById('tannenbaum-penalty-player-modal')
     ?.classList.add('hidden');
 
+  /*
+   * Kranz:
+   * Erst Spieler merken, danach freie Zahl wählen.
+   */
+  if (type === 'kranz') {
+    pendingTannenbaumKranzChoice = {
+      type,
+      team,
+      thrower: personName
+    };
+
+    pendingTannenbaumPenaltyThrow = null;
+
+    openTannenbaumKranzNumberModal();
+    return;
+  }
+
+  /*
+   * 9er und Gosse können direkt gebucht werden.
+   */
+  const booking = bookTannenbaumPenalty(
+    type,
+    personName
+  );
+
+  if (!booking) return;
+
   pendingTannenbaumPenaltyThrow = null;
 
   if (type === '9er' && number === 9) {
-    // Die 9 zusätzlich ganz normal im Tannenbaum verarbeiten
     handleTannenbaumThrow(9);
-  } else {
-    // Kranz und Gosse nur im Verlauf speichern
-    tannenbaumState.history.unshift({
-      team,
-      number: type,
-      action: `${getTannenbaumTeamDisplay(team)}: ${type} durch ${personName}`,
-      type: `penalty-${type}`,
-      thrower: personName,
-      createdAt: new Date().toISOString()
-    });
 
-    tannenbaumThrowTeam = null;
+    if (typeof renderStrafen === 'function') {
+      renderStrafen();
+    }
 
-    renderTannenbaum();
-    renderStrafen?.();
     persistState();
 
     showToast(
-      type === 'gosse'
-        ? `💀 Gosse für ${personName} gebucht`
-        : `✅ ${type}: ${personName} bleibt straffrei`,
+      `🎯 9er von ${personName} gebucht`,
       'success'
     );
+
+    return;
   }
+
+  /*
+   * Gosse verändert keine Zahl im Tannenbaum.
+   */
+  tannenbaumState.history.unshift({
+    team,
+    number: 'gosse',
+    action:
+      `${getTannenbaumTeamDisplay(team)}: Gosse durch ${personName}`,
+    type: 'penalty-gosse',
+    thrower: personName,
+    penaltyKey: booking.penaltyKey,
+    punishedNames: booking.punishedNames,
+    createdAt: new Date().toISOString()
+  });
+
+  tannenbaumThrowTeam = null;
+
+  renderTannenbaum();
+
+  if (typeof renderStrafen === 'function') {
+    renderStrafen();
+  }
+
+  persistState();
+
+  showToast(
+    `💀 Gosse für ${personName} gebucht`,
+    'success'
+  );
+}
+
+function openTannenbaumKranzNumberModal() {
+  if (!pendingTannenbaumKranzChoice) return;
+
+  const grid = document.getElementById(
+    'tannenbaum-kranz-number-grid'
+  );
+
+  const sub = document.getElementById(
+    'tannenbaum-kranz-number-sub'
+  );
+
+  if (!grid) return;
+
+  const {
+    team,
+    thrower
+  } = pendingTannenbaumKranzChoice;
+
+  if (sub) {
+    sub.textContent =
+      `${thrower} hat einen Kranz geworfen. ` +
+      `Welche Zahl soll für ${getTannenbaumTeamDisplay(team)} gelten?`;
+  }
+
+  grid.innerHTML = '';
+
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+
+    btn.className = 'tannenbaum-number-btn';
+    btn.textContent = n;
+
+    btn.onclick = () => {
+      confirmTannenbaumKranzNumber(n);
+    };
+
+    grid.appendChild(btn);
+  }
+
+  document
+    .getElementById('tannenbaum-kranz-number-modal')
+    ?.classList.remove('hidden');
 }
 
 function closeTannenbaumPenaltyPlayerModal() {
@@ -290,6 +387,16 @@ function closeTannenbaumPenaltyPlayerModal() {
   tannenbaumThrowTeam = null;
 }
 
+function closeTannenbaumKranzNumberModal() {
+  document
+    .getElementById('tannenbaum-kranz-number-modal')
+    ?.classList.add('hidden');
+
+  pendingTannenbaumKranzChoice = null;
+  pendingTannenbaumPenaltyThrow = null;
+  tannenbaumThrowTeam = null;
+}
+  
 function closeTannenbaumThrowModal() {
   document.getElementById('tannenbaum-throw-modal').classList.add('hidden');
   tannenbaumThrowTeam = null;
@@ -396,7 +503,7 @@ function renderTannenbaumThrowHistoryForTeam(team, elementId) {
     return `
       <div class="tannenbaum-history-entry">
         <div class="tannenbaum-history-number">
-          ${number}
+          ${displayNumber}
         </div>
 
         <div class="tannenbaum-history-text">
@@ -409,6 +516,14 @@ function renderTannenbaumThrowHistoryForTeam(team, elementId) {
 }
 
 function getTannenbaumHistoryLabel(entry) {
+  if (entry.specialType === 'kranz') {
+    return `Kranz · ${entry.thrower || ''}`;
+  }
+
+  if (entry.type === 'penalty-gosse') {
+    return `Gosse · ${entry.thrower || ''}`;
+  }
+
   if (entry.type === 'strike-own') {
     return 'Gestrichen';
   }
@@ -419,14 +534,6 @@ function getTannenbaumHistoryLabel(entry) {
 
   if (entry.type === 'restore') {
     return 'Zurück';
-  }
-
-  if (entry.type === 'penalty-kranz') {
-    return `Kranz · ${entry.thrower || ''}`;
-  }
-
-  if (entry.type === 'penalty-gosse') {
-    return `Gosse · ${entry.thrower || ''}`;
   }
 
   return entry.action || 'Wurf';
@@ -510,6 +617,67 @@ function closeTannenbaumRestoreModal() {
   document.getElementById('tannenbaum-restore-modal')?.classList.add('hidden');
 }
 
+function confirmTannenbaumKranzNumber(number) {
+  ensureTannenbaumState();
+
+  if (!pendingTannenbaumKranzChoice) return;
+
+  const {
+    team,
+    thrower
+  } = pendingTannenbaumKranzChoice;
+
+  const booking = bookTannenbaumPenalty(
+    'kranz',
+    thrower
+  );
+
+  if (!booking) return;
+
+  document
+    .getElementById('tannenbaum-kranz-number-modal')
+    ?.classList.add('hidden');
+
+  pendingTannenbaumKranzChoice = null;
+
+  /*
+   * Team erneut setzen, damit handleTannenbaumThrow()
+   * weiß, für welches Team die Zahl gilt.
+   */
+  tannenbaumThrowTeam = team;
+
+  handleTannenbaumThrow(number);
+
+  /*
+   * Den gerade erzeugten Historieneintrag
+   * um Kranz-Daten erweitern.
+   */
+  const latestEntry = tannenbaumState.history?.[0];
+
+  if (latestEntry) {
+    latestEntry.specialType = 'kranz';
+    latestEntry.thrower = thrower;
+    latestEntry.penaltyKey = booking.penaltyKey;
+    latestEntry.punishedNames = booking.punishedNames;
+    latestEntry.action =
+      `👑 Kranz von ${thrower}: Zahl ${number} · ` +
+      latestEntry.action;
+  }
+
+  renderTannenbaum();
+
+  if (typeof renderStrafen === 'function') {
+    renderStrafen();
+  }
+
+  persistState();
+
+  showToast(
+    `👑 Kranz von ${thrower}: Zahl ${number} gewählt`,
+    'success'
+  );
+}
+  
 function confirmTannenbaumRestore() {
   ensureTannenbaumState();
 
