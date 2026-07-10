@@ -1,4 +1,4 @@
-g<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -11,7 +11,7 @@ g<!DOCTYPE html>
   <title>Kegelclub - Manager</title>
 
   <link rel="manifest" href="manifest.json?v=20260318-v16">
-        
+    
     
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
@@ -561,49 +561,195 @@ g<!DOCTYPE html>
     <!-- SPIELE -->
     <div id="main-spiele" class="main-panel hidden">
         
-        <div id="tab-tannenbaum">
-          <div class="section-title">Tannenbaum</div>
+<div id="tab-tannenbaum">
+  <div class="section-title">Tannenbaum</div>
 
-          <div class="tannenbaum-game">
+  <div class="tannenbaum-game">
 
-            <div class="tannenbaum-input-row">
-              <button class="tannenbaum-throw-btn t1" onclick="openTannenbaumThrowModal('T1')">
-                ⚫ Wurf Wand
-              </button>
+    <!-- Wurfbuttons -->
+    <div class="tannenbaum-input-row">
+      <button
+        id="tannenbaum-throw-btn-t1"
+        class="tannenbaum-throw-btn t1"
+        onclick="openTannenbaumThrowModal('T1')"
+      >
+        Team 1 Wurf
+      </button>
 
-              <button class="tannenbaum-throw-btn t2" onclick="openTannenbaumThrowModal('T2')">
-                🔴 Wurf TV
-              </button>
-            </div>
+      <button
+        id="tannenbaum-throw-btn-t2"
+        class="tannenbaum-throw-btn t2"
+        onclick="openTannenbaumThrowModal('T2')"
+      >
+        Team 2 Wurf
+      </button>
+    </div>
 
-            <div class="tannenbaum-action-row">
-              <button class="secondary-btn" onclick="undoLastTannenbaumThrow()">
-                ↩ Letzten Wurf rückgängig
-              </button>
+    <!-- Vier Betragsboxen -->
+    <div class="tannenbaum-summary-grid">
 
-              <button class="secondary-btn" onclick="openTannenbaumRestoreModal()">
-                ➕ Zahl wieder hinzufügen
-              </button>
-
-              <button class="secondary-btn" onclick="openCoinFlipModal('Tannenbaum')">
-                🪙 Münzwurf
-              </button>
-            </div>
-
-            <div id="tannenbaum-board"></div>
-
-            <div style="margin-top:14px;">
-              <button class="save-prices-btn" onclick="finishTannenbaumGame()">
-                ✅ Tannenbaum abschließen
-              </button>
-
-              <button class="save-prices-btn" onclick="resetTannenbaumGame()">
-                ↻ Tannenbaum neu starten
-              </button>
-            </div>
-
-          </div>
+      <div class="tannenbaum-summary-card t1">
+        <div class="tannenbaum-summary-label">
+          Strafbetrag
         </div>
+        <div
+          class="tannenbaum-summary-value"
+          id="tannenbaum-current-t1"
+        >
+          0,00 €
+        </div>
+        <div
+          class="tannenbaum-summary-team"
+          id="tannenbaum-current-t1-team"
+        >
+          Team 1
+        </div>
+      </div>
+
+      <div class="tannenbaum-summary-card t1">
+        <div class="tannenbaum-summary-label">
+          Noch offen
+        </div>
+        <div
+          class="tannenbaum-summary-value"
+          id="tannenbaum-open-t1"
+        >
+          0,00 €
+        </div>
+        <div
+          class="tannenbaum-summary-team"
+          id="tannenbaum-open-t1-team"
+        >
+          Team 1
+        </div>
+      </div>
+
+      <div class="tannenbaum-summary-card t2">
+        <div class="tannenbaum-summary-label">
+          Strafbetrag
+        </div>
+        <div
+          class="tannenbaum-summary-value"
+          id="tannenbaum-current-t2"
+        >
+          0,00 €
+        </div>
+        <div
+          class="tannenbaum-summary-team"
+          id="tannenbaum-current-t2-team"
+        >
+          Team 2
+        </div>
+      </div>
+
+      <div class="tannenbaum-summary-card t2">
+        <div class="tannenbaum-summary-label">
+          Noch offen
+        </div>
+        <div
+          class="tannenbaum-summary-value"
+          id="tannenbaum-open-t2"
+        >
+          0,00 €
+        </div>
+        <div
+          class="tannenbaum-summary-team"
+          id="tannenbaum-open-t2-team"
+        >
+          Team 2
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Würfe links / Tabelle Mitte / Würfe rechts -->
+    <div class="tannenbaum-main-layout">
+
+      <div class="tannenbaum-throws-panel t1">
+        <div
+          class="tannenbaum-throws-title"
+          id="tannenbaum-history-t1-title"
+        >
+          Team 1
+        </div>
+
+        <div class="tannenbaum-throws-subtitle">
+          Letzte 10 Würfe
+        </div>
+
+        <div
+          class="tannenbaum-throws-list"
+          id="tannenbaum-history-t1"
+        ></div>
+      </div>
+
+      <div class="tannenbaum-board-wrap">
+        <div id="tannenbaum-board"></div>
+      </div>
+
+      <div class="tannenbaum-throws-panel t2">
+        <div
+          class="tannenbaum-throws-title"
+          id="tannenbaum-history-t2-title"
+        >
+          Team 2
+        </div>
+
+        <div class="tannenbaum-throws-subtitle">
+          Letzte 10 Würfe
+        </div>
+
+        <div
+          class="tannenbaum-throws-list"
+          id="tannenbaum-history-t2"
+        ></div>
+      </div>
+
+    </div>
+
+    <!-- Aktionen jetzt UNTER der Tabelle -->
+    <div class="tannenbaum-action-row">
+      <button
+        class="secondary-btn"
+        onclick="undoLastTannenbaumThrow()"
+      >
+        ↩ Letzten Wurf rückgängig
+      </button>
+
+      <button
+        class="secondary-btn"
+        onclick="openTannenbaumRestoreModal()"
+      >
+        ➕ Zahl wieder hinzufügen
+      </button>
+
+      <button
+        class="secondary-btn"
+        onclick="openCoinFlipModal('Tannenbaum')"
+      >
+        🪙 Münzwurf
+      </button>
+    </div>
+
+    <!-- Spielaktionen -->
+    <div class="tannenbaum-finish-row">
+      <button
+        class="save-prices-btn"
+        onclick="finishTannenbaumGame()"
+      >
+        ✅ Tannenbaum abschließen
+      </button>
+
+      <button
+        class="save-prices-btn"
+        onclick="resetTannenbaumGame()"
+      >
+        ↻ Tannenbaum neu starten
+      </button>
+    </div>
+
+  </div>
+</div>
         
     <div id="tab-darts" class="hidden">
       <div class="section-title">Darts</div>
@@ -806,6 +952,7 @@ g<!DOCTYPE html>
 <div class="tiberius-live-next-target">
   <div class="tiberius-live-label">Nächstes Ziel</div>
   <div class="tiberius-live-value" id="tiberius-next-target-display">117</div>
+  <div class="tiberius-live-next" id="tiberius-next-rest-display">noch 27</div>
 </div>
 
         <div class="tiberius-live-money">
@@ -816,20 +963,25 @@ g<!DOCTYPE html>
   </div>
 
   <div id="tiberius-board"></div>
-</div>
-        <div style="margin-top:14px;display:flex;gap:10px;">
-          <button class="secondary-btn tiberius-reset-live-btn hidden" onclick="resetTiberiusGame()">
-            ↻ Neustart
-          </button>
+      <div style="margin-top:14px;display:flex;gap:10px;">
+        <button
+          class="secondary-btn tiberius-reset-live-btn hidden"
+          onclick="resetTiberiusGame()"
+        >
+          ↻ Neustart
+        </button>
 
-          <button class="save-prices-btn hidden" onclick="finishTiberiusGame()">
-            ✅ Tiberius abschließen
-          </button>
-        </div>
+        <button
+          class="save-prices-btn hidden"
+          onclick="finishTiberiusGame()"
+        >
+          ✅ Tiberius abschließen
+        </button>
+      </div>
 
-          <div class="section-title">Tiberius Verlauf</div>
-          <div id="tiberius-history-list" class="spiele-list"></div>
-        </div>
+      <div class="section-title">Tiberius Verlauf</div>
+      <div id="tiberius-history-list" class="spiele-list"></div>
+    </div>
         
         <div id="tab-spiele-einstellungen" class="hidden">
           <div class="section-title">Spiel-Einstellungen</div>
