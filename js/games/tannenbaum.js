@@ -231,6 +231,16 @@ function bookTannenbaumPenalty(type, personName) {
   };
 }
   
+function refreshTannenbaumPenaltyUI() {
+  if (typeof renderStrafen === 'function') {
+    renderStrafen();
+  }
+
+  if (typeof updateStats === 'function') {
+    updateStats();
+  }
+}
+  
 function confirmTannenbaumPenaltyPlayer() {
   ensureTannenbaumState();
 
@@ -257,10 +267,6 @@ function confirmTannenbaumPenaltyPlayer() {
     .getElementById('tannenbaum-penalty-player-modal')
     ?.classList.add('hidden');
 
-  /*
-   * Kranz:
-   * Erst Spieler merken, danach freie Zahl wählen.
-   */
   if (type === 'kranz') {
     pendingTannenbaumKranzChoice = {
       type,
@@ -274,9 +280,6 @@ function confirmTannenbaumPenaltyPlayer() {
     return;
   }
 
-  /*
-   * 9er und Gosse können direkt gebucht werden.
-   */
   const booking = bookTannenbaumPenalty(
     type,
     personName
@@ -289,9 +292,16 @@ function confirmTannenbaumPenaltyPlayer() {
   if (type === '9er' && number === 9) {
     handleTannenbaumThrow(9);
 
-    if (typeof renderStrafen === 'function') {
-      renderStrafen();
+      const latestEntry = tannenbaumState.history?.[0];
+
+    if (latestEntry) {
+      latestEntry.specialType = '9er';
+      latestEntry.thrower = personName;
+      latestEntry.penaltyKey = booking.penaltyKey;
+      latestEntry.punishedNames = booking.punishedNames;
     }
+      
+refreshTannenbaumPenaltyUI();
 
     persistState();
 
@@ -303,9 +313,6 @@ function confirmTannenbaumPenaltyPlayer() {
     return;
   }
 
-  /*
-   * Gosse verändert keine Zahl im Tannenbaum.
-   */
   tannenbaumState.history.unshift({
     team,
     number: 'gosse',
@@ -320,13 +327,9 @@ function confirmTannenbaumPenaltyPlayer() {
 
   tannenbaumThrowTeam = null;
 
-  renderTannenbaum();
-
-  if (typeof renderStrafen === 'function') {
-    renderStrafen();
-  }
-
-  persistState();
+    renderTannenbaum();
+    refreshTannenbaumPenaltyUI();
+    persistState();
 
   showToast(
     `💀 Gosse für ${personName} gebucht`,
@@ -475,7 +478,7 @@ function renderTannenbaumThrowHistoryForTeam(team, elementId) {
   const entries = (tannenbaumState.history || [])
     .filter(entry => entry.team === team)
     .filter(entry => entry.type !== 'manual-restore')
-    .slice(0, 10);
+    .slice(0, 7);
 
   if (!entries.length) {
     list.innerHTML = `
@@ -488,17 +491,15 @@ function renderTannenbaumThrowHistoryForTeam(team, elementId) {
 
   list.innerHTML = entries.map(entry => {
     const displayNumber =
-      entry.number === 'kranz'
-        ? '👑'
-        : entry.number === 'gosse'
-          ? '💀'
-          : entry.number;
-    const time = entry.createdAt
-      ? new Date(entry.createdAt).toLocaleTimeString('de-DE', {
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      : '';
+      entry.number === 'gosse'
+        ? '💀'
+        : entry.specialType === 'kranz'
+          ? '👑'
+          : entry.specialType === '9er'
+            ? '🎯'
+            : entry.number;
+
+    const throwerName = entry.thrower || '—';
 
     return `
       <div class="tannenbaum-history-entry">
@@ -507,8 +508,13 @@ function renderTannenbaumThrowHistoryForTeam(team, elementId) {
         </div>
 
         <div class="tannenbaum-history-text">
-          <div>${getTannenbaumHistoryLabel(entry)}</div>
-          <small>${time}</small>
+          <div class="tannenbaum-history-action">
+            ${getTannenbaumHistoryLabel(entry)}
+          </div>
+
+          <div class="tannenbaum-history-thrower">
+            ${throwerName}
+          </div>
         </div>
       </div>
     `;
@@ -517,26 +523,30 @@ function renderTannenbaumThrowHistoryForTeam(team, elementId) {
 
 function getTannenbaumHistoryLabel(entry) {
   if (entry.specialType === 'kranz') {
-    return `Kranz · ${entry.thrower || ''}`;
+    return '👑 Kranz';
+  }
+
+  if (entry.specialType === '9er') {
+    return '🎯 9er';
   }
 
   if (entry.type === 'penalty-gosse') {
-    return `Gosse · ${entry.thrower || ''}`;
+    return '💀 Gosse';
   }
 
   if (entry.type === 'strike-own') {
-    return 'Gestrichen';
+    return '✅ Gestrichen';
   }
 
   if (entry.type === 'enemy-strike') {
-    return 'Gegner +1';
+    return '⚠️ Gegner +1';
   }
 
   if (entry.type === 'restore') {
-    return 'Zurück';
+    return '↩️ Zurück';
   }
 
-  return entry.action || 'Wurf';
+  return '🎳 Wurf';
 }
 
 function renderTannenbaum() {
@@ -640,18 +650,10 @@ function confirmTannenbaumKranzNumber(number) {
 
   pendingTannenbaumKranzChoice = null;
 
-  /*
-   * Team erneut setzen, damit handleTannenbaumThrow()
-   * weiß, für welches Team die Zahl gilt.
-   */
   tannenbaumThrowTeam = team;
 
   handleTannenbaumThrow(number);
 
-  /*
-   * Den gerade erzeugten Historieneintrag
-   * um Kranz-Daten erweitern.
-   */
   const latestEntry = tannenbaumState.history?.[0];
 
   if (latestEntry) {
@@ -664,13 +666,9 @@ function confirmTannenbaumKranzNumber(number) {
       latestEntry.action;
   }
 
-  renderTannenbaum();
-
-  if (typeof renderStrafen === 'function') {
-    renderStrafen();
-  }
-
-  persistState();
+    renderTannenbaum();
+    refreshTannenbaumPenaltyUI();
+    persistState();
 
   showToast(
     `👑 Kranz von ${thrower}: Zahl ${number} gewählt`,
