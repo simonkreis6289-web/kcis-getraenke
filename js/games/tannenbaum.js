@@ -1,3 +1,5 @@
+let pendingTannenbaumPenaltyThrow = null;
+
 function createTannenbaumState() {
   return {
     teams: {
@@ -60,20 +62,232 @@ function openTannenbaumThrowModal(team) {
   const title = document.getElementById('tannenbaum-throw-title');
   const grid = document.getElementById('tannenbaum-number-grid');
 
-  if (title) title.textContent = `Wurf für ${getTeamLabel(team)}`;
+  if (title) {
+    title.textContent = `Wurf für ${getTannenbaumTeamDisplay(team)}`;
+  }
+
   if (!grid) return;
 
   grid.innerHTML = '';
 
+  // Normale Zahlen 1 bis 9
   for (let n = 1; n <= 9; n++) {
     const btn = document.createElement('button');
     btn.className = 'tannenbaum-number-btn';
     btn.textContent = n;
-    btn.onclick = () => handleTannenbaumThrow(n);
+
+    if (n === 9) {
+      btn.onclick = () => {
+        openTannenbaumPenaltyPlayerModal('9er', team, 9);
+      };
+    } else {
+      btn.onclick = () => handleTannenbaumThrow(n);
+    }
+
     grid.appendChild(btn);
   }
 
-  document.getElementById('tannenbaum-throw-modal').classList.remove('hidden');
+  // Kranz
+  const kranzBtn = document.createElement('button');
+  kranzBtn.className = 'tannenbaum-number-btn special kranz';
+  kranzBtn.innerHTML = '👑<br><span>Kranz</span>';
+  kranzBtn.onclick = () => {
+    openTannenbaumPenaltyPlayerModal('kranz', team, null);
+  };
+  grid.appendChild(kranzBtn);
+
+  // Gosse
+  const gosseBtn = document.createElement('button');
+  gosseBtn.className = 'tannenbaum-number-btn special gosse';
+  gosseBtn.innerHTML = '💀<br><span>Gosse</span>';
+  gosseBtn.onclick = () => {
+    openTannenbaumPenaltyPlayerModal('gosse', team, null);
+  };
+  grid.appendChild(gosseBtn);
+
+  document
+    .getElementById('tannenbaum-throw-modal')
+    ?.classList.remove('hidden');
+}
+  
+function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
+  pendingTannenbaumPenaltyThrow = {
+    type,
+    team,
+    number
+  };
+
+  const title = document.getElementById(
+    'tannenbaum-penalty-player-title'
+  );
+
+  const sub = document.getElementById(
+    'tannenbaum-penalty-player-sub'
+  );
+
+  const select = document.getElementById(
+    'tannenbaum-penalty-player-select'
+  );
+
+  const labels = {
+    '9er': '🎯 9er geworfen',
+    kranz: '👑 Kranz geworfen',
+    gosse: '💀 Gosse geworfen'
+  };
+
+  if (title) {
+    title.textContent = labels[type] || 'Wer hat geworfen?';
+  }
+
+  if (sub) {
+    sub.textContent = type === 'gosse'
+      ? 'Wer bekommt die Gosse-Strafe?'
+      : 'Wer hat geworfen und bleibt straffrei?';
+  }
+
+  if (select) {
+    select.innerHTML =
+      '<option value="">Bitte Person auswählen</option>';
+
+    persons
+      .filter(p => p.present && !p.left)
+      .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+      .forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.name;
+        option.textContent = p.name;
+        select.appendChild(option);
+      });
+  }
+
+  document
+    .getElementById('tannenbaum-throw-modal')
+    ?.classList.add('hidden');
+
+  document
+    .getElementById('tannenbaum-penalty-player-modal')
+    ?.classList.remove('hidden');
+}
+  
+function confirmTannenbaumPenaltyPlayer() {
+  ensureTannenbaumState();
+
+  if (!pendingTannenbaumPenaltyThrow) return;
+
+  const select = document.getElementById(
+    'tannenbaum-penalty-player-select'
+  );
+
+  const personName = select?.value || '';
+
+  if (!personName) {
+    showToast('Bitte Person auswählen', 'error');
+    return;
+  }
+
+  const {
+    type,
+    team,
+    number
+  } = pendingTannenbaumPenaltyThrow;
+
+  const penaltyKey = getPenaltyKeyByType(type);
+
+  if (!penaltyKey) {
+    showToast(`Strafe "${type}" nicht gefunden`, 'error');
+    return;
+  }
+
+  const activePlayers = persons.filter(
+    p => p.present && !p.left
+  );
+
+  const punishedNames = [];
+
+  if (type === 'gosse') {
+    // Bei Gosse zahlt nur die werfende Person
+    const thrower = persons.find(p => p.name === personName);
+
+    if (!thrower) {
+      showToast('Person nicht gefunden', 'error');
+      return;
+    }
+
+    if (!thrower.strafen) {
+      thrower.strafen = {};
+    }
+
+    thrower.strafen[penaltyKey] =
+      (thrower.strafen[penaltyKey] || 0) + 1;
+
+    punishedNames.push(personName);
+  } else {
+    // Bei 9er und Kranz zahlen alle außer der werfenden Person
+    activePlayers.forEach(person => {
+      if (person.name === personName) return;
+
+      if (!person.strafen) {
+        person.strafen = {};
+      }
+
+      person.strafen[penaltyKey] =
+        (person.strafen[penaltyKey] || 0) + 1;
+
+      punishedNames.push(person.name);
+    });
+  }
+
+  if (typeof addPenaltyStatsEntry === 'function') {
+    addPenaltyStatsEntry(
+      type,
+      personName,
+      punishedNames
+    );
+  }
+
+  // Modal schließen, ohne Team schon zu löschen
+  document
+    .getElementById('tannenbaum-penalty-player-modal')
+    ?.classList.add('hidden');
+
+  pendingTannenbaumPenaltyThrow = null;
+
+  if (type === '9er' && number === 9) {
+    // Die 9 zusätzlich ganz normal im Tannenbaum verarbeiten
+    handleTannenbaumThrow(9);
+  } else {
+    // Kranz und Gosse nur im Verlauf speichern
+    tannenbaumState.history.unshift({
+      team,
+      number: type,
+      action: `${getTannenbaumTeamDisplay(team)}: ${type} durch ${personName}`,
+      type: `penalty-${type}`,
+      thrower: personName,
+      createdAt: new Date().toISOString()
+    });
+
+    tannenbaumThrowTeam = null;
+
+    renderTannenbaum();
+    renderStrafen?.();
+    persistState();
+
+    showToast(
+      type === 'gosse'
+        ? `💀 Gosse für ${personName} gebucht`
+        : `✅ ${type}: ${personName} bleibt straffrei`,
+      'success'
+    );
+  }
+}
+
+function closeTannenbaumPenaltyPlayerModal() {
+  document
+    .getElementById('tannenbaum-penalty-player-modal')
+    ?.classList.add('hidden');
+
+  pendingTannenbaumPenaltyThrow = null;
+  tannenbaumThrowTeam = null;
 }
 
 function closeTannenbaumThrowModal() {
@@ -81,7 +295,143 @@ function closeTannenbaumThrowModal() {
   tannenbaumThrowTeam = null;
 }
 
-    
+function getTannenbaumTeamDisplay(team) {
+  const fallback = team === 'T1'
+    ? { emoji: '⚫', name: 'Team 1' }
+    : { emoji: '🔴', name: 'Team 2' };
+
+  const settings = groupSettings?.[team] || fallback;
+  const emoji = settings.emoji || fallback.emoji;
+  const name = settings.name || fallback.name;
+
+  return `${emoji} ${name}`;
+}
+
+function updateTannenbaumPageHeader() {
+  const throwT1 = document.getElementById('tannenbaum-throw-btn-t1');
+  const throwT2 = document.getElementById('tannenbaum-throw-btn-t2');
+
+  const currentT1Team = document.getElementById('tannenbaum-current-t1-team');
+  const openT1Team = document.getElementById('tannenbaum-open-t1-team');
+  const currentT2Team = document.getElementById('tannenbaum-current-t2-team');
+  const openT2Team = document.getElementById('tannenbaum-open-t2-team');
+
+  const historyT1Title = document.getElementById('tannenbaum-history-t1-title');
+  const historyT2Title = document.getElementById('tannenbaum-history-t2-title');
+
+  const labelT1 = getTannenbaumTeamDisplay('T1');
+  const labelT2 = getTannenbaumTeamDisplay('T2');
+
+  if (throwT1) throwT1.textContent = `${labelT1} Wurf`;
+  if (throwT2) throwT2.textContent = `${labelT2} Wurf`;
+
+  if (currentT1Team) currentT1Team.textContent = labelT1;
+  if (openT1Team) openT1Team.textContent = labelT1;
+  if (currentT2Team) currentT2Team.textContent = labelT2;
+  if (openT2Team) openT2Team.textContent = labelT2;
+
+  if (historyT1Title) historyT1Title.textContent = labelT1;
+  if (historyT2Title) historyT2Title.textContent = labelT2;
+}
+
+function renderTannenbaumSummary() {
+  ensureTannenbaumState();
+
+  const currentT1 = document.getElementById('tannenbaum-current-t1');
+  const openT1 = document.getElementById('tannenbaum-open-t1');
+  const currentT2 = document.getElementById('tannenbaum-current-t2');
+  const openT2 = document.getElementById('tannenbaum-open-t2');
+
+  const currentAmountT1 = getTannenbaumTeamTotal('T1');
+  const currentAmountT2 = getTannenbaumTeamTotal('T2');
+
+  const openAmountT1 = getTannenbaumOpenNumbersTotal('T1').total;
+  const openAmountT2 = getTannenbaumOpenNumbersTotal('T2').total;
+
+  if (currentT1) currentT1.textContent = euros(currentAmountT1);
+  if (openT1) openT1.textContent = euros(openAmountT1);
+  if (currentT2) currentT2.textContent = euros(currentAmountT2);
+  if (openT2) openT2.textContent = euros(openAmountT2);
+}
+
+function renderTannenbaumThrowHistory() {
+  ensureTannenbaumState();
+
+  renderTannenbaumThrowHistoryForTeam('T1', 'tannenbaum-history-t1');
+  renderTannenbaumThrowHistoryForTeam('T2', 'tannenbaum-history-t2');
+}
+
+function renderTannenbaumThrowHistoryForTeam(team, elementId) {
+  const list = document.getElementById(elementId);
+  if (!list) return;
+
+  const entries = (tannenbaumState.history || [])
+    .filter(entry => entry.team === team)
+    .filter(entry => entry.type !== 'manual-restore')
+    .slice(0, 10);
+
+  if (!entries.length) {
+    list.innerHTML = `
+      <div class="tannenbaum-throw-empty">
+        Noch keine Würfe
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = entries.map(entry => {
+    const displayNumber =
+      entry.number === 'kranz'
+        ? '👑'
+        : entry.number === 'gosse'
+          ? '💀'
+          : entry.number;
+    const time = entry.createdAt
+      ? new Date(entry.createdAt).toLocaleTimeString('de-DE', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : '';
+
+    return `
+      <div class="tannenbaum-history-entry">
+        <div class="tannenbaum-history-number">
+          ${number}
+        </div>
+
+        <div class="tannenbaum-history-text">
+          <div>${getTannenbaumHistoryLabel(entry)}</div>
+          <small>${time}</small>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function getTannenbaumHistoryLabel(entry) {
+  if (entry.type === 'strike-own') {
+    return 'Gestrichen';
+  }
+
+  if (entry.type === 'enemy-strike') {
+    return 'Gegner +1';
+  }
+
+  if (entry.type === 'restore') {
+    return 'Zurück';
+  }
+
+  if (entry.type === 'penalty-kranz') {
+    return `Kranz · ${entry.thrower || ''}`;
+  }
+
+  if (entry.type === 'penalty-gosse') {
+    return `Gosse · ${entry.thrower || ''}`;
+  }
+
+  return entry.action || 'Wurf';
+}
+
 function renderTannenbaum() {
   ensureTannenbaumState();
 
@@ -115,23 +465,25 @@ function renderTannenbaum() {
       <table class="tannenbaum-table">
         <thead>
           <tr>
-            <th>Striche ${getGroupLabel('T1')}</th>
-            <th class="wand">${getGroupLabel('T1')}</th>
+            <th>Striche</th>
+            <th class="wand">${getTannenbaumTeamDisplay('T1')}</th>
             <th>Zahl</th>
-            <th class="tv">${getGroupLabel('T2')}</th>
-            <th>Striche ${getGroupLabel('T2')}</th>
+            <th class="tv">${getTannenbaumTeamDisplay('T2')}</th>
+            <th>Striche</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+
+        <tbody>
+          ${rows}
+        </tbody>
       </table>
     </div>
-
-    <div class="tannenbaum-price-wrap">
-      ${renderTannenbaumPriceTable()}
-    </div>
   `;
-    
-    updateTannenbaumCountdownSummary();
+
+  updateTannenbaumPageHeader();
+  renderTannenbaumSummary();
+  renderTannenbaumThrowHistory();
+  updateTannenbaumCountdownSummary();
 }
 
 function openTannenbaumRestoreModal() {
