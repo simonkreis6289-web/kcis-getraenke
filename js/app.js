@@ -139,88 +139,223 @@ function getFirestoreState() {
 }
 
 function applyLoadedState(state) {
-  if (!state) return false;
+  if (!state) {
+    return false;
+  }
 
-  persons = Array.isArray(state.persons) ? state.persons : [];
-  spiele = Array.isArray(state.spiele) ? state.spiele : [];
-  DRINKS = Array.isArray(state.DRINKS) && state.DRINKS.length ? state.DRINKS : DRINKS;
-  prices = state.prices || {};
-  SPIELE_KATALOG = Array.isArray(state.SPIELE_KATALOG) && state.SPIELE_KATALOG.length ? state.SPIELE_KATALOG : SPIELE_KATALOG;
-  RUNDEN_GRUENDE = Array.isArray(state.RUNDEN_GRUENDE) && state.RUNDEN_GRUENDE.length ? state.RUNDEN_GRUENDE : RUNDEN_GRUENDE;
-  selectedLoser = state.selectedLoser || null;
-  teamDrinks = state.teamDrinks || {};
-    STRAFEN_LIMIT = parseFloat(state.STRAFEN_LIMIT || 30) || 30;
-  bahnPreisProStunde = parseFloat(state.bahnPreisProStunde || 0) || 0;
-  bahnTimerStart = state.bahnTimerStart || null;
-  bahnTimerRunning = !!state.bahnTimerRunning;
-    dartsState = state.dartsState || createDartsState();
-    ensureDartsState();
-    
-    lotterieState = state.lotterieState || createLotterieState();
-    tiberiusState = state.tiberiusState || createTiberiusState();
+  persons = Array.isArray(state.persons)
+    ? state.persons
+    : [];
 
-    lotterieSettings = state.lotterieSettings || {
+  spiele = Array.isArray(state.spiele)
+    ? state.spiele
+    : [];
+
+  DRINKS =
+    Array.isArray(state.DRINKS) &&
+    state.DRINKS.length
+      ? state.DRINKS
+      : DRINKS;
+
+  prices =
+    state.prices &&
+    typeof state.prices === 'object'
+      ? state.prices
+      : {};
+
+  SPIELE_KATALOG =
+    Array.isArray(state.SPIELE_KATALOG) &&
+    state.SPIELE_KATALOG.length
+      ? state.SPIELE_KATALOG
+      : SPIELE_KATALOG;
+
+  RUNDEN_GRUENDE =
+    Array.isArray(state.RUNDEN_GRUENDE) &&
+    state.RUNDEN_GRUENDE.length
+      ? state.RUNDEN_GRUENDE
+      : RUNDEN_GRUENDE;
+
+  selectedLoser =
+    state.selectedLoser || null;
+
+  teamDrinks =
+    state.teamDrinks &&
+    typeof state.teamDrinks === 'object'
+      ? state.teamDrinks
+      : {};
+
+  STRAFEN_LIMIT =
+    parseFloat(
+      state.STRAFEN_LIMIT || 30
+    ) || 30;
+
+  bahnPreisProStunde =
+    parseFloat(
+      state.bahnPreisProStunde || 0
+    ) || 0;
+
+  bahnTimerStart =
+    state.bahnTimerStart || null;
+
+  bahnTimerRunning =
+    !!state.bahnTimerRunning;
+
+  teamStopwatchActive =
+    !!state.teamStopwatchActive;
+
+  teamStopwatchRunning =
+    !!state.teamStopwatchRunning;
+
+  teamStopwatchStart =
+    state.teamStopwatchStart || null;
+
+  teamCountdownDuration =
+    parseInt(
+      state.teamCountdownDuration || 0,
+      10
+    ) || 0;
+
+  teamCountdownRemainingBefore =
+    parseInt(
+      state.teamCountdownRemainingBefore || 0,
+      10
+    ) || 0;
+
+  dartsState =
+    state.dartsState ||
+    createDartsState();
+
+  ensureDartsState();
+
+  /*
+   * Wichtig:
+   * lotterieState wird hier absichtlich
+   * NICHT aus state/current übernommen.
+   *
+   * Der laufende Lotteriestand kommt separat
+   * aus clubs/{clubId}/liveGames/lotterie.
+   */
+  ensureLotterieState();
+
+  tiberiusState =
+    state.tiberiusState ||
+    createTiberiusState();
+
+  ensureTiberiusState();
+
+  lotterieSettings =
+    state.lotterieSettings || {
       minAmount: 0.10,
       maxAmount: 10.00
     };
-    
-    timePenaltySettings = state.timePenaltySettings || {
-      startTime: '20:00',
-      endTime: '23:00'
-    };
-    
-        groupSettings = state.groupSettings || {
-          T1: { name: 'Wand', color: 'black' },
-          T2: { name: 'TV', color: 'red' }
-        };
 
-        if (!groupSettings.T1) groupSettings.T1 = { name: 'Wand', color: 'black' };
-        if (!groupSettings.T2) groupSettings.T2 = { name: 'TV', color: 'red' };
-
-        groupSettings.T1.color = normalizeGroupColorKey(groupSettings.T1.color, 'black');
-        groupSettings.T2.color = normalizeGroupColorKey(groupSettings.T2.color, 'red');
-    
-    tiberiusSettings = state.tiberiusSettings || {
+  tiberiusSettings =
+    state.tiberiusSettings || {
       minPins: 10,
       maxPins: 300
     };
-    
-    wurfSettings = state.wurfSettings || {
+
+  timePenaltySettings =
+    state.timePenaltySettings || {
+      startTime: '20:00',
+      endTime: '23:00'
+    };
+
+  wurfSettings =
+    state.wurfSettings || {
       maxBuys: 3
     };
-    
-    penaltyStatsLog = Array.isArray(state.penaltyStatsLog)
+
+  groupSettings =
+    state.groupSettings || {
+      T1: {
+        name: 'Wand',
+        color: 'black'
+      },
+      T2: {
+        name: 'TV',
+        color: 'red'
+      }
+    };
+
+  if (!groupSettings.T1) {
+    groupSettings.T1 = {
+      name: 'Wand',
+      color: 'black'
+    };
+  }
+
+  if (!groupSettings.T2) {
+    groupSettings.T2 = {
+      name: 'TV',
+      color: 'red'
+    };
+  }
+
+  groupSettings.T1.color =
+    normalizeGroupColorKey(
+      groupSettings.T1.color,
+      'black'
+    );
+
+  groupSettings.T2.color =
+    normalizeGroupColorKey(
+      groupSettings.T2.color,
+      'red'
+    );
+
+  penaltyStatsLog =
+    Array.isArray(state.penaltyStatsLog)
       ? state.penaltyStatsLog
       : [];
 
-    ensureLotterieState();
-    ensureTiberiusState();
+  strafenHistory =
+    Array.isArray(state.strafenHistory)
+      ? state.strafenHistory
+      : [];
 
-  teamStopwatchActive = !!state.teamStopwatchActive;
-  teamStopwatchRunning = !!state.teamStopwatchRunning;
-  teamStopwatchStart = state.teamStopwatchStart || null;
-  teamCountdownDuration = parseInt(state.teamCountdownDuration || 0, 10) || 0;
-  teamCountdownRemainingBefore = parseInt(state.teamCountdownRemainingBefore || 0, 10) || 0;    
-  strafenHistory = Array.isArray(state.strafenHistory) ? state.strafenHistory : [];
-    
-    STRAFEN = Array.isArray(state.STRAFEN) && state.STRAFEN.length ? state.STRAFEN : STRAFEN;
-    strafPrices = state.strafPrices || {};
-    
-    TANNENBAUM_BASE = state.TANNENBAUM_BASE || { ...TANNENBAUM_DEFAULT_BASE };
-    tannenbaumHardRule = state.tannenbaumHardRule !== undefined ? !!state.tannenbaumHardRule : true;
-    
-  tannenbaumState = state.tannenbaumState || createTannenbaumState();
+  STRAFEN =
+    Array.isArray(state.STRAFEN) &&
+    state.STRAFEN.length
+      ? state.STRAFEN
+      : STRAFEN;
+
+  strafPrices =
+    state.strafPrices &&
+    typeof state.strafPrices === 'object'
+      ? state.strafPrices
+      : {};
+
+  TANNENBAUM_BASE =
+    state.TANNENBAUM_BASE || {
+      ...TANNENBAUM_DEFAULT_BASE
+    };
+
+  tannenbaumHardRule =
+    state.tannenbaumHardRule !== undefined
+      ? !!state.tannenbaumHardRule
+      : true;
+
+  tannenbaumState =
+    state.tannenbaumState ||
+    createTannenbaumState();
+
   ensureTannenbaumState();
-    
-    kegelAbende = Array.isArray(state.kegelAbende)
-  ? state.kegelAbende
-  : [];
-    
+
+  kegelAbende =
+    Array.isArray(state.kegelAbende)
+      ? state.kegelAbende
+      : [];
+
   if (state.updatedClientAt) {
-    lastRemoteChangeAt = Number(state.updatedClientAt || 0);
+    lastRemoteChangeAt =
+      Number(
+        state.updatedClientAt || 0
+      );
   }
-    
+
   hydrateState();
+
   return true;
 }
 
