@@ -1,5 +1,197 @@
 // ──-───────────────────────────────────────────────────────────────────────
 // ── LOTTERIE ──   
+
+let liveLotterieUnsubscribe = null;
+let isApplyingLiveLotterie = false;
+
+function getLiveLotteriePayload() {
+  ensureLotterieState();
+
+  return {
+    active: !!lotterieState.active,
+    onTop: !!lotterieState.onTop,
+    amountsGenerated:
+      !!lotterieState.amountsGenerated,
+
+    columnCount:
+      parseInt(
+        lotterieState.columnCount || 0,
+        10
+      ) || 0,
+
+    columns: Array.isArray(
+      lotterieState.columns
+    )
+      ? [...lotterieState.columns]
+      : [],
+
+    throws: {
+      ...(lotterieState.throws || {})
+    },
+
+    throwMeta: {
+      ...(lotterieState.throwMeta || {})
+    },
+
+    finished:
+      !!lotterieState.finished,
+
+    history: Array.isArray(
+      lotterieState.history
+    )
+      ? [...lotterieState.history]
+      : []
+  };
+}
+
+async function saveLiveLotterieState() {
+  if (
+    isApplyingLiveLotterie ||
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    typeof window.firestoreApi
+      ?.saveLiveLotterie !== 'function'
+  ) {
+    return false;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(ACTIVE_CLUB);
+
+    await window.firestoreApi
+      .saveLiveLotterie(
+        clubId,
+        getLiveLotteriePayload()
+      );
+
+    return true;
+  } catch (error) {
+    console.error(
+      'Lotterie-Livestand konnte nicht gespeichert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Lotterie konnte nicht synchronisiert werden',
+      'error'
+    );
+
+    return false;
+  }
+}
+
+function applyLiveLotterieState(
+  remoteState
+) {
+  if (!remoteState) {
+    return;
+  }
+
+  isApplyingLiveLotterie = true;
+
+  try {
+    lotterieState = {
+      ...createLotterieState(),
+      ...remoteState,
+
+      columns: Array.isArray(
+        remoteState.columns
+      )
+        ? [...remoteState.columns]
+        : [],
+
+      throws:
+        remoteState.throws &&
+        typeof remoteState.throws ===
+          'object'
+          ? remoteState.throws
+          : {},
+
+      throwMeta:
+        remoteState.throwMeta &&
+        typeof remoteState.throwMeta ===
+          'object'
+          ? remoteState.throwMeta
+          : {},
+
+      history: Array.isArray(
+        remoteState.history
+      )
+        ? [...remoteState.history]
+        : []
+    };
+
+    ensureLotterieState();
+    renderLotterie();
+    renderLotterieAmountEditor();
+    renderLotterieHistory();
+  } finally {
+    isApplyingLiveLotterie = false;
+  }
+}
+
+async function startLiveLotterieSync() {
+  if (
+    liveLotterieUnsubscribe
+  ) {
+    liveLotterieUnsubscribe();
+    liveLotterieUnsubscribe = null;
+  }
+
+  if (
+    !ACTIVE_CLUB ||
+    typeof window.firestoreApi
+      ?.subscribeToLiveLotterie !==
+      'function'
+  ) {
+    return;
+  }
+
+  const clubId =
+    getClubFirestoreId(ACTIVE_CLUB);
+
+  const existing =
+    await window.firestoreApi
+      .loadLiveLotterie(clubId);
+
+  if (existing) {
+    applyLiveLotterieState(existing);
+  } else {
+    await window.firestoreApi
+      .saveLiveLotterie(
+        clubId,
+        getLiveLotteriePayload()
+      );
+  }
+
+  liveLotterieUnsubscribe =
+    window.firestoreApi
+      .subscribeToLiveLotterie(
+        clubId,
+        remoteState => {
+          if (!remoteState) return;
+
+          applyLiveLotterieState(
+            remoteState
+          );
+        },
+        error => {
+          console.error(
+            'Lotterie-Live-Sync fehlgeschlagen:',
+            error
+          );
+        }
+      );
+}
+
+function stopLiveLotterieSync() {
+  if (liveLotterieUnsubscribe) {
+    liveLotterieUnsubscribe();
+    liveLotterieUnsubscribe = null;
+  }
+}
+
 function getActivePlayersForSoloGame() {
   return persons
     .filter(p => p.present && !p.left)
