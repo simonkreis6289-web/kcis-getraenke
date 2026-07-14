@@ -170,11 +170,17 @@ function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
     ?.classList.remove('hidden');
 }
   
-function bookTannenbaumPenalty(type, personName) {
+async function bookTannenbaumPenalty(
+  type,
+  personName
+) {
   const penaltyKey = getPenaltyKeyByType(type);
 
   if (!penaltyKey) {
-    showToast(`Strafe "${type}" nicht gefunden`, 'error');
+    showToast(
+      `Strafe "${type}" nicht gefunden`,
+      'error'
+    );
     return null;
   }
 
@@ -182,42 +188,35 @@ function bookTannenbaumPenalty(type, personName) {
     p => p.present && !p.left
   );
 
-  const punishedNames = [];
+  let punishedNames = [];
 
   if (type === 'gosse') {
-    const thrower = persons.find(
-      p => p.name === personName
-    );
-
-    if (!thrower) {
-      showToast('Person nicht gefunden', 'error');
-      return null;
-    }
-
-    if (!thrower.strafen) {
-      thrower.strafen = {};
-    }
-
-    thrower.strafen[penaltyKey] =
-      (thrower.strafen[penaltyKey] || 0) + 1;
-
-    punishedNames.push(personName);
+    punishedNames = [personName];
   } else {
-    activePlayers.forEach(person => {
-      if (person.name === personName) return;
-
-      if (!person.strafen) {
-        person.strafen = {};
-      }
-
-      person.strafen[penaltyKey] =
-        (person.strafen[penaltyKey] || 0) + 1;
-
-      punishedNames.push(person.name);
-    });
+    punishedNames = activePlayers
+      .filter(person => person.name !== personName)
+      .map(person => person.name);
   }
 
-  if (typeof addPenaltyStatsEntry === 'function') {
+  const changes = punishedNames.map(name => ({
+    personName: name,
+    category: 'strafen',
+    key: penaltyKey,
+    delta: 1
+  }));
+
+  const success =
+    await changeMultipleSyncedPersonCounters(
+      changes
+    );
+
+  if (!success) {
+    return null;
+  }
+
+  if (
+    typeof addPenaltyStatsEntry === 'function'
+  ) {
     addPenaltyStatsEntry(
       type,
       personName,
@@ -241,7 +240,7 @@ function refreshTannenbaumPenaltyUI() {
   }
 }
   
-function confirmTannenbaumPenaltyPlayer() {
+async function confirmTannenbaumPenaltyPlayer() {
   ensureTannenbaumState();
 
   if (!pendingTannenbaumPenaltyThrow) return;
@@ -280,10 +279,10 @@ function confirmTannenbaumPenaltyPlayer() {
     return;
   }
 
-  const booking = bookTannenbaumPenalty(
-    type,
-    personName
-  );
+const booking = await bookTannenbaumPenalty(
+  type,
+  personName
+);
 
   if (!booking) return;
 
@@ -627,7 +626,7 @@ function closeTannenbaumRestoreModal() {
   document.getElementById('tannenbaum-restore-modal')?.classList.add('hidden');
 }
 
-function confirmTannenbaumKranzNumber(number) {
+async function confirmTannenbaumKranzNumber(number) {
   ensureTannenbaumState();
 
   if (!pendingTannenbaumKranzChoice) return;
@@ -637,10 +636,10 @@ function confirmTannenbaumKranzNumber(number) {
     thrower
   } = pendingTannenbaumKranzChoice;
 
-  const booking = bookTannenbaumPenalty(
-    'kranz',
-    thrower
-  );
+const booking = await bookTannenbaumPenalty(
+  'kranz',
+  thrower
+);
 
   if (!booking) return;
 
