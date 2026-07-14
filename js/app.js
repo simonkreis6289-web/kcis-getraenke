@@ -4846,35 +4846,61 @@ teamStopwatchInterval = setInterval(updateTeamStopwatchDisplay, 1000);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-        const reg = await navigator.serviceWorker.register(
+    try {
+      const reg =
+        await navigator.serviceWorker.register(
           './sw.js?v=20260714-v31',
           {
             updateViaCache: 'none'
           }
         );
 
-        await reg.update();
+      await reg.update();
 
-      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
-          }
+      if (reg.waiting) {
+        reg.waiting.postMessage({
+          type: 'SKIP_WAITING'
         });
-      });
+      }
+
+      reg.addEventListener(
+        'updatefound',
+        () => {
+          const newWorker = reg.installing;
+
+          if (!newWorker) {
+            return;
+          }
+
+          newWorker.addEventListener(
+            'statechange',
+            () => {
+              if (
+                newWorker.state === 'installed' &&
+                navigator.serviceWorker.controller
+              ) {
+                newWorker.postMessage({
+                  type: 'SKIP_WAITING'
+                });
+              }
+            }
+          );
+        }
+      );
     } catch (err) {
-      console.log('SW registration failed:', err);
+      console.log(
+        'SW registration failed:',
+        err
+      );
     }
   });
 
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
-  });
+  navigator.serviceWorker.addEventListener(
+    'controllerchange',
+    () => {
+      window.location.reload();
+    }
+  );
 }
 
 let quickPenaltyType = '';
