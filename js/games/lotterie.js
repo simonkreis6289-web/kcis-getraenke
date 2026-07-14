@@ -209,7 +209,7 @@ function getLotteriePlayerCount() {
   return getActivePlayersForSoloGame().length;
 }
 
-function startLotterieGame() {
+async function startLotterieGame() {
   ensureLotterieState();
   saveLotterieSettings(false);
 
@@ -240,16 +240,15 @@ function startLotterieGame() {
 
   lotterieState.columns = Array.from(
     { length: colCount },
-    (_, index) => {
-      return roundTo10Cent(
+    (_, index) =>
+      roundTo10Cent(
         lotterieState.columns[index] || 0
-      );
-    }
+      )
   );
 
   const missingAmounts =
     lotterieState.columns.some(
-      value => !value || value <= 0
+      amount => amount <= 0
     );
 
   if (missingAmounts) {
@@ -262,9 +261,9 @@ function startLotterieGame() {
 
   lotterieState.active = true;
   lotterieState.finished = false;
+  lotterieState.amountsGenerated = true;
   lotterieState.throws = {};
   lotterieState.throwMeta = {};
-  lotterieState.amountsGenerated = true;
 
   players.forEach(person => {
     lotterieState.throws[person.name] =
@@ -280,8 +279,18 @@ function startLotterieGame() {
       );
   });
 
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    showToast(
+      '❌ Lotterie konnte nicht gestartet werden',
+      'error'
+    );
+    return;
+  }
+
   renderLotterie();
-  persistState();
 
   showToast(
     '🎰 Lotterie gestartet',
@@ -289,86 +298,218 @@ function startLotterieGame() {
   );
 }
 
-function resetLotterieGame() {
-  if (!confirm('Lotterie wirklich neu starten?')) return;
+async function resetLotterieGame() {
+  if (
+    !confirm(
+      'Lotterie wirklich neu starten?'
+    )
+  ) {
+    return;
+  }
 
-  lotterieState = createLotterieState();
+  const previousState =
+    lotterieState;
+
+  lotterieState =
+    createLotterieState();
+
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    lotterieState =
+      previousState;
+
+    showToast(
+      '❌ Lotterie konnte nicht zurückgesetzt werden',
+      'error'
+    );
+    return;
+  }
 
   renderLotterie();
   renderLotterieAmountEditor();
-  persistState();
 
-  showToast('↻ Lotterie zurückgesetzt', 'success');
+  showToast(
+    '↻ Lotterie zurückgesetzt',
+    'success'
+  );
 }
 
-function toggleLotterieOnTop() {
-  const check = document.getElementById('lotterie-ontop-check');
-  lotterieState.onTop = !!check?.checked;
+async function toggleLotterieOnTop() {
+  ensureLotterieState();
+
+  const check =
+    document.getElementById(
+      'lotterie-ontop-check'
+    );
+
+  const previousValue =
+    !!lotterieState.onTop;
+
+  lotterieState.onTop =
+    !!check?.checked;
+
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    lotterieState.onTop =
+      previousValue;
+
+    if (check) {
+      check.checked =
+        previousValue;
+    }
+
+    return;
+  }
 
   renderLotterie();
-  persistState();
 }
 
-function generateLotterieAmounts() {
+async function generateLotterieAmounts() {
   ensureLotterieState();
 
   if (lotterieState.active) {
-    showToast('Beträge können nach Spielstart nicht mehr geändert werden', 'error');
+    showToast(
+      'Beträge können nach Spielstart nicht mehr geändert werden',
+      'error'
+    );
     return;
   }
 
-  const colCount = lotterieState.columnCount || getLotterieColumnCountInput();
+  const colCount =
+    lotterieState.columnCount ||
+    getLotterieColumnCountInput();
 
   if (!colCount) {
-    showToast('Bitte zuerst Spaltenanzahl eingeben', 'error');
+    showToast(
+      'Bitte zuerst Spaltenanzahl eingeben',
+      'error'
+    );
     return;
   }
 
-  lotterieState.columnCount = colCount;
+  lotterieState.columnCount =
+    colCount;
 
-  const min = roundTo10Cent(lotterieSettings.minAmount || 0.10);
-  const max = roundTo10Cent(lotterieSettings.maxAmount || min);
+  const min =
+    roundTo10Cent(
+      lotterieSettings.minAmount || 0.10
+    );
 
-  const low = Math.min(min, max);
-  const high = Math.max(min, max);
+  const max =
+    roundTo10Cent(
+      lotterieSettings.maxAmount || min
+    );
+
+  const low =
+    Math.min(min, max);
+
+  const high =
+    Math.max(min, max);
 
   const amounts = [];
 
   if (colCount === 1) {
     amounts.push(high);
   } else {
-    for (let i = 0; i < colCount; i++) {
-      const t = i / (colCount - 1);
-      const base = low + (high - low) * t;
-      const jitter = (Math.random() - 0.5) * 0.20;
-      amounts.push(roundTo10Cent(base + jitter));
+    for (
+      let index = 0;
+      index < colCount;
+      index++
+    ) {
+      const progress =
+        index / (colCount - 1);
+
+      const base =
+        low +
+        (high - low) * progress;
+
+      const jitter =
+        (Math.random() - 0.5) *
+        0.20;
+
+      amounts.push(
+        roundTo10Cent(
+          base + jitter
+        )
+      );
     }
 
     amounts[0] = low;
-    amounts[colCount - 1] = high;
+    amounts[colCount - 1] =
+      high;
   }
 
-  lotterieState.columns = amounts
-    .map(v => Math.min(high, Math.max(low, roundTo10Cent(v))))
-    .sort((a, b) => a - b);
+  lotterieState.columns =
+    amounts
+      .map(value =>
+        Math.min(
+          high,
+          Math.max(
+            low,
+            roundTo10Cent(value)
+          )
+        )
+      )
+      .sort((a, b) => a - b);
 
-  lotterieState.amountsGenerated = true;
+  lotterieState.amountsGenerated =
+    true;
+
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    return;
+  }
 
   renderLotterieAmountEditor();
   renderLotterie();
-  persistState();
 
-  showToast('🎲 Lotterie-Beträge verteilt', 'success');
+  showToast(
+    '🎲 Lotterie-Beträge verteilt',
+    'success'
+  );
 }
 
-function updateLotterieAmount(index, value) {
+async function updateLotterieAmount(
+  index,
+  value
+) {
   ensureLotterieState();
 
-  lotterieState.columns[index] = roundTo10Cent(String(value).replace(',', '.'));
-  lotterieState.amountsGenerated = lotterieState.columns.some(v => (parseFloat(v || 0) || 0) > 0);
+  if (lotterieState.active) {
+    return;
+  }
+
+  const previousValue =
+    lotterieState.columns[index];
+
+  lotterieState.columns[index] =
+    roundTo10Cent(
+      String(value).replace(',', '.')
+    );
+
+  lotterieState.amountsGenerated =
+    lotterieState.columns.some(
+      amount =>
+        Number(amount || 0) > 0
+    );
+
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    lotterieState.columns[index] =
+      previousValue;
+
+    return;
+  }
 
   renderLotterie();
-  persistState();
 }
 
 function openLotterieThrowModal(personName, colIndex) {
@@ -415,7 +556,9 @@ function closeLotterieThrowModal() {
   };
 }
 
-async function confirmLotterieThrow(value) {
+async function confirmLotterieThrow(
+  value
+) {
   ensureLotterieState();
 
   const personName =
@@ -432,20 +575,52 @@ async function confirmLotterieThrow(value) {
     return;
   }
 
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine
+  ) {
+    showToast(
+      '📴 Lotterie-Würfe sind offline nicht möglich',
+      'error'
+    );
+    return;
+  }
+
+  if (
+    typeof window.firestoreApi
+      ?.changeLiveLotterieThrow !==
+      'function'
+  ) {
+    showToast(
+      '❌ Lotterie-Synchronisation nicht verfügbar',
+      'error'
+    );
+    return;
+  }
+
   if (!lotterieState.throws[personName]) {
     lotterieState.throws[personName] = [];
   }
 
-  if (!lotterieState.throwMeta[personName]) {
-    lotterieState.throwMeta[personName] = [];
+  if (
+    !lotterieState.throwMeta[personName]
+  ) {
+    lotterieState.throwMeta[
+      personName
+    ] = [];
   }
 
   const previousMeta =
-    lotterieState.throwMeta[personName][colIndex]
-    || null;
+    lotterieState.throwMeta[
+      personName
+    ][colIndex] || null;
 
   const changes = [];
 
+  /*
+   * Eine eventuell vorhandene alte
+   * Sonderwurf-Strafe zurücknehmen.
+   */
   if (
     previousMeta?.penaltyBooked &&
     previousMeta.penaltyKey &&
@@ -454,11 +629,13 @@ async function confirmLotterieThrow(value) {
     )
   ) {
     previousMeta.punishedNames.forEach(
-      name => {
+      punishedName => {
         changes.push({
-          personName: name,
+          personName:
+            punishedName,
           category: 'strafen',
-          key: previousMeta.penaltyKey,
+          key:
+            previousMeta.penaltyKey,
           delta: -1
         });
       }
@@ -479,21 +656,24 @@ async function confirmLotterieThrow(value) {
 
   if (penaltyType) {
     const penaltyKey =
-      getPenaltyKeyByType(penaltyType);
+      getPenaltyKeyByType(
+        penaltyType
+      );
 
     if (!penaltyKey) {
       showToast(
-        `Strafe "${penaltyType}" nicht gefunden`,
+        `Strafe „${penaltyType}“ nicht gefunden`,
         'error'
       );
       return;
     }
 
-    const activePlayers = persons.filter(
-      person =>
-        person.present &&
-        !person.left
-    );
+    const activePlayers =
+      persons.filter(
+        person =>
+          person.present &&
+          !person.left
+      );
 
     const punishedNames =
       penaltyType === 'gosse'
@@ -501,34 +681,44 @@ async function confirmLotterieThrow(value) {
         : activePlayers
             .filter(
               person =>
-                person.name !== personName
+                person.name !==
+                personName
             )
-            .map(person => person.name);
+            .map(
+              person =>
+                person.name
+            );
 
-    punishedNames.forEach(name => {
-      changes.push({
-        personName: name,
-        category: 'strafen',
-        key: penaltyKey,
-        delta: 1
-      });
-    });
+    punishedNames.forEach(
+      punishedName => {
+        changes.push({
+          personName:
+            punishedName,
+          category: 'strafen',
+          key: penaltyKey,
+          delta: 1
+        });
+      }
+    );
 
     nextMeta = {
       penaltyType,
       penaltyKey,
-      punishedNames:
-        [...punishedNames],
-
+      punishedNames: [
+        ...punishedNames
+      ],
       penaltyBooked:
         punishedNames.length > 0,
-
       thrower: personName,
       createdAt:
         new Date().toISOString()
     };
   }
 
+  /*
+   * Zuerst die Strafen buchen beziehungsweise
+   * eine alte Buchung korrigieren.
+   */
   if (changes.length) {
     const success =
       await changeMultipleSyncedPersonCounters(
@@ -540,27 +730,53 @@ async function confirmLotterieThrow(value) {
     }
   }
 
-  lotterieState.throws[personName][colIndex] =
-    value;
+  const clubId =
+    getClubFirestoreId(
+      ACTIVE_CLUB
+    );
 
-  lotterieState.throwMeta[personName][colIndex] =
-    nextMeta;
+  try {
+    await window.firestoreApi
+      .changeLiveLotterieThrow(
+        clubId,
+        personName,
+        colIndex,
+        value,
+        nextMeta
+      );
+  } catch (error) {
+    console.error(
+      'Lotterie-Wurf konnte nicht gespeichert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Wurf konnte nicht synchronisiert werden',
+      'error'
+    );
+
+    return;
+  }
 
   if (
     nextMeta &&
-    typeof addPenaltyStatsEntry === 'function'
+    typeof addPenaltyStatsEntry ===
+      'function'
   ) {
     addPenaltyStatsEntry(
       nextMeta.penaltyType,
       personName,
       nextMeta.punishedNames
     );
+
+    /*
+     * Nur die Statistik kommt noch in
+     * state/current. Der Wurf selbst nicht.
+     */
+    persistState();
   }
 
   closeLotterieThrowModal();
-
-  renderAll();
-  persistState();
 
   let message =
     `🎳 ${value} Pins eingetragen`;
@@ -568,14 +784,10 @@ async function confirmLotterieThrow(value) {
   if (value === 0) {
     message =
       `💀 Gosse für ${personName} eingetragen`;
-  }
-
-  if (value === 9) {
+  } else if (value === 9) {
     message =
       `🎯 9er von ${personName} eingetragen`;
-  }
-
-  if (value === 12) {
+  } else if (value === 12) {
     message =
       `👑 Kranz von ${personName} eingetragen`;
   }
@@ -633,24 +845,45 @@ function getLotterieColumnCountInput() {
   return Math.max(1, parseInt(input?.value || '0', 10) || 0);
 }
 
-function prepareLotterieColumns() {
+async function prepareLotterieColumns() {
   ensureLotterieState();
 
-  if (lotterieState.active) return;
+  if (lotterieState.active) {
+    return;
+  }
 
-  const count = Math.max(
-    1,
-    parseInt(document.getElementById('lotterie-column-count')?.value || '0', 10) || 0
-  );
+  const count =
+    Math.max(
+      1,
+      parseInt(
+        document.getElementById(
+          'lotterie-column-count'
+        )?.value || '0',
+        10
+      ) || 0
+    );
 
-  lotterieState.columnCount = count;
+  lotterieState.columnCount =
+    count;
 
-  lotterieState.columns = Array.from({ length: count }, (_, i) => {
-    return roundTo10Cent(lotterieState.columns[i] || 0);
-  });
+  lotterieState.columns =
+    Array.from(
+      { length: count },
+      (_, index) =>
+        roundTo10Cent(
+          lotterieState.columns[index] || 0
+        )
+    );
+
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    return;
+  }
 
   renderLotterieAmountEditor();
-  persistState();
+  renderLotterie();
 }
 
 function initLotterieDefaultsIfNeeded() {
@@ -709,15 +942,37 @@ function renderLotterieAmountEditor() {
   `).join('');
 }
 
-function updateLotteriePreStartAmount(index, value) {
+async function updateLotteriePreStartAmount(
+  index,
+  value
+) {
   ensureLotterieState();
 
-  if (lotterieState.active) return;
+  if (lotterieState.active) {
+    return;
+  }
 
-  lotterieState.columns[index] = roundTo10Cent(String(value).replace(',', '.'));
-  lotterieState.amountsGenerated = lotterieState.columns.some(v => v > 0);
+  const previousValue =
+    lotterieState.columns[index];
 
-  persistState();
+  lotterieState.columns[index] =
+    roundTo10Cent(
+      String(value).replace(',', '.')
+    );
+
+  lotterieState.amountsGenerated =
+    lotterieState.columns.some(
+      amount =>
+        Number(amount || 0) > 0
+    );
+
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    lotterieState.columns[index] =
+      previousValue;
+  }
 }
     
 function renderLotterie() {
@@ -869,76 +1124,157 @@ if (resetBtn) {
   renderLotterieHistory();
 }
 
-function finishLotterieGame() {
+async function finishLotterieGame() {
   ensureLotterieState();
 
   if (!lotterieState.active) {
-    showToast('Lotterie wurde noch nicht gestartet', 'error');
+    showToast(
+      'Lotterie wurde noch nicht gestartet',
+      'error'
+    );
     return;
   }
 
-  const players = getActivePlayersForSoloGame();
+  const players =
+    getActivePlayersForSoloGame();
 
   if (!players.length) {
-    showToast('Keine Spieler vorhanden', 'error');
+    showToast(
+      'Keine Spieler vorhanden',
+      'error'
+    );
     return;
   }
 
   const assignedTo = [];
+  const createdAt =
+    new Date().toISOString();
 
-  players.forEach(p => {
-    const amount = getLotterieLivePenalty(p.name);
+  players.forEach(person => {
+    const amount =
+      getLotterieLivePenalty(
+        person.name
+      );
 
-    if (amount <= 0) return;
+    if (amount <= 0) {
+      return;
+    }
 
-    const id = 'lotterie_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const chargeId =
+      'lotterie_' +
+      Date.now() +
+      '_' +
+      Math.random()
+        .toString(36)
+        .slice(2);
 
-    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
+    if (
+      !Array.isArray(
+        person.freeStrafen
+      )
+    ) {
+      person.freeStrafen = [];
+    }
 
-    p.freeStrafen.push({
-      id,
+    person.freeStrafen.push({
+      id: chargeId,
       reason: 'Lotterie',
       amount,
-      onTop: !!lotterieState.onTop,
-      createdAt: new Date().toISOString()
+      onTop:
+        !!lotterieState.onTop,
+      createdAt
     });
 
     assignedTo.push({
-      id,
-      name: p.name,
+      id: chargeId,
+      name: person.name,
       amount,
-      onTop: !!lotterieState.onTop
+      onTop:
+        !!lotterieState.onTop
     });
   });
 
   if (!assignedTo.length) {
-    showToast('Keine Lotterie-Strafen zu buchen', 'error');
+    showToast(
+      'Keine Lotterie-Strafen zu buchen',
+      'error'
+    );
     return;
   }
 
-  const historyId = 'lotterie_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  const historyId =
+    'lotterie_history_' +
+    Date.now() +
+    '_' +
+    Math.random()
+      .toString(36)
+      .slice(2);
 
   const entry = {
     id: historyId,
     type: 'lotterie',
-    createdAt: new Date().toISOString(),
-    onTop: !!lotterieState.onTop,
-    columns: JSON.parse(JSON.stringify(lotterieState.columns)),
-    throws: JSON.parse(JSON.stringify(lotterieState.throws)),
+    createdAt,
+    onTop:
+      !!lotterieState.onTop,
+
+    columns:
+      JSON.parse(
+        JSON.stringify(
+          lotterieState.columns
+        )
+      ),
+
+    throws:
+      JSON.parse(
+        JSON.stringify(
+          lotterieState.throws
+        )
+      ),
+
     assignedTo
   };
 
-  if (!Array.isArray(strafenHistory)) strafenHistory = [];
-  strafenHistory.unshift(entry);
+  if (
+    !Array.isArray(
+      strafenHistory
+    )
+  ) {
+    strafenHistory = [];
+  }
 
-  lotterieState.history.unshift(entry);
+  strafenHistory.unshift(
+    entry
+  );
+
+  lotterieState.history.unshift(
+    entry
+  );
+
   lotterieState.finished = true;
   lotterieState.active = false;
 
+  const saved =
+    await saveLiveLotterieState();
+
+  if (!saved) {
+    showToast(
+      '❌ Lotterie-Abschluss konnte nicht synchronisiert werden',
+      'error'
+    );
+    return;
+  }
+
+  /*
+   * Personenbeträge und allgemeine
+   * Strafen-Historie speichern.
+   */
   renderAll();
   persistState();
 
-  showToast('✅ Lotterie abgeschlossen und Strafen gebucht', 'success');
+  showToast(
+    '✅ Lotterie abgeschlossen und Strafen gebucht',
+    'success'
+  );
 }
 
 function renderLotterieHistory() {
