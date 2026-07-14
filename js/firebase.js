@@ -1,4 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
 import {
   getFirestore,
   doc,
@@ -7,7 +8,8 @@ import {
   onSnapshot,
   serverTimestamp,
   collection,
-  getDocs
+  getDocs,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -60,6 +62,129 @@ window.firestoreApi = {
       id: d.id,
       ...d.data()
     }));
+  },
+    
+      getLivePersonId(personName) {
+    return encodeURIComponent(
+      String(personName || '')
+        .trim()
+        .toLowerCase()
+    );
+  },
+
+  async loadLivePersons(clubId) {
+    const ref = collection(db, 'clubs', clubId, 'livePersons');
+    const snap = await getDocs(ref);
+
+    return snap.docs.map(item => ({
+      id: item.id,
+      ...item.data()
+    }));
+  },
+
+    async seedLivePersons(clubId, persons = []) {
+      await Promise.all(
+        persons.map(async person => {
+          const personId = this.getLivePersonId(person.name);
+
+          const personRef = doc(
+            db,
+            'clubs',
+            clubId,
+            'livePersons',
+            personId
+          );
+
+          const existing = await getDoc(personRef);
+
+          // Vorhandene Live-Werte niemals überschreiben.
+          if (existing.exists()) {
+            return;
+          }
+
+          await setDoc(personRef, {
+            name: person.name,
+            drinks: { ...(person.drinks || {}) },
+            strafen: { ...(person.strafen || {}) },
+            updatedAt: serverTimestamp()
+          });
+        })
+      );
+
+      return true;
+    },
+
+  async changeLivePersonCounter(
+    clubId,
+    personName,
+    category,
+    key,
+    delta
+  ) {
+    if (!['drinks', 'strafen'].includes(category)) {
+      throw new Error(`Ungültige Kategorie: ${category}`);
+    }
+
+    const personId = this.getLivePersonId(personName);
+    const personRef = doc(
+      db,
+      'clubs',
+      clubId,
+      'livePersons',
+      personId
+    );
+
+    return runTransaction(db, async transaction => {
+      const snap = await transaction.get(personRef);
+      const current = snap.exists() ? snap.data() : {};
+
+      const counters = {
+        ...(current[category] || {})
+      };
+
+      const previousValue = Number(counters[key] || 0);
+      const nextValue = Math.max(
+        0,
+        previousValue + Number(delta || 0)
+      );
+
+      counters[key] = nextValue;
+
+      transaction.set(
+        personRef,
+        {
+          name: personName,
+          [category]: counters,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+
+      return nextValue;
+    });
+  },
+
+  subscribeToLivePersons(clubId, onData, onError) {
+    const ref = collection(
+      db,
+      'clubs',
+      clubId,
+      'livePersons'
+    );
+
+    return onSnapshot(
+      ref,
+      snapshot => {
+        const changes = snapshot.docChanges().map(change => ({
+          type: change.type,
+          id: change.doc.id,
+          data: change.doc.data()
+        }));
+
+        onData(changes);
+      },
+      onError
+    );
   },
 
   subscribeToClubState(clubId, onData, onError) {
