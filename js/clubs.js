@@ -392,6 +392,123 @@ async function createClub() {
   input.value = '';
 }
 
+function applyLivePersonData(data) {
+  if (!data || !data.name) return false;
+
+  const personName = String(data.name);
+
+  livePersonCounters.set(personName, {
+    drinks: { ...(data.drinks || {}) },
+    strafen: { ...(data.strafen || {}) }
+  });
+
+  const person = persons.find(p => p.name === personName);
+  if (!person) return false;
+
+  if (data.drinks) {
+    person.drinks = {
+      ...(person.drinks || {}),
+      ...data.drinks
+    };
+  }
+
+  if (data.strafen) {
+    person.strafen = {
+      ...(person.strafen || {}),
+      ...data.strafen
+    };
+  }
+
+  return true;
+}
+
+function reapplyLivePersonCounters() {
+  if (!liveCountersReady) return;
+
+  livePersonCounters.forEach((liveData, personName) => {
+    const person = persons.find(p => p.name === personName);
+    if (!person) return;
+
+    person.drinks = {
+      ...(person.drinks || {}),
+      ...(liveData.drinks || {})
+    };
+
+    person.strafen = {
+      ...(person.strafen || {}),
+      ...(liveData.strafen || {})
+    };
+  });
+}
+
+function renderLiveCounterChanges() {
+  renderGetraenke();
+  renderStrafen();
+  renderAbrechnung();
+  updateStats();
+
+  syncCurrentClubToStore();
+  saveClubSystem();
+}
+
+function stopLivePersonSync() {
+  if (currentLivePersonsUnsubscribe) {
+    currentLivePersonsUnsubscribe();
+    currentLivePersonsUnsubscribe = null;
+  }
+
+  livePersonCounters.clear();
+  liveCountersReady = false;
+}
+
+async function startLivePersonSync(clubId) {
+  if (!window.firestoreApi || !clubId) return;
+
+  stopLivePersonSync();
+
+  try {
+    await window.firestoreApi.seedLivePersons(clubId, persons);
+  } catch (error) {
+    console.error(
+      'Live-Personen konnten nicht initialisiert werden:',
+      error
+    );
+  }
+
+  currentLivePersonsUnsubscribe =
+    window.firestoreApi.subscribeToLivePersons(
+      clubId,
+      changes => {
+        let hasChanges = false;
+
+        changes.forEach(change => {
+          if (change.type === 'removed') return;
+
+          if (applyLivePersonData(change.data)) {
+            hasChanges = true;
+          }
+        });
+
+        liveCountersReady = true;
+
+        if (hasChanges) {
+          renderLiveCounterChanges();
+        }
+      },
+      error => {
+        console.error(
+          'Live-Personen-Synchronisation fehlgeschlagen:',
+          error
+        );
+
+        showToast(
+          '❌ Getränke- und Strafensynchronisation gestört',
+          'error'
+        );
+      }
+    );
+}
+
 async function selectClub(clubName) {
   if (!clubName) return;
 
@@ -482,6 +599,8 @@ async function selectClub(clubName) {
     renderAll();
     updateAppHeader();
   }
+    
+await startLivePersonSync(clubId);
 
   if (window.firestoreApi && typeof window.firestoreApi.subscribeToClubState === 'function') {
     currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
