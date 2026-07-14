@@ -262,21 +262,32 @@ async function confirmDartsPenaltyPlayer() {
 function handleDartsThrow(hitKey) {
   ensureDartsState();
 
-  if (!dartsThrowTeam) return;
+  const team = dartsThrowTeam;
 
-  const value = parseInt(dartsState.valueMap[hitKey] ?? DARTS_DEFAULT_VALUES[hitKey] ?? 0, 10) || 0;
+  if (!team) return;
 
-  dartsState.roundThrows[dartsThrowTeam].push({
+  const value = parseInt(
+    dartsState.valueMap[hitKey] ??
+    DARTS_DEFAULT_VALUES[hitKey] ??
+    0,
+    10
+  ) || 0;
+
+  dartsState.roundThrows[team].push({
     hit: hitKey,
     value,
     createdAt: new Date().toISOString()
   });
 
   closeDartsThrowModal();
+
   renderDarts();
   persistState();
 
-  showToast(`${getTeamLabel(dartsThrowTeam)} +${value} Punkte`, 'success');
+  showToast(
+    `${getTeamLabel(team)} +${value} Punkte`,
+    'success'
+  );
 }
 
 function getDartsRoundTotal(team) {
