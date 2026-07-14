@@ -12,68 +12,180 @@ import {
   runTransaction
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyClS5Mby1bZ39Olgra0bEvV273_c5FRTck",
-    authDomain: "kegelclub-invaliden-schwadron.firebaseapp.com",
-    projectId: "kegelclub-invaliden-schwadron",
-    storageBucket: "kegelclub-invaliden-schwadron.firebasestorage.app",
-    messagingSenderId: "1013015505267",
-    appId: "1:1013015505267:web:6cc65bae12a4337cd8fd06",
-    measurementId: "G-F4T56N61BF"
-  };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyClS5Mby1bZ39Olgra0bEvV273_c5FRTck",
+  authDomain: "kegelclub-invaliden-schwadron.firebaseapp.com",
+  projectId: "kegelclub-invaliden-schwadron",
+  storageBucket: "kegelclub-invaliden-schwadron.firebasestorage.app",
+  messagingSenderId: "1013015505267",
+  appId: "1:1013015505267:web:6cc65bae12a4337cd8fd06",
+  measurementId: "G-F4T56N61BF"
+};
+
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 
 window.firestoreApi = {
+
+  // ─────────────────────────────────────────────
+  // GESAMTZUSTAND
+  // ─────────────────────────────────────────────
+
   async loadClubState(clubId) {
-    const ref = doc(db, 'clubs', clubId, 'state', 'current');
+    const ref = doc(
+      db,
+      "clubs",
+      clubId,
+      "state",
+      "current"
+    );
+
     const snap = await getDoc(ref);
-    return snap.exists() ? snap.data() : null;
+
+    return snap.exists()
+      ? snap.data()
+      : null;
   },
+
 
   async saveClubState(clubId, payload = {}) {
-    const ref = doc(db, 'clubs', clubId, 'state', 'current');
-    await setDoc(ref, {
-      ...payload,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    const ref = doc(
+      db,
+      "clubs",
+      clubId,
+      "state",
+      "current"
+    );
+
+    await setDoc(
+      ref,
+      {
+        ...payload,
+        updatedAt: serverTimestamp()
+      },
+      {
+        merge: true
+      }
+    );
   },
 
-  async archiveClubEvent(clubId, archiveId, payload = {}) {
-    const ref = doc(db, 'clubs', clubId, 'archive', archiveId);
-    await setDoc(ref, {
-      ...payload,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+
+  subscribeToClubState(clubId, onData, onError) {
+    const ref = doc(
+      db,
+      "clubs",
+      clubId,
+      "state",
+      "current"
+    );
+
+    return onSnapshot(
+      ref,
+
+      snap => {
+        onData(
+          snap.exists()
+            ? snap.data()
+            : null
+        );
+      },
+
+      onError
+    );
   },
+
+
+  // ─────────────────────────────────────────────
+  // ARCHIV
+  // ─────────────────────────────────────────────
+
+  async archiveClubEvent(
+    clubId,
+    archiveId,
+    payload = {}
+  ) {
+    const ref = doc(
+      db,
+      "clubs",
+      clubId,
+      "archive",
+      archiveId
+    );
+
+    await setDoc(
+      ref,
+      {
+        ...payload,
+        updatedAt: serverTimestamp()
+      },
+      {
+        merge: true
+      }
+    );
+  },
+
+
+  // ─────────────────────────────────────────────
+  // CLUB-METADATEN
+  // ─────────────────────────────────────────────
 
   async saveClubMeta(clubId, payload = {}) {
-    const ref = doc(db, 'clubs', clubId);
-    await setDoc(ref, {
-      ...payload,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    const ref = doc(
+      db,
+      "clubs",
+      clubId
+    );
+
+    await setDoc(
+      ref,
+      {
+        ...payload,
+        updatedAt: serverTimestamp()
+      },
+      {
+        merge: true
+      }
+    );
   },
 
+
   async loadClubList() {
-    const snap = await getDocs(collection(db, 'clubs'));
-    return snap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
+    const snap = await getDocs(
+      collection(db, "clubs")
+    );
+
+    return snap.docs.map(item => ({
+      id: item.id,
+      ...item.data()
     }));
   },
-    
-      getLivePersonId(personName) {
+
+
+  // ─────────────────────────────────────────────
+  // LIVE-PERSONEN
+  // Getränke und Strafen
+  // ─────────────────────────────────────────────
+
+  getLivePersonId(personName) {
     return encodeURIComponent(
-      String(personName || '')
+      String(personName || "")
         .trim()
         .toLowerCase()
     );
   },
 
+
   async loadLivePersons(clubId) {
-    const ref = collection(db, 'clubs', clubId, 'livePersons');
+    const ref = collection(
+      db,
+      "clubs",
+      clubId,
+      "livePersons"
+    );
+
     const snap = await getDocs(ref);
 
     return snap.docs.map(item => ({
@@ -82,37 +194,62 @@ window.firestoreApi = {
     }));
   },
 
-    async seedLivePersons(clubId, persons = []) {
-      await Promise.all(
-        persons.map(async person => {
-          const personId = this.getLivePersonId(person.name);
 
-          const personRef = doc(
-            db,
-            'clubs',
-            clubId,
-            'livePersons',
-            personId
-          );
+  async seedLivePersons(
+    clubId,
+    persons = []
+  ) {
+    await Promise.all(
+      persons.map(async person => {
+        if (!person || !person.name) {
+          return;
+        }
 
-          const existing = await getDoc(personRef);
+        const personId =
+          this.getLivePersonId(person.name);
 
-          // Vorhandene Live-Werte niemals überschreiben.
-          if (existing.exists()) {
-            return;
-          }
+        const personRef = doc(
+          db,
+          "clubs",
+          clubId,
+          "livePersons",
+          personId
+        );
 
-          await setDoc(personRef, {
-            name: person.name,
-            drinks: { ...(person.drinks || {}) },
-            strafen: { ...(person.strafen || {}) },
-            updatedAt: serverTimestamp()
-          });
-        })
-      );
+        const existing =
+          await getDoc(personRef);
 
-      return true;
-    },
+        /*
+         * Bereits vorhandene Live-Werte
+         * niemals überschreiben.
+         */
+        if (existing.exists()) {
+          return;
+        }
+
+        await setDoc(personRef, {
+          name: person.name,
+
+          drinks: {
+            ...(person.drinks || {})
+          },
+
+          strafen: {
+            ...(person.strafen || {})
+          },
+
+          updatedAt: serverTimestamp()
+        });
+      })
+    );
+
+    return true;
+  },
+
+
+  // ─────────────────────────────────────────────
+  // EINZELNEN ZÄHLER ÄNDERN
+  // ─────────────────────────────────────────────
 
   async changeLivePersonCounter(
     clubId,
@@ -121,84 +258,264 @@ window.firestoreApi = {
     key,
     delta
   ) {
-    if (!['drinks', 'strafen'].includes(category)) {
-      throw new Error(`Ungültige Kategorie: ${category}`);
+    if (
+      !["drinks", "strafen"].includes(category)
+    ) {
+      throw new Error(
+        `Ungültige Kategorie: ${category}`
+      );
     }
 
-    const personId = this.getLivePersonId(personName);
+    if (!personName) {
+      throw new Error(
+        "Personenname fehlt"
+      );
+    }
+
+    if (!key) {
+      throw new Error(
+        "Zählerschlüssel fehlt"
+      );
+    }
+
+    const personId =
+      this.getLivePersonId(personName);
+
     const personRef = doc(
       db,
-      'clubs',
+      "clubs",
       clubId,
-      'livePersons',
+      "livePersons",
       personId
     );
 
-    return runTransaction(db, async transaction => {
-      const snap = await transaction.get(personRef);
-      const current = snap.exists() ? snap.data() : {};
+    return runTransaction(
+      db,
 
-      const counters = {
-        ...(current[category] || {})
-      };
+      async transaction => {
+        const snap =
+          await transaction.get(personRef);
 
-      const previousValue = Number(counters[key] || 0);
-      const nextValue = Math.max(
-        0,
-        previousValue + Number(delta || 0)
-      );
+        const current = snap.exists()
+          ? snap.data()
+          : {};
 
-      counters[key] = nextValue;
+        const counters = {
+          ...(current[category] || {})
+        };
 
-      transaction.set(
-        personRef,
-        {
-          name: personName,
-          [category]: counters,
-          updatedAt: serverTimestamp()
-        },
-        { merge: true }
-      );
+        const previousValue = Number(
+          counters[key] || 0
+        );
 
-      return nextValue;
-    });
+        const nextValue = Math.max(
+          0,
+          previousValue + Number(delta || 0)
+        );
+
+        counters[key] = nextValue;
+
+        transaction.set(
+          personRef,
+
+          {
+            name: personName,
+
+            [category]: counters,
+
+            updatedAt: serverTimestamp()
+          },
+
+          {
+            merge: true
+          }
+        );
+
+        return nextValue;
+      }
+    );
   },
 
-  subscribeToLivePersons(clubId, onData, onError) {
+
+  // ─────────────────────────────────────────────
+  // MEHRERE ZÄHLER ATOMAR ÄNDERN
+  // z. B. Kranz oder Verliererteam
+  // ─────────────────────────────────────────────
+
+  async changeMultipleLivePersonCounters(
+    clubId,
+    changes = []
+  ) {
+    const validChanges = changes.filter(
+      change =>
+        change &&
+        change.personName &&
+        ["drinks", "strafen"].includes(
+          change.category
+        ) &&
+        change.key &&
+        Number(change.delta || 0) !== 0
+    );
+
+    if (!validChanges.length) {
+      return [];
+    }
+
+    return runTransaction(
+      db,
+
+      async transaction => {
+        const groupedChanges = new Map();
+
+        /*
+         * Änderungen nach Person gruppieren.
+         */
+        validChanges.forEach(change => {
+          const personId =
+            this.getLivePersonId(
+              change.personName
+            );
+
+          if (!groupedChanges.has(personId)) {
+            groupedChanges.set(personId, {
+              personId,
+              personName: change.personName,
+              changes: []
+            });
+          }
+
+          groupedChanges
+            .get(personId)
+            .changes
+            .push(change);
+        });
+
+        /*
+         * Firestore verlangt, dass innerhalb
+         * einer Transaktion zuerst alle Reads
+         * und danach alle Writes stattfinden.
+         */
+        const loadedPersons = [];
+
+        for (
+          const group of groupedChanges.values()
+        ) {
+          const personRef = doc(
+            db,
+            "clubs",
+            clubId,
+            "livePersons",
+            group.personId
+          );
+
+          const snap =
+            await transaction.get(personRef);
+
+          loadedPersons.push({
+            ...group,
+            personRef,
+
+            current: snap.exists()
+              ? snap.data()
+              : {}
+          });
+        }
+
+        const results = [];
+
+        loadedPersons.forEach(group => {
+          const nextData = {
+            name: group.personName,
+
+            drinks: {
+              ...(group.current.drinks || {})
+            },
+
+            strafen: {
+              ...(group.current.strafen || {})
+            },
+
+            updatedAt: serverTimestamp()
+          };
+
+          group.changes.forEach(change => {
+            const counters =
+              nextData[change.category];
+
+            const previousValue = Number(
+              counters[change.key] || 0
+            );
+
+            const nextValue = Math.max(
+              0,
+              previousValue +
+                Number(change.delta || 0)
+            );
+
+            counters[change.key] = nextValue;
+
+            results.push({
+              personName: change.personName,
+              category: change.category,
+              key: change.key,
+              value: nextValue
+            });
+          });
+
+          transaction.set(
+            group.personRef,
+            nextData,
+            {
+              merge: true
+            }
+          );
+        });
+
+        return results;
+      }
+    );
+  },
+
+
+  // ─────────────────────────────────────────────
+  // LIVE-LISTENER FÜR PERSONEN
+  // ─────────────────────────────────────────────
+
+  subscribeToLivePersons(
+    clubId,
+    onData,
+    onError
+  ) {
     const ref = collection(
       db,
-      'clubs',
+      "clubs",
       clubId,
-      'livePersons'
+      "livePersons"
     );
 
     return onSnapshot(
       ref,
+
       snapshot => {
-        const changes = snapshot.docChanges().map(change => ({
-          type: change.type,
-          id: change.doc.id,
-          data: change.doc.data()
-        }));
+        const changes =
+          snapshot.docChanges().map(change => ({
+            type: change.type,
+            id: change.doc.id,
+            data: change.doc.data()
+          }));
 
         onData(changes);
       },
-      onError
-    );
-  },
 
-  subscribeToClubState(clubId, onData, onError) {
-    const ref = doc(db, 'clubs', clubId, 'state', 'current');
-    return onSnapshot(
-      ref,
-      (snap) => onData(snap.exists() ? snap.data() : null),
       onError
     );
   }
 };
 
-  console.log('Firestore API bereit');
 
-  if (typeof startApp === 'function') {
-    startApp();
-  }
+console.log("Firestore API bereit");
+
+
+if (typeof startApp === "function") {
+  startApp();
+}
