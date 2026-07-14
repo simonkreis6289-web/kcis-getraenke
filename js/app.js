@@ -4847,7 +4847,14 @@ teamStopwatchInterval = setInterval(updateTeamStopwatchDisplay, 1000);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=20260318-v13');
+        const reg = await navigator.serviceWorker.register(
+          './sw.js?v=20260714-v14',
+          {
+            updateViaCache: 'none'
+          }
+        );
+
+        await reg.update();
 
       if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
 
