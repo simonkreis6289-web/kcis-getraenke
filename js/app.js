@@ -123,7 +123,6 @@ function getFirestoreState() {
       TANNENBAUM_BASE,
       tannenbaumHardRule,
       dartsState,
-      lotterieState,
         tiberiusState,
         lotterieSettings,
         tiberiusSettings,
@@ -271,23 +270,85 @@ async function loadFromFirestore() {
   }
 }
 
-async function saveToFirestore(showSuccessToast = false) {
-  if (!window.firestoreApi || !ACTIVE_CLUB) return false;
+function cleanForFirestore(value) {
+  if (Array.isArray(value)) {
+    return value.map(item =>
+      item === undefined
+        ? null
+        : cleanForFirestore(item)
+    );
+  }
+
+  if (
+    value !== null &&
+    typeof value === 'object'
+  ) {
+    const cleaned = {};
+
+    Object.entries(value).forEach(
+      ([key, item]) => {
+        if (item === undefined) {
+          console.warn(
+            `Firestore: undefined entfernt bei "${key}"`
+          );
+          return;
+        }
+
+        cleaned[key] =
+          cleanForFirestore(item);
+      }
+    );
+
+    return cleaned;
+  }
+
+  return value;
+}
+
+async function saveToFirestore(
+  showSuccessToast = false
+) {
+  if (
+    !window.firestoreApi ||
+    !ACTIVE_CLUB
+  ) {
+    return false;
+  }
 
   try {
-    const clubId = getClubFirestoreId(ACTIVE_CLUB);
-    await window.firestoreApi.saveClubState(clubId, getFirestoreState());
+    const clubId =
+      getClubFirestoreId(ACTIVE_CLUB);
+
+    const rawState =
+      getFirestoreState();
+
+    const cleanState =
+      cleanForFirestore(rawState);
+
+    await window.firestoreApi.saveClubState(
+      clubId,
+      cleanState
+    );
 
     if (showSuccessToast) {
-      showToast(`☁️ ${ACTIVE_CLUB} gespeichert`, 'success');
+      showToast(
+        `☁️ ${ACTIVE_CLUB} gespeichert`,
+        'success'
+      );
     }
 
     return true;
-  } catch (e) {
-    console.error('Fehler beim Speichern in Firestore:', e);
+  } catch (error) {
+    console.error(
+      'Fehler beim Speichern in Firestore:',
+      error
+    );
 
     if (showSuccessToast) {
-      showToast('❌ Firestore-Speichern fehlgeschlagen', 'error');
+      showToast(
+        '❌ Firestore-Speichern fehlgeschlagen',
+        'error'
+      );
     }
 
     return false;
@@ -302,6 +363,46 @@ async function manualSaveAll() {
     '✅ Lokal gespeichert. Live-Daten synchronisieren automatisch.',
     'success'
   );
+}
+
+function findUndefinedPaths(
+  value,
+  path = 'state',
+  results = []
+) {
+  if (value === undefined) {
+    results.push(path);
+    return results;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      findUndefinedPaths(
+        item,
+        `${path}[${index}]`,
+        results
+      );
+    });
+
+    return results;
+  }
+
+  if (
+    value !== null &&
+    typeof value === 'object'
+  ) {
+    Object.entries(value).forEach(
+      ([key, item]) => {
+        findUndefinedPaths(
+          item,
+          `${path}.${key}`,
+          results
+        );
+      }
+    );
+  }
+
+  return results;
 }
     
 function renderBoughtThrowsDots(person) {
