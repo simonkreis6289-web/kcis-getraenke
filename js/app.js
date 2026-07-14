@@ -587,18 +587,13 @@ function calcStrafenTotal(p) {
   return normalTotal + calcFreeStrafenTotal(p) + calcTannenbaumChargesTotal(p);
 }
 
-function changeStrafe(personName, key, delta) {
-  const p = persons.find(x => x.name === personName);
-  if (!p || !p.present || p.left) return;
-
-  if (!p.strafen) p.strafen = {};
-
-  p.strafen[key] = Math.max(0, (p.strafen[key] || 0) + delta);
-
-  renderStrafen();
-  updateStats();
-
-  persistState();
+async function changeStrafe(personName, key, delta) {
+  await changeSyncedPersonCounter(
+    personName,
+    'strafen',
+    key,
+    delta
+  );
 }
 
 function renderStrafen() {
@@ -3916,18 +3911,65 @@ rowIndex = renderDrinkRows(guests, body, rowIndex);
   }
 }
 
-function changeDrink(name, key, delta) {
-  const p = persons.find(x => x.name === name);
-  if (!p || p.left) return;
-  if (!p.drinks) p.drinks = {};
+async function changeSyncedPersonCounter(
+  personName,
+  category,
+  key,
+  delta
+) {
+  if (!ACTIVE_CLUB || !window.firestoreApi) {
+    showToast('❌ Keine Firestore-Verbindung verfügbar', 'error');
+    return;
+  }
 
-  p.drinks[key] = Math.max(0, (p.drinks[key] || 0) + delta);
-  renderGetraenke();
-  updateStats();
-  renderAbrechnung();
-  persistState();
+  const person = persons.find(p => p.name === personName);
+
+  if (!person || person.left) return;
+
+  if (category === 'strafen' && !person.present) {
+    return;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Diese Eingabe ist offline derzeit nicht möglich',
+      'error'
+    );
+    return;
+  }
+
+  try {
+    const clubId = getClubFirestoreId(ACTIVE_CLUB);
+
+    await window.firestoreApi.changeLivePersonCounter(
+      clubId,
+      personName,
+      category,
+      key,
+      delta
+    );
+  } catch (error) {
+    console.error(
+      'Synchronisierte Zähleränderung fehlgeschlagen:',
+      error
+    );
+
+    showToast(
+      '❌ Änderung konnte nicht gespeichert werden',
+      'error'
+    );
+  }
 }
-    
+
+async function changeDrink(name, key, delta) {
+  await changeSyncedPersonCounter(
+    name,
+    'drinks',
+    key,
+    delta
+  );
+}
+
 function openDrinkEditModal() {
   return;
 }
