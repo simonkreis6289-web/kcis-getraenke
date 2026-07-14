@@ -522,7 +522,7 @@ async function startLivePersonSync(clubId) {
 
 async function selectClub(clubName) {
   if (!clubName) return;
-    
+
   if (currentClubUnsubscribe) {
     currentClubUnsubscribe();
     currentClubUnsubscribe = null;
@@ -534,11 +534,6 @@ async function selectClub(clubName) {
 
   if (typeof stopLiveLotterieSync === 'function') {
     stopLiveLotterieSync();
-  }
-
-  if (currentClubUnsubscribe) {
-    currentClubUnsubscribe();
-    currentClubUnsubscribe = null;
   }
 
   ACTIVE_CLUB = clubName;
