@@ -295,8 +295,13 @@ async function saveToFirestore(showSuccessToast = false) {
 }
 
 async function manualSaveAll() {
+  syncCurrentClubToStore();
   saveClubSystem();
-  await saveToFirestore(true);
+
+  showToast(
+    '✅ Lokal gespeichert. Live-Daten synchronisieren automatisch.',
+    'success'
+  );
 }
     
 function renderBoughtThrowsDots(person) {
@@ -410,27 +415,49 @@ function closeKranzModal() {
   document.getElementById('kranz-modal').classList.add('hidden');
 }
 
-function confirmKranzThrow(winnerName) {
+async function confirmKranzThrow(winnerName) {
   const key = getKranzStrafeKey();
 
   if (!key) {
-    showToast('Strafe 9er/Kranz nicht gefunden', 'error');
+    showToast(
+      'Strafe 9er/Kranz nicht gefunden',
+      'error'
+    );
     return;
   }
 
-  persons.forEach(p => {
-    if (!p.present || p.left) return;
-    if (p.name === winnerName) return;
+  const punishedNames = persons
+    .filter(p =>
+      p.present &&
+      !p.left &&
+      p.name !== winnerName
+    )
+    .map(p => p.name);
 
-    if (!p.strafen) p.strafen = {};
-    p.strafen[key] = (p.strafen[key] || 0) + 1;
-  });
+  const changes = punishedNames.map(name => ({
+    personName: name,
+    category: 'strafen',
+    key,
+    delta: 1
+  }));
+
+  const success =
+    await changeMultipleSyncedPersonCounters(
+      changes,
+      `🎯 ${winnerName} bekommt nichts, alle anderen +1`
+    );
+
+  if (!success) return;
+
+  addPenaltyStatsEntry(
+    'Kranz',
+    winnerName,
+    punishedNames
+  );
 
   closeKranzModal();
-  renderAll();
-  persistState();
 
-  showToast(`🎯 ${winnerName} bekommt nichts, alle anderen +1`, 'success');
+  persistState();
 }
     
 function openFreeStrafeModal() {
@@ -1111,6 +1138,24 @@ function getGosseKings() {
   return candidates
     .filter(x => x.count === max)
     .map(x => x.name);
+}
+
+function getFirstLoserStrafeKey() {
+  const found = STRAFEN.find(s => {
+    const label = String(
+      s.label || ''
+    )
+      .trim()
+      .toLowerCase();
+
+    return (
+      label === '1. verlierer' ||
+      label === '1 verlierer' ||
+      label.includes('erster verlierer')
+    );
+  });
+
+  return found ? found.key : null;
 }
 
 function isGosseKing(personName) {
@@ -3918,36 +3963,66 @@ async function changeSyncedPersonCounter(
   delta
 ) {
   if (!ACTIVE_CLUB || !window.firestoreApi) {
-    showToast('❌ Keine Firestore-Verbindung verfügbar', 'error');
-    return;
+    showToast(
+      '❌ Keine Firestore-Verbindung verfügbar',
+      'error'
+    );
+    return false;
   }
 
-  const person = persons.find(p => p.name === personName);
+  const person = persons.find(
+    p => p.name === personName
+  );
 
-  if (!person || person.left) return;
+  if (!person) {
+    showToast(
+      `❌ Person nicht gefunden: ${personName}`,
+      'error'
+    );
+    return false;
+  }
 
-  if (category === 'strafen' && !person.present) {
-    return;
+  if (person.left) {
+    showToast(
+      `${personName} ist bereits als gegangen markiert`,
+      'error'
+    );
+    return false;
+  }
+
+  if (
+    category === 'strafen' &&
+    !person.present
+  ) {
+    showToast(
+      `${personName} ist nicht anwesend`,
+      'error'
+    );
+    return false;
   }
 
   if (!navigator.onLine) {
     showToast(
-      '📴 Diese Eingabe ist offline derzeit nicht möglich',
+      '📴 Live-Buchungen sind offline nicht möglich',
       'error'
     );
-    return;
+    return false;
   }
 
   try {
-    const clubId = getClubFirestoreId(ACTIVE_CLUB);
+    const clubId =
+      getClubFirestoreId(ACTIVE_CLUB);
 
-    await window.firestoreApi.changeLivePersonCounter(
-      clubId,
-      personName,
-      category,
-      key,
-      delta
-    );
+    await window.firestoreApi
+      .changeLivePersonCounter(
+        clubId,
+        personName,
+        category,
+        key,
+        delta
+      );
+
+    return true;
   } catch (error) {
     console.error(
       'Synchronisierte Zähleränderung fehlgeschlagen:',
@@ -3958,6 +4033,120 @@ async function changeSyncedPersonCounter(
       '❌ Änderung konnte nicht gespeichert werden',
       'error'
     );
+
+    return false;
+  }
+}
+
+async function changeMultipleSyncedPersonCounters(
+  changes = [],
+  successMessage = ''
+) {
+  if (!ACTIVE_CLUB || !window.firestoreApi) {
+    showToast(
+      '❌ Keine Firestore-Verbindung verfügbar',
+      'error'
+    );
+    return false;
+  }
+
+  if (
+    typeof window.firestoreApi
+      .changeMultipleLivePersonCounters !== 'function'
+  ) {
+    showToast(
+      '❌ Mehrfach-Synchronisation ist nicht verfügbar',
+      'error'
+    );
+    return false;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Live-Buchungen sind offline nicht möglich',
+      'error'
+    );
+    return false;
+  }
+
+  const validChanges = changes.filter(change => {
+    if (
+      !change ||
+      !change.personName ||
+      !change.category ||
+      !change.key
+    ) {
+      return false;
+    }
+
+    if (
+      !['drinks', 'strafen'].includes(
+        change.category
+      )
+    ) {
+      return false;
+    }
+
+    if (Number(change.delta || 0) === 0) {
+      return false;
+    }
+
+    const person = persons.find(
+      p => p.name === change.personName
+    );
+
+    if (!person || person.left) {
+      return false;
+    }
+
+    if (
+      change.category === 'strafen' &&
+      !person.present
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (!validChanges.length) {
+    showToast(
+      'Keine aktiven Personen für diese Buchung gefunden',
+      'error'
+    );
+    return false;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(ACTIVE_CLUB);
+
+    await window.firestoreApi
+      .changeMultipleLivePersonCounters(
+        clubId,
+        validChanges
+      );
+
+    if (successMessage) {
+      showToast(
+        successMessage,
+        'success'
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      'Synchronisierte Mehrfachbuchung fehlgeschlagen:',
+      error
+    );
+
+    showToast(
+      '❌ Mehrfachbuchung konnte nicht gespeichert werden',
+      'error'
+    );
+
+    return false;
   }
 }
 
@@ -4280,6 +4469,56 @@ function renderTeamspiele() {
     `;
     list.appendChild(c);
   });
+}
+
+async function addFirstLoserPenaltyToTeam(teamKey) {
+  const key = getFirstLoserStrafeKey();
+
+  if (!key) {
+    showToast(
+      'Bitte zuerst die Strafe „1. Verlierer“ anlegen',
+      'error'
+    );
+    return false;
+  }
+
+  const members = getActiveTeamMembers(teamKey);
+
+  if (!members.length) {
+    showToast(
+      'Keine aktiven Spieler im Verliererteam',
+      'error'
+    );
+    return false;
+  }
+
+  const changes = members.map(person => ({
+    personName: person.name,
+    category: 'strafen',
+    key,
+    delta: 1
+  }));
+
+  const teamName = getGroupLabel(teamKey);
+
+  return changeMultipleSyncedPersonCounters(
+    changes,
+    `🥇 ${teamName}: alle erhalten 1. Verlierer`
+  );
+}
+
+async function addFirstLoserPenaltyForSelectedTeam() {
+  if (!selectedLoser) {
+    showToast(
+      'Bitte zuerst das Verliererteam auswählen',
+      'error'
+    );
+    return;
+  }
+
+  await addFirstLoserPenaltyToTeam(
+    selectedLoser
+  );
 }
 
 function changeTeamDrink(key, delta) {
@@ -5087,33 +5326,87 @@ function undoReset() {
 
 // ── NETWORK EVENTS ──
 window.addEventListener('online', async () => {
-  showToast('🌐 Wieder online. Synchronisiere…', 'success');
+  showToast(
+    '🌐 Wieder online. Serverstand wird geladen…',
+    'success'
+  );
 
-  if (!ACTIVE_CLUB || !window.firestoreApi) return;
-
-  const clubId = getClubFirestoreId(ACTIVE_CLUB);
-  const remoteState = await window.firestoreApi.loadClubState(clubId);
-  const remoteUpdatedAt = Number(remoteState?.updatedClientAt || 0);
-
-  if (!remoteState || lastLocalChangeAt >= remoteUpdatedAt) {
-    await saveToFirestore(false);
-    showToast('☁️ Lokaler Stand hochgeladen', 'success');
+  if (
+    !ACTIVE_CLUB ||
+    !window.firestoreApi
+  ) {
     return;
   }
 
-  isApplyingRemoteState = true;
+  try {
+    const clubId =
+      getClubFirestoreId(ACTIVE_CLUB);
 
-  applyLoadedState(remoteState);
-  lastRemoteChangeAt = remoteUpdatedAt;
-  lastLocalChangeAt = Math.max(lastLocalChangeAt, remoteUpdatedAt);
+    const remoteState =
+      await window.firestoreApi
+        .loadClubState(clubId);
 
-  renderAll();
-  syncCurrentClubToStore();
-  saveClubSystem();
+    if (!remoteState) {
+      showToast(
+        '⚠️ Kein Serverstand vorhanden',
+        'error'
+      );
+      return;
+    }
 
-  isApplyingRemoteState = false;
+    const remoteUpdatedAt = Number(
+      remoteState.updatedClientAt || 0
+    );
 
-  showToast('☁️ Firestore-Stand übernommen', 'success');
+    isApplyingRemoteState = true;
+
+    try {
+      applyLoadedState(remoteState);
+
+      /*
+       * Getränke und gezählte Strafen werden
+       * anschließend wieder aus livePersons
+       * über den geladenen Gesamtstand gelegt.
+       */
+      if (
+        typeof reapplyLivePersonCounters ===
+        'function'
+      ) {
+        reapplyLivePersonCounters();
+      }
+
+      lastRemoteChangeAt =
+        remoteUpdatedAt;
+
+      lastLocalChangeAt = Math.max(
+        lastLocalChangeAt,
+        remoteUpdatedAt
+      );
+
+      renderAll();
+      syncCurrentClubToStore();
+      saveClubSystem();
+    } finally {
+      isApplyingRemoteState = false;
+    }
+
+    showToast(
+      '☁️ Aktueller Serverstand übernommen',
+      'success'
+    );
+  } catch (error) {
+    isApplyingRemoteState = false;
+
+    console.error(
+      'Synchronisation nach Wiederverbindung fehlgeschlagen:',
+      error
+    );
+
+    showToast(
+      '❌ Serverstand konnte nicht geladen werden',
+      'error'
+    );
+  }
 });
 
 window.addEventListener('offline', () => {
@@ -5254,9 +5547,15 @@ function closeQuickPenaltyModal() {
   quickPenaltyType = '';
 }
 
-function confirmQuickPenalty() {
-  const personName = document.getElementById('quick-penalty-person-select')?.value || '';
-  const key = getPenaltyKeyByType(quickPenaltyType);
+async function confirmQuickPenalty() {
+  const personName =
+    document.getElementById(
+      'quick-penalty-person-select'
+    )?.value || '';
+
+  const key = getPenaltyKeyByType(
+    quickPenaltyType
+  );
 
   if (!personName) {
     showToast('Bitte Person auswählen', 'error');
@@ -5268,42 +5567,64 @@ function confirmQuickPenalty() {
     return;
   }
 
-  const type = String(quickPenaltyType || '').toLowerCase();
-  const active = persons.filter(p => p.present && !p.left);
+  const type = String(
+    quickPenaltyType || ''
+  ).toLowerCase();
+
+  const activePersons = persons.filter(
+    p => p.present && !p.left
+  );
+
   let punishedNames = [];
+  let changes = [];
 
   if (type === 'gosse') {
-    const p = persons.find(x => x.name === personName);
-    if (!p) return;
-
-    if (!p.strafen) p.strafen = {};
-    p.strafen[key] = (p.strafen[key] || 0) + 1;
-
     punishedNames = [personName];
+
+    changes = [{
+      personName,
+      category: 'strafen',
+      key,
+      delta: 1
+    }];
   } else {
-    active.forEach(p => {
-      if (p.name === personName) return;
+    punishedNames = activePersons
+      .filter(p => p.name !== personName)
+      .map(p => p.name);
 
-      if (!p.strafen) p.strafen = {};
-      p.strafen[key] = (p.strafen[key] || 0) + 1;
-
-      punishedNames.push(p.name);
-    });
+    changes = punishedNames.map(name => ({
+      personName: name,
+      category: 'strafen',
+      key,
+      delta: 1
+    }));
   }
 
-  addPenaltyStatsEntry(quickPenaltyType, personName, punishedNames);
+  const success =
+    await changeMultipleSyncedPersonCounters(
+      changes,
+      type === 'gosse'
+        ? `✅ Gosse für ${personName} gebucht`
+        : `✅ ${personName} ist straffrei, alle anderen +1`
+    );
+
+  if (!success) return;
+
+  addPenaltyStatsEntry(
+    quickPenaltyType,
+    personName,
+    punishedNames
+  );
 
   closeQuickPenaltyModal();
-  renderAll();
-  persistState();
 
-  showToast(
-    type === 'gosse'
-      ? `✅ Gosse für ${personName} gebucht`
-      : `✅ ${personName} ist straffrei, alle anderen +1`,
-    'success'
-  );
+  /*
+   * Nur Statistik und restlichen App-Zustand speichern.
+   * Die Zähler selbst kommen aus livePersons.
+   */
+  persistState();
 }
+
 function normalizePenaltyStatsType(type) {
   const t = String(type || '').toLowerCase();
 
