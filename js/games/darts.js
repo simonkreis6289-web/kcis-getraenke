@@ -155,61 +155,100 @@ function closeDartsPenaltyPlayerModal() {
   pendingDartsPenalty = null;
 }
 
-function confirmDartsPenaltyPlayer() {
+async function confirmDartsPenaltyPlayer() {
   if (!pendingDartsPenalty) return;
 
-  const personName = document.getElementById('darts-penalty-player-select')?.value || '';
+  const personName =
+    document.getElementById(
+      'darts-penalty-player-select'
+    )?.value || '';
 
   if (!personName) {
-    showToast('Bitte Person auswählen', 'error');
+    showToast(
+      'Bitte Person auswählen',
+      'error'
+    );
     return;
   }
 
-  const { type, team, points } = pendingDartsPenalty;
+  const {
+    type,
+    team,
+    points
+  } = pendingDartsPenalty;
+
   const key = getPenaltyKeyByType(type);
 
   if (!key) {
-    showToast(`Strafe "${type}" nicht gefunden`, 'error');
+    showToast(
+      `Strafe "${type}" nicht gefunden`,
+      'error'
+    );
     return;
   }
 
-  const active = persons.filter(p => p.present && !p.left);
+  const activePlayers = persons.filter(
+    p => p.present && !p.left
+  );
+
   let punishedNames = [];
 
   if (type === 'gosse') {
-    const p = persons.find(x => x.name === personName);
-
-    if (p) {
-      if (!p.strafen) p.strafen = {};
-      p.strafen[key] = (p.strafen[key] || 0) + 1;
-      punishedNames = [personName];
-    }
+    punishedNames = [personName];
   } else {
-    active.forEach(p => {
-      if (p.name === personName) return;
-
-      if (!p.strafen) p.strafen = {};
-      p.strafen[key] = (p.strafen[key] || 0) + 1;
-      punishedNames.push(p.name);
-    });
+    punishedNames = activePlayers
+      .filter(p => p.name !== personName)
+      .map(p => p.name);
   }
 
-  addPenaltyStatsEntry(type, personName, punishedNames);
+  const changes = punishedNames.map(name => ({
+    personName: name,
+    category: 'strafen',
+    key,
+    delta: 1
+  }));
 
-  if (!dartsState.roundThrows[team]) dartsState.roundThrows[team] = [];
+  const success =
+    await changeMultipleSyncedPersonCounters(
+      changes
+    );
+
+  if (!success) return;
+
+  if (
+    typeof addPenaltyStatsEntry === 'function'
+  ) {
+    addPenaltyStatsEntry(
+      type,
+      personName,
+      punishedNames
+    );
+  }
+
+  if (!dartsState.roundThrows[team]) {
+    dartsState.roundThrows[team] = [];
+  }
 
   dartsState.roundThrows[team].push({
     hit: type,
     value: points,
     thrower: personName,
+
+    /*
+     * Wichtig für späteres Löschen:
+     * Damit wissen wir exakt, welche Strafe
+     * wieder zurückgenommen werden muss.
+     */
+    penaltyKey: key,
+    punishedNames: [...punishedNames],
+    penaltyBooked: true,
+
     createdAt: new Date().toISOString()
   });
 
   closeDartsPenaltyPlayerModal();
 
   renderDarts();
-  renderStrafen();
-  updateStats();
   persistState();
 
   showToast(
@@ -563,6 +602,12 @@ function renderDartsRoundList() {
         <div class="spiel-detail">
           Wurf: ${entry.hit === 'kranz' ? 'Kranz' : entry.hit}
         </div>
+
+        ${entry.thrower ? `
+          <div class="spiel-detail">
+            Spieler: ${entry.thrower}
+          </div>
+        ` : ''}
       </div>
 
       <div style="display:flex;align-items:center;gap:8px;">
@@ -580,27 +625,76 @@ function renderDartsRoundList() {
   `).join('');
 }
 
-function deleteDartsThrow(team, index) {
+async function deleteDartsThrow(
+  team,
+  index
+) {
   ensureDartsState();
 
-  if (!dartsState.roundThrows?.[team]?.[index]) return;
+  const entry =
+    dartsState.roundThrows?.[team]?.[index];
 
-  const entry = dartsState.roundThrows[team][index];
+  if (!entry) return;
+
+  const hitLabel =
+    entry.hit === 'kranz'
+      ? 'Kranz'
+      : entry.hit;
 
   if (
     !confirm(
-      `Wurf "${entry.hit === 'kranz' ? 'Kranz' : entry.hit}" (${entry.value} Punkte) löschen?`
+      `Wurf "${hitLabel}" (${entry.value} Punkte) löschen?`
     )
   ) {
     return;
   }
 
-  dartsState.roundThrows[team].splice(index, 1);
+  /*
+   * Wurde mit diesem Wurf eine Strafe gebucht,
+   * wird sie synchron zurückgenommen.
+   */
+  if (
+    entry.penaltyBooked &&
+    entry.penaltyKey &&
+    Array.isArray(entry.punishedNames) &&
+    entry.punishedNames.length
+  ) {
+    const reverseChanges =
+      entry.punishedNames.map(name => ({
+        personName: name,
+        category: 'strafen',
+        key: entry.penaltyKey,
+        delta: -1
+      }));
+
+    const success =
+      await changeMultipleSyncedPersonCounters(
+        reverseChanges
+      );
+
+    if (!success) {
+      showToast(
+        '❌ Strafe konnte nicht zurückgenommen werden. Wurf bleibt bestehen.',
+        'error'
+      );
+      return;
+    }
+  }
+
+  dartsState.roundThrows[team].splice(
+    index,
+    1
+  );
 
   renderDarts();
   persistState();
 
-  showToast('🗑️ Wurf gelöscht', 'success');
+  showToast(
+    entry.penaltyBooked
+      ? '🗑️ Wurf und zugehörige Strafe entfernt'
+      : '🗑️ Wurf gelöscht',
+    'success'
+  );
 }
 
 function renderDartsHistory() {
