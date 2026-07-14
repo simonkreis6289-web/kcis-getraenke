@@ -2395,8 +2395,8 @@ async function archiveEvent(snapshot) {
   }
 }
 
-function startNewKegelabend() {
-    archiveCurrentKegelabendForStats();
+async function startNewKegelabend() {
+  archiveCurrentKegelabendForStats();
 
   persons.forEach(p => {
     p.present = false;
@@ -2410,18 +2410,25 @@ function startNewKegelabend() {
     p.teamExtra = 0;
     p.roundExtra = 0;
     p.rounds = [];
-      p.freeStrafen = [];
-      p.tannenbaumCharges = [];
+    p.freeStrafen = [];
+    p.tannenbaumCharges = [];
 
-    if (!p.drinks) p.drinks = {};
+    if (!p.drinks) {
+      p.drinks = {};
+    }
+
     DRINKS.forEach(d => {
       p.drinks[d.key] = 0;
     });
 
-    if (!p.strafen) p.strafen = {};
+    if (!p.strafen) {
+      p.strafen = {};
+    }
+
     STRAFEN.forEach(s => {
       p.strafen[s.key] = 0;
     });
+
     p.boughtThrows = 0;
   });
 
@@ -2429,10 +2436,14 @@ function startNewKegelabend() {
   teamDrinks = {};
   selectedLoser = null;
   roundDraftDrinks = {};
-    strafenHistory = [];
+  strafenHistory = [];
+
   bahnTimerStart = null;
   bahnTimerRunning = false;
-  localStorage.removeItem(getBahnStoppedKey());
+
+  localStorage.removeItem(
+    getBahnStoppedKey()
+  );
 
   teamStopwatchActive = false;
   teamStopwatchRunning = false;
@@ -2440,14 +2451,44 @@ function startNewKegelabend() {
   teamCountdownDuration = 0;
   teamCountdownRemainingBefore = 0;
 
-  tannenbaumState = createTannenbaumState();
-    dartsState = createDartsState();
-    lotterieState = createLotterieState();
-    tiberiusState = createTiberiusState();
+  tannenbaumState =
+    createTannenbaumState();
+
+  dartsState =
+    createDartsState();
+
+  lotterieState =
+    createLotterieState();
+
+  tiberiusState =
+    createTiberiusState();
+
+  /*
+   * Den separaten Lotterie-Livestand
+   * ebenfalls zurücksetzen.
+   */
+  if (
+    typeof saveLiveLotterieState ===
+    'function'
+  ) {
+    const saved =
+      await saveLiveLotterieState();
+
+    if (!saved) {
+      showToast(
+        '⚠️ Lotterie-Livestand konnte nicht zurückgesetzt werden',
+        'error'
+      );
+    }
+  }
+
   renderAll();
   persistState();
 
-  showToast('🆕 Neuer Kegelabend gestartet', 'success');
+  showToast(
+    '🆕 Neuer Kegelabend gestartet',
+    'success'
+  );
 }
 
 function openBuyThrowModal() {
