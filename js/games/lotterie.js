@@ -307,8 +307,12 @@ async function resetLotterieGame() {
     return;
   }
 
-  const previousState =
-    lotterieState;
+const previousState =
+  JSON.parse(
+    JSON.stringify(
+      lotterieState
+    )
+  );
 
   lotterieState =
     createLotterieState();
@@ -719,44 +723,52 @@ async function confirmLotterieThrow(
    * Zuerst die Strafen buchen beziehungsweise
    * eine alte Buchung korrigieren.
    */
-  if (changes.length) {
-    const success =
-      await changeMultipleSyncedPersonCounters(
-        changes
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
       );
 
-    if (!success) {
+    try {
+      /*
+       * Zuerst den Wurf speichern.
+       */
+      await window.firestoreApi
+        .changeLiveLotterieThrow(
+          clubId,
+          personName,
+          colIndex,
+          value,
+          nextMeta
+        );
+
+      /*
+       * Danach die zugehörigen Strafen buchen.
+       */
+      if (changes.length) {
+        const success =
+          await changeMultipleSyncedPersonCounters(
+            changes
+          );
+
+        if (!success) {
+          throw new Error(
+            'Strafbuchung fehlgeschlagen'
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        'Lotterie-Wurf konnte nicht vollständig gespeichert werden:',
+        error
+      );
+
+      showToast(
+        '❌ Wurf oder Strafe konnte nicht synchronisiert werden',
+        'error'
+      );
+
       return;
     }
-  }
-
-  const clubId =
-    getClubFirestoreId(
-      ACTIVE_CLUB
-    );
-
-  try {
-    await window.firestoreApi
-      .changeLiveLotterieThrow(
-        clubId,
-        personName,
-        colIndex,
-        value,
-        nextMeta
-      );
-  } catch (error) {
-    console.error(
-      'Lotterie-Wurf konnte nicht gespeichert werden:',
-      error
-    );
-
-    showToast(
-      '❌ Wurf konnte nicht synchronisiert werden',
-      'error'
-    );
-
-    return;
-  }
 
   if (
     nextMeta &&
