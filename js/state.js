@@ -1,5 +1,5 @@
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '2.0.0.14, © SK';
+const APPVersionSelf = '2.0.0.20, © SK';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -58,6 +58,10 @@ localStorage.setItem(CLIENT_ID_KEY, CLIENT_ID);
 let ACTIVE_CLUB = null;
 let CLUBS = {};
 let currentClubUnsubscribe = null;
+
+let currentLivePersonsUnsubscribe = null;
+let livePersonCounters = new Map();
+let liveCountersReady = false;
 
 const sounds = {
   cash: new Audio('sounds/cash.mp3'),
