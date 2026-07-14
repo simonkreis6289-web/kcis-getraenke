@@ -621,10 +621,6 @@ async function confirmLotterieThrow(
 
   const changes = [];
 
-  /*
-   * Eine eventuell vorhandene alte
-   * Sonderwurf-Strafe zurücknehmen.
-   */
   if (
     previousMeta?.penaltyBooked &&
     previousMeta.penaltyKey &&
@@ -719,56 +715,67 @@ async function confirmLotterieThrow(
     };
   }
 
-  /*
-   * Zuerst die Strafen buchen beziehungsweise
-   * eine alte Buchung korrigieren.
-   */
-    const clubId =
-      getClubFirestoreId(
-        ACTIVE_CLUB
+const clubId =
+  getClubFirestoreId(
+    ACTIVE_CLUB
+  );
+
+const previousValue =
+  lotterieState.throws[
+    personName
+  ][colIndex] ?? null;
+
+try {
+  await window.firestoreApi
+    .changeLiveLotterieThrow(
+      clubId,
+      personName,
+      colIndex,
+      value,
+      nextMeta
+    );
+
+  if (changes.length) {
+    const success =
+      await changeMultipleSyncedPersonCounters(
+        changes
       );
 
-    try {
-      /*
-       * Zuerst den Wurf speichern.
-       */
-      await window.firestoreApi
-        .changeLiveLotterieThrow(
-          clubId,
-          personName,
-          colIndex,
-          value,
-          nextMeta
-        );
-
-      /*
-       * Danach die zugehörigen Strafen buchen.
-       */
-      if (changes.length) {
-        const success =
-          await changeMultipleSyncedPersonCounters(
-            changes
-          );
-
-        if (!success) {
-          throw new Error(
-            'Strafbuchung fehlgeschlagen'
-          );
-        }
-      }
-    } catch (error) {
-      console.error(
-        'Lotterie-Wurf konnte nicht vollständig gespeichert werden:',
-        error
+    if (!success) {
+      throw new Error(
+        'Strafbuchung fehlgeschlagen'
       );
-
-      showToast(
-        '❌ Wurf oder Strafe konnte nicht synchronisiert werden',
-        'error'
-      );
-
-      return;
     }
+  }
+} catch (error) {
+  console.error(
+    'Lotterie-Wurf konnte nicht vollständig gespeichert werden:',
+    error
+  );
+
+  try {
+    await window.firestoreApi
+      .changeLiveLotterieThrow(
+        clubId,
+        personName,
+        colIndex,
+        previousValue,
+        previousMeta
+      );
+  } catch (rollbackError) {
+    console.error(
+      'Lotterie-Rollback fehlgeschlagen:',
+      rollbackError
+    );
+  }
+
+  showToast(
+    '❌ Wurf oder Strafe konnte nicht synchronisiert werden',
+    'error'
+  );
+
+  return;
+}
 
   if (
     nextMeta &&
