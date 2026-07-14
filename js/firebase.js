@@ -72,6 +72,148 @@ window.firestoreApi = {
     );
   },
 
+async loadLiveLotterie(clubId) {
+  const ref = doc(
+    db,
+    'clubs',
+    clubId,
+    'liveGames',
+    'lotterie'
+  );
+
+  const snap = await getDoc(ref);
+
+  return snap.exists()
+    ? snap.data()
+    : null;
+},
+
+async saveLiveLotterie(
+  clubId,
+  state = {}
+) {
+  const ref = doc(
+    db,
+    'clubs',
+    clubId,
+    'liveGames',
+    'lotterie'
+  );
+
+  await setDoc(
+    ref,
+    {
+      ...state,
+      updatedAt: serverTimestamp()
+    },
+    {
+      merge: true
+    }
+  );
+},
+
+async changeLiveLotterieThrow(
+  clubId,
+  personName,
+  colIndex,
+  value,
+  throwMeta = null
+) {
+  const ref = doc(
+    db,
+    'clubs',
+    clubId,
+    'liveGames',
+    'lotterie'
+  );
+
+  return runTransaction(
+    db,
+    async transaction => {
+      const snap =
+        await transaction.get(ref);
+
+      const current =
+        snap.exists()
+          ? snap.data()
+          : {};
+
+      const throws = {
+        ...(current.throws || {})
+      };
+
+      const throwMetaMap = {
+        ...(current.throwMeta || {})
+      };
+
+      const personThrows =
+        Array.isArray(throws[personName])
+          ? [...throws[personName]]
+          : [];
+
+      const personMeta =
+        Array.isArray(
+          throwMetaMap[personName]
+        )
+          ? [...throwMetaMap[personName]]
+          : [];
+
+      personThrows[colIndex] = value;
+      personMeta[colIndex] =
+        throwMeta || null;
+
+      throws[personName] =
+        personThrows;
+
+      throwMetaMap[personName] =
+        personMeta;
+
+      transaction.set(
+        ref,
+        {
+          throws,
+          throwMeta: throwMetaMap,
+          updatedAt: serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      return {
+        value,
+        throwMeta: throwMeta || null
+      };
+    }
+  );
+},
+
+subscribeToLiveLotterie(
+  clubId,
+  onData,
+  onError
+) {
+  const ref = doc(
+    db,
+    'clubs',
+    clubId,
+    'liveGames',
+    'lotterie'
+  );
+
+  return onSnapshot(
+    ref,
+    snap => {
+      onData(
+        snap.exists()
+          ? snap.data()
+          : null
+      );
+    },
+    onError
+  );
+},    
+    
 
   subscribeToClubState(clubId, onData, onError) {
     const ref = doc(
