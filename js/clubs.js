@@ -353,11 +353,22 @@ function goToClubSelection() {
     currentClubUnsubscribe = null;
   }
 
+  if (typeof stopLivePersonSync === 'function') {
+    stopLivePersonSync();
+  }
+
+  if (typeof stopLiveLotterieSync === 'function') {
+    stopLiveLotterieSync();
+  }
+
   syncCurrentClubToStore();
   saveClubSystem();
 
   document.getElementById('app').style.display = 'none';
-  document.getElementById('club-start-screen').classList.remove('hidden');
+
+  document
+    .getElementById('club-start-screen')
+    .classList.remove('hidden');
 
   renderClubList();
   updateAppHeader();
@@ -511,6 +522,19 @@ async function startLivePersonSync(clubId) {
 
 async function selectClub(clubName) {
   if (!clubName) return;
+    
+  if (currentClubUnsubscribe) {
+    currentClubUnsubscribe();
+    currentClubUnsubscribe = null;
+  }
+
+  if (typeof stopLivePersonSync === 'function') {
+    stopLivePersonSync();
+  }
+
+  if (typeof stopLiveLotterieSync === 'function') {
+    stopLiveLotterieSync();
+  }
 
   if (currentClubUnsubscribe) {
     currentClubUnsubscribe();
@@ -602,6 +626,12 @@ async function selectClub(clubName) {
     
 await startLivePersonSync(clubId);
 
+if (
+  typeof startLiveLotterieSync === 'function'
+) {
+  await startLiveLotterieSync();
+}
+
   if (window.firestoreApi && typeof window.firestoreApi.subscribeToClubState === 'function') {
     currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
       clubId,
@@ -626,10 +656,27 @@ await startLivePersonSync(clubId);
 
         isApplyingRemoteState = true;
 
-        try {
-          applyLoadedState(state);
+try {
+  const preservedLotterieState =
+    lotterieState
+      ? JSON.parse(
+          JSON.stringify(lotterieState)
+        )
+      : createLotterieState();
 
-          lastRemoteChangeAt = incomingClientAt;
+  applyLoadedState(state);
+
+  lotterieState = preservedLotterieState;
+  ensureLotterieState();
+
+  if (
+    typeof reapplyLivePersonCounters ===
+    'function'
+  ) {
+    reapplyLivePersonCounters();
+  }
+
+  lastRemoteChangeAt = incomingClientAt;
           lastLocalChangeAt = Math.max(lastLocalChangeAt, incomingClientAt);
 
           renderAll();
