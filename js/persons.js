@@ -419,9 +419,7 @@ function stripLeadingTeamEmoji(
     .trim();
 }
 
-function getPersonTeamCardHtml(
-  person
-) {
+function getPersonTeamCardHtml(person) {
   const teamKey =
     normalizeTisch(
       person.tisch
@@ -430,11 +428,13 @@ function getPersonTeamCardHtml(
   if (!teamKey) {
     return `
       <div class="person-team-badge no-team">
-        <span
-          class="person-team-dot no-team-dot"
-        ></span>
+        <span class="person-team-emoji">
+          ⚪
+        </span>
 
-        <span>Kein Team</span>
+        <span class="person-team-name">
+          Kein Team
+        </span>
       </div>
     `;
   }
@@ -442,42 +442,36 @@ function getPersonTeamCardHtml(
   const settings =
     groupSettings?.[teamKey] || {};
 
-  const fallbackColor =
-    teamKey === 'T1'
-      ? '#111111'
-      : '#d62828';
-
-  const color =
-    resolveGroupDisplayColor(
-      settings.color,
-      fallbackColor
+  const teamName =
+    stripLeadingTeamEmoji(
+      settings.name ||
+      getGroupLabel(teamKey) ||
+      teamKey
     );
 
-  const rawLabel =
-    typeof getGroupLabel ===
-      'function'
-      ? getGroupLabel(teamKey)
-      : (
-          settings.name ||
-          teamKey
-        );
-
-  const label =
-    stripLeadingTeamEmoji(
-      rawLabel
+  const theme =
+    getGroupTheme(
+      settings.color
     );
 
   return `
     <div
-      class="person-team-badge ${teamKey.toLowerCase()}"
-    >
-      <span
-        class="person-team-dot"
-        style="background:${color};"
-        aria-hidden="true"
-      ></span>
+      class="person-team-badge"
+      style="
+        --person-team-color:
+          ${theme.hex};
 
-      <span>${label}</span>
+        --person-team-bg:
+          ${theme.bg};
+      "
+    >
+      <span class="person-team-emoji">
+        ${theme.emoji}
+      </span>
+
+      <span class="person-team-name">
+        ${teamName}
+      </span>
     </div>
   `;
 }
@@ -2269,4 +2263,44 @@ async function balanceTeamsRandomly() {
     `⚖️ ${selectedPerson.name}: ${oldTeamName} → ${newTeamName}`,
     'success'
   );
+}
+
+async function saveLivePersonTeam(
+  person,
+  newTeam
+) {
+  if (!person) {
+    return false;
+  }
+
+  const previousTeam =
+    normalizeTisch(
+      person.tisch
+    );
+
+  person.tisch =
+    normalizeTisch(
+      newTeam
+    );
+
+  renderAll();
+
+  const saved =
+    await saveLivePersonStatus(
+      person
+    );
+
+  if (!saved) {
+    person.tisch =
+      previousTeam;
+
+    renderAll();
+
+    return false;
+  }
+
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  return true;
 }
