@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
   onSnapshot,
   serverTimestamp,
   collection,
@@ -336,58 +337,286 @@ subscribeToLiveLotterie(
     }));
   },
 
+async seedLivePersons(
+  clubId,
+  persons = []
+) {
+  await Promise.all(
+    persons.map(async person => {
+      if (!person || !person.name) {
+        return;
+      }
 
-  async seedLivePersons(
-    clubId,
-    persons = []
-  ) {
-    await Promise.all(
-      persons.map(async person => {
-        if (!person || !person.name) {
-          return;
-        }
-
-        const personId =
-          this.getLivePersonId(person.name);
-
-        const personRef = doc(
-          db,
-          "clubs",
-          clubId,
-          "livePersons",
-          personId
+      const personId =
+        this.getLivePersonId(
+          person.name
         );
 
-        const existing =
-          await getDoc(personRef);
+      const personRef = doc(
+        db,
+        "clubs",
+        clubId,
+        "livePersons",
+        personId
+      );
 
-        /*
-         * Bereits vorhandene Live-Werte
-         * niemals überschreiben.
-         */
-        if (existing.exists()) {
-          return;
-        }
+      const existing =
+        await getDoc(personRef);
 
-        await setDoc(personRef, {
-          name: person.name,
+      if (existing.exists()) {
+        return;
+      }
 
-          drinks: {
-            ...(person.drinks || {})
-          },
+      await setDoc(personRef, {
+        name:
+          person.name,
 
-          strafen: {
-            ...(person.strafen || {})
-          },
+        isGuest:
+          !!person.isGuest,
 
-          updatedAt: serverTimestamp()
-        });
-      })
+        present:
+          !!person.present,
+
+        attendanceStatus:
+          person.present
+            ? "present"
+            : (
+                person.attendanceStatus ||
+                "unknown"
+              ),
+
+        left:
+          !!person.left,
+
+        tisch:
+          person.tisch || "",
+
+        arrivalTime:
+          person.arrivalTime || "",
+
+        leftAt:
+          person.leftAt || "",
+
+        leftEarlyAt:
+          person.leftEarlyAt || "",
+
+        drinks: {
+          ...(person.drinks || {})
+        },
+
+        strafen: {
+          ...(person.strafen || {})
+        },
+
+        updatedAt:
+          serverTimestamp()
+      });
+    })
+  );
+
+  return true;
+},
+    async saveLivePersonStatus(
+  clubId,
+  personName,
+  payload = {}
+) {
+  if (!personName) {
+    throw new Error(
+      "Personenname fehlt"
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
     );
 
-    return true;
-  },
+  const personRef = doc(
+    db,
+    "clubs",
+    clubId,
+    "livePersons",
+    personId
+  );
 
+  const allowedStatuses = [
+    "present",
+    "excused",
+    "unexcused",
+    "unknown"
+  ];
+
+  const attendanceStatus =
+    allowedStatuses.includes(
+      payload.attendanceStatus
+    )
+      ? payload.attendanceStatus
+      : (
+          payload.present
+            ? "present"
+            : "unknown"
+        );
+
+  await setDoc(
+    personRef,
+    {
+      name:
+        personName,
+
+      isGuest:
+        !!payload.isGuest,
+
+      present:
+        !!payload.present,
+
+      attendanceStatus,
+
+      left:
+        !!payload.left,
+
+      tisch:
+        payload.tisch || "",
+
+      arrivalTime:
+        payload.arrivalTime || "",
+
+      leftAt:
+        payload.leftAt || "",
+
+      leftEarlyAt:
+        payload.leftEarlyAt || "",
+
+      updatedAt:
+        serverTimestamp()
+    },
+    {
+      merge: true
+    }
+  );
+
+  return true;
+},
+
+async saveLivePerson(
+  clubId,
+  personName,
+  payload = {}
+) {
+  if (!personName) {
+    throw new Error(
+      "Personenname fehlt"
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    "clubs",
+    clubId,
+    "livePersons",
+    personId
+  );
+
+  const allowedStatuses = [
+    "present",
+    "excused",
+    "unexcused",
+    "unknown"
+  ];
+
+  const attendanceStatus =
+    allowedStatuses.includes(
+      payload.attendanceStatus
+    )
+      ? payload.attendanceStatus
+      : (
+          payload.present
+            ? "present"
+            : "unknown"
+        );
+
+  await setDoc(
+    personRef,
+    {
+      name:
+        personName,
+
+      isGuest:
+        !!payload.isGuest,
+
+      present:
+        !!payload.present,
+
+      attendanceStatus,
+
+      left:
+        !!payload.left,
+
+      tisch:
+        payload.tisch || "",
+
+      arrivalTime:
+        payload.arrivalTime || "",
+
+      leftAt:
+        payload.leftAt || "",
+
+      leftEarlyAt:
+        payload.leftEarlyAt || "",
+
+      drinks: {
+        ...(payload.drinks || {})
+      },
+
+      strafen: {
+        ...(payload.strafen || {})
+      },
+
+      updatedAt:
+        serverTimestamp()
+    },
+    {
+      merge: true
+    }
+  );
+
+  return true;
+},
+
+async deleteLivePerson(
+  clubId,
+  personName
+) {
+  if (!personName) {
+    throw new Error(
+      "Personenname fehlt"
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    "clubs",
+    clubId,
+    "livePersons",
+    personId
+  );
+
+  await deleteDoc(
+    personRef
+  );
+
+  return true;
+},
 
   // ─────────────────────────────────────────────
   // EINZELNEN ZÄHLER ÄNDERN
