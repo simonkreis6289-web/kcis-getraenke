@@ -4421,43 +4421,164 @@ function getEarlyPenaltyDisplay(p) {
   };
 }
 
-function confirmPayment() {
-  if (!modalPerson) return;
+async function confirmPayment() {
+  if (!modalPerson) {
+    return;
+  }
 
-  const oldPaid = parseFloat(modalPerson.paid || 0) || 0;
-  const oldLeft = !!modalPerson.left;
+  const person =
+    modalPerson;
 
-  const newPaid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
-  const newLeft = document.getElementById('modal-left-check').checked;
+  const oldPaid =
+    Math.max(
+      0,
+      parseFloat(
+        person.paid || 0
+      ) || 0
+    );
 
-  modalPerson.paid = newPaid;
-  modalPerson.left = newLeft;
+  const oldLeft =
+    !!person.left;
 
-    if (!oldLeft && newLeft) {
+  const paidInput =
+    document.getElementById(
+      'modal-paid-input'
+    );
+
+  const leftInput =
+    document.getElementById(
+      'modal-left-check'
+    );
+
+  const newPaid =
+    Math.max(
+      0,
+      Math.round(
+        (
+          parseFloat(
+            String(
+              paidInput?.value || '0'
+            ).replace(',', '.')
+          ) || 0
+        ) * 100
+      ) / 100
+    );
+
+  const newLeft =
+    !!leftInput?.checked;
+
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .saveLivePersonPayment !==
+      'function'
+  ) {
+    showToast(
+      '❌ Zahlungs-Synchronisation nicht verfügbar',
+      'error'
+    );
+
+    return;
+  }
+
+  const clubId =
+    getClubFirestoreId(
+      ACTIVE_CLUB
+    );
+
+  try {
+    const result =
+      await window.firestoreApi
+        .saveLivePersonPayment(
+          clubId,
+          person.name,
+          newPaid
+        );
+
+    person.paid =
+      Math.max(
+        0,
+        parseFloat(
+          result?.paid ?? newPaid
+        ) || 0
+      );
+
+    if (
+      !oldLeft &&
+      newLeft
+    ) {
       closeModal();
-      openLeftEarlyModal(modalPerson);
+
+      if (newPaid !== oldPaid) {
+        playSound(
+          sounds.cash
+        );
+      }
+
+      syncCurrentClubToStore();
+      saveClubSystem();
+
+      openLeftEarlyModal(
+        person
+      );
+
       return;
     }
-  if (oldLeft && !newLeft) modalPerson.leftAt = '';
 
-  closeModal();
-  updateStats();
-  renderAbrechnung();
-  renderAnwesenheit();
-  renderTeamspiele();
-  renderRunden();
-  renderGetraenke();
+    if (
+      oldLeft &&
+      !newLeft
+    ) {
+      person.left = false;
+      person.leftAt = '';
+      person.leftEarlyAt = '';
 
-  if (newPaid !== oldPaid) {
-    playSound(sounds.cash);
+      const statusSaved =
+        await saveLivePersonStatus(
+          person
+        );
+
+      if (!statusSaved) {
+        person.left =
+          oldLeft;
+
+        showToast(
+          '⚠️ Zahlung gespeichert, Gehstatus aber nicht',
+          'error'
+        );
+      }
+    }
+
+    closeModal();
+
+    renderAll();
+
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    if (newPaid !== oldPaid) {
+      playSound(
+        sounds.cash
+      );
+    }
+
+    showToast(
+      '✅ Zahlung live gespeichert',
+      'success'
+    );
+  } catch (error) {
+    console.error(
+      'Zahlung konnte nicht synchronisiert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Zahlung konnte nicht gespeichert werden',
+      'error'
+    );
   }
-
-  if (!oldLeft && newLeft) {
-    playSound(sounds.goodbye);
-  }
-
-  showToast('✅ Zahlung gespeichert', 'success');
-  persistState();
 }
 
 // ── RUNDENGRUENDE ──
