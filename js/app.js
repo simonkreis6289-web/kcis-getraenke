@@ -728,63 +728,199 @@ function closeFreeStrafeModal() {
   document.getElementById('free-strafe-modal').classList.add('hidden');
 }
 
-function confirmFreeStrafe() {
-  const personName = document.getElementById('free-strafe-person-select')?.value || '';
-const reason = (document.getElementById('free-strafe-reason')?.value || '').trim();
-const amount = parseFloat(String(document.getElementById('free-strafe-amount')?.value || '0').replace(',', '.')) || 0;
-  const onTop = !!document.getElementById('free-strafe-ontop-check')?.checked;
+async function confirmFreeStrafe() {
+  const personName =
+    document
+      .getElementById(
+        'free-strafe-person-select'
+      )
+      ?.value || '';
+
+  const reason =
+    (
+      document
+        .getElementById(
+          'free-strafe-reason'
+        )
+        ?.value || ''
+    ).trim();
+
+  const amount =
+    Math.max(
+      0,
+      Math.round(
+        (
+          parseFloat(
+            String(
+              document
+                .getElementById(
+                  'free-strafe-amount'
+                )
+                ?.value || '0'
+            ).replace(',', '.')
+          ) || 0
+        ) * 100
+      ) / 100
+    );
+
+  const onTop =
+    !!document
+      .getElementById(
+        'free-strafe-ontop-check'
+      )
+      ?.checked;
 
   if (!personName) {
-    showToast('Bitte Person auswählen', 'error');
+    showToast(
+      'Bitte Person auswählen',
+      'error'
+    );
     return;
   }
 
   if (!reason) {
-    showToast('Bitte Grund eingeben', 'error');
+    showToast(
+      'Bitte Grund eingeben',
+      'error'
+    );
     return;
   }
 
   if (amount <= 0) {
-    showToast('Bitte Betrag eingeben', 'error');
+    showToast(
+      'Bitte Betrag eingeben',
+      'error'
+    );
     return;
   }
 
-  const p = persons.find(x => x.name === personName);
-  if (!p) {
-    showToast('Person nicht gefunden', 'error');
+  const person =
+    persons.find(
+      item =>
+        item.name === personName
+    );
+
+  if (!person) {
+    showToast(
+      'Person nicht gefunden',
+      'error'
+    );
     return;
   }
 
-  const id = 'free_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .addLivePersonFreeStrafe !==
+      'function'
+  ) {
+    showToast(
+      '❌ Live-Synchronisation nicht verfügbar',
+      'error'
+    );
+    return;
+  }
 
-  if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
-  if (!Array.isArray(strafenHistory)) strafenHistory = [];
+  const createdAt =
+    new Date().toISOString();
 
-  const entry = {
+  const id =
+    'free_' +
+    Date.now() +
+    '_' +
+    Math.random()
+      .toString(36)
+      .slice(2);
+
+  const freeEntry = {
+    id,
+    reason,
+    amount,
+    onTop,
+    createdAt
+  };
+
+  const historyEntry = {
     id,
     type: 'free',
     person: personName,
     reason,
     amount,
     onTop,
-    createdAt: new Date().toISOString()
+    createdAt
   };
 
-  p.freeStrafen.push({
-    id,
-    reason,
-    amount,
-    onTop,
-    createdAt: entry.createdAt
-  });
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
 
-  strafenHistory.unshift(entry);
+    const result =
+      await window.firestoreApi
+        .addLivePersonFreeStrafe(
+          clubId,
+          personName,
+          freeEntry
+        );
 
-  closeFreeStrafeModal();
-  renderAll();
-  persistState();
+    person.freeStrafen =
+      Array.isArray(
+        result?.freeStrafen
+      )
+        ? result.freeStrafen.map(
+            entry => ({
+              ...entry
+            })
+          )
+        : [
+            ...(
+              person.freeStrafen ||
+              []
+            ),
+            freeEntry
+          ];
 
-  showToast('💸 Freier Betrag gebucht', 'success');
+    if (
+      !Array.isArray(
+        strafenHistory
+      )
+    ) {
+      strafenHistory = [];
+    }
+
+    if (
+      !strafenHistory.some(
+        entry =>
+          entry.id === id
+      )
+    ) {
+      strafenHistory.unshift(
+        historyEntry
+      );
+    }
+
+    closeFreeStrafeModal();
+    renderAll();
+    persistState();
+
+    showToast(
+      `💸 ${euros(amount)} für ${personName} gebucht`,
+      'success'
+    );
+  } catch (error) {
+    console.error(
+      'Freier Strafbetrag konnte nicht synchronisiert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Freier Betrag konnte nicht gespeichert werden',
+      'error'
+    );
+  }
 }
 
 function addPenaltyStatsEntry(type, throwerName, punishedNames) {
@@ -803,21 +939,119 @@ function addPenaltyStatsEntry(type, throwerName, punishedNames) {
   });
 }
     
-function deleteFreeStrafe(personName, freeId) {
-  const p = persons.find(x => x.name === personName);
-  if (!p || !Array.isArray(p.freeStrafen)) return;
+async function deleteFreeStrafe(
+  personName,
+  freeId
+) {
+  const person =
+    persons.find(
+      item =>
+        item.name === personName
+    );
 
-  const item = p.freeStrafen.find(x => x.id === freeId);
-  if (!item) return;
+  if (
+    !person ||
+    !Array.isArray(
+      person.freeStrafen
+    )
+  ) {
+    return;
+  }
 
-  if (!confirm(`Freien Betrag "${item.reason || 'Ohne Grund'}" wirklich löschen?`)) return;
+  const item =
+    person.freeStrafen.find(
+      entry =>
+        entry.id === freeId
+    );
 
-  p.freeStrafen = p.freeStrafen.filter(x => x.id !== freeId);
+  if (!item) {
+    return;
+  }
 
-  renderAll();
-  persistState();
+  if (
+    !confirm(
+      `Freien Betrag "${
+        item.reason ||
+        'Ohne Grund'
+      }" wirklich löschen?`
+    )
+  ) {
+    return;
+  }
 
-  showToast('🗑️ Freier Betrag gelöscht', 'success');
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .deleteLivePersonFreeStrafe !==
+      'function'
+  ) {
+    showToast(
+      '❌ Live-Synchronisation nicht verfügbar',
+      'error'
+    );
+    return;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    const result =
+      await window.firestoreApi
+        .deleteLivePersonFreeStrafe(
+          clubId,
+          personName,
+          freeId
+        );
+
+    person.freeStrafen =
+      Array.isArray(
+        result?.freeStrafen
+      )
+        ? result.freeStrafen.map(
+            entry => ({
+              ...entry
+            })
+          )
+        : person.freeStrafen.filter(
+            entry =>
+              entry.id !== freeId
+          );
+
+    if (
+      Array.isArray(
+        strafenHistory
+      )
+    ) {
+      strafenHistory =
+        strafenHistory.filter(
+          entry =>
+            entry.id !== freeId
+        );
+    }
+
+    renderAll();
+    persistState();
+
+    showToast(
+      '🗑️ Freier Betrag live gelöscht',
+      'success'
+    );
+  } catch (error) {
+    console.error(
+      'Freier Strafbetrag konnte nicht gelöscht werden:',
+      error
+    );
+
+    showToast(
+      '❌ Freier Betrag konnte nicht gelöscht werden',
+      'error'
+    );
+  }
 }
 
 function makeStrafeKey(label) {
@@ -2366,11 +2600,6 @@ async function startNewKegelabend() {
     });
   });
 
-  /*
-   * Den vollständigen Personenstand live speichern.
-   * saveLivePersonStatus() reicht hier nicht,
-   * weil Getränke und Strafen ebenfalls auf 0 müssen.
-   */
   if (
     ACTIVE_CLUB &&
     navigator.onLine &&
@@ -2381,31 +2610,40 @@ async function startNewKegelabend() {
       getClubFirestoreId(ACTIVE_CLUB);
 
     try {
-      await Promise.all(
-        persons.map(person =>
-          window.firestoreApi.saveLivePerson(
-            clubId,
-            person.name,
-            {
-              ...getLivePersonStatusPayload(person),
+        await Promise.all(
+          persons.map(person =>
+            window.firestoreApi
+              .saveLivePerson(
+                clubId,
+                person.name,
+                {
+                  ...getLivePersonStatusPayload(
+                    person
+                  ),
 
-              drinks: {
-                ...(person.drinks || {})
-              },
+                  drinks: {
+                    ...(person.drinks || {})
+                  },
 
-              strafen: {
-                ...(person.strafen || {})
-              }
-            }
+                  strafen: {
+                    ...(person.strafen || {})
+                  },
+
+                  freeStrafen:
+                    Array.isArray(
+                      person.freeStrafen
+                    )
+                      ? person.freeStrafen.map(
+                          entry => ({
+                            ...entry
+                          })
+                        )
+                      : []
+                }
+              )
           )
-        )
-      );
+        );
 
-      /*
-       * Lokalen Live-Cache ebenfalls auf den
-       * neuen Nullstand setzen. So können alte
-       * Zähler nicht kurz wieder auftauchen.
-       */
       persons.forEach(person => {
         livePersonCounters.set(
           person.name,
@@ -2417,6 +2655,8 @@ async function startNewKegelabend() {
             strafen: {
               ...(person.strafen || {})
             },
+
+        freeStrafen: [],
 
             ...getLivePersonStatusPayload(person)
           }
