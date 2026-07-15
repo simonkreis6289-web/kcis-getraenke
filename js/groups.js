@@ -159,9 +159,19 @@ function saveGroupSettings() {
 
 
 function renderGruppen() {
-  const present = persons.filter(p => p.present).map(p => {
-    p.tisch = normalizeTisch(p.tisch);
-    return p;
+const present = persons
+  .filter(
+    person =>
+      person.present &&
+      !person.left
+  )
+  .map(person => {
+    person.tisch =
+      normalizeTisch(
+        person.tisch
+      );
+
+    return person;
   });
 
   const unEl = document.getElementById('unassigned-list');
@@ -246,21 +256,70 @@ function closeAssignModal() {
   assignPerson = null;
 }
 
-function setAssignTarget(target) {
+async function setAssignTarget(target) {
   if (!assignPerson) return;
 
-  assignPerson.tisch = normalizeTisch(target);
+  const person = assignPerson;
+  const previousTeam = normalizeTisch(person.tisch);
+  const newTeam = normalizeTisch(target);
+
+  person.tisch = newTeam;
+
   closeAssignModal();
   renderAll();
-  persistState();
-}
 
+  const saved = await saveLivePersonStatus(person);
+
+  if (!saved) {
+    person.tisch = previousTeam;
+
+    renderAll();
+
+    showToast(
+      '❌ Teamzuordnung konnte nicht gespeichert werden',
+      'error'
+    );
+
+    return;
+  }
+
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  const teamLabel = newTeam
+    ? stripLeadingTeamEmoji(
+        getGroupLabel(newTeam)
+      )
+    : 'Kein Team';
+
+  showToast(
+    `✅ ${person.name}: ${teamLabel}`,
+    'success'
+  );
+}
     
-function randomAssignUnassignedPeople() {
-  const candidates = persons.filter(p => p.present && !p.left && !p.tisch);
+async function randomAssignUnassignedPeople() {
+  const candidates = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    !normalizeTisch(person.tisch)
+  );
 
   if (!candidates.length) {
-    showToast('Alle Anwesenden sind bereits zugewiesen', 'success');
+    showToast(
+      'Alle Anwesenden sind bereits zugewiesen',
+      'success'
+    );
+
+    return;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Teamverteilung ist offline nicht möglich',
+      'error'
+    );
+
     return;
   }
 
@@ -268,25 +327,235 @@ function randomAssignUnassignedPeople() {
     .slice()
     .sort(() => Math.random() - 0.5);
 
-  let t1Count = persons.filter(p => p.present && !p.left && p.tisch === 'T1').length;
-  let t2Count = persons.filter(p => p.present && !p.left && p.tisch === 'T2').length;
+  let t1Count = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    normalizeTisch(person.tisch) === 'T1'
+  ).length;
 
-  shuffled.forEach(p => {
+  let t2Count = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    normalizeTisch(person.tisch) === 'T2'
+  ).length;
+
+  const previousTeams = new Map();
+  const changedPersons = [];
+
+  shuffled.forEach(person => {
+    previousTeams.set(
+      person.name,
+      normalizeTisch(person.tisch)
+    );
+
     if (t1Count <= t2Count) {
-      p.tisch = 'T1';
+      person.tisch = 'T1';
       t1Count++;
     } else {
-      p.tisch = 'T2';
+      person.tisch = 'T2';
       t2Count++;
     }
+
+    changedPersons.push(person);
   });
 
   renderAll();
-  persistState();
 
-  showToast('🎲 Personen zufällig verteilt', 'success');
+  try {
+    const results = await Promise.all(
+      changedPersons.map(person =>
+        saveLivePersonStatus(person)
+      )
+    );
+
+    if (results.some(result => !result)) {
+      throw new Error(
+        'Mindestens eine Teamzuordnung konnte nicht gespeichert werden'
+      );
+    }
+
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    showToast(
+      '🎲 Personen live verteilt',
+      'success'
+    );
+  } catch (error) {
+    changedPersons.forEach(person => {
+      person.tisch =
+        previousTeams.get(person.name) || '';
+    });
+
+    renderAll();
+
+    console.error(
+      'Zufällige Teamverteilung fehlgeschlagen:',
+      error
+    );
+
+    showToast(
+      '❌ Teamverteilung konnte nicht vollständig gespeichert werden',
+      'error'
+    );
+  }
 }
    
+async function balanceTeamsRandomly() {
+  const team1 = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    normalizeTisch(person.tisch) === 'T1'
+  );
+
+  const team2 = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    normalizeTisch(person.tisch) === 'T2'
+  );
+
+  const totalPlayers =
+    team1.length +
+    team2.length;
+
+  if (team1.length === team2.length) {
+    showToast(
+      '⚖️ Die Teams sind bereits gleich groß',
+      'success'
+    );
+
+    return;
+  }
+
+  if (totalPlayers % 2 !== 0) {
+    showToast(
+      '⚖️ Bei einer ungeraden Spielerzahl ist kein vollständiger Ausgleich möglich',
+      'success'
+    );
+
+    return;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Teamausgleich ist offline nicht möglich',
+      'error'
+    );
+
+    return;
+  }
+
+  const sourceTeam =
+    team1.length > team2.length
+      ? 'T1'
+      : 'T2';
+
+  const targetTeam =
+    sourceTeam === 'T1'
+      ? 'T2'
+      : 'T1';
+
+  const sourceMembers =
+    (
+      sourceTeam === 'T1'
+        ? team1
+        : team2
+    )
+      .slice()
+      .sort(
+        () =>
+          Math.random() - 0.5
+      );
+
+  const numberToMove =
+    Math.abs(
+      team1.length -
+      team2.length
+    ) / 2;
+
+  const selectedPersons =
+    sourceMembers.slice(
+      0,
+      numberToMove
+    );
+
+  const previousTeams =
+    new Map();
+
+  selectedPersons.forEach(
+    person => {
+      previousTeams.set(
+        person.name,
+        person.tisch
+      );
+
+      person.tisch =
+        targetTeam;
+    }
+  );
+
+  renderAll();
+
+  try {
+    const results =
+      await Promise.all(
+        selectedPersons.map(
+          person =>
+            saveLivePersonStatus(
+              person
+            )
+        )
+      );
+
+    if (
+      results.some(
+        result => !result
+      )
+    ) {
+      throw new Error(
+        'Mindestens ein Teamwechsel konnte nicht gespeichert werden'
+      );
+    }
+
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    const movedNames =
+      selectedPersons
+        .map(
+          person =>
+            person.name
+        )
+        .join(', ');
+
+    showToast(
+      `⚖️ Gewechselt: ${movedNames}`,
+      'success'
+    );
+  } catch (error) {
+    selectedPersons.forEach(
+      person => {
+        person.tisch =
+          previousTeams.get(
+            person.name
+          ) || '';
+      }
+    );
+
+    renderAll();
+
+    console.error(
+      'Teamausgleich fehlgeschlagen:',
+      error
+    );
+
+    showToast(
+      '❌ Teamausgleich konnte nicht vollständig gespeichert werden',
+      'error'
+    );
+  }
+}
+
 function getGroupEmoji(teamKey) {
   const g = groupSettings?.[teamKey];
   return getGroupTheme(g?.color).emoji;
