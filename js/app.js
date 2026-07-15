@@ -4808,6 +4808,8 @@ if ('serviceWorker' in navigator) {
 }
 
 let quickPenaltyType = '';
+let quickPenaltySelectedPersons =
+  new Set();
 
 function getPenaltyKeyByType(type) {
   const search = String(type || '').toLowerCase();
@@ -4834,118 +4836,291 @@ function getPenaltyKeyByType(type) {
     return false;
   })?.key || null;
 }
-
+  
 function openPenaltyQuick(type) {
-  quickPenaltyType = type;
+  quickPenaltyType =
+    type;
 
-  const key = getPenaltyKeyByType(type);
+  quickPenaltySelectedPersons
+    .clear();
+
+  const key =
+    getPenaltyKeyByType(type);
 
   if (!key) {
-    showToast(`Bitte zuerst eine Strafe "${type}" anlegen`, 'error');
+    showToast(
+      `Bitte zuerst eine Strafe "${type}" anlegen`,
+      'error'
+    );
+
     return;
   }
 
-  const select = document.getElementById('quick-penalty-person-select');
-  const title = document.getElementById('quick-penalty-title');
+  const title =
+    document.getElementById(
+      'quick-penalty-title'
+    );
 
-  if (title) title.textContent = `${type} eintragen`;
+  const grid =
+    document.getElementById(
+      'quick-penalty-person-grid'
+    );
 
-  const active = persons
-    .filter(p => p.present && !p.left)
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (title) {
+    title.textContent =
+      `${type} eintragen`;
+  }
 
-  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+  if (!grid) {
+    showToast(
+      'Spielerauswahl nicht gefunden',
+      'error'
+    );
 
-  active.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.name;
-    opt.textContent = p.name;
-    select.appendChild(opt);
+    return;
+  }
+
+  const activePersons =
+    persons
+      .filter(person =>
+        person.present &&
+        !person.left
+      )
+      .sort((a, b) =>
+        a.name.localeCompare(
+          b.name,
+          'de'
+        )
+      );
+
+  grid.innerHTML = '';
+
+  if (!activePersons.length) {
+    grid.innerHTML = `
+      <div class="quick-penalty-empty">
+        Niemand anwesend
+      </div>
+    `;
+
+    document
+      .getElementById(
+        'quick-penalty-modal'
+      )
+      ?.classList
+      .remove('hidden');
+
+    return;
+  }
+
+  activePersons.forEach(person => {
+    const button =
+      document.createElement(
+        'button'
+      );
+
+    button.type =
+      'button';
+
+    button.className =
+      'quick-penalty-person-btn';
+
+    button.dataset.personName =
+      person.name;
+
+    button.innerHTML = `
+      ${getAvatarHtml(
+        person.name
+      ).replace(
+        /class="person-avatar[^"]*"/,
+        'class="quick-penalty-avatar"'
+      )}
+
+      <span>
+        ${person.name}
+      </span>
+    `;
+
+    button.onclick = () => {
+      toggleQuickPenaltyPerson(
+        person.name,
+        button
+      );
+    };
+
+    grid.appendChild(
+      button
+    );
   });
 
-  document.getElementById('quick-penalty-modal')?.classList.remove('hidden');
+  document
+    .getElementById(
+      'quick-penalty-modal'
+    )
+    ?.classList
+    .remove('hidden');
+}
+
+function toggleQuickPenaltyPerson(
+  personName,
+  button
+) {
+  if (
+    quickPenaltySelectedPersons
+      .has(personName)
+  ) {
+    quickPenaltySelectedPersons
+      .delete(personName);
+
+    button?.classList
+      .remove('selected');
+  } else {
+    quickPenaltySelectedPersons
+      .add(personName);
+
+    button?.classList
+      .add('selected');
+  }
 }
 
 function closeQuickPenaltyModal() {
-  document.getElementById('quick-penalty-modal')?.classList.add('hidden');
+  document
+    .getElementById(
+      'quick-penalty-modal'
+    )
+    ?.classList
+    .add('hidden');
+
   quickPenaltyType = '';
+
+  quickPenaltySelectedPersons
+    .clear();
+
+  document
+    .querySelectorAll(
+      '.quick-penalty-person-btn.selected'
+    )
+    .forEach(button => {
+      button.classList.remove('selected');
+    });
 }
 
 async function confirmQuickPenalty() {
-  const personName =
-    document.getElementById(
-      'quick-penalty-person-select'
-    )?.value || '';
+  const selectedNames =
+    Array.from(
+      quickPenaltySelectedPersons
+    );
 
-  const key = getPenaltyKeyByType(
-    quickPenaltyType
-  );
+  const key =
+    getPenaltyKeyByType(
+      quickPenaltyType
+    );
 
-  if (!personName) {
-    showToast('Bitte Person auswählen', 'error');
+  if (!selectedNames.length) {
+    showToast(
+      'Bitte mindestens eine Person auswählen',
+      'error'
+    );
+
     return;
   }
 
   if (!key) {
-    showToast('Strafe nicht gefunden', 'error');
+    showToast(
+      'Strafe nicht gefunden',
+      'error'
+    );
+
     return;
   }
 
-  const type = String(
-    quickPenaltyType || ''
-  ).toLowerCase();
+  const type =
+    String(
+      quickPenaltyType || ''
+    )
+      .trim()
+      .toLowerCase();
 
-  const activePersons = persons.filter(
-    p => p.present && !p.left
-  );
+  const activePersons =
+    persons.filter(person =>
+      person.present &&
+      !person.left
+    );
 
   let punishedNames = [];
   let changes = [];
 
   if (type === 'gosse') {
-    punishedNames = [personName];
 
-    changes = [{
-      personName,
-      category: 'strafen',
-      key,
-      delta: 1
-    }];
+    punishedNames =
+      selectedNames.slice();
+
+    changes =
+      selectedNames.map(
+        personName => ({
+          personName,
+          category: 'strafen',
+          key,
+          delta: 1
+        })
+      );
   } else {
-    punishedNames = activePersons
-      .filter(p => p.name !== personName)
-      .map(p => p.name);
 
-    changes = punishedNames.map(name => ({
-      personName: name,
-      category: 'strafen',
-      key,
-      delta: 1
-    }));
+    punishedNames =
+      activePersons
+        .filter(person =>
+          !quickPenaltySelectedPersons
+            .has(person.name)
+        )
+        .map(person =>
+          person.name
+        );
+
+    changes =
+      punishedNames.map(
+        personName => ({
+          personName,
+          category: 'strafen',
+          key,
+          delta: 1
+        })
+      );
+  }
+
+  if (!changes.length) {
+    showToast(
+      type === 'gosse'
+        ? 'Keine Buchung vorhanden'
+        : 'Alle aktiven Spieler sind ausgewählt',
+      'error'
+    );
+
+    return;
   }
 
   const success =
     await changeMultipleSyncedPersonCounters(
       changes,
       type === 'gosse'
-        ? `✅ Gosse für ${personName} gebucht`
-        : `✅ ${personName} ist straffrei, alle anderen +1`
+        ? `✅ Gosse gebucht: ${selectedNames.join(', ')}`
+        : `✅ Straffrei: ${selectedNames.join(', ')}`
     );
 
-  if (!success) return;
+  if (!success) {
+    return;
+  }
 
-  addPenaltyStatsEntry(
-    quickPenaltyType,
-    personName,
-    punishedNames
+  selectedNames.forEach(
+    throwerName => {
+      addPenaltyStatsEntry(
+        quickPenaltyType,
+        throwerName,
+        punishedNames
+      );
+    }
   );
 
   closeQuickPenaltyModal();
 
-  /*
-   * Nur Statistik und restlichen App-Zustand speichern.
-   * Die Zähler selbst kommen aus livePersons.
-   */
   persistState();
 }
 
