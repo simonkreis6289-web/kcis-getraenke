@@ -155,7 +155,15 @@ function getLivePersonStatusPayload(
           person.boughtThrows || 0,
           10
         ) || 0
-      )
+      ),
+      
+      paid:
+          Math.max(
+            0,
+            parseFloat(
+              person.paid || 0
+            ) || 0
+          )
   };
 }
 
@@ -556,6 +564,14 @@ function applyLivePersonData(
             ) || 0
           ),
 
+paid:
+  Math.max(
+    0,
+    parseFloat(
+      data.paid || 0
+    ) || 0
+  ),
+
       present:
         data.present,
 
@@ -686,6 +702,18 @@ function applyLivePersonData(
           ) || 0
         );
     }
+
+if (
+  data.paid !== undefined
+) {
+  person.paid =
+    Math.max(
+      0,
+      parseFloat(
+        data.paid || 0
+      ) || 0
+    );
+}
 
   normalizePersonForLive(
     person
