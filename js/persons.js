@@ -367,6 +367,47 @@ function resolveGroupDisplayColor(
   );
 }
 
+function getGroupColorEmoji(
+  teamKey
+) {
+  const normalizedTeam =
+    normalizeTisch(teamKey);
+
+  if (!normalizedTeam) {
+    return '⚪';
+  }
+
+  const fallbackColor =
+    normalizedTeam === 'T1'
+      ? 'black'
+      : 'red';
+
+  const colorKey =
+    String(
+      groupSettings?.[normalizedTeam]
+        ?.color ||
+      fallbackColor
+    )
+      .trim()
+      .toLowerCase();
+
+  const emojis = {
+    red: '🔴',
+    orange: '🟠',
+    yellow: '🟡',
+    green: '🟢',
+    blue: '🔵',
+    purple: '🟣',
+    black: '⚫',
+    white: '⚪',
+    brown: '🟤',
+    gray: '⚪',
+    grey: '⚪'
+  };
+
+  return emojis[colorKey] || '●';
+}
+
 function stripLeadingTeamEmoji(
   value
 ) {
@@ -1884,5 +1925,235 @@ function openLeftEarlyModalByName(
 
   openLeftEarlyModal(
     person
+  );
+}
+
+async function changeSyncedPersonCounter(
+  personName,
+  category,
+  key,
+  delta
+) {
+  if (
+    !ACTIVE_CLUB ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .changeLivePersonCounter !== 'function'
+  ) {
+    showToast(
+      '❌ Personen-Synchronisation nicht verfügbar',
+      'error'
+    );
+
+    return false;
+  }
+
+  const person = persons.find(
+    item => item.name === personName
+  );
+
+  if (!person) {
+    showToast(
+      `❌ Person nicht gefunden: ${personName}`,
+      'error'
+    );
+
+    return false;
+  }
+
+  if (person.left) {
+    showToast(
+      `${personName} ist bereits gegangen`,
+      'error'
+    );
+
+    return false;
+  }
+
+  if (
+    category === 'strafen' &&
+    !person.present
+  ) {
+    showToast(
+      `${personName} ist nicht anwesend`,
+      'error'
+    );
+
+    return false;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Live-Buchungen sind offline nicht möglich',
+      'error'
+    );
+
+    return false;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    await window.firestoreApi
+      .changeLivePersonCounter(
+        clubId,
+        personName,
+        category,
+        key,
+        Number(delta || 0)
+      );
+
+    return true;
+  } catch (error) {
+    console.error(
+      'Live-Zähler konnte nicht geändert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Änderung konnte nicht gespeichert werden',
+      'error'
+    );
+
+    return false;
+  }
+}
+
+async function changeMultipleSyncedPersonCounters(
+  changes = [],
+  successMessage = ''
+) {
+  if (
+    !ACTIVE_CLUB ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .changeMultipleLivePersonCounters !==
+      'function'
+  ) {
+    showToast(
+      '❌ Mehrfach-Synchronisation nicht verfügbar',
+      'error'
+    );
+
+    return false;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Live-Buchungen sind offline nicht möglich',
+      'error'
+    );
+
+    return false;
+  }
+
+  const validChanges =
+    changes.filter(change => {
+      if (
+        !change ||
+        !change.personName ||
+        !['drinks', 'strafen'].includes(
+          change.category
+        ) ||
+        !change.key ||
+        Number(change.delta || 0) === 0
+      ) {
+        return false;
+      }
+
+      const person =
+        persons.find(
+          item =>
+            item.name ===
+            change.personName
+        );
+
+      if (
+        !person ||
+        person.left
+      ) {
+        return false;
+      }
+
+      if (
+        change.category === 'strafen' &&
+        !person.present
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+  if (!validChanges.length) {
+    showToast(
+      'Keine gültigen Buchungen vorhanden',
+      'error'
+    );
+
+    return false;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    await window.firestoreApi
+      .changeMultipleLivePersonCounters(
+        clubId,
+        validChanges
+      );
+
+    if (successMessage) {
+      showToast(
+        successMessage,
+        'success'
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      'Mehrfachbuchung fehlgeschlagen:',
+      error
+    );
+
+    showToast(
+      '❌ Mehrfachbuchung konnte nicht gespeichert werden',
+      'error'
+    );
+
+    return false;
+  }
+}
+
+async function changeDrink(
+  personName,
+  key,
+  delta
+) {
+  return changeSyncedPersonCounter(
+    personName,
+    'drinks',
+    key,
+    delta
+  );
+}
+
+async function changeStrafe(
+  personName,
+  key,
+  delta
+) {
+  return changeSyncedPersonCounter(
+    personName,
+    'strafen',
+    key,
+    delta
   );
 }
