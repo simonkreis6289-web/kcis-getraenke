@@ -564,6 +564,22 @@ function hydrateState() {
     if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
     if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
     p.present = !!p.present;
+      if (p.present) {
+      p.attendanceStatus =
+        'present';
+    } else if (
+      ![
+        'excused',
+        'unexcused',
+        'unknown'
+      ].includes(
+        p.attendanceStatus
+      )
+    ) {
+      p.attendanceStatus =
+        'unknown';
+    }
+      
     p.isGuest = !!p.isGuest;
     p.tisch = normalizeTisch(p.tisch);
     p.teamExtra = parseFloat(p.teamExtra || 0) || 0;
@@ -834,15 +850,6 @@ function calcStrafenTotal(p) {
   }, 0);
 
   return normalTotal + calcFreeStrafenTotal(p) + calcTannenbaumChargesTotal(p);
-}
-
-async function changeStrafe(personName, key, delta) {
-  await changeSyncedPersonCounter(
-    personName,
-    'strafen',
-    key,
-    delta
-  );
 }
 
 function renderStrafen() {
@@ -2289,6 +2296,7 @@ async function startNewKegelabend() {
 
   persons.forEach(p => {
     p.present = false;
+    p.attendanceStatus = 'unknown';
     p.tisch = '';
     p.left = false;
     p.leftAt = '';
@@ -2321,6 +2329,44 @@ async function startNewKegelabend() {
     p.boughtThrows = 0;
   });
 
+    if (
+      ACTIVE_CLUB &&
+      navigator.onLine &&
+      typeof window.firestoreApi
+        ?.saveLivePersonStatus ===
+        'function'
+    ) {
+      const clubId =
+        getClubFirestoreId(
+          ACTIVE_CLUB
+        );
+
+      try {
+        await Promise.all(
+          persons.map(person =>
+            window.firestoreApi
+              .saveLivePersonStatus(
+                clubId,
+                person.name,
+                getLivePersonStatusPayload(
+                  person
+                )
+              )
+          )
+        );
+      } catch (error) {
+        console.error(
+          'Personenstatus konnte beim neuen Kegelabend nicht zurückgesetzt werden:',
+          error
+        );
+
+        showToast(
+          '⚠️ Personenstatus wurde nicht vollständig synchronisiert',
+          'error'
+        );
+      }
+    }
+
   spiele = [];
   teamDrinks = {};
   selectedLoser = null;
@@ -2352,10 +2398,6 @@ async function startNewKegelabend() {
   tiberiusState =
     createTiberiusState();
 
-  /*
-   * Den separaten Lotterie-Livestand
-   * ebenfalls zurücksetzen.
-   */
   if (
     typeof saveLiveLotterieState ===
     'function'
@@ -3335,209 +3377,6 @@ rowIndex = renderDrinkRows(guests, body, rowIndex);
   if (!members.length && !guests.length) {
     body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
   }
-}
-
-async function changeSyncedPersonCounter(
-  personName,
-  category,
-  key,
-  delta
-) {
-  if (!ACTIVE_CLUB || !window.firestoreApi) {
-    showToast(
-      '❌ Keine Firestore-Verbindung verfügbar',
-      'error'
-    );
-    return false;
-  }
-
-  const person = persons.find(
-    p => p.name === personName
-  );
-
-  if (!person) {
-    showToast(
-      `❌ Person nicht gefunden: ${personName}`,
-      'error'
-    );
-    return false;
-  }
-
-  if (person.left) {
-    showToast(
-      `${personName} ist bereits als gegangen markiert`,
-      'error'
-    );
-    return false;
-  }
-
-  if (
-    category === 'strafen' &&
-    !person.present
-  ) {
-    showToast(
-      `${personName} ist nicht anwesend`,
-      'error'
-    );
-    return false;
-  }
-
-  if (!navigator.onLine) {
-    showToast(
-      '📴 Live-Buchungen sind offline nicht möglich',
-      'error'
-    );
-    return false;
-  }
-
-  try {
-    const clubId =
-      getClubFirestoreId(ACTIVE_CLUB);
-
-    await window.firestoreApi
-      .changeLivePersonCounter(
-        clubId,
-        personName,
-        category,
-        key,
-        delta
-      );
-
-    return true;
-  } catch (error) {
-    console.error(
-      'Synchronisierte Zähleränderung fehlgeschlagen:',
-      error
-    );
-
-    showToast(
-      '❌ Änderung konnte nicht gespeichert werden',
-      'error'
-    );
-
-    return false;
-  }
-}
-
-async function changeMultipleSyncedPersonCounters(
-  changes = [],
-  successMessage = ''
-) {
-  if (!ACTIVE_CLUB || !window.firestoreApi) {
-    showToast(
-      '❌ Keine Firestore-Verbindung verfügbar',
-      'error'
-    );
-    return false;
-  }
-
-  if (
-    typeof window.firestoreApi
-      .changeMultipleLivePersonCounters !== 'function'
-  ) {
-    showToast(
-      '❌ Mehrfach-Synchronisation ist nicht verfügbar',
-      'error'
-    );
-    return false;
-  }
-
-  if (!navigator.onLine) {
-    showToast(
-      '📴 Live-Buchungen sind offline nicht möglich',
-      'error'
-    );
-    return false;
-  }
-
-  const validChanges = changes.filter(change => {
-    if (
-      !change ||
-      !change.personName ||
-      !change.category ||
-      !change.key
-    ) {
-      return false;
-    }
-
-    if (
-      !['drinks', 'strafen'].includes(
-        change.category
-      )
-    ) {
-      return false;
-    }
-
-    if (Number(change.delta || 0) === 0) {
-      return false;
-    }
-
-    const person = persons.find(
-      p => p.name === change.personName
-    );
-
-    if (!person || person.left) {
-      return false;
-    }
-
-    if (
-      change.category === 'strafen' &&
-      !person.present
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-
-  if (!validChanges.length) {
-    showToast(
-      'Keine aktiven Personen für diese Buchung gefunden',
-      'error'
-    );
-    return false;
-  }
-
-  try {
-    const clubId =
-      getClubFirestoreId(ACTIVE_CLUB);
-
-    await window.firestoreApi
-      .changeMultipleLivePersonCounters(
-        clubId,
-        validChanges
-      );
-
-    if (successMessage) {
-      showToast(
-        successMessage,
-        'success'
-      );
-    }
-
-    return true;
-  } catch (error) {
-    console.error(
-      'Synchronisierte Mehrfachbuchung fehlgeschlagen:',
-      error
-    );
-
-    showToast(
-      '❌ Mehrfachbuchung konnte nicht gespeichert werden',
-      'error'
-    );
-
-    return false;
-  }
-}
-
-async function changeDrink(name, key, delta) {
-  await changeSyncedPersonCounter(
-    name,
-    'drinks',
-    key,
-    delta
-  );
 }
 
 function openDrinkEditModal() {
@@ -4594,7 +4433,7 @@ function closeResetModal() {
   document.getElementById('reset-modal').classList.add('hidden');
 }
 
-function confirmReset() {
+async function confirmReset() {
   lastState = JSON.stringify({ persons, spiele, DRINKS, prices, SPIELE_KATALOG, RUNDEN_GRUENDE, selectedLoser, teamDrinks });
 
   persons.forEach(p => {
@@ -4606,8 +4445,57 @@ function confirmReset() {
     p.left = false;
     p.leftAt = '';
     p.present = false;
+    p.attendanceStatus = 'unknown';
     p.tisch = '';
   });
+
+    if (
+      ACTIVE_CLUB &&
+      navigator.onLine &&
+      typeof window.firestoreApi
+        ?.saveLivePerson ===
+        'function'
+    ) {
+      const clubId =
+        getClubFirestoreId(
+          ACTIVE_CLUB
+        );
+
+      try {
+        await Promise.all(
+          persons.map(person =>
+            window.firestoreApi
+              .saveLivePerson(
+                clubId,
+                person.name,
+                {
+                  ...getLivePersonStatusPayload(
+                    person
+                  ),
+
+                  drinks: {
+                    ...(person.drinks || {})
+                  },
+
+                  strafen: {
+                    ...(person.strafen || {})
+                  }
+                }
+              )
+          )
+        );
+      } catch (error) {
+        console.error(
+          'Personen konnten beim Reset nicht synchronisiert werden:',
+          error
+        );
+
+        showToast(
+          '⚠️ Reset wurde nicht vollständig synchronisiert',
+          'error'
+        );
+      }
+    }
 
   spiele = [];
   teamDrinks = {};
@@ -4682,11 +4570,6 @@ window.addEventListener('online', async () => {
     try {
       applyLoadedState(remoteState);
 
-      /*
-       * Getränke und gezählte Strafen werden
-       * anschließend wieder aus livePersons
-       * über den geladenen Gesamtstand gelegt.
-       */
       if (
         typeof reapplyLivePersonCounters ===
         'function'
