@@ -408,6 +408,17 @@ async seedLivePersons(
           ...(person.strafen || {})
         },
           
+          freeStrafen:
+              Array.isArray(
+                person.freeStrafen
+              )
+                ? person.freeStrafen.map(
+                    entry => ({
+                      ...entry
+                    })
+                  )
+                : [],
+          
         boughtThrows:
           Math.max(
             0,
@@ -417,6 +428,14 @@ async seedLivePersons(
             ) || 0
           ),
 
+          paid:
+              Math.max(
+                0,
+                parseFloat(
+                  person.paid || 0
+                ) || 0
+              ),
+          
         updatedAt:
           serverTimestamp()
       });
@@ -507,12 +526,12 @@ async saveLivePersonStatus(
           ),
         
         paid:
-  Math.max(
-    0,
-    parseFloat(
-      payload.paid || 0
-    ) || 0
-  ),
+          Math.max(
+            0,
+            parseFloat(
+              payload.paid || 0
+            ) || 0
+          ),
 
       updatedAt:
         serverTimestamp()
@@ -603,6 +622,17 @@ async saveLivePerson(
       strafen: {
         ...(payload.strafen || {})
       },
+        
+        freeStrafen:
+          Array.isArray(
+            payload.freeStrafen
+          )
+            ? payload.freeStrafen.map(
+                entry => ({
+                  ...entry
+                })
+              )
+            : [],
         
         boughtThrows:
           Math.max(
@@ -800,6 +830,182 @@ async saveLivePerson(
     paid:
       numericPaid
   };
+},
+    
+    async addLivePersonFreeStrafe(
+  clubId,
+  personName,
+  entry
+) {
+  if (!personName) {
+    throw new Error(
+      'Personenname fehlt'
+    );
+  }
+
+  if (
+    !entry ||
+    !entry.id
+  ) {
+    throw new Error(
+      'Ungültiger Strafeneintrag'
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    'clubs',
+    clubId,
+    'livePersons',
+    personId
+  );
+
+  return runTransaction(
+    db,
+    async transaction => {
+      const snapshot =
+        await transaction.get(
+          personRef
+        );
+
+      const current =
+        snapshot.exists()
+          ? snapshot.data()
+          : {};
+
+      const freeStrafen =
+        Array.isArray(
+          current.freeStrafen
+        )
+          ? current.freeStrafen.map(
+              item => ({
+                ...item
+              })
+            )
+          : [];
+
+      const alreadyExists =
+        freeStrafen.some(
+          item =>
+            item.id === entry.id
+        );
+
+      if (!alreadyExists) {
+        freeStrafen.push({
+          ...entry
+        });
+      }
+
+      transaction.set(
+        personRef,
+        {
+          name: personName,
+          freeStrafen,
+          updatedAt:
+            serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      return {
+        added:
+          !alreadyExists,
+        freeStrafen
+      };
+    }
+  );
+},
+    
+    async deleteLivePersonFreeStrafe(
+  clubId,
+  personName,
+  freeStrafeId
+) {
+  if (!personName) {
+    throw new Error(
+      'Personenname fehlt'
+    );
+  }
+
+  if (!freeStrafeId) {
+    throw new Error(
+      'Strafen-ID fehlt'
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    'clubs',
+    clubId,
+    'livePersons',
+    personId
+  );
+
+  return runTransaction(
+    db,
+    async transaction => {
+      const snapshot =
+        await transaction.get(
+          personRef
+        );
+
+      if (!snapshot.exists()) {
+        return {
+          deleted: false,
+          freeStrafen: []
+        };
+      }
+
+      const current =
+        snapshot.data();
+
+      const previous =
+        Array.isArray(
+          current.freeStrafen
+        )
+          ? current.freeStrafen
+          : [];
+
+      const freeStrafen =
+        previous.filter(
+          item =>
+            item.id !==
+            freeStrafeId
+        );
+
+      transaction.set(
+        personRef,
+        {
+          name: personName,
+          freeStrafen,
+          updatedAt:
+            serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      return {
+        deleted:
+          freeStrafen.length !==
+          previous.length,
+        freeStrafen
+      };
+    }
+  );
 },
 
 async deleteLivePerson(
