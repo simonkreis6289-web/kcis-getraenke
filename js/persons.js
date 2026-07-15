@@ -1,6 +1,154 @@
 // ─────────────────────────────────────────────────────────────
 // ── PERSONEN / ANWESENHEIT ──
 // ─────────────────────────────────────────────────────────────
+const ATTENDANCE_STATUS = Object.freeze({
+  PRESENT: 'present',
+  EXCUSED: 'excused',
+  UNEXCUSED: 'unexcused',
+  UNKNOWN: 'unknown'
+});
+
+let attendanceStatusPerson = null;
+
+function normalizeAttendanceStatus(person) {
+  if (!person) {
+    return ATTENDANCE_STATUS.UNKNOWN;
+  }
+
+  if (person.present) {
+    return ATTENDANCE_STATUS.PRESENT;
+  }
+
+  const validStatuses =
+    Object.values(
+      ATTENDANCE_STATUS
+    );
+
+  return validStatuses.includes(
+    person.attendanceStatus
+  )
+    ? person.attendanceStatus
+    : ATTENDANCE_STATUS.UNKNOWN;
+}
+
+function normalizePersonForLive(person) {
+  if (!person) {
+    return null;
+  }
+
+  if (
+    !person.drinks ||
+    typeof person.drinks !== 'object'
+  ) {
+    person.drinks = {};
+  }
+
+  if (
+    !person.strafen ||
+    typeof person.strafen !== 'object'
+  ) {
+    person.strafen = {};
+  }
+
+  if (!Array.isArray(person.rounds)) {
+    person.rounds = [];
+  }
+
+  if (
+    !Array.isArray(
+      person.freeStrafen
+    )
+  ) {
+    person.freeStrafen = [];
+  }
+
+  if (
+    !Array.isArray(
+      person.tannenbaumCharges
+    )
+  ) {
+    person.tannenbaumCharges = [];
+  }
+
+  person.present =
+    !!person.present;
+
+  person.isGuest =
+    !!person.isGuest;
+
+  person.left =
+    !!person.left;
+
+  person.tisch =
+    normalizeTisch(
+      person.tisch
+    );
+
+  person.attendanceStatus =
+    normalizeAttendanceStatus(
+      person
+    );
+
+  person.arrivalTime =
+    person.arrivalTime || '';
+
+  person.leftAt =
+    person.leftAt || '';
+
+  person.leftEarlyAt =
+    person.leftEarlyAt || '';
+
+  person.paid =
+    parseFloat(
+      person.paid || 0
+    ) || 0;
+
+  person.boughtThrows =
+    parseInt(
+      person.boughtThrows || 0,
+      10
+    ) || 0;
+
+  return person;
+}
+
+function getLivePersonStatusPayload(
+  person
+) {
+  normalizePersonForLive(
+    person
+  );
+
+  return {
+    present:
+      !!person.present,
+
+    attendanceStatus:
+      normalizeAttendanceStatus(
+        person
+      ),
+
+    left:
+      !!person.left,
+
+    tisch:
+      normalizeTisch(
+        person.tisch
+      ),
+
+    arrivalTime:
+      person.arrivalTime || '',
+
+    leftAt:
+      person.leftAt || '',
+
+    leftEarlyAt:
+      person.leftEarlyAt || '',
+
+    isGuest:
+      !!person.isGuest
+  };
+}
 
 function getMembers() {
   return persons.filter(person => !person.isGuest);
@@ -66,7 +214,10 @@ function getAvatarFileCandidates(name) {
   ];
 }
 
-function getAvatarHtml(name) {
+function getAvatarHtml(
+  name,
+  extraClass = ''
+) {
   const initials =
     String(name || '')
       .split(' ')
@@ -82,8 +233,8 @@ function getAvatarHtml(name) {
     JSON.stringify(candidates)
       .replace(/"/g, '&quot;');
 
-  return `
-    <div class="person-avatar">
+return `
+  <div class="person-avatar ${extraClass}">
       <img
         src="${candidates[0]}"
         alt="${name}"
@@ -182,7 +333,54 @@ function renderBoughtThrowsDots(person) {
   return html;
 }
 
-function getPersonTeamCardHtml(person) {
+function resolveGroupDisplayColor(
+  value,
+  fallback = '#78909c'
+) {
+  const color =
+    String(value || '')
+      .trim();
+
+  if (!color) {
+    return fallback;
+  }
+
+  const namedColors = {
+    black: '#111111',
+    red: '#d62828',
+    blue: '#1976d2',
+    green: '#2e7d32',
+    yellow: '#f9a825',
+    orange: '#ef6c00',
+    purple: '#7b1fa2',
+    pink: '#c2185b',
+    gray: '#78909c',
+    grey: '#78909c',
+    white: '#ffffff'
+  };
+
+  return (
+    namedColors[
+      color.toLowerCase()
+    ] ||
+    color
+  );
+}
+
+function stripLeadingTeamEmoji(
+  value
+) {
+  return String(value || '')
+    .replace(
+      /^[⚫⚪🔴🟠🟡🟢🔵🟣🟤●⬤]\s*/u,
+      ''
+    )
+    .trim();
+}
+
+function getPersonTeamCardHtml(
+  person
+) {
   const teamKey =
     normalizeTisch(
       person.tisch
@@ -190,10 +388,12 @@ function getPersonTeamCardHtml(person) {
 
   if (!teamKey) {
     return `
-      <div
-        class="person-team-badge no-team"
-      >
-        ➖ Kein Team
+      <div class="person-team-badge no-team">
+        <span
+          class="person-team-dot no-team-dot"
+        ></span>
+
+        <span>Kein Team</span>
       </div>
     `;
   }
@@ -201,15 +401,18 @@ function getPersonTeamCardHtml(person) {
   const settings =
     groupSettings?.[teamKey] || {};
 
-  const emoji =
-    settings.emoji ||
-    (
-      teamKey === 'T1'
-        ? '⚫'
-        : '🔴'
+  const fallbackColor =
+    teamKey === 'T1'
+      ? '#111111'
+      : '#d62828';
+
+  const color =
+    resolveGroupDisplayColor(
+      settings.color,
+      fallbackColor
     );
 
-  const label =
+  const rawLabel =
     typeof getGroupLabel ===
       'function'
       ? getGroupLabel(teamKey)
@@ -218,13 +421,451 @@ function getPersonTeamCardHtml(person) {
           teamKey
         );
 
+  const label =
+    stripLeadingTeamEmoji(
+      rawLabel
+    );
+
   return `
     <div
       class="person-team-badge ${teamKey.toLowerCase()}"
     >
-      ${emoji} ${label}
+      <span
+        class="person-team-dot"
+        style="background:${color};"
+        aria-hidden="true"
+      ></span>
+
+      <span>${label}</span>
     </div>
   `;
+}
+
+function getAttendanceAvatarClass(person) {
+  const status =
+    normalizeAttendanceStatus(person);
+
+  if (status === 'present') {
+    return 'avatar-status-present';
+  }
+
+  if (status === 'excused') {
+    return 'avatar-status-excused';
+  }
+
+  if (status === 'unexcused') {
+    return 'avatar-status-unexcused';
+  }
+
+  return 'avatar-status-unknown';
+}
+
+function getAttendanceStatusLabel(person) {
+  const status =
+    normalizeAttendanceStatus(person);
+
+  if (status === 'present') {
+    return '🟢 Da';
+  }
+
+  if (status === 'excused') {
+    return '🟡 Abgemeldet';
+  }
+
+  if (status === 'unexcused') {
+    return '🔴 Nicht abgemeldet';
+  }
+
+  return '⚪ Keine Rückmeldung';
+}
+
+function applyLivePersonData(
+  data
+) {
+  if (
+    !data ||
+    !data.name
+  ) {
+    return false;
+  }
+
+  const personName =
+    String(data.name);
+
+  livePersonCounters.set(
+    personName,
+    {
+      drinks: {
+        ...(data.drinks || {})
+      },
+
+      strafen: {
+        ...(data.strafen || {})
+      },
+
+      present:
+        data.present,
+
+      attendanceStatus:
+        data.attendanceStatus,
+
+      left:
+        data.left,
+
+      tisch:
+        data.tisch,
+
+      arrivalTime:
+        data.arrivalTime,
+
+      leftAt:
+        data.leftAt,
+
+      leftEarlyAt:
+        data.leftEarlyAt,
+
+      isGuest:
+        data.isGuest
+    }
+  );
+
+  const person =
+    persons.find(
+      item =>
+        item.name === personName
+    );
+
+  if (!person) {
+    return false;
+  }
+
+  if (
+    data.drinks &&
+    typeof data.drinks === 'object'
+  ) {
+    person.drinks = {
+      ...(person.drinks || {}),
+      ...data.drinks
+    };
+  }
+
+  if (
+    data.strafen &&
+    typeof data.strafen === 'object'
+  ) {
+    person.strafen = {
+      ...(person.strafen || {}),
+      ...data.strafen
+    };
+  }
+
+  if (
+    data.present !== undefined
+  ) {
+    person.present =
+      !!data.present;
+  }
+
+  if (
+    data.attendanceStatus !==
+      undefined
+  ) {
+    person.attendanceStatus =
+      data.attendanceStatus;
+  }
+
+  if (
+    data.left !== undefined
+  ) {
+    person.left =
+      !!data.left;
+  }
+
+  if (
+    data.tisch !== undefined
+  ) {
+    person.tisch =
+      normalizeTisch(
+        data.tisch
+      );
+  }
+
+  if (
+    data.arrivalTime !==
+      undefined
+  ) {
+    person.arrivalTime =
+      data.arrivalTime || '';
+  }
+
+  if (
+    data.leftAt !== undefined
+  ) {
+    person.leftAt =
+      data.leftAt || '';
+  }
+
+  if (
+    data.leftEarlyAt !==
+      undefined
+  ) {
+    person.leftEarlyAt =
+      data.leftEarlyAt || '';
+  }
+
+  if (
+    data.isGuest !== undefined
+  ) {
+    person.isGuest =
+      !!data.isGuest;
+  }
+
+  normalizePersonForLive(
+    person
+  );
+
+  return true;
+}
+
+function reapplyLivePersonCounters() {
+  if (!liveCountersReady) {
+    return;
+  }
+
+  livePersonCounters.forEach(
+    (
+      liveData,
+      personName
+    ) => {
+      applyLivePersonData({
+        name: personName,
+        ...liveData
+      });
+    }
+  );
+}
+
+function renderLivePersonChanges() {
+  renderAnwesenheit();
+
+  if (
+    typeof renderGruppen ===
+      'function'
+  ) {
+    renderGruppen();
+  }
+
+  if (
+    typeof renderGetraenke ===
+      'function'
+  ) {
+    renderGetraenke();
+  }
+
+  if (
+    typeof renderStrafen ===
+      'function'
+  ) {
+    renderStrafen();
+  }
+
+  if (
+    typeof renderAbrechnung ===
+      'function'
+  ) {
+    renderAbrechnung();
+  }
+
+  if (
+    typeof renderTeamspiele ===
+      'function'
+  ) {
+    renderTeamspiele();
+  }
+
+  if (
+    typeof renderLotterie ===
+      'function'
+  ) {
+    renderLotterie();
+  }
+
+  if (
+    typeof updateStats ===
+      'function'
+  ) {
+    updateStats();
+  }
+
+  syncCurrentClubToStore();
+  saveClubSystem();
+}
+
+/*
+ * Rückwärtskompatibilität für ältere
+ * Aufrufe aus clubs.js.
+ */
+function renderLiveCounterChanges() {
+  renderLivePersonChanges();
+}
+
+function stopLivePersonSync() {
+  if (
+    currentLivePersonsUnsubscribe
+  ) {
+    currentLivePersonsUnsubscribe();
+    currentLivePersonsUnsubscribe =
+      null;
+  }
+
+  livePersonCounters.clear();
+  liveCountersReady =
+    false;
+}
+
+async function startLivePersonSync(
+  clubId
+) {
+  if (
+    !window.firestoreApi ||
+    !clubId ||
+    typeof window.firestoreApi
+      .subscribeToLivePersons !==
+      'function'
+  ) {
+    return;
+  }
+
+  stopLivePersonSync();
+
+  try {
+    await window.firestoreApi
+      .seedLivePersons(
+        clubId,
+        persons
+      );
+  } catch (error) {
+    console.error(
+      'Live-Personen konnten nicht initialisiert werden:',
+      error
+    );
+  }
+
+  currentLivePersonsUnsubscribe =
+    window.firestoreApi
+      .subscribeToLivePersons(
+        clubId,
+        changes => {
+          let hasChanges =
+            false;
+
+          changes.forEach(
+            change => {
+              if (
+                change.type ===
+                'removed'
+              ) {
+                const removedName =
+                  change.data?.name ||
+                  '';
+
+                livePersonCounters
+                  .delete(
+                    removedName
+                  );
+
+                return;
+              }
+
+              if (
+                applyLivePersonData(
+                  change.data
+                )
+              ) {
+                hasChanges =
+                  true;
+              }
+            }
+          );
+
+          liveCountersReady =
+            true;
+
+          if (hasChanges) {
+            renderLivePersonChanges();
+          }
+        },
+        error => {
+          console.error(
+            'Live-Personen-Synchronisation fehlgeschlagen:',
+            error
+          );
+
+          showToast(
+            '❌ Personen-Synchronisation gestört',
+            'error'
+          );
+        }
+      );
+}
+
+async function saveLivePersonStatus(
+  person
+) {
+  if (
+    !person ||
+    !ACTIVE_CLUB ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .saveLivePersonStatus !==
+      'function'
+  ) {
+    showToast(
+      '❌ Personen-Synchronisation nicht verfügbar',
+      'error'
+    );
+
+    return false;
+  }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Statusänderungen sind offline nicht möglich',
+      'error'
+    );
+
+    return false;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    await window.firestoreApi
+      .saveLivePersonStatus(
+        clubId,
+        person.name,
+        getLivePersonStatusPayload(
+          person
+        )
+      );
+
+    return true;
+  } catch (error) {
+    console.error(
+      'Personenstatus konnte nicht synchronisiert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Personenstatus konnte nicht gespeichert werden',
+      'error'
+    );
+
+    return false;
+  }
 }
 
 function renderPersonCards(
@@ -363,7 +1004,10 @@ function renderPersonCards(
         ✕
       </button>
 
-      ${getAvatarHtml(person.name)}
+      ${getAvatarHtml(
+          person.name,
+          getAttendanceAvatarClass(person)
+        )}
 
       <div class="person-name">
         ${person.name}
@@ -376,6 +1020,10 @@ function renderPersonCards(
             : 'Mitglied'
         }
       </div>
+
+        <div class="person-attendance-status">
+          ${getAttendanceStatusLabel(person)}
+        </div>
 
       ${getPersonTeamCardHtml(person)}
 
@@ -508,11 +1156,11 @@ function addPerson(isGuest) {
     isGuest:
       !!isGuest,
 
-    present:
-      true,
+    present: true,
+      
+    attendanceStatus: 'present',
 
-    tisch:
-      '',
+    tisch: '',
 
     drinks,
     strafen:
