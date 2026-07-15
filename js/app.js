@@ -3275,11 +3275,28 @@ function renderDrinkRows(list, body, startIndex = 0) {
     const leftEmoji = p.left ? '<span class="left-emoji">🏡</span>' : '';
 
     const tl = p.tisch
-      ? `<span class="ptisch ${p.tisch.toLowerCase()}">${getGroupLabel(p.tisch)}</span>`
-      : `<span class="ptisch">Kein Team</span>`;
+      ? `
+        <span
+          class="ptisch ${p.tisch.toLowerCase()}"
+        >
+          ${getGroupColorEmoji(p.tisch)}
+          ${stripLeadingTeamEmoji(
+            getGroupLabel(p.tisch)
+          )}
+        </span>
+      `
+      : `
+        <span class="ptisch">
+          ⚪ Kein Team
+        </span>
+      `;
 
-    const avatarHtml = getAvatarHtml(p.name)
-      .replace('class="person-avatar"', 'class="table-avatar"');
+    const avatarHtml =
+      getAvatarHtml(p.name)
+        .replace(
+          /class="person-avatar[^"]*"/,
+          'class="table-avatar"'
+        );
 
     const te = p.teamExtra || 0;
     const re = p.roundExtra || 0;
