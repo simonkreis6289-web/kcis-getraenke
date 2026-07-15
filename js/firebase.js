@@ -426,7 +426,7 @@ async seedLivePersons(
   return true;
 },
     
-    async saveLivePersonStatus(
+async saveLivePersonStatus(
   clubId,
   personName,
   payload = {}
@@ -505,6 +505,14 @@ async seedLivePersons(
               10
             ) || 0
           ),
+        
+        paid:
+  Math.max(
+    0,
+    parseFloat(
+      payload.paid || 0
+    ) || 0
+  ),
 
       updatedAt:
         serverTimestamp()
@@ -604,6 +612,14 @@ async saveLivePerson(
               10
             ) || 0
           ),
+        
+        paid:
+  Math.max(
+    0,
+    parseFloat(
+      payload.paid || 0
+    ) || 0
+  ),
 
       updatedAt:
         serverTimestamp()
@@ -725,6 +741,65 @@ async saveLivePerson(
       };
     }
   );
+},
+    
+    async saveLivePersonPayment(
+  clubId,
+  personName,
+  paid
+) {
+  if (!personName) {
+    throw new Error(
+      'Personenname fehlt'
+    );
+  }
+
+  const numericPaid =
+    Math.max(
+      0,
+      Math.round(
+        (
+          parseFloat(
+            paid || 0
+          ) || 0
+        ) * 100
+      ) / 100
+    );
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    'clubs',
+    clubId,
+    'livePersons',
+    personId
+  );
+
+  await setDoc(
+    personRef,
+    {
+      name:
+        personName,
+
+      paid:
+        numericPaid,
+
+      updatedAt:
+        serverTimestamp()
+    },
+    {
+      merge: true
+    }
+  );
+
+  return {
+    paid:
+      numericPaid
+  };
 },
 
 async deleteLivePerson(
