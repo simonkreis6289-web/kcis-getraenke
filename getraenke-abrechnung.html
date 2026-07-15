@@ -1521,14 +1521,14 @@
 </div>
     
 <div class="modal-overlay hidden" id="buy-throw-modal">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:620px;">
     <h3>Würfe kaufen</h3>
-    <div class="modal-sub">Eine Person kauft einen zusätzlichen Wurf</div>
+    <div class="modal-sub">Eine oder mehrere Personen auswählen</div>
 
-    <div class="modal-input-row">
-      <label>Person</label>
-      <select id="buy-throw-person" class="modal-select"></select>
-    </div>
+        <div
+          id="buy-throw-person-grid"
+          class="quick-penalty-person-grid"
+        ></div>
 
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeBuyThrowModal()">Abbrechen</button>
@@ -1657,17 +1657,16 @@
 </div>
     
     <div class="modal-overlay hidden" id="quick-penalty-modal">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:620px;">
     <h3 id="quick-penalty-title">Strafe eintragen</h3>
-    <div class="modal-sub">Wähle die Person aus.</div>
-
-    <div class="modal-input-row">
-      <label>Person</label>
-      <div
-          id="quick-penalty-person-grid"
-          class="quick-penalty-person-grid"
-        ></div>
+    <div class="modal-sub">
+      Eine oder mehrere Personen auswählen.
     </div>
+
+    <div
+      id="quick-penalty-person-grid"
+      class="quick-penalty-person-grid"
+    ></div>
 
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeQuickPenaltyModal()">Abbrechen</button>
