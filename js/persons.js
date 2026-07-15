@@ -146,7 +146,16 @@ function getLivePersonStatusPayload(
       person.leftEarlyAt || '',
 
     isGuest:
-      !!person.isGuest
+  !!person.isGuest,
+
+    boughtThrows:
+      Math.max(
+        0,
+        parseInt(
+          person.boughtThrows || 0,
+          10
+        ) || 0
+      )
   };
 }
 
@@ -538,6 +547,15 @@ function applyLivePersonData(
         ...(data.strafen || {})
       },
 
+        boughtThrows:
+          Math.max(
+            0,
+            parseInt(
+              data.boughtThrows || 0,
+              10
+            ) || 0
+          ),
+
       present:
         data.present,
 
@@ -654,6 +672,20 @@ function applyLivePersonData(
     person.isGuest =
       !!data.isGuest;
   }
+
+    if (
+      data.boughtThrows !==
+        undefined
+    ) {
+      person.boughtThrows =
+        Math.max(
+          0,
+          parseInt(
+            data.boughtThrows || 0,
+            10
+          ) || 0
+        );
+    }
 
   normalizePersonForLive(
     person
