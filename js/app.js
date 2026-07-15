@@ -540,20 +540,6 @@ function findUndefinedPaths(
   return results;
 }
     
-function renderBoughtThrowsDots(person) {
-  const max = Math.max(0, parseInt(wurfSettings.maxBuys || 3, 10) || 3);
-  const used = Math.max(0, parseInt(person.boughtThrows || 0, 10) || 0);
-
-  let html = '<div class="wurf-dots">';
-
-  for (let i = 0; i < max; i++) {
-    html += `<span class="wurf-dot ${i < used ? 'used' : 'free'}"></span>`;
-  }
-
-  html += '</div>';
-  return html;
-}
-    
 function hydrateState() {
   DRINKS.forEach(d => {
     if (prices[d.key] === undefined) prices[d.key] = 0;
@@ -1013,103 +999,6 @@ function renderStrafen() {
     tr.innerHTML = html;
     body.appendChild(tr);
   });
-}
-    
-function openArrivalModal(person) {
-  arrivalEditPerson = person;
-
-  const sub = document.getElementById('arrival-modal-sub');
-  const nowCheck = document.getElementById('arrival-now-check');
-  const timeInput = document.getElementById('arrival-time-input');
-
-  if (sub) sub.textContent = `${person.name} ist angekommen.`;
-  if (nowCheck) nowCheck.checked = true;
-  if (timeInput) timeInput.value = getNowTimeString();
-
-  toggleArrivalTimeInput();
-
-  document.getElementById('arrival-modal')?.classList.remove('hidden');
-}
-
-function closeArrivalModal() {
-  document.getElementById('arrival-modal')?.classList.add('hidden');
-  arrivalEditPerson = null;
-}
-
-function toggleArrivalTimeInput() {
-  const nowCheck = document.getElementById('arrival-now-check');
-  const row = document.getElementById('arrival-time-row');
-
-  if (row) {
-    row.style.display = nowCheck?.checked ? 'none' : 'block';
-  }
-}
-
-function confirmArrivalTime() {
-  if (!arrivalEditPerson) return;
-
-  const nowCheck = document.getElementById('arrival-now-check');
-  const timeInput = document.getElementById('arrival-time-input');
-
-  arrivalEditPerson.arrivalTime = nowCheck?.checked
-    ? getNowTimeString()
-    : (timeInput?.value || getNowTimeString());
-
-  closeArrivalModal();
-  renderAll();
-  persistState();
-
-  showToast(`✅ Ankunftszeit gespeichert: ${arrivalEditPerson.arrivalTime}`, 'success');
-}
-
-function openLeftEarlyModal(person) {
-  leftEarlyEditPerson = person;
-
-  const sub = document.getElementById('left-early-modal-sub');
-  const nowCheck = document.getElementById('left-early-now-check');
-  const timeInput = document.getElementById('left-early-time-input');
-
-  if (sub) sub.textContent = `${person.name} geht.`;
-  if (nowCheck) nowCheck.checked = true;
-  if (timeInput) timeInput.value = getNowTimeString();
-
-  toggleLeftEarlyTimeInput();
-
-  document.getElementById('left-early-modal')?.classList.remove('hidden');
-}
-
-function closeLeftEarlyModal() {
-  document.getElementById('left-early-modal')?.classList.add('hidden');
-  leftEarlyEditPerson = null;
-}
-
-function toggleLeftEarlyTimeInput() {
-  const nowCheck = document.getElementById('left-early-now-check');
-  const row = document.getElementById('left-early-time-row');
-
-  if (row) {
-    row.style.display = nowCheck?.checked ? 'none' : 'block';
-  }
-}
-
-function confirmLeftEarlyTime() {
-  if (!leftEarlyEditPerson) return;
-
-  const nowCheck = document.getElementById('left-early-now-check');
-  const timeInput = document.getElementById('left-early-time-input');
-
-  leftEarlyEditPerson.leftEarlyAt = nowCheck?.checked
-    ? getNowTimeString()
-    : (timeInput?.value || getNowTimeString());
-
-  leftEarlyEditPerson.left = true;
-  leftEarlyEditPerson.leftAt = new Date().toISOString();
-
-  closeLeftEarlyModal();
-  renderAll();
-  persistState();
-
-  showToast(`✅ Gehzeit gespeichert: ${leftEarlyEditPerson.leftEarlyAt}`, 'success');
 }
 
 function renderStrafenHistory() {
@@ -2563,17 +2452,6 @@ function isAutoTimeStrafeKey(key) {
   return key === getLateStrafeKey() || key === getEarlyLeaveStrafeKey();
 }
 
-function openLeftEarlyModalByName(personName) {
-  const p = persons.find(x => x.name === personName);
-
-  if (!p) {
-    showToast('Person nicht gefunden', 'error');
-    return;
-  }
-
-  openLeftEarlyModal(p);
-}
-
 function getPersonPenaltyExtraLines(p) {
   if (!p) return [];
 
@@ -2659,11 +2537,6 @@ function normalizeTisch(value) {
   return value === 'T1' || value === 'T2' ? value : '';
 }
 
-function getMembers() { return persons.filter(p => !p.isGuest); }
-function getGuests() { return persons.filter(p => p.isGuest); }
-function getPresentMembers() { return persons.filter(p => p.present && !p.isGuest); }
-function getPresentGuests() { return persons.filter(p => p.present && p.isGuest); }
-function getPresentNotLeftPeople() { return persons.filter(p => p.present && !p.left); }
 function getSpielDisplayName(spiel) { return spiel.spieltyp || 'Teamspiel'; }
 
 function getPersonOpenAmount(p) {
@@ -2708,68 +2581,6 @@ function getPersonTeamspielBreakdown(p) {
     }
   });
   return result;
-}
-    
-function getAvatarFileCandidates(name) {
-  const clean = String(name || '').trim();
-
-  const normalized = clean
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  const base = normalized
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return [
-    `bilder/${base}.jpg`,
-    `bilder/${base}.jpeg`,
-    `bilder/${base}.png`,
-    `bilder/${base}.webp`
-  ];
-}
-    
-function getAvatarHtml(name) {
-  const initials = String(name || '')
-    .split(' ')
-    .map(n => n[0] || '')
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  const candidates = getAvatarFileCandidates(name);
-  const fallback = `<span class="person-avatar-fallback">${initials}</span>`;
-
-  const imgTag = `
-    <img
-      src="${candidates[0]}"
-      alt="${name}"
-      onerror="
-        if(this.dataset.tryIndex===undefined){this.dataset.tryIndex='0';}
-        var files = ${JSON.stringify(candidates).replace(/"/g, '&quot;')};
-        var next = parseInt(this.dataset.tryIndex,10) + 1;
-        if(next < files.length){
-          this.dataset.tryIndex = String(next);
-          this.src = files[next];
-        } else {
-            var parent = this.parentElement;
-            this.remove();
-            if (parent) {
-              var fb = parent.querySelector('.person-avatar-fallback');
-              if (fb) fb.style.display = 'flex';
-            }
-        }
-      "
-    >
-  `;
-
-  return `
-    <div class="person-avatar">
-      ${imgTag}
-      <span class="person-avatar-fallback" style="display:none;">${initials}</span>
-    </div>
-  `;
 }
  
 // ── PREISE SPEICHERN ──
@@ -3401,101 +3212,6 @@ function saveWurfSettings() {
   persistState();
 
   showToast('✅ Würfe-Einstellung gespeichert', 'success');
-}
-
-function renderPersonCards(targetId, list) {
-  const g = document.getElementById(targetId);
-  if (!g) return;
-
-  g.innerHTML = '';
-
-  const sorted = list.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
-
-  if (!sorted.length) {
-    g.innerHTML = `<div style="font-size:0.8rem;color:var(--muted);padding:8px 0;">Noch niemand vorhanden</div>`;
-    return;
-  }
-
-  sorted.forEach(p => {
-    const c = document.createElement('div');
-    c.className = 'person-card' + (p.present ? ' present' : ' absent') + (p.isGuest ? ' guest' : '');
-
-    let badgeClass = p.present ? 'present-badge' : 'absent-badge';
-    let badgeText = p.present ? 'DA' : 'FEHLT';
-
-    if (p.present && p.left) {
-      badgeClass = 'left-badge';
-      badgeText = 'RAUS';
-    }
-
-    const timeHtml = (p.arrivalTime || p.leftEarlyAt)
-      ? `
-        <div class="person-times">
-          ${p.arrivalTime ? `<div>⏰ Ankunft: <strong>${p.arrivalTime}</strong></div>` : ''}
-          ${p.leftEarlyAt ? `<div>🚪 Weg: <strong>${p.leftEarlyAt}</strong></div>` : ''}
-        </div>
-      `
-      : `<div class="person-times empty">Keine Zeit gesetzt</div>`;
-
-    c.innerHTML = `
-      <button
-        class="person-delete-btn"
-        onclick="deletePerson('${escapeForJs(p.name)}'); event.stopPropagation();"
-      >✕</button>
-
-      ${getAvatarHtml(p.name)}
-
-      <div class="person-name">${p.name}</div>
-      <div class="person-role">${p.isGuest ? 'Gastkegler' : 'Mitglied'}</div>
-
-      ${timeHtml}
-
-      ${p.present ? `
-        <button
-          type="button"
-          class="mini-action-btn"
-          onclick="event.stopPropagation(); openLeftEarlyModalByName('${escapeForJs(p.name)}')"
-        >
-          🚪 Gehzeit
-        </button>
-      ` : ''}
-
-      <div class="${badgeClass}">${badgeText}</div>
-    `;
-
-    c.onclick = () => {
-      const wasPresent = !!p.present;
-      p.present = !p.present;
-
-      if (!p.present) {
-        p.tisch = '';
-        p.left = false;
-        p.leftAt = '';
-        p.arrivalTime = '';
-        p.leftEarlyAt = '';
-      }
-
-      if (!wasPresent && p.present) {
-        playSound(sounds.welcome);
-
-        renderAll();
-        persistState();
-
-        openArrivalModal(p);
-        return;
-      }
-
-      renderAll();
-      persistState();
-    };
-
-    g.appendChild(c);
-  });
-}
-
-function renderAnwesenheit() {
-  renderPersonCards('persons-grid-members', getMembers());
-  renderPersonCards('persons-grid-guests', getGuests());
 }
 
 function renderDrinkRows(list, body, startIndex = 0) {
@@ -4759,68 +4475,6 @@ function deleteSpielFromKatalog(name) {
   renderSpieltypSelect();
   renderSpieleKatalog();
   showToast('🗑️ Spiel gelöscht', 'success');
-  persistState();
-}
-
-// ── PERSONEN ──
-function addPerson(isGuest) {
-  const input = document.getElementById(isGuest ? 'new-guest-input' : 'new-person-input');
-  const name = input.value.trim();
-  if (!name) return;
-
-  if (persons.find(p => p.name.toLowerCase() === name.toLowerCase())) {
-    showToast('Name existiert bereits', 'error');
-    return;
-  }
-    
-    const personStrafen = {};
-        STRAFEN.forEach(s => {
-          personStrafen[s.key] = 0;
-        });
-
-  const drinks = {};
-  DRINKS.forEach(d => drinks[d.key] = 0);
-
-persons.push({
-  name,
-  isGuest: !!isGuest,
-  present: true,
-  tisch: '',
-  drinks,
-    strafen: personStrafen,
-  freeStrafen: [],
-  tannenbaumCharges: [],
-  paid: 0,
-  teamExtra: 0,
-  roundExtra: 0,
-  rounds: [],
-  left: false,
-  leftAt: '',
-    arrivalTime: '',
-    leftEarlyAt: '',
-  boughtThrows: 0
-});
-
-  input.value = '';
-  renderAll();
-  showToast(`✅ ${name} hinzugefügt`, 'success');
-  persistState();
-}
-
-function deletePerson(name) {
-  const p = persons.find(x => x.name === name);
-  if (!p) return;
-
-  const typeLabel = p.isGuest ? 'Gastkegler' : 'Mitglied';
-  if (!confirm(`${typeLabel} "${p.name}" wirklich löschen?`)) return;
-
-  persons = persons.filter(x => x.name !== name);
-  spiele = spiele
-    .map(s => ({ ...s, members: (s.members || []).filter(m => m !== name) }))
-    .filter(s => (s.members || []).length > 0);
-
-  renderAll();
-  showToast('🗑️ Person gelöscht', 'success');
   persistState();
 }
 
