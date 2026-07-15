@@ -544,59 +544,70 @@ function applyLivePersonData(
   const personName =
     String(data.name);
 
-  livePersonCounters.set(
-    personName,
-    {
-      drinks: {
-        ...(data.drinks || {})
-      },
+livePersonCounters.set(
+  personName,
+  {
+    drinks: {
+      ...(data.drinks || {})
+    },
 
-      strafen: {
-        ...(data.strafen || {})
-      },
+    strafen: {
+      ...(data.strafen || {})
+    },
 
-        boughtThrows:
-          Math.max(
-            0,
-            parseInt(
-              data.boughtThrows || 0,
-              10
-            ) || 0
-          ),
+    freeStrafen:
+      Array.isArray(
+        data.freeStrafen
+      )
+        ? data.freeStrafen.map(
+            entry => ({
+              ...entry
+            })
+          )
+        : [],
 
-paid:
-  Math.max(
-    0,
-    parseFloat(
-      data.paid || 0
-    ) || 0
-  ),
+    boughtThrows:
+      Math.max(
+        0,
+        parseInt(
+          data.boughtThrows || 0,
+          10
+        ) || 0
+      ),
 
-      present:
-        data.present,
+    paid:
+      Math.max(
+        0,
+        parseFloat(
+          data.paid || 0
+        ) || 0
+      ),
 
-      attendanceStatus:
-        data.attendanceStatus,
+    present:
+      data.present,
 
-      left:
-        data.left,
+    attendanceStatus:
+      data.attendanceStatus,
 
-      tisch:
-        data.tisch,
+    left:
+      data.left,
 
-      arrivalTime:
-        data.arrivalTime,
+    tisch:
+      data.tisch,
 
-      leftAt:
-        data.leftAt,
+    arrivalTime:
+      data.arrivalTime,
 
-      leftEarlyAt:
-        data.leftEarlyAt,
+    leftAt:
+      data.leftAt,
 
-      isGuest:
-        data.isGuest
-    }
-  );
+    leftEarlyAt:
+      data.leftEarlyAt,
+
+    isGuest:
+      data.isGuest
+  }
+);
 
   const person =
     persons.find(
@@ -627,6 +638,19 @@ paid:
       ...data.strafen
     };
   }
+
+    if (
+      Array.isArray(
+        data.freeStrafen
+      )
+    ) {
+      person.freeStrafen =
+        data.freeStrafen.map(
+          entry => ({
+            ...entry
+          })
+        );
+    }
 
   if (
     data.present !== undefined
@@ -1475,6 +1499,7 @@ async function addPerson(
         ACTIVE_CLUB
       );
 
+
     await window.firestoreApi
       .saveLivePerson(
         clubId,
@@ -1490,9 +1515,21 @@ async function addPerson(
 
           strafen: {
             ...(person.strafen || {})
-          }
+          },
+
+          freeStrafen:
+            Array.isArray(
+              person.freeStrafen
+            )
+              ? person.freeStrafen.map(
+                  entry => ({
+                    ...entry
+                  })
+                )
+              : []
         }
       );
+
   } catch (error) {
     console.error(
       'Person konnte nicht angelegt werden:',
