@@ -1460,59 +1460,249 @@ function renderStrafpreisEditor() {
   });
 }
     
-function deleteStrafenHistoryEntry(id) {
-  if (!Array.isArray(strafenHistory)) strafenHistory = [];
+async function deleteStrafenHistoryEntry(id) {
+  if (!Array.isArray(strafenHistory)) {
+    strafenHistory = [];
+  }
 
-  const entry = strafenHistory.find(x => x.id === id)
-    || lotterieState?.history?.find(x => x.id === id)
-    || tiberiusState?.history?.find(x => x.id === id);
+  const entry =
+    strafenHistory.find(item =>
+      item.id === id
+    ) ||
+    lotterieState?.history?.find(item =>
+      item.id === id
+    ) ||
+    tiberiusState?.history?.find(item =>
+      item.id === id
+    );
 
-  if (!entry) return;
+  if (!entry) {
+    return;
+  }
 
-  if (!confirm('Diesen Historien-Eintrag wirklich löschen?')) return;
+  if (
+    !confirm(
+      'Diesen Historien-Eintrag wirklich löschen?'
+    )
+  ) {
+    return;
+  }
 
-  if (entry.type === 'tannenbaum') {
-    persons.forEach(p => {
-      if (Array.isArray(p.tannenbaumCharges)) {
-        p.tannenbaumCharges = p.tannenbaumCharges.filter(x => x.id !== id);
+  if (
+    entry.type === 'free'
+  ) {
+    const person =
+      persons.find(item =>
+        item.name === entry.person
+      );
+
+    if (!person) {
+      showToast(
+        'Person zum Historieneintrag nicht gefunden',
+        'error'
+      );
+      return;
+    }
+
+    if (
+      !ACTIVE_CLUB ||
+      !navigator.onLine ||
+      !window.firestoreApi ||
+      typeof window.firestoreApi
+        .deleteLivePersonFreeStrafe !==
+        'function'
+    ) {
+      showToast(
+        '❌ Live-Synchronisation nicht verfügbar',
+        'error'
+      );
+      return;
+    }
+
+    try {
+      const clubId =
+        getClubFirestoreId(
+          ACTIVE_CLUB
+        );
+
+      const result =
+        await window.firestoreApi
+          .deleteLivePersonFreeStrafe(
+            clubId,
+            person.name,
+            id
+          );
+
+      person.freeStrafen =
+        Array.isArray(
+          result?.freeStrafen
+        )
+          ? result.freeStrafen.map(
+              item => ({
+                ...item
+              })
+            )
+          : (
+              person.freeStrafen ||
+              []
+            ).filter(
+              item =>
+                item.id !== id
+            );
+    } catch (error) {
+      console.error(
+        'Historien-Strafe konnte nicht live gelöscht werden:',
+        error
+      );
+
+      showToast(
+        '❌ Betrag konnte nicht gelöscht werden',
+        'error'
+      );
+      return;
+    }
+  }
+
+  if (
+    entry.type === 'lotterie' ||
+    entry.type === 'tiberius'
+  ) {
+    const assignedEntries =
+      Array.isArray(
+        entry.assignedTo
+      )
+        ? entry.assignedTo
+        : [];
+
+    if (
+      !ACTIVE_CLUB ||
+      !navigator.onLine ||
+      !window.firestoreApi ||
+      typeof window.firestoreApi
+        .deleteLivePersonFreeStrafe !==
+        'function'
+    ) {
+      showToast(
+        '❌ Live-Synchronisation nicht verfügbar',
+        'error'
+      );
+      return;
+    }
+
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    try {
+      await Promise.all(
+        assignedEntries
+          .filter(item =>
+            item?.name &&
+            item?.id
+          )
+          .map(item =>
+            window.firestoreApi
+              .deleteLivePersonFreeStrafe(
+                clubId,
+                item.name,
+                item.id
+              )
+          )
+      );
+
+      assignedEntries.forEach(item => {
+        const person =
+          persons.find(personItem =>
+            personItem.name ===
+            item.name
+          );
+
+        if (!person) {
+          return;
+        }
+
+        person.freeStrafen =
+          (
+            person.freeStrafen ||
+            []
+          ).filter(
+            freeEntry =>
+              freeEntry.id !==
+              item.id
+          );
+      });
+    } catch (error) {
+      console.error(
+        'Spielstrafen konnten nicht live gelöscht werden:',
+        error
+      );
+
+      showToast(
+        '❌ Gebuchte Beträge konnten nicht gelöscht werden',
+        'error'
+      );
+      return;
+    }
+  }
+
+  if (
+    entry.type === 'tannenbaum'
+  ) {
+    persons.forEach(person => {
+      if (
+        Array.isArray(
+          person.tannenbaumCharges
+        )
+      ) {
+        person.tannenbaumCharges =
+          person.tannenbaumCharges.filter(
+            item =>
+              item.id !== id
+          );
       }
     });
   }
 
-  if (entry.type === 'free') {
-    persons.forEach(p => {
-      if (Array.isArray(p.freeStrafen)) {
-        p.freeStrafen = p.freeStrafen.filter(x => x.id !== id);
-      }
-    });
+  strafenHistory =
+    strafenHistory.filter(
+      item =>
+        item.id !== id
+    );
+
+  if (
+    lotterieState &&
+    Array.isArray(
+      lotterieState.history
+    )
+  ) {
+    lotterieState.history =
+      lotterieState.history.filter(
+        item =>
+          item.id !== id
+      );
   }
 
-  if (entry.type === 'lotterie' || entry.type === 'tiberius') {
-    const chargeIds = (entry.assignedTo || [])
-      .map(x => x.id)
-      .filter(Boolean);
-
-    persons.forEach(p => {
-      if (Array.isArray(p.freeStrafen)) {
-        p.freeStrafen = p.freeStrafen.filter(x => !chargeIds.includes(x.id));
-      }
-    });
-  }
-
-  strafenHistory = strafenHistory.filter(x => x.id !== id);
-
-  if (lotterieState && Array.isArray(lotterieState.history)) {
-    lotterieState.history = lotterieState.history.filter(x => x.id !== id);
-  }
-
-  if (tiberiusState && Array.isArray(tiberiusState.history)) {
-    tiberiusState.history = tiberiusState.history.filter(x => x.id !== id);
+  if (
+    tiberiusState &&
+    Array.isArray(
+      tiberiusState.history
+    )
+  ) {
+    tiberiusState.history =
+      tiberiusState.history.filter(
+        item =>
+          item.id !== id
+      );
   }
 
   renderAll();
   persistState();
 
-  showToast('🗑️ Historien-Eintrag gelöscht', 'success');
+  showToast(
+    '🗑️ Historien-Eintrag gelöscht',
+    'success'
+  );
 }
 
 function getGosseKings() {
