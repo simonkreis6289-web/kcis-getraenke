@@ -407,6 +407,15 @@ async seedLivePersons(
         strafen: {
           ...(person.strafen || {})
         },
+          
+        boughtThrows:
+          Math.max(
+            0,
+            parseInt(
+              person.boughtThrows || 0,
+              10
+            ) || 0
+          ),
 
         updatedAt:
           serverTimestamp()
@@ -416,6 +425,7 @@ async seedLivePersons(
 
   return true;
 },
+    
     async saveLivePersonStatus(
   clubId,
   personName,
@@ -486,6 +496,15 @@ async seedLivePersons(
 
       leftEarlyAt:
         payload.leftEarlyAt || "",
+        
+        boughtThrows:
+          Math.max(
+            0,
+            parseInt(
+              payload.boughtThrows || 0,
+              10
+            ) || 0
+          ),
 
       updatedAt:
         serverTimestamp()
@@ -576,6 +595,15 @@ async saveLivePerson(
       strafen: {
         ...(payload.strafen || {})
       },
+        
+        boughtThrows:
+          Math.max(
+            0,
+            parseInt(
+              payload.boughtThrows || 0,
+              10
+            ) || 0
+          ),
 
       updatedAt:
         serverTimestamp()
@@ -586,6 +614,117 @@ async saveLivePerson(
   );
 
   return true;
+},
+    
+    async changeLivePersonBoughtThrows(
+  clubId,
+  personName,
+  delta,
+  maxBuys
+) {
+  if (!personName) {
+    throw new Error(
+      'Personenname fehlt'
+    );
+  }
+
+  const numericDelta =
+    parseInt(
+      delta || 0,
+      10
+    ) || 0;
+
+  const numericMax =
+    Math.max(
+      0,
+      parseInt(
+        maxBuys || 0,
+        10
+      ) || 0
+    );
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    'clubs',
+    clubId,
+    'livePersons',
+    personId
+  );
+
+  return runTransaction(
+    db,
+    async transaction => {
+      const snap =
+        await transaction.get(
+          personRef
+        );
+
+      const current =
+        snap.exists()
+          ? snap.data()
+          : {};
+
+      const previousValue =
+        Math.max(
+          0,
+          parseInt(
+            current.boughtThrows || 0,
+            10
+          ) || 0
+        );
+
+      const nextValue =
+        Math.max(
+          0,
+          Math.min(
+            numericMax,
+            previousValue +
+              numericDelta
+          )
+        );
+
+      if (
+        numericDelta > 0 &&
+        previousValue >= numericMax
+      ) {
+        return {
+          changed: false,
+          value: previousValue
+        };
+      }
+
+      transaction.set(
+        personRef,
+        {
+          name:
+            personName,
+
+          boughtThrows:
+            nextValue,
+
+          updatedAt:
+            serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      return {
+        changed:
+          nextValue !==
+          previousValue,
+
+        value:
+          nextValue
+      };
+    }
+  );
 },
 
 async deleteLivePerson(
