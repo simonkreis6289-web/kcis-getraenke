@@ -1517,6 +1517,81 @@
   </div>
 </div>
     
+    <div
+  class="modal-overlay hidden"
+  id="attendance-status-modal"
+  onclick="
+    if (event.target === this) {
+      closeAttendanceStatusModal();
+    }
+  "
+>
+  <div
+    class="modal attendance-status-dialog"
+    style="max-width:520px;"
+  >
+    <h3>Anwesenheitsstatus</h3>
+
+    <div
+      id="attendance-status-subtitle"
+      class="modal-sub"
+    >
+      Status auswählen
+    </div>
+
+    <div class="attendance-status-grid">
+      <button
+        type="button"
+        class="attendance-choice present"
+        onclick="confirmAttendanceStatus('present')"
+      >
+        <span class="attendance-choice-icon">🟢</span>
+        <strong>Da</strong>
+      </button>
+
+      <button
+        type="button"
+        class="attendance-choice excused"
+        onclick="confirmAttendanceStatus('excused')"
+      >
+        <span class="attendance-choice-icon">🟡</span>
+        <strong>Abgemeldet</strong>
+      </button>
+
+      <button
+        type="button"
+        class="attendance-choice unexcused"
+        onclick="confirmAttendanceStatus('unexcused')"
+      >
+        <span class="attendance-choice-icon">🔴</span>
+        <strong>Nicht abgemeldet</strong>
+      </button>
+
+      <button
+        type="button"
+        class="attendance-choice unknown"
+        onclick="confirmAttendanceStatus('unknown')"
+      >
+        <span class="attendance-choice-icon">⚪</span>
+        <strong>Keine Rückmeldung</strong>
+      </button>
+    </div>
+
+    <div
+      class="modal-btns"
+      style="margin-top:16px;"
+    >
+      <button
+        type="button"
+        class="modal-cancel"
+        onclick="closeAttendanceStatusModal()"
+      >
+        Abbrechen
+      </button>
+    </div>
+  </div>
+</div>
+    
 <div class="modal-overlay hidden" id="arrival-modal">
   <div class="modal" style="max-width:420px;">
     <h3>Ankunftszeit</h3>
