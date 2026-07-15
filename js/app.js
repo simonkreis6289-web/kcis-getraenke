@@ -2323,78 +2323,122 @@ async function archiveEvent(snapshot) {
 async function startNewKegelabend() {
   archiveCurrentKegelabendForStats();
 
-  persons.forEach(p => {
-    p.present = false;
-    p.attendanceStatus = 'unknown';
-    p.tisch = '';
-    p.left = false;
-    p.leftAt = '';
-    p.arrivalTime = '';
-    p.leftEarlyAt = '';
-    p.paid = 0;
+  persons.forEach(person => {
+    person.present = false;
+    person.attendanceStatus = 'unknown';
+    person.tisch = '';
 
-    p.teamExtra = 0;
-    p.roundExtra = 0;
-    p.rounds = [];
-    p.freeStrafen = [];
-    p.tannenbaumCharges = [];
+    person.left = false;
+    person.leftAt = '';
+    person.arrivalTime = '';
+    person.leftEarlyAt = '';
 
-    if (!p.drinks) {
-      p.drinks = {};
-    }
+    person.paid = 0;
+    person.boughtThrows = 0;
 
-    DRINKS.forEach(d => {
-      p.drinks[d.key] = 0;
-    });
+    person.teamExtra = 0;
+    person.roundExtra = 0;
 
-    if (!p.strafen) {
-      p.strafen = {};
-    }
-
-    STRAFEN.forEach(s => {
-      p.strafen[s.key] = 0;
-    });
-
-    p.boughtThrows = 0;
-  });
+    person.rounds = [];
+    person.freeStrafen = [];
+    person.tannenbaumCharges = [];
 
     if (
-      ACTIVE_CLUB &&
-      navigator.onLine &&
-      typeof window.firestoreApi
-        ?.saveLivePersonStatus ===
-        'function'
+      !person.drinks ||
+      typeof person.drinks !== 'object'
     ) {
-      const clubId =
-        getClubFirestoreId(
-          ACTIVE_CLUB
-        );
-
-      try {
-        await Promise.all(
-          persons.map(person =>
-            window.firestoreApi
-              .saveLivePersonStatus(
-                clubId,
-                person.name,
-                getLivePersonStatusPayload(
-                  person
-                )
-              )
-          )
-        );
-      } catch (error) {
-        console.error(
-          'Personenstatus konnte beim neuen Kegelabend nicht zurückgesetzt werden:',
-          error
-        );
-
-        showToast(
-          '⚠️ Personenstatus wurde nicht vollständig synchronisiert',
-          'error'
-        );
-      }
+      person.drinks = {};
     }
+
+    DRINKS.forEach(drink => {
+      person.drinks[drink.key] = 0;
+    });
+
+    if (
+      !person.strafen ||
+      typeof person.strafen !== 'object'
+    ) {
+      person.strafen = {};
+    }
+
+    STRAFEN.forEach(strafe => {
+      person.strafen[strafe.key] = 0;
+    });
+  });
+
+  /*
+   * Den vollständigen Personenstand live speichern.
+   * saveLivePersonStatus() reicht hier nicht,
+   * weil Getränke und Strafen ebenfalls auf 0 müssen.
+   */
+  if (
+    ACTIVE_CLUB &&
+    navigator.onLine &&
+    typeof window.firestoreApi
+      ?.saveLivePerson === 'function'
+  ) {
+    const clubId =
+      getClubFirestoreId(ACTIVE_CLUB);
+
+    try {
+      await Promise.all(
+        persons.map(person =>
+          window.firestoreApi.saveLivePerson(
+            clubId,
+            person.name,
+            {
+              ...getLivePersonStatusPayload(person),
+
+              drinks: {
+                ...(person.drinks || {})
+              },
+
+              strafen: {
+                ...(person.strafen || {})
+              }
+            }
+          )
+        )
+      );
+
+      /*
+       * Lokalen Live-Cache ebenfalls auf den
+       * neuen Nullstand setzen. So können alte
+       * Zähler nicht kurz wieder auftauchen.
+       */
+      persons.forEach(person => {
+        livePersonCounters.set(
+          person.name,
+          {
+            drinks: {
+              ...(person.drinks || {})
+            },
+
+            strafen: {
+              ...(person.strafen || {})
+            },
+
+            ...getLivePersonStatusPayload(person)
+          }
+        );
+      });
+    } catch (error) {
+      console.error(
+        'Personendaten konnten beim neuen Kegelabend nicht vollständig zurückgesetzt werden:',
+        error
+      );
+
+      showToast(
+        '⚠️ Personen, Getränke oder Strafen wurden nicht vollständig synchronisiert',
+        'error'
+      );
+    }
+  } else if (!navigator.onLine) {
+    showToast(
+      '📴 Neuer Kegelabend wurde lokal gestartet. Live-Reset folgt erst bei Verbindung.',
+      'error'
+    );
+  }
 
   spiele = [];
   teamDrinks = {};
