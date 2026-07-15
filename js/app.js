@@ -921,26 +921,55 @@ function renderStrafen() {
     const freeDisplayTotal = freeNormalTotal + freeOnTopTotal;
     const extraLines = getPersonPenaltyExtraLines(p);
 
-    let html = `
-      <td class="sticky-col">
-        <div class="person-cell">
-          <div class="table-person-inline">
-            <div class="gosse-king-wrap ${isGosseKing(p.name) ? 'is-king' : ''}">
-              ${getAvatarHtml(p.name).replace('class="person-avatar"', 'class="table-avatar"')}
-            </div>
+const avatarHtml =
+  getAvatarHtml(p.name)
+    .replace(
+      /class="person-avatar[^"]*"/,
+      'class="table-avatar"'
+    );
 
-            <div style="min-width:0;">
-              <span class="pname">${p.name}</span>
-              ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
-              <span class="ptisch">
-                ${p.tisch ? getGroupLabel(p.tisch) : 'Kein Team'}
-              </span>
-              ${renderBoughtThrowsDots(p)}
+        let html = `
+          <td class="sticky-col">
+            <div class="person-cell">
+              <div class="table-person-inline">
+                <div class="gosse-king-wrap ${
+                  isGosseKing(p.name)
+                    ? 'is-king'
+                    : ''
+                }">
+                  ${avatarHtml}
+                </div>
+
+                <div style="min-width:0;">
+                  <span class="pname">
+                    ${p.name}
+                  </span>
+
+                  ${
+                    p.isGuest
+                      ? '<span class="prole">Gastkegler</span>'
+                      : ''
+                  }
+
+                  <span class="ptisch">
+                    ${
+                      p.tisch
+                        ? `
+                          ${getGroupColorEmoji(p.tisch)}
+                          ${stripLeadingTeamEmoji(
+                            getGroupLabel(p.tisch)
+                          )}
+                        `
+                        : '⚪ Kein Team'
+                    }
+                  </span>
+
+                  ${renderBoughtThrowsDots(p)}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </td>
-    `;
+          </td>
+        `;
 
     visibleStrafen.forEach(s => {
       const v = p.strafen[s.key] || 0;
