@@ -3823,3 +3823,90 @@ body.view-only #clubBackBtn {
   font-size: 2.2rem;
   line-height: 1;
 }
+
+/* ─────────────────────────────────────────────
+   ANWESENHEITSSTATUS
+   ───────────────────────────────────────────── */
+
+.attendance-status-dialog {
+  width: min(100%, 520px);
+}
+
+.attendance-status-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.attendance-choice {
+  min-height: 110px;
+  padding: 14px 10px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border: 2px solid var(--border);
+  border-radius: 14px;
+
+  background: var(--surface2);
+  color: var(--text);
+
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.attendance-choice-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.attendance-choice strong {
+  text-align: center;
+  line-height: 1.2;
+}
+
+.attendance-choice.present {
+  border-color: var(--green);
+  background: var(--green_bg);
+}
+
+.attendance-choice.excused {
+  border-color: #d4a017;
+  background: rgba(255, 204, 0, 0.18);
+}
+
+.attendance-choice.unexcused {
+  border-color: var(--warn);
+  background: var(--warn_bg);
+}
+
+.attendance-choice.unknown {
+  border-color: #78909c;
+  background: rgba(120, 144, 156, 0.12);
+}
+
+.attendance-choice:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 560px) {
+  .attendance-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-choice {
+    min-height: 72px;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 12px 16px;
+  }
+
+  .attendance-choice-icon {
+    font-size: 1.6rem;
+  }
+}
