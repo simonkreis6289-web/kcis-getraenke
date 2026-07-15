@@ -906,30 +906,6 @@ function openAttendanceStatusModal(person) {
   modal.classList.remove('hidden');
 }
 
-function openAttendanceStatusModal(
-  person
-) {
-  attendanceStatusPerson =
-    person;
-
-  const modal =
-    ensureAttendanceStatusModal();
-
-  const subtitle =
-    modal.querySelector(
-      '#attendance-status-subtitle'
-    );
-
-  if (subtitle) {
-    subtitle.textContent =
-      `Status für ${person.name} auswählen`;
-  }
-
-  modal.classList.remove(
-    'hidden'
-  );
-}
-
 function closeAttendanceStatusModal() {
   document
     .getElementById(
@@ -1048,6 +1024,42 @@ async function confirmAttendanceStatus(
   }
 }
 
+function getPersonCardStatusClass(
+  person
+) {
+  if (person.left) {
+    return 'left';
+  }
+
+  const status =
+    normalizeAttendanceStatus(
+      person
+    );
+
+  if (
+    status ===
+    ATTENDANCE_STATUS.PRESENT
+  ) {
+    return 'present';
+  }
+
+  if (
+    status ===
+    ATTENDANCE_STATUS.EXCUSED
+  ) {
+    return 'excused';
+  }
+
+  if (
+    status ===
+    ATTENDANCE_STATUS.UNEXCUSED
+  ) {
+    return 'unexcused';
+  }
+
+  return 'unknown';
+}
+
 function renderPersonCards(
   targetId,
   list
@@ -1096,39 +1108,20 @@ function renderPersonCards(
         'div'
       );
 
-    card.className =
-      'person-card' +
-      (
-        person.present
-          ? ' present'
-          : ' absent'
-      ) +
-      (
-        person.isGuest
-          ? ' guest'
-          : ''
+    const cardStatusClass =
+      getPersonCardStatusClass(
+        person
       );
 
-    let badgeClass =
-      person.present
-        ? 'present-badge'
-        : 'absent-badge';
-
-    let badgeText =
-      person.present
-        ? 'DA'
-        : 'FEHLT';
-
-    if (
-      person.present &&
-      person.left
-    ) {
-      badgeClass =
-        'left-badge';
-
-      badgeText =
-        'RAUS';
-    }
+    card.className = [
+      'person-card',
+      cardStatusClass,
+      person.isGuest
+        ? 'guest'
+        : ''
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     const timeHtml =
       person.arrivalTime ||
@@ -1201,10 +1194,6 @@ function renderPersonCards(
         }
       </div>
 
-        <div class="person-attendance-status">
-          ${getAttendanceStatusLabel(person)}
-        </div>
-
       ${getPersonTeamCardHtml(person)}
 
       ${timeHtml}
@@ -1227,10 +1216,6 @@ function renderPersonCards(
           `
           : ''
       }
-
-      <div class="${badgeClass}">
-        ${badgeText}
-      </div>
     `;
 
     card.onclick = () => {
