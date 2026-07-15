@@ -2671,6 +2671,22 @@ async function confirmBuyThrow() {
     return;
   }
 
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .changeLivePersonBoughtThrows !==
+      'function'
+  ) {
+    showToast(
+      '❌ Live-Synchronisation für Würfe nicht verfügbar',
+      'error'
+    );
+
+    return;
+  }
+
   const max =
     Math.max(
       0,
@@ -2688,56 +2704,115 @@ async function confirmBuyThrow() {
             person.name === name
         )
       )
-      .filter(Boolean);
+      .filter(person =>
+        person &&
+        person.present &&
+        !person.left
+      );
 
-  const validPersons =
-    selectedPersons.filter(
-      person => {
-        const used =
-          Math.max(
-            0,
-            parseInt(
-              person.boughtThrows || 0,
-              10
-            ) || 0
-          );
-
-        return used < max;
-      }
-    );
-
-  if (!validPersons.length) {
+  if (!selectedPersons.length) {
     showToast(
-      'Keine Würfe mehr verfügbar',
+      'Keine gültige Person ausgewählt',
       'error'
     );
 
     return;
   }
 
-  validPersons.forEach(person => {
-    person.boughtThrows =
-      Math.max(
-        0,
-        parseInt(
-          person.boughtThrows || 0,
-          10
-        ) || 0
-      ) + 1;
-  });
+  const clubId =
+    getClubFirestoreId(
+      ACTIVE_CLUB
+    );
 
-  closeBuyThrowModal();
-  renderAll();
-  persistState();
+  try {
+    const results =
+      await Promise.all(
+        selectedPersons.map(
+          async person => {
+            const result =
+              await window.firestoreApi
+                .changeLivePersonBoughtThrows(
+                  clubId,
+                  person.name,
+                  1,
+                  max
+                );
 
-  showToast(
-    `🎳 Wurf gekauft: ${
-      validPersons
-        .map(person => person.name)
-        .join(', ')
-    }`,
-    'success'
-  );
+            return {
+              person,
+              result
+            };
+          }
+        )
+      );
+
+    const changed =
+      results.filter(
+        item =>
+          item.result?.changed
+      );
+
+    const exhausted =
+      results.filter(
+        item =>
+          !item.result?.changed
+      );
+
+    changed.forEach(item => {
+      item.person.boughtThrows =
+        Math.max(
+          0,
+          parseInt(
+            item.result.value || 0,
+            10
+          ) || 0
+        );
+    });
+
+    closeBuyThrowModal();
+    renderAll();
+
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    if (changed.length) {
+      showToast(
+        `🎳 Wurf gekauft: ${
+          changed
+            .map(
+              item =>
+                item.person.name
+            )
+            .join(', ')
+        }`,
+        'success'
+      );
+    }
+
+    if (exhausted.length) {
+      showToast(
+        `⚠️ Keine Würfe mehr frei: ${
+          exhausted
+            .map(
+              item =>
+                item.person.name
+            )
+            .join(', ')
+        }`,
+        'error'
+      );
+    }
+  } catch (error) {
+    console.error(
+      'Gekaufte Würfe konnten nicht synchronisiert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Würfe konnten nicht gebucht werden',
+      'error'
+    );
+  }
 }
     
 // ── HELPERS ──
