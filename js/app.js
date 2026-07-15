@@ -2496,70 +2496,248 @@ async function startNewKegelabend() {
 }
 
 function openBuyThrowModal() {
-  const select = document.getElementById('buy-throw-person');
-  if (!select) return;
+  const grid =
+    document.getElementById(
+      'buy-throw-person-grid'
+    );
 
-  const max = Math.max(0, parseInt(wurfSettings.maxBuys || 3, 10) || 3);
+  if (!grid) {
+    showToast(
+      'Spielerauswahl nicht gefunden',
+      'error'
+    );
 
-  const active = persons
-    .filter(p => p.present && !p.left)
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    return;
+  }
 
-  select.innerHTML = '<option value="">Bitte Person wählen</option>';
+  buyThrowSelectedPersons.clear();
 
-  active.forEach(p => {
-    const used = Math.max(0, parseInt(p.boughtThrows || 0, 10) || 0);
-    const left = Math.max(0, max - used);
+  const max =
+    Math.max(
+      0,
+      parseInt(
+        wurfSettings.maxBuys || 3,
+        10
+      ) || 3
+    );
 
-    const opt = document.createElement('option');
-    opt.value = p.name;
-    opt.textContent = `${p.name} (${left} frei)`;
+  const activePersons =
+    persons
+      .filter(person =>
+        person.present &&
+        !person.left
+      )
+      .sort((a, b) =>
+        a.name.localeCompare(
+          b.name,
+          'de'
+        )
+      );
 
-    if (left <= 0) {
-      opt.disabled = true;
-      opt.textContent = `${p.name} (keine Würfe frei)`;
+  grid.innerHTML = '';
+
+  setSelectionGridColumns(
+    grid,
+    activePersons.length
+  );
+
+  if (!activePersons.length) {
+    grid.innerHTML = `
+      <div class="quick-penalty-empty">
+        Niemand anwesend
+      </div>
+    `;
+  }
+
+  activePersons.forEach(person => {
+    const used =
+      Math.max(
+        0,
+        parseInt(
+          person.boughtThrows || 0,
+          10
+        ) || 0
+      );
+
+    const remaining =
+      Math.max(
+        0,
+        max - used
+      );
+
+    const button =
+      document.createElement(
+        'button'
+      );
+
+    button.type =
+      'button';
+
+    button.className =
+      'quick-penalty-person-btn buy-throw-person-btn';
+
+    button.dataset.personName =
+      person.name;
+
+    button.disabled =
+      remaining <= 0;
+
+    button.innerHTML = `
+      ${getAvatarHtml(
+        person.name
+      ).replace(
+        /class="person-avatar[^"]*"/,
+        'class="quick-penalty-avatar"'
+      )}
+
+      <span class="selection-person-name">
+        ${person.name}
+      </span>
+
+      <span class="buy-throw-remaining">
+        ${
+          remaining > 0
+            ? `${remaining} frei`
+            : 'Keine mehr frei'
+        }
+      </span>
+    `;
+
+    if (remaining > 0) {
+      button.onclick = () => {
+        toggleBuyThrowPerson(
+          person.name,
+          button
+        );
+      };
     }
 
-    select.appendChild(opt);
+    grid.appendChild(button);
   });
 
-  document.getElementById('buy-throw-modal')?.classList.remove('hidden');
+  document
+    .getElementById(
+      'buy-throw-modal'
+    )
+    ?.classList
+    .remove('hidden');
+}
+
+function toggleBuyThrowPerson(
+  personName,
+  button
+) {
+  if (
+    buyThrowSelectedPersons
+      .has(personName)
+  ) {
+    buyThrowSelectedPersons
+      .delete(personName);
+
+    button?.classList
+      .remove('selected');
+  } else {
+    buyThrowSelectedPersons
+      .add(personName);
+
+    button?.classList
+      .add('selected');
+  }
 }
 
 function closeBuyThrowModal() {
-  document.getElementById('buy-throw-modal')?.classList.add('hidden');
+  document
+    .getElementById(
+      'buy-throw-modal'
+    )
+    ?.classList
+    .add('hidden');
+
+  buyThrowSelectedPersons.clear();
 }
 
-function confirmBuyThrow() {
-  const select = document.getElementById('buy-throw-person');
-  const personName = select?.value || '';
+async function confirmBuyThrow() {
+  const selectedNames =
+    Array.from(
+      buyThrowSelectedPersons
+    );
 
-  if (!personName) {
-    showToast('Bitte Person auswählen', 'error');
+  if (!selectedNames.length) {
+    showToast(
+      'Bitte mindestens eine Person auswählen',
+      'error'
+    );
+
     return;
   }
 
-  const p = persons.find(x => x.name === personName);
-  if (!p) {
-    showToast('Person nicht gefunden', 'error');
+  const max =
+    Math.max(
+      0,
+      parseInt(
+        wurfSettings.maxBuys || 3,
+        10
+      ) || 3
+    );
+
+  const selectedPersons =
+    selectedNames
+      .map(name =>
+        persons.find(
+          person =>
+            person.name === name
+        )
+      )
+      .filter(Boolean);
+
+  const validPersons =
+    selectedPersons.filter(
+      person => {
+        const used =
+          Math.max(
+            0,
+            parseInt(
+              person.boughtThrows || 0,
+              10
+            ) || 0
+          );
+
+        return used < max;
+      }
+    );
+
+  if (!validPersons.length) {
+    showToast(
+      'Keine Würfe mehr verfügbar',
+      'error'
+    );
+
     return;
   }
 
-  const max = Math.max(0, parseInt(wurfSettings.maxBuys || 3, 10) || 3);
-  p.boughtThrows = Math.max(0, parseInt(p.boughtThrows || 0, 10) || 0);
-
-  if (p.boughtThrows >= max) {
-    showToast('Keine Würfe mehr verfügbar', 'error');
-    return;
-  }
-
-  p.boughtThrows += 1;
+  validPersons.forEach(person => {
+    person.boughtThrows =
+      Math.max(
+        0,
+        parseInt(
+          person.boughtThrows || 0,
+          10
+        ) || 0
+      ) + 1;
+  });
 
   closeBuyThrowModal();
   renderAll();
   persistState();
 
-  showToast(`🎳 ${p.name} hat einen Wurf gekauft`, 'success');
+  showToast(
+    `🎳 Wurf gekauft: ${
+      validPersons
+        .map(person => person.name)
+        .join(', ')
+    }`,
+    'success'
+  );
 }
     
 // ── HELPERS ──
@@ -4810,6 +4988,8 @@ if ('serviceWorker' in navigator) {
 let quickPenaltyType = '';
 let quickPenaltySelectedPersons =
   new Set();
+let buyThrowSelectedPersons =
+  new Set();
 
 function getPenaltyKeyByType(type) {
   const search = String(type || '').toLowerCase();
@@ -4835,6 +5015,32 @@ function getPenaltyKeyByType(type) {
 
     return false;
   })?.key || null;
+}
+  
+function setSelectionGridColumns(
+  grid,
+  personCount
+) {
+  if (!grid) return;
+
+  let columns = 1;
+
+  if (personCount >= 2) {
+    columns = 2;
+  }
+
+  if (personCount >= 5) {
+    columns = 3;
+  }
+
+  if (personCount >= 10) {
+    columns = 4;
+  }
+
+  grid.style.setProperty(
+    '--selection-grid-columns',
+    columns
+  );
 }
   
 function openPenaltyQuick(type) {
@@ -4894,6 +5100,11 @@ function openPenaltyQuick(type) {
       );
 
   grid.innerHTML = '';
+
+    setSelectionGridColumns(
+      grid,
+      activePersons.length
+    );
 
   if (!activePersons.length) {
     grid.innerHTML = `
@@ -5046,13 +5257,13 @@ async function confirmQuickPenalty() {
       !person.left
     );
 
-  let punishedNames = [];
+  const selectedCount =
+    selectedNames.length;
+
   let changes = [];
+  let punishedNames = [];
 
   if (type === 'gosse') {
-
-    punishedNames =
-      selectedNames.slice();
 
     changes =
       selectedNames.map(
@@ -5063,35 +5274,59 @@ async function confirmQuickPenalty() {
           delta: 1
         })
       );
-  } else {
 
     punishedNames =
-      activePersons
-        .filter(person =>
-          !quickPenaltySelectedPersons
-            .has(person.name)
-        )
-        .map(person =>
-          person.name
-        );
+      selectedNames.slice();
+  } else {
 
     changes =
-      punishedNames.map(
-        personName => ({
-          personName,
-          category: 'strafen',
-          key,
-          delta: 1
+      activePersons
+        .map(person => {
+          const isSelected =
+            quickPenaltySelectedPersons
+              .has(person.name);
+
+          const delta =
+            isSelected
+              ? selectedCount - 1
+              : selectedCount;
+
+          return {
+            personName: person.name,
+            category: 'strafen',
+            key,
+            delta
+          };
         })
+        .filter(change =>
+          change.delta > 0
+        );
+
+    punishedNames =
+      changes.map(
+        change =>
+          change.personName
       );
   }
 
   if (!changes.length) {
+
+    selectedNames.forEach(
+      throwerName => {
+        addPenaltyStatsEntry(
+          quickPenaltyType,
+          throwerName,
+          []
+        );
+      }
+    );
+
+    closeQuickPenaltyModal();
+    persistState();
+
     showToast(
-      type === 'gosse'
-        ? 'Keine Buchung vorhanden'
-        : 'Alle aktiven Spieler sind ausgewählt',
-      'error'
+      '✅ Wurf eingetragen, keine Strafe notwendig',
+      'success'
     );
 
     return;
@@ -5101,8 +5336,12 @@ async function confirmQuickPenalty() {
     await changeMultipleSyncedPersonCounters(
       changes,
       type === 'gosse'
-        ? `✅ Gosse gebucht: ${selectedNames.join(', ')}`
-        : `✅ Straffrei: ${selectedNames.join(', ')}`
+        ? `💀 Gosse: ${selectedNames.join(', ')}`
+        : `🎯 ${selectedCount} Wurf${
+            selectedCount === 1
+              ? ''
+              : 'e'
+          } gebucht`
     );
 
   if (!success) {
@@ -5120,7 +5359,6 @@ async function confirmQuickPenalty() {
   );
 
   closeQuickPenaltyModal();
-
   persistState();
 }
 
