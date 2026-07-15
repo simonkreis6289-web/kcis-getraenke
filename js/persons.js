@@ -868,87 +868,42 @@ async function saveLivePersonStatus(
   }
 }
                 
-                function ensureAttendanceStatusModal() {
-  let modal =
+function openAttendanceStatusModal(person) {
+  if (!person) {
+    return;
+  }
+
+  attendanceStatusPerson = person;
+
+  const modal =
     document.getElementById(
       'attendance-status-modal'
     );
 
-  if (modal) {
-    return modal;
+  const subtitle =
+    document.getElementById(
+      'attendance-status-subtitle'
+    );
+
+  if (!modal) {
+    console.error(
+      'attendance-status-modal wurde im HTML nicht gefunden'
+    );
+
+    showToast(
+      'Anwesenheitsfenster nicht gefunden',
+      'error'
+    );
+
+    return;
   }
 
-  modal =
-    document.createElement('div');
+  if (subtitle) {
+    subtitle.textContent =
+      `Status für ${person.name} auswählen`;
+  }
 
-  modal.id =
-    'attendance-status-modal';
-
-  modal.className =
-    'modal hidden';
-
-  modal.innerHTML = `
-    <div class="modal-content attendance-status-dialog">
-      <button
-        type="button"
-        class="modal-close-btn"
-        onclick="closeAttendanceStatusModal()"
-      >
-        ✕
-      </button>
-
-      <h2>Anwesenheitsstatus</h2>
-
-      <div
-        id="attendance-status-subtitle"
-        class="modal-sub"
-      ></div>
-
-      <div class="attendance-status-grid">
-        <button
-          type="button"
-          class="attendance-choice present"
-          onclick="confirmAttendanceStatus('present')"
-        >
-          <span>🟢</span>
-          <strong>Da</strong>
-        </button>
-
-        <button
-          type="button"
-          class="attendance-choice excused"
-          onclick="confirmAttendanceStatus('excused')"
-        >
-          <span>🟡</span>
-          <strong>Abgemeldet</strong>
-        </button>
-
-        <button
-          type="button"
-          class="attendance-choice unexcused"
-          onclick="confirmAttendanceStatus('unexcused')"
-        >
-          <span>🔴</span>
-          <strong>Nicht abgemeldet</strong>
-        </button>
-
-        <button
-          type="button"
-          class="attendance-choice unknown"
-          onclick="confirmAttendanceStatus('unknown')"
-        >
-          <span>⚪</span>
-          <strong>Keine Rückmeldung</strong>
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(
-    modal
-  );
-
-  return modal;
+  modal.classList.remove('hidden');
 }
 
 function openAttendanceStatusModal(
@@ -983,8 +938,7 @@ function closeAttendanceStatusModal() {
     ?.classList
     .add('hidden');
 
-  attendanceStatusPerson =
-    null;
+  attendanceStatusPerson = null;
 }
 
 async function confirmAttendanceStatus(
