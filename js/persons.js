@@ -867,6 +867,232 @@ async function saveLivePersonStatus(
     return false;
   }
 }
+                
+                function ensureAttendanceStatusModal() {
+  let modal =
+    document.getElementById(
+      'attendance-status-modal'
+    );
+
+  if (modal) {
+    return modal;
+  }
+
+  modal =
+    document.createElement('div');
+
+  modal.id =
+    'attendance-status-modal';
+
+  modal.className =
+    'modal hidden';
+
+  modal.innerHTML = `
+    <div class="modal-content attendance-status-dialog">
+      <button
+        type="button"
+        class="modal-close-btn"
+        onclick="closeAttendanceStatusModal()"
+      >
+        ✕
+      </button>
+
+      <h2>Anwesenheitsstatus</h2>
+
+      <div
+        id="attendance-status-subtitle"
+        class="modal-sub"
+      ></div>
+
+      <div class="attendance-status-grid">
+        <button
+          type="button"
+          class="attendance-choice present"
+          onclick="confirmAttendanceStatus('present')"
+        >
+          <span>🟢</span>
+          <strong>Da</strong>
+        </button>
+
+        <button
+          type="button"
+          class="attendance-choice excused"
+          onclick="confirmAttendanceStatus('excused')"
+        >
+          <span>🟡</span>
+          <strong>Abgemeldet</strong>
+        </button>
+
+        <button
+          type="button"
+          class="attendance-choice unexcused"
+          onclick="confirmAttendanceStatus('unexcused')"
+        >
+          <span>🔴</span>
+          <strong>Nicht abgemeldet</strong>
+        </button>
+
+        <button
+          type="button"
+          class="attendance-choice unknown"
+          onclick="confirmAttendanceStatus('unknown')"
+        >
+          <span>⚪</span>
+          <strong>Keine Rückmeldung</strong>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(
+    modal
+  );
+
+  return modal;
+}
+
+function openAttendanceStatusModal(
+  person
+) {
+  attendanceStatusPerson =
+    person;
+
+  const modal =
+    ensureAttendanceStatusModal();
+
+  const subtitle =
+    modal.querySelector(
+      '#attendance-status-subtitle'
+    );
+
+  if (subtitle) {
+    subtitle.textContent =
+      `Status für ${person.name} auswählen`;
+  }
+
+  modal.classList.remove(
+    'hidden'
+  );
+}
+
+function closeAttendanceStatusModal() {
+  document
+    .getElementById(
+      'attendance-status-modal'
+    )
+    ?.classList
+    .add('hidden');
+
+  attendanceStatusPerson =
+    null;
+}
+
+async function confirmAttendanceStatus(
+  status
+) {
+  const person =
+    attendanceStatusPerson;
+
+  if (!person) {
+    return;
+  }
+
+  const validStatuses =
+    Object.values(
+      ATTENDANCE_STATUS
+    );
+
+  if (
+    !validStatuses.includes(
+      status
+    )
+  ) {
+    showToast(
+      'Ungültiger Status',
+      'error'
+    );
+
+    return;
+  }
+
+  const previousState = {
+    present:
+      !!person.present,
+
+    attendanceStatus:
+      normalizeAttendanceStatus(
+        person
+      ),
+
+    left:
+      !!person.left,
+
+    leftAt:
+      person.leftAt || '',
+
+    arrivalTime:
+      person.arrivalTime || '',
+
+    leftEarlyAt:
+      person.leftEarlyAt || '',
+
+    tisch:
+      person.tisch || ''
+  };
+
+  const wasPresent =
+    !!person.present;
+
+  person.attendanceStatus =
+    status;
+
+  person.present =
+    status ===
+    ATTENDANCE_STATUS.PRESENT;
+
+  if (!person.present) {
+    person.left = false;
+    person.leftAt = '';
+    person.arrivalTime = '';
+    person.leftEarlyAt = '';
+
+  }
+
+  renderAll();
+
+  const saved =
+    await saveLivePersonStatus(
+      person
+    );
+
+  if (!saved) {
+    Object.assign(
+      person,
+      previousState
+    );
+
+    renderAll();
+    return;
+  }
+
+  closeAttendanceStatusModal();
+
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  if (
+    !wasPresent &&
+    person.present
+  ) {
+    playSound(
+      sounds.welcome
+    );
+
+    openArrivalModal(
+      person
+    );
+  }
+}
 
 function renderPersonCards(
   targetId,
@@ -1054,35 +1280,9 @@ function renderPersonCards(
     `;
 
     card.onclick = () => {
-      const wasPresent =
-        !!person.present;
-
-      person.present =
-        !person.present;
-
-      if (!person.present) {
-        person.tisch = '';
-        person.left = false;
-        person.leftAt = '';
-        person.arrivalTime = '';
-        person.leftEarlyAt = '';
-      }
-
-      renderAll();
-      persistState();
-
-      if (
-        !wasPresent &&
-        person.present
-      ) {
-        playSound(
-          sounds.welcome
-        );
-
-        openArrivalModal(
-          person
-        );
-      }
+      openAttendanceStatusModal(
+        person
+      );
     };
 
     grid.appendChild(card);
@@ -1101,7 +1301,9 @@ function renderAnwesenheit() {
   );
 }
 
-function addPerson(isGuest) {
+async function addPerson(
+  isGuest
+) {
   const input =
     document.getElementById(
       isGuest
@@ -1151,18 +1353,23 @@ function addPerson(isGuest) {
     drinks[drink.key] = 0;
   });
 
-  persons.push({
+  const person = {
     name,
+
     isGuest:
       !!isGuest,
 
-    present: true,
-      
-    attendanceStatus: 'present',
+    present:
+      false,
 
-    tisch: '',
+    attendanceStatus:
+      ATTENDANCE_STATUS.UNKNOWN,
+
+    tisch:
+      '',
 
     drinks,
+
     strafen:
       personStrafen,
 
@@ -1198,12 +1405,84 @@ function addPerson(isGuest) {
 
     boughtThrows:
       0
-  });
+  };
 
+  persons.push(person);
   input.value = '';
 
   renderAll();
-  persistState();
+
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    typeof window.firestoreApi
+      ?.saveLivePerson !==
+      'function'
+  ) {
+    persons =
+      persons.filter(
+        item =>
+          item !== person
+      );
+
+    renderAll();
+
+    showToast(
+      '❌ Person konnte nicht synchronisiert werden',
+      'error'
+    );
+
+    return;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    await window.firestoreApi
+      .saveLivePerson(
+        clubId,
+        person.name,
+        {
+          ...getLivePersonStatusPayload(
+            person
+          ),
+
+          drinks: {
+            ...(person.drinks || {})
+          },
+
+          strafen: {
+            ...(person.strafen || {})
+          }
+        }
+      );
+  } catch (error) {
+    console.error(
+      'Person konnte nicht angelegt werden:',
+      error
+    );
+
+    persons =
+      persons.filter(
+        item =>
+          item !== person
+      );
+
+    renderAll();
+
+    showToast(
+      '❌ Person konnte nicht angelegt werden',
+      'error'
+    );
+
+    return;
+  }
+
+  syncCurrentClubToStore();
+  saveClubSystem();
 
   showToast(
     `✅ ${name} hinzugefügt`,
@@ -1211,7 +1490,9 @@ function addPerson(isGuest) {
   );
 }
 
-function deletePerson(name) {
+async function deletePerson(
+  name
+) {
   const person =
     persons.find(
       item =>
@@ -1234,6 +1515,29 @@ function deletePerson(name) {
   ) {
     return;
   }
+
+  if (!navigator.onLine) {
+    showToast(
+      '📴 Personen können offline nicht gelöscht werden',
+      'error'
+    );
+
+    return;
+  }
+
+  const previousPersons =
+    JSON.parse(
+      JSON.stringify(
+        persons
+      )
+    );
+
+  const previousSpiele =
+    JSON.parse(
+      JSON.stringify(
+        spiele
+      )
+    );
 
   persons =
     persons.filter(
@@ -1264,6 +1568,46 @@ function deletePerson(name) {
       );
 
   renderAll();
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    await window.firestoreApi
+      .deleteLivePerson(
+        clubId,
+        name
+      );
+  } catch (error) {
+    console.error(
+      'Person konnte nicht gelöscht werden:',
+      error
+    );
+
+    persons =
+      previousPersons;
+
+    spiele =
+      previousSpiele;
+
+    renderAll();
+
+    showToast(
+      '❌ Person konnte nicht gelöscht werden',
+      'error'
+    );
+
+    return;
+  }
+
+  livePersonCounters.delete(
+    name
+  );
+
+  syncCurrentClubToStore();
+  saveClubSystem();
   persistState();
 
   showToast(
@@ -1347,13 +1691,24 @@ function toggleArrivalTimeInput() {
   }
 }
 
-function confirmArrivalTime() {
+async function confirmArrivalTime() {
   if (!arrivalEditPerson) {
     return;
   }
 
   const person =
     arrivalEditPerson;
+
+  const previousState = {
+    arrivalTime:
+      person.arrivalTime || '',
+
+    present:
+      !!person.present,
+
+    attendanceStatus:
+      person.attendanceStatus
+  };
 
   const nowCheck =
     document.getElementById(
@@ -1376,10 +1731,33 @@ function confirmArrivalTime() {
   person.arrivalTime =
     savedTime;
 
-  closeArrivalModal();
+  person.present =
+    true;
+
+  person.attendanceStatus =
+    ATTENDANCE_STATUS.PRESENT;
 
   renderAll();
-  persistState();
+
+  const saved =
+    await saveLivePersonStatus(
+      person
+    );
+
+  if (!saved) {
+    Object.assign(
+      person,
+      previousState
+    );
+
+    renderAll();
+    return;
+  }
+
+  closeArrivalModal();
+
+  syncCurrentClubToStore();
+  saveClubSystem();
 
   showToast(
     `✅ Ankunftszeit gespeichert: ${savedTime}`,
@@ -1462,13 +1840,24 @@ function toggleLeftEarlyTimeInput() {
   }
 }
 
-function confirmLeftEarlyTime() {
+async function confirmLeftEarlyTime() {
   if (!leftEarlyEditPerson) {
     return;
   }
 
   const person =
     leftEarlyEditPerson;
+
+  const previousState = {
+    leftEarlyAt:
+      person.leftEarlyAt || '',
+
+    left:
+      !!person.left,
+
+    leftAt:
+      person.leftAt || ''
+  };
 
   const nowCheck =
     document.getElementById(
@@ -1498,13 +1887,40 @@ function confirmLeftEarlyTime() {
     new Date()
       .toISOString();
 
+  renderAll();
+
+  const saved =
+    await saveLivePersonStatus(
+      person
+    );
+
+  if (!saved) {
+    Object.assign(
+      person,
+      previousState
+    );
+
+    renderAll();
+    return;
+  }
+
   closeLeftEarlyModal();
 
-  renderAll();
-  persistState();
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  const earlyCount =
+    typeof calcLeftEarlyCount ===
+      'function'
+      ? calcLeftEarlyCount(
+          person
+        )
+      : 0;
 
   showToast(
-    `✅ Gehzeit gespeichert: ${savedTime}`,
+    earlyCount > 0
+      ? `✅ Gehzeit gespeichert: ${savedTime} · ${earlyCount}× zu früh`
+      : `✅ Gehzeit gespeichert: ${savedTime}`,
     'success'
   );
 }
