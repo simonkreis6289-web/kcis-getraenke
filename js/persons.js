@@ -2157,3 +2157,116 @@ async function changeStrafe(
     delta
   );
 }
+
+async function balanceTeamsRandomly() {
+  const team1 = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    normalizeTisch(person.tisch) === 'T1'
+  );
+
+  const team2 = persons.filter(person =>
+    person.present &&
+    !person.left &&
+    normalizeTisch(person.tisch) === 'T2'
+  );
+
+  const difference =
+    Math.abs(team1.length - team2.length);
+
+  if (difference < 2) {
+    const message =
+      difference === 0
+        ? '⚖️ Die Teams sind bereits gleich groß'
+        : '⚖️ Bei einer ungeraden Spielerzahl ist kein vollständiger Ausgleich möglich';
+
+    showToast(
+      message,
+      'success'
+    );
+
+    return;
+  }
+
+  const sourceTeam =
+    team1.length > team2.length
+      ? 'T1'
+      : 'T2';
+
+  const targetTeam =
+    sourceTeam === 'T1'
+      ? 'T2'
+      : 'T1';
+
+  const sourceMembers =
+    sourceTeam === 'T1'
+      ? team1
+      : team2;
+
+  if (!sourceMembers.length) {
+    showToast(
+      'Keine Person zum Wechseln gefunden',
+      'error'
+    );
+
+    return;
+  }
+
+  const randomIndex =
+    Math.floor(
+      Math.random() *
+      sourceMembers.length
+    );
+
+  const selectedPerson =
+    sourceMembers[randomIndex];
+
+  const oldTeam =
+    selectedPerson.tisch;
+
+  selectedPerson.tisch =
+    targetTeam;
+
+  renderAll();
+
+  const saved =
+    await saveLivePersonStatus(
+      selectedPerson
+    );
+
+  if (!saved) {
+    selectedPerson.tisch =
+      oldTeam;
+
+    renderAll();
+
+    showToast(
+      '❌ Teamwechsel konnte nicht synchronisiert werden',
+      'error'
+    );
+
+    return;
+  }
+
+  syncCurrentClubToStore();
+  saveClubSystem();
+
+  const oldTeamName =
+    stripLeadingTeamEmoji(
+      getGroupLabel(
+        sourceTeam
+      )
+    );
+
+  const newTeamName =
+    stripLeadingTeamEmoji(
+      getGroupLabel(
+        targetTeam
+      )
+    );
+
+  showToast(
+    `⚖️ ${selectedPerson.name}: ${oldTeamName} → ${newTeamName}`,
+    'success'
+  );
+}
