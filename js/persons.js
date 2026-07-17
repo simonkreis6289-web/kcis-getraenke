@@ -566,6 +566,15 @@ livePersonCounters.set(
           )
         : [],
 
+    rounds: Array.isArray(data.rounds)
+      ? data.rounds.map(round => ({
+          ...round,
+          drinks: {
+            ...(round.drinks || {})
+          }
+        }))
+      : [],
+
     boughtThrows:
       Math.max(
         0,
@@ -650,6 +659,25 @@ livePersonCounters.set(
             ...entry
           })
         );
+    }
+
+    if (Array.isArray(data.rounds)) {
+      person.rounds = data.rounds.map(round => ({
+        ...round,
+        drinks: {
+          ...(round.drinks || {})
+        }
+      }));
+
+      person.roundExtra =
+        typeof calcRoundsTotal === 'function'
+          ? calcRoundsTotal(person)
+          : person.rounds.reduce(
+              (sum, round) =>
+                sum +
+                (parseFloat(round.total || 0) || 0),
+              0
+            );
     }
 
   if (
@@ -787,6 +815,13 @@ function renderLivePersonChanges() {
   ) {
     renderStrafen();
   }
+
+    if (
+      typeof renderRunden ===
+        'function'
+    ) {
+      renderRunden();
+    }
 
   if (
     typeof renderAbrechnung ===
@@ -1516,6 +1551,15 @@ async function addPerson(
           strafen: {
             ...(person.strafen || {})
           },
+
+            rounds: Array.isArray(person.rounds)
+              ? person.rounds.map(round => ({
+                  ...round,
+                  drinks: {
+                    ...(round.drinks || {})
+                  }
+                }))
+              : [],
 
           freeStrafen:
             Array.isArray(
