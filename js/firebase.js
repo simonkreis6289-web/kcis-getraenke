@@ -419,6 +419,20 @@ async seedLivePersons(
                   )
                 : [],
           
+          rounds:
+              Array.isArray(
+                person.rounds
+              )
+                ? person.rounds.map(
+                    round => ({
+                      ...round,
+                      drinks: {
+                        ...(round.drinks || {})
+                      }
+                    })
+                  )
+                : [],
+          
         boughtThrows:
           Math.max(
             0,
@@ -634,6 +648,20 @@ async saveLivePerson(
               )
             : [],
         
+        rounds:
+          Array.isArray(
+            payload.rounds
+          )
+            ? payload.rounds.map(
+                round => ({
+                  ...round,
+                  drinks: {
+                    ...(round.drinks || {})
+                  }
+                })
+              )
+            : [],
+        
         boughtThrows:
           Math.max(
             0,
@@ -662,7 +690,95 @@ async saveLivePerson(
   return true;
 },
     
-    async changeLivePersonBoughtThrows(
+async deleteLivePersonRound(
+  clubId,
+  personName,
+  roundId
+) {
+  if (!personName) {
+    throw new Error(
+      'Personenname fehlt'
+    );
+  }
+
+  if (!roundId) {
+    throw new Error(
+      'Runden-ID fehlt'
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    'clubs',
+    clubId,
+    'livePersons',
+    personId
+  );
+
+  return runTransaction(
+    db,
+    async transaction => {
+      const snapshot =
+        await transaction.get(
+          personRef
+        );
+
+      if (!snapshot.exists()) {
+        return {
+          deleted: false,
+          rounds: []
+        };
+      }
+
+      const current =
+        snapshot.data();
+
+      const previous =
+        Array.isArray(
+          current.rounds
+        )
+          ? current.rounds
+          : [];
+
+      const rounds =
+        previous.filter(
+          round =>
+            round.id !== roundId
+        );
+
+      transaction.set(
+        personRef,
+        {
+          name:
+            personName,
+
+          rounds,
+
+          updatedAt:
+            serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      return {
+        deleted:
+          rounds.length !==
+          previous.length,
+
+        rounds
+      };
+    }
+  );
+},    
+    
+async changeLivePersonBoughtThrows(
   clubId,
   personName,
   delta,
@@ -773,7 +889,7 @@ async saveLivePerson(
   );
 },
     
-    async saveLivePersonPayment(
+async saveLivePersonPayment(
   clubId,
   personName,
   paid
@@ -832,7 +948,7 @@ async saveLivePerson(
   };
 },
     
-    async addLivePersonFreeStrafe(
+async addLivePersonFreeStrafe(
   clubId,
   personName,
   entry
@@ -923,7 +1039,109 @@ async saveLivePerson(
   );
 },
     
-    async deleteLivePersonFreeStrafe(
+async addLivePersonRound(
+  clubId,
+  personName,
+  roundEntry
+) {
+  if (!personName) {
+    throw new Error(
+      'Personenname fehlt'
+    );
+  }
+
+  if (
+    !roundEntry ||
+    !roundEntry.id
+  ) {
+    throw new Error(
+      'Ungültiger Rundeneintrag'
+    );
+  }
+
+  const personId =
+    this.getLivePersonId(
+      personName
+    );
+
+  const personRef = doc(
+    db,
+    'clubs',
+    clubId,
+    'livePersons',
+    personId
+  );
+
+  return runTransaction(
+    db,
+    async transaction => {
+      const snapshot =
+        await transaction.get(
+          personRef
+        );
+
+      const current =
+        snapshot.exists()
+          ? snapshot.data()
+          : {};
+
+      const rounds =
+        Array.isArray(
+          current.rounds
+        )
+          ? current.rounds.map(
+              round => ({
+                ...round,
+                drinks: {
+                  ...(round.drinks || {})
+                }
+              })
+            )
+          : [];
+
+      const alreadyExists =
+        rounds.some(
+          round =>
+            round.id ===
+            roundEntry.id
+        );
+
+      if (!alreadyExists) {
+        rounds.push({
+          ...roundEntry,
+          drinks: {
+            ...(roundEntry.drinks || {})
+          }
+        });
+      }
+
+      transaction.set(
+        personRef,
+        {
+          name:
+            personName,
+
+          rounds,
+
+          updatedAt:
+            serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      return {
+        added:
+          !alreadyExists,
+
+        rounds
+      };
+    }
+  );
+},
+    
+async deleteLivePersonFreeStrafe(
   clubId,
   personName,
   freeStrafeId
