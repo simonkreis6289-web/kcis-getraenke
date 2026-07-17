@@ -548,9 +548,63 @@ function hydrateState() {
   persons.forEach(p => {
     if (!p.drinks) p.drinks = {};
     if (!Array.isArray(p.rounds)) p.rounds = [];
-    (p.rounds || []).forEach(r => {
-      if (!r.reason) r.reason = '';
-    });
+        (p.rounds || []).forEach(
+          (round, roundIndex) => {
+            if (!round.reason) {
+              round.reason = '';
+            }
+
+            if (
+              !round.drinks ||
+              typeof round.drinks !==
+                'object'
+            ) {
+              round.drinks = {};
+            }
+
+            round.total =
+              parseFloat(
+                round.total || 0
+              ) || 0;
+
+            round.createdAt =
+              round.createdAt || '';
+
+            if (!round.id) {
+              const personPart =
+                String(p.name || 'person')
+                  .toLowerCase()
+                  .normalize('NFD')
+                  .replace(
+                    /[\u0300-\u036f]/g,
+                    ''
+                  )
+                  .replace(
+                    /[^a-z0-9]+/g,
+                    '_'
+                  );
+
+              const datePart =
+                String(
+                  round.createdAt ||
+                  'no_date'
+                )
+                  .replace(
+                    /[^a-z0-9]+/gi,
+                    '_'
+                  );
+
+              round.id =
+                'round_legacy_' +
+                personPart +
+                '_' +
+                datePart +
+                '_' +
+                roundIndex;
+            }
+            }
+          }
+        );
     if (p.roundExtra === undefined) p.roundExtra = 0;
 
     DRINKS.forEach(d => {
@@ -2819,6 +2873,21 @@ async function startNewKegelabend() {
                     ...(person.strafen || {})
                   },
 
+                rounds:
+                  Array.isArray(
+                    person.rounds
+                  )
+                    ? person.rounds.map(
+                        round => ({
+                          ...round,
+
+                          drinks: {
+                            ...(round.drinks || {})
+                          }
+                        })
+                      )
+                    : [],
+
                   freeStrafen:
                     Array.isArray(
                       person.freeStrafen
@@ -2845,7 +2914,7 @@ async function startNewKegelabend() {
             strafen: {
               ...(person.strafen || {})
             },
-
+        rounds: [],
         freeStrafen: [],
 
             ...getLivePersonStatusPayload(person)
@@ -4281,99 +4350,480 @@ function updateRoundTotalDisplay() {
   document.getElementById('round-total-display').textContent = euros(calcRoundTotal(roundDraftDrinks));
 }
 
-function confirmGiveRound() {
-  const personName = document.getElementById('round-person-select').value.trim();
-  const roundReason = (document.getElementById('round-reason-select')?.value || '').trim();
+async function confirmGiveRound() {
+  const personName =
+    document
+      .getElementById(
+        'round-person-select'
+      )
+      ?.value
+      .trim() || '';
+
+  const roundReason =
+    (
+      document
+        .getElementById(
+          'round-reason-select'
+        )
+        ?.value || ''
+    ).trim();
+
   if (!personName) {
-    showToast('Bitte erst auswählen, wer die Runde gibt', 'error');
+    showToast(
+      'Bitte erst auswählen, wer die Runde gibt',
+      'error'
+    );
+
     return;
   }
 
-  if (!DRINKS.some(d => (roundDraftDrinks[d.key] || 0) > 0)) {
-    showToast('Bitte mindestens ein Getränk eintragen', 'error');
+  if (!roundReason) {
+    showToast(
+      'Bitte einen Grund auswählen',
+      'error'
+    );
+
     return;
   }
 
-  const p = persons.find(x => x.name === personName);
-  if (!p) {
-    showToast('Person nicht gefunden', 'error');
+  const hasDrinks =
+    DRINKS.some(
+      drink =>
+        (
+          roundDraftDrinks[
+            drink.key
+          ] || 0
+        ) > 0
+    );
+
+  if (!hasDrinks) {
+    showToast(
+      'Bitte mindestens ein Getränk eintragen',
+      'error'
+    );
+
     return;
   }
 
-  if (!Array.isArray(p.rounds)) p.rounds = [];
+  const person =
+    persons.find(
+      item =>
+        item.name === personName
+    );
 
-	if (!roundReason) {
-	  showToast('Bitte einen Grund auswählen', 'error');
-	  return;
-	}
+  if (!person) {
+    showToast(
+      'Person nicht gefunden',
+      'error'
+    );
 
-  const roundTotal = calcRoundTotal(roundDraftDrinks);
-  p.rounds.push({
-	reason: roundReason,
-    drinks: { ...roundDraftDrinks },
-    total: roundTotal,
-    createdAt: new Date().toISOString()
-  });
+    return;
+  }
 
-  p.roundExtra = calcRoundsTotal(p);
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .addLivePersonRound !==
+      'function'
+  ) {
+    showToast(
+      '❌ Runden-Synchronisation nicht verfügbar',
+      'error'
+    );
 
-  closeRoundModal();
-  renderAll();
-  showToast(`🍻 Runde auf ${p.name} gebucht`, 'success');
-  persistState();
+    return;
+  }
+
+  const createdAt =
+    new Date().toISOString();
+
+  const roundEntry = {
+    id:
+      'round_' +
+      Date.now() +
+      '_' +
+      Math.random()
+        .toString(36)
+        .slice(2),
+
+    reason:
+      roundReason,
+
+    drinks: {
+      ...roundDraftDrinks
+    },
+
+    total:
+      calcRoundTotal(
+        roundDraftDrinks
+      ),
+
+    createdAt
+  };
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    const result =
+      await window.firestoreApi
+        .addLivePersonRound(
+          clubId,
+          person.name,
+          roundEntry
+        );
+
+    const updatedRounds =
+      Array.isArray(result)
+        ? result
+        : (
+            Array.isArray(
+              result?.rounds
+            )
+              ? result.rounds
+              : [
+                  ...(
+                    person.rounds ||
+                    []
+                  ),
+                  roundEntry
+                ]
+          );
+
+    person.rounds =
+      updatedRounds.map(
+        round => ({
+          ...round,
+
+          drinks: {
+            ...(round.drinks || {})
+          }
+        })
+      );
+
+    person.roundExtra =
+      calcRoundsTotal(
+        person
+      );
+
+    closeRoundModal();
+    renderAll();
+
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    showToast(
+      `🍻 Runde auf ${person.name} gebucht`,
+      'success'
+    );
+  } catch (error) {
+    console.error(
+      'Runde konnte nicht live gespeichert werden:',
+      error
+    );
+
+    showToast(
+      '❌ Runde konnte nicht gespeichert werden',
+      'error'
+    );
+  }
 }
 
 function renderRunden() {
-  const list = document.getElementById('runden-list');
+  const list =
+    document.getElementById(
+      'runden-list'
+    );
+
+  if (!list) {
+    return;
+  }
+
   list.innerHTML = '';
 
   const entries = [];
-  persons.forEach(p => {
-    (p.rounds || []).forEach((r, idx) => {
+
+  persons.forEach(person => {
+    if (
+      !Array.isArray(
+        person.rounds
+      )
+    ) {
+      person.rounds = [];
+    }
+
+    person.rounds.forEach(round => {
       entries.push({
-        person: p.name,
-        tisch: p.tisch,
-        isGuest: p.isGuest,
-        round: r,
-        idx
+        personName:
+          person.name,
+
+        round
       });
     });
   });
 
-  entries.sort((a, b) => new Date(b.round.createdAt || 0) - new Date(a.round.createdAt || 0));
+  entries.sort(
+    (first, second) =>
+      new Date(
+        second.round.createdAt ||
+        0
+      ).getTime() -
+      new Date(
+        first.round.createdAt ||
+        0
+      ).getTime()
+  );
 
   if (!entries.length) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Noch keine Runden gebucht</div>';
+    list.innerHTML = `
+      <div
+        style="
+          color:var(--muted);
+          font-size:0.85rem;
+          text-align:center;
+          padding:20px;
+        "
+      >
+        Noch keine Runden gebucht
+      </div>
+    `;
+
     return;
   }
 
   entries.forEach(entry => {
-    const c = document.createElement('div');
-    c.className = 'spiel-card';
-    c.innerHTML = `
+    const card =
+      document.createElement(
+        'div'
+      );
+
+    card.className =
+      'spiel-card';
+
+    const personName =
+      entry.personName || '';
+
+    const round =
+      entry.round || {};
+
+    const roundId =
+      round.id || '';
+
+    const reason =
+      round.reason ||
+      'Ohne Grund';
+
+    const drinksText =
+      describeRoundDrinks(
+        round.drinks || {}
+      ) ||
+      'Keine Getränke';
+
+    const total =
+      parseFloat(
+        round.total || 0
+      ) || 0;
+
+    const createdAtText =
+      round.createdAt
+        ? formatDateTime(
+            round.createdAt
+          )
+        : '';
+
+    card.innerHTML = `
       <div class="spiel-info">
-        <div class="spiel-verlierer round">🍻 ${entry.person} hat eine Runde gegeben</div>
-		<div class="spiel-detail"><strong>${entry.round.reason || 'Ohne Grund'}</strong></div>
-        <div class="spiel-detail">${describeRoundDrinks(entry.round.drinks) || 'Keine Getränke'}</div>
-        <div class="spiel-detail">${entry.round.createdAt ? formatDateTime(entry.round.createdAt) : ''}</div>
+        <div class="spiel-verlierer round">
+          🍻 ${personName} hat eine Runde gegeben
+        </div>
+
+        <div class="spiel-detail">
+          <strong>
+            ${reason}
+          </strong>
+        </div>
+
+        <div class="spiel-detail">
+          ${drinksText}
+        </div>
+
+        ${
+          createdAtText
+            ? `
+              <div class="spiel-detail">
+                ${createdAtText}
+              </div>
+            `
+            : ''
+        }
       </div>
+
       <div>
-        <div class="spiel-betrag round">${(entry.round.total || 0).toFixed(2).replace('.', ',')}€</div>
+        <div class="spiel-betrag round">
+          ${
+            total
+              .toFixed(2)
+              .replace('.', ',')
+          }€
+        </div>
       </div>
-      <button class="del-spiel-btn" onclick="deleteRound('${escapeForJs(entry.person)}', ${entry.idx})">✕</button>
+
+      ${
+        roundId
+          ? `
+            <button
+              type="button"
+              class="del-spiel-btn"
+              onclick="
+                deleteRound(
+                  '${escapeForJs(personName)}',
+                  '${escapeForJs(roundId)}'
+                )
+              "
+              title="Runde löschen"
+            >
+              ✕
+            </button>
+          `
+          : ''
+      }
     `;
-    list.appendChild(c);
+
+    list.appendChild(
+      card
+    );
   });
 }
 
-function deleteRound(personName, roundIndex) {
-  const p = persons.find(x => x.name === personName);
-  if (!p || !Array.isArray(p.rounds)) return;
-  p.rounds.splice(roundIndex, 1);
-  p.roundExtra = calcRoundsTotal(p);
-  renderAll();
-  persistState();
-  showToast('🗑️ Runde gelöscht', 'success');
+async function deleteRound(
+  personName,
+  roundId
+) {
+  const person =
+    persons.find(
+      item =>
+        item.name === personName
+    );
+
+  if (
+    !person ||
+    !Array.isArray(
+      person.rounds
+    )
+  ) {
+    return;
+  }
+
+  const round =
+    person.rounds.find(
+      item =>
+        item.id === roundId
+    );
+
+  if (!round) {
+    showToast(
+      'Runde nicht gefunden',
+      'error'
+    );
+
+    return;
+  }
+
+  if (
+    !confirm(
+      `Runde "${
+        round.reason ||
+        'Ohne Grund'
+      }" wirklich löschen?`
+    )
+  ) {
+    return;
+  }
+
+  if (
+    !ACTIVE_CLUB ||
+    !navigator.onLine ||
+    !window.firestoreApi ||
+    typeof window.firestoreApi
+      .deleteLivePersonRound !==
+      'function'
+  ) {
+    showToast(
+      '❌ Runden-Synchronisation nicht verfügbar',
+      'error'
+    );
+
+    return;
+  }
+
+  try {
+    const clubId =
+      getClubFirestoreId(
+        ACTIVE_CLUB
+      );
+
+    const result =
+      await window.firestoreApi
+        .deleteLivePersonRound(
+          clubId,
+          person.name,
+          roundId
+        );
+
+    const updatedRounds =
+      Array.isArray(result)
+        ? result
+        : (
+            Array.isArray(
+              result?.rounds
+            )
+              ? result.rounds
+              : person.rounds.filter(
+                  item =>
+                    item.id !== roundId
+                )
+          );
+
+    person.rounds =
+      updatedRounds.map(
+        item => ({
+          ...item,
+
+          drinks: {
+            ...(item.drinks || {})
+          }
+        })
+      );
+
+    person.roundExtra =
+      calcRoundsTotal(
+        person
+      );
+
+    renderAll();
+
+    syncCurrentClubToStore();
+    saveClubSystem();
+
+    showToast(
+      '🗑️ Runde live gelöscht',
+      'success'
+    );
+  } catch (error) {
+    console.error(
+      'Runde konnte nicht live gelöscht werden:',
+      error
+    );
+
+    showToast(
+      '❌ Runde konnte nicht gelöscht werden',
+      'error'
+    );
+  }
 }
 
 // ── TEAMSPIELE ──
@@ -5373,7 +5823,23 @@ async function confirmReset() {
 
                   strafen: {
                     ...(person.strafen || {})
-                  }
+                  },
+              
+                  rounds:
+                      Array.isArray(
+                        person.rounds
+                      )
+                        ? person.rounds.map(
+                            round => ({
+                              ...round,
+
+                              drinks: {
+                                ...(round.drinks || {})
+                              }
+                            })
+                          )
+                        : [],
+            
                 }
               )
           )
