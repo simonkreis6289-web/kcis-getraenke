@@ -541,85 +541,223 @@ function findUndefinedPaths(
 }
     
 function hydrateState() {
-  DRINKS.forEach(d => {
-    if (prices[d.key] === undefined) prices[d.key] = 0;
+  DRINKS.forEach(drink => {
+    if (
+      prices[drink.key] ===
+      undefined
+    ) {
+      prices[drink.key] = 0;
+    }
   });
 
-  persons.forEach(p => {
-    if (!p.drinks) p.drinks = {};
-    if (!Array.isArray(p.rounds)) p.rounds = [];
-        (p.rounds || []).forEach(
-          (round, roundIndex) => {
-            if (!round.reason) {
-              round.reason = '';
-            }
+  persons.forEach(person => {
+    if (
+      !person.drinks ||
+      typeof person.drinks !==
+        'object'
+    ) {
+      person.drinks = {};
+    }
 
-            if (
-              !round.drinks ||
-              typeof round.drinks !==
-                'object'
-            ) {
-              round.drinks = {};
-            }
+    DRINKS.forEach(drink => {
+      if (
+        person.drinks[
+          drink.key
+        ] === undefined
+      ) {
+        person.drinks[
+          drink.key
+        ] = 0;
+      }
+    });
 
-            round.total =
-              parseFloat(
-                round.total || 0
-              ) || 0;
+    if (
+      !person.strafen ||
+      typeof person.strafen !==
+        'object'
+    ) {
+      person.strafen = {};
+    }
 
-            round.createdAt =
-              round.createdAt || '';
+    STRAFEN.forEach(strafe => {
+      if (
+        person.strafen[
+          strafe.key
+        ] === undefined
+      ) {
+        person.strafen[
+          strafe.key
+        ] = 0;
+      }
+    });
 
-            if (!round.id) {
-              const personPart =
-                String(p.name || 'person')
-                  .toLowerCase()
-                  .normalize('NFD')
-                  .replace(
-                    /[\u0300-\u036f]/g,
-                    ''
-                  )
-                  .replace(
-                    /[^a-z0-9]+/g,
-                    '_'
-                  );
+    if (
+      !Array.isArray(
+        person.rounds
+      )
+    ) {
+      person.rounds = [];
+    }
 
-              const datePart =
-                String(
-                  round.createdAt ||
-                  'no_date'
+    person.rounds.forEach(
+      (
+        round,
+        roundIndex
+      ) => {
+        if (
+          !round ||
+          typeof round !==
+            'object'
+        ) {
+          person.rounds[
+            roundIndex
+          ] = {
+            id:
+              'round_legacy_' +
+              String(
+                person.name ||
+                'person'
+              )
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(
+                  /[\u0300-\u036f]/g,
+                  ''
                 )
-                  .replace(
-                    /[^a-z0-9]+/gi,
-                    '_'
-                  );
+                .replace(
+                  /[^a-z0-9]+/g,
+                  '_'
+                ) +
+              '_no_date_' +
+              roundIndex,
 
-              round.id =
-                'round_legacy_' +
-                personPart +
-                '_' +
-                datePart +
-                '_' +
-                roundIndex;
-            }
-            }
+            reason: '',
+            drinks: {},
+            total: 0,
+            createdAt: ''
+          };
+
+          return;
+        }
+
+        round.reason =
+          String(
+            round.reason || ''
+          );
+
+        if (
+          !round.drinks ||
+          typeof round.drinks !==
+            'object'
+        ) {
+          round.drinks = {};
+        }
+
+        DRINKS.forEach(
+          drink => {
+            round.drinks[
+              drink.key
+            ] =
+              Math.max(
+                0,
+                parseInt(
+                  round.drinks[
+                    drink.key
+                  ] || 0,
+                  10
+                ) || 0
+              );
           }
         );
-    if (p.roundExtra === undefined) p.roundExtra = 0;
 
-    DRINKS.forEach(d => {
-      if (p.drinks[d.key] === undefined) p.drinks[d.key] = 0;
-        if (!p.strafen) p.strafen = {};
-    });
-          
-    STRAFEN.forEach(s => {
-      if (p.strafen[s.key] === undefined) p.strafen[s.key] = 0;
-    });
-    if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
-    if (!Array.isArray(p.tannenbaumCharges)) p.tannenbaumCharges = [];
-    p.present = !!p.present;
-      if (p.present) {
-      p.attendanceStatus =
+        round.total =
+          Math.max(
+            0,
+            parseFloat(
+              round.total || 0
+            ) || 0
+          );
+
+        round.createdAt =
+          String(
+            round.createdAt || ''
+          );
+
+        if (!round.id) {
+          const personPart =
+            String(
+              person.name ||
+              'person'
+            )
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(
+                /[\u0300-\u036f]/g,
+                ''
+              )
+              .replace(
+                /[^a-z0-9]+/g,
+                '_'
+              )
+              .replace(
+                /^_+|_+$/g,
+                ''
+              ) ||
+            'person';
+
+          const datePart =
+            String(
+              round.createdAt ||
+              'no_date'
+            )
+              .toLowerCase()
+              .replace(
+                /[^a-z0-9]+/g,
+                '_'
+              )
+              .replace(
+                /^_+|_+$/g,
+                ''
+              ) ||
+            'no_date';
+
+          round.id =
+            'round_legacy_' +
+            personPart +
+            '_' +
+            datePart +
+            '_' +
+            roundIndex;
+        }
+      }
+    );
+
+    person.roundExtra =
+      calcRoundsTotal(
+        person
+      );
+
+    if (
+      !Array.isArray(
+        person.freeStrafen
+      )
+    ) {
+      person.freeStrafen = [];
+    }
+
+    if (
+      !Array.isArray(
+        person.tannenbaumCharges
+      )
+    ) {
+      person.tannenbaumCharges = [];
+    }
+
+    person.present =
+      !!person.present;
+
+    if (person.present) {
+      person.attendanceStatus =
         'present';
     } else if (
       ![
@@ -627,27 +765,67 @@ function hydrateState() {
         'unexcused',
         'unknown'
       ].includes(
-        p.attendanceStatus
+        person.attendanceStatus
       )
     ) {
-      p.attendanceStatus =
+      person.attendanceStatus =
         'unknown';
     }
-      
-    p.isGuest = !!p.isGuest;
-    p.tisch = normalizeTisch(p.tisch);
-    p.teamExtra = parseFloat(p.teamExtra || 0) || 0;
-    p.roundExtra = parseFloat(p.roundExtra || 0) || 0;
-    p.paid = parseFloat(p.paid || 0) || 0;
-    p.left = !!p.left;
-    p.leftAt = p.leftAt || '';
-      p.arrivalTime = p.arrivalTime || '';
-      p.leftEarlyAt = p.leftEarlyAt || '';
-      p.boughtThrows = parseInt(p.boughtThrows || 0, 10) || 0;
+
+    person.isGuest =
+      !!person.isGuest;
+
+    person.tisch =
+      normalizeTisch(
+        person.tisch
+      );
+
+    person.teamExtra =
+      parseFloat(
+        person.teamExtra || 0
+      ) || 0;
+
+    person.paid =
+      Math.max(
+        0,
+        parseFloat(
+          person.paid || 0
+        ) || 0
+      );
+
+    person.left =
+      !!person.left;
+
+    person.leftAt =
+      person.leftAt || '';
+
+    person.arrivalTime =
+      person.arrivalTime || '';
+
+    person.leftEarlyAt =
+      person.leftEarlyAt || '';
+
+    person.boughtThrows =
+      Math.max(
+        0,
+        parseInt(
+          person.boughtThrows || 0,
+          10
+        ) || 0
+      );
   });
-    STRAFEN.forEach(s => {
-      if (strafPrices[s.key] === undefined) strafPrices[s.key] = 0;
-    });
+
+  STRAFEN.forEach(strafe => {
+    if (
+      strafPrices[
+        strafe.key
+      ] === undefined
+    ) {
+      strafPrices[
+        strafe.key
+      ] = 0;
+    }
+  });
 }
 
 function persistState() {
