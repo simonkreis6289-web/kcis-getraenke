@@ -2569,18 +2569,14 @@ function getSafePdfClubName() {
     .replace(/\s+/g, '_');
 }
 
-async function generateStrafenPDF(
-  snapshot
-) {
-  const { jsPDF } =
-    window.jspdf;
+async function generateStrafenPDF(snapshot) {
+  const { jsPDF } = window.jspdf;
 
-  const doc =
-    new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a3'
-    });
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a3'
+  });
 
   const pageWidth =
     doc.internal.pageSize.getWidth();
@@ -2590,42 +2586,46 @@ async function generateStrafenPDF(
 
   const margin = 12;
 
-  const formatEuro =
-    value =>
-      (
-        Math.round(
-          (
-            parseFloat(
-              value || 0
-            ) || 0
-          ) * 100
-        ) / 100
-      )
+  /*
+   * PDF-Helfer
+   */
+
+  const formatEuro = value => {
+    const number =
+      Math.round(
+        (
+          parseFloat(value || 0) || 0
+        ) * 100
+      ) / 100;
+
+    return (
+      number
         .toFixed(2)
         .replace('.', ',') +
-      ' EUR';
+      ' EUR'
+    );
+  };
 
-  const formatDate =
-    value => {
-      if (!value) {
-        return '-';
-      }
+  const formatDate = value => {
+    if (!value) {
+      return '-';
+    }
 
-      const date =
-        new Date(value);
+    const date =
+      new Date(value);
 
-      if (
-        Number.isNaN(
-          date.getTime()
-        )
-      ) {
-        return '-';
-      }
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return '-';
+    }
 
-      return date.toLocaleDateString(
-        'de-DE'
-      );
-    };
+    return date.toLocaleDateString(
+      'de-DE'
+    );
+  };
 
   const formatDateTimeSafe =
     value => {
@@ -2641,6 +2641,114 @@ async function generateStrafenPDF(
         return String(value);
       }
     };
+
+  function getPlainTeamName(
+    teamKey
+  ) {
+    if (
+      teamKey !== 'T1' &&
+      teamKey !== 'T2'
+    ) {
+      return String(
+        teamKey || 'Kein Team'
+      );
+    }
+
+    const fallback =
+      teamKey === 'T1'
+        ? 'Team 1'
+        : 'Team 2';
+
+    const configuredName =
+      groupSettings?.[
+        teamKey
+      ]?.name || fallback;
+
+    return String(
+      configuredName
+    )
+      .replace(
+        /[\u{1F300}-\u{1FAFF}]/gu,
+        ''
+      )
+      .replace(
+        /[\u2600-\u27BF]/g,
+        ''
+      )
+      .trim() ||
+      fallback;
+  }
+
+  function getPlainText(
+    value
+  ) {
+    return String(
+      value || ''
+    )
+      .replace(
+        /[\u{1F300}-\u{1FAFF}]/gu,
+        ''
+      )
+      .replace(
+        /[\u2600-\u27BF]/g,
+        ''
+      )
+      .trim();
+  }
+
+  function drawPageTitle(
+    title,
+    subtitle
+  ) {
+    doc.setFont(
+      'helvetica',
+      'bold'
+    );
+
+    doc.setFontSize(18);
+
+    doc.text(
+      getPlainText(title),
+      margin,
+      16
+    );
+
+    doc.setFont(
+      'helvetica',
+      'normal'
+    );
+
+    doc.setFontSize(10);
+
+    doc.text(
+      getPlainText(subtitle),
+      margin,
+      23
+    );
+  }
+
+  function ensurePageSpace(
+    neededHeight,
+    resetY = margin
+  ) {
+    if (
+      currentY +
+      neededHeight >
+      pageHeight -
+      margin
+    ) {
+      doc.addPage();
+      currentY = resetY;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  /*
+   * Datenaufbereitung
+   */
 
   const visibleStrafen =
     (
@@ -2703,12 +2811,12 @@ async function generateStrafenPDF(
       return null;
     }
 
-    const latePenalty =
+    const penalty =
       getLatePenaltyDisplay(
         person
       );
 
-    if (!latePenalty) {
+    if (!penalty) {
       return null;
     }
 
@@ -2717,7 +2825,7 @@ async function generateStrafenPDF(
         Math.max(
           0,
           parseInt(
-            latePenalty.count || 0,
+            penalty.count || 0,
             10
           ) || 0
         ),
@@ -2726,7 +2834,7 @@ async function generateStrafenPDF(
         Math.max(
           0,
           parseFloat(
-            latePenalty.amount || 0
+            penalty.amount || 0
           ) || 0
         )
     };
@@ -2742,12 +2850,12 @@ async function generateStrafenPDF(
       return null;
     }
 
-    const earlyPenalty =
+    const penalty =
       getEarlyPenaltyDisplay(
         person
       );
 
-    if (!earlyPenalty) {
+    if (!penalty) {
       return null;
     }
 
@@ -2756,7 +2864,7 @@ async function generateStrafenPDF(
         Math.max(
           0,
           parseInt(
-            earlyPenalty.count || 0,
+            penalty.count || 0,
             10
           ) || 0
         ),
@@ -2765,42 +2873,16 @@ async function generateStrafenPDF(
         Math.max(
           0,
           parseFloat(
-            earlyPenalty.amount || 0
+            penalty.amount || 0
           ) || 0
         )
     };
   }
 
-  function drawPageTitle(
-    title,
-    subtitle
-  ) {
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
-
-    doc.setFontSize(18);
-
-    doc.text(
-      title,
-      margin,
-      16
-    );
-
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
-
-    doc.setFontSize(10);
-
-    doc.text(
-      subtitle,
-      margin,
-      23
-    );
-  }
+  /*
+   * Seite 1:
+   * Tabellen
+   */
 
   function drawTable({
     title,
@@ -2820,7 +2902,7 @@ async function generateStrafenPDF(
     doc.setFontSize(13);
 
     doc.text(
-      title,
+      getPlainText(title),
       margin,
       y
     );
@@ -2836,15 +2918,18 @@ async function generateStrafenPDF(
         ? 31
         : 38;
 
+    /*
+     * Status bewusst schmaler
+     */
     const statusWidth =
       includeStatus
-        ? 28
+        ? 20
         : 0;
 
-    const lateWidth = 23;
-    const earlyWidth = 23;
+    const lateWidth = 22;
+    const earlyWidth = 22;
     const extrasWidth = 23;
-    const penaltyWidth = 25;
+    const penaltyTotalWidth = 25;
 
     const monthlyWidth =
       includeMonthlyFee
@@ -2853,20 +2938,26 @@ async function generateStrafenPDF(
 
     const totalWidth = 27;
 
+    /*
+     * Leere Abhakspalte
+     */
+    const paidWidth = 23;
+
     const fixedWidth =
       nameWidth +
       statusWidth +
       lateWidth +
       earlyWidth +
       extrasWidth +
-      penaltyWidth +
+      penaltyTotalWidth +
       monthlyWidth +
-      totalWidth;
+      totalWidth +
+      paidWidth;
 
     const penaltyColumnWidth =
       visibleStrafen.length
         ? Math.max(
-            10,
+            9,
             (
               usableWidth -
               fixedWidth
@@ -2876,7 +2967,12 @@ async function generateStrafenPDF(
         : 0;
 
     const headerHeight = 29;
-    const rowHeight = 9;
+
+    /*
+     * Alle Datenzeilen gleichmäßig
+     * etwas höher
+     */
+    const rowHeight = 12;
 
     let frameStartY =
       y;
@@ -2912,7 +3008,7 @@ async function generateStrafenPDF(
         return;
       }
 
-      doc.setLineWidth(0.75);
+      doc.setLineWidth(0.8);
 
       doc.rect(
         margin,
@@ -2945,7 +3041,7 @@ async function generateStrafenPDF(
 
       const lines =
         doc.splitTextToSize(
-          String(text),
+          getPlainText(text),
           Math.max(
             4,
             width - 2
@@ -3006,7 +3102,7 @@ async function generateStrafenPDF(
 
       const lines =
         doc.splitTextToSize(
-          String(text),
+          getPlainText(text),
           Math.max(
             4,
             width - 4
@@ -3082,8 +3178,8 @@ async function generateStrafenPDF(
         width,
         height,
         {
-          fontSize: 6.3,
-          lineHeight: 2.8
+          fontSize: 6.2,
+          lineHeight: 3
         }
       );
     }
@@ -3138,7 +3234,7 @@ async function generateStrafenPDF(
           headerHeight,
           {
             bold: true,
-            fontSize: 8
+            fontSize: 7
           }
         );
 
@@ -3168,7 +3264,7 @@ async function generateStrafenPDF(
             headerHeight,
             {
               bold: true,
-              fontSize: 6.5,
+              fontSize: 6.2,
               lineHeight: 3
             }
           );
@@ -3196,7 +3292,7 @@ async function generateStrafenPDF(
         headerHeight,
         {
           bold: true,
-          fontSize: 7
+          fontSize: 6.8
         }
       );
 
@@ -3221,7 +3317,7 @@ async function generateStrafenPDF(
         headerHeight,
         {
           bold: true,
-          fontSize: 6.8
+          fontSize: 6.3
         }
       );
 
@@ -3246,7 +3342,7 @@ async function generateStrafenPDF(
         headerHeight,
         {
           bold: true,
-          fontSize: 6.5
+          fontSize: 6.2
         }
       );
 
@@ -3256,7 +3352,7 @@ async function generateStrafenPDF(
       drawCell(
         x,
         y,
-        penaltyWidth,
+        penaltyTotalWidth,
         headerHeight,
         {
           thick: true
@@ -3267,7 +3363,7 @@ async function generateStrafenPDF(
         'Strafen',
         x,
         y,
-        penaltyWidth,
+        penaltyTotalWidth,
         headerHeight,
         {
           bold: true,
@@ -3276,7 +3372,7 @@ async function generateStrafenPDF(
       );
 
       x +=
-        penaltyWidth;
+        penaltyTotalWidth;
 
       if (
         includeMonthlyFee
@@ -3325,7 +3421,32 @@ async function generateStrafenPDF(
         headerHeight,
         {
           bold: true,
-          fontSize: 9
+          fontSize: 8
+        }
+      );
+
+      x +=
+        totalWidth;
+
+      drawCell(
+        x,
+        y,
+        paidWidth,
+        headerHeight,
+        {
+          thick: true
+        }
+      );
+
+      drawCenteredText(
+        'Bezahlt',
+        x,
+        y,
+        paidWidth,
+        headerHeight,
+        {
+          bold: true,
+          fontSize: 8
         }
       );
 
@@ -3338,256 +3459,268 @@ async function generateStrafenPDF(
 
     drawHeader();
 
-    rows.forEach(
-      person => {
-        if (
-          y +
-          rowHeight >
-          pageHeight -
-          margin
-        ) {
-          drawOuterFrame(
-            frameStartY,
-            y
-          );
+    rows.forEach(person => {
+      if (
+        y +
+        rowHeight >
+        pageHeight -
+        margin
+      ) {
+        drawOuterFrame(
+          frameStartY,
+          y
+        );
 
-          doc.addPage();
+        doc.addPage();
 
-          y =
-            margin;
-
-          frameStartY =
-            y;
-
-          drawHeader();
-        }
-
-        let x =
+        y =
           margin;
 
-        drawCell(
-          x,
-          y,
-          nameWidth,
-          rowHeight
-        );
+        frameStartY =
+          y;
 
-        drawLeftText(
-          person.name,
-          x,
-          y,
-          nameWidth,
-          rowHeight,
-          {
-            bold: true
-          }
-        );
-
-        x +=
-          nameWidth;
-
-        if (
-          includeStatus
-        ) {
-          drawCell(
-            x,
-            y,
-            statusWidth,
-            rowHeight
-          );
-
-          drawCenteredText(
-            person.statusLabel,
-            x,
-            y,
-            statusWidth,
-            rowHeight,
-            {
-              fontSize: 6.7
-            }
-          );
-
-          x +=
-            statusWidth;
-        }
-
-        visibleStrafen.forEach(
-          strafe => {
-            const count =
-              Math.max(
-                0,
-                parseInt(
-                  person
-                    .strafen?.[
-                      strafe.key
-                    ] || 0,
-                  10
-                ) || 0
-              );
-
-            drawCell(
-              x,
-              y,
-              penaltyColumnWidth,
-              rowHeight
-            );
-
-            drawCenteredText(
-              count > 0
-                ? count
-                : '-',
-              x,
-              y,
-              penaltyColumnWidth,
-              rowHeight,
-              {
-                fontSize: 8
-              }
-            );
-
-            x +=
-              penaltyColumnWidth;
-          }
-        );
-
-        const latePenalty =
-          getLatePdfData(
-            person
-          );
-
-        drawTimePenaltyCell(
-          latePenalty,
-          x,
-          y,
-          lateWidth,
-          rowHeight
-        );
-
-        x +=
-          lateWidth;
-
-        const earlyPenalty =
-          getEarlyPdfData(
-            person
-          );
-
-        drawTimePenaltyCell(
-          earlyPenalty,
-          x,
-          y,
-          earlyWidth,
-          rowHeight
-        );
-
-        x +=
-          earlyWidth;
-
-        drawCell(
-          x,
-          y,
-          extrasWidth,
-          rowHeight
-        );
-
-        const extraTotal =
-          getFreeAndGameTotal(
-            person
-          );
-
-        drawCenteredText(
-          extraTotal > 0
-            ? formatEuro(
-                extraTotal
-              )
-            : '-',
-          x,
-          y,
-          extrasWidth,
-          rowHeight,
-          {
-            fontSize: 6.5
-          }
-        );
-
-        x +=
-          extrasWidth;
-
-        drawCell(
-          x,
-          y,
-          penaltyWidth,
-          rowHeight
-        );
-
-        drawCenteredText(
-          formatEuro(
-            person.penaltyTotal
-          ),
-          x,
-          y,
-          penaltyWidth,
-          rowHeight,
-          {
-            bold: true,
-            fontSize: 7.5
-          }
-        );
-
-        x +=
-          penaltyWidth;
-
-        if (
-          includeMonthlyFee
-        ) {
-          drawCell(
-            x,
-            y,
-            monthlyWidth,
-            rowHeight
-          );
-
-          drawCenteredText(
-            formatEuro(
-              person.monthlyFee
-            ),
-            x,
-            y,
-            monthlyWidth,
-            rowHeight,
-            {
-              fontSize: 7.5
-            }
-          );
-
-          x +=
-            monthlyWidth;
-        }
-
-        drawCell(
-          x,
-          y,
-          totalWidth,
-          rowHeight
-        );
-
-        drawCenteredText(
-          formatEuro(
-            person.total
-          ),
-          x,
-          y,
-          totalWidth,
-          rowHeight,
-          {
-            bold: true,
-            fontSize: 7.5
-          }
-        );
-
-        y +=
-          rowHeight;
+        drawHeader();
       }
-    );
+
+      let x =
+        margin;
+
+      drawCell(
+        x,
+        y,
+        nameWidth,
+        rowHeight
+      );
+
+      drawLeftText(
+        person.name,
+        x,
+        y,
+        nameWidth,
+        rowHeight,
+        {
+          bold: true,
+          fontSize: 8
+        }
+      );
+
+      x +=
+        nameWidth;
+
+      if (
+        includeStatus
+      ) {
+        drawCell(
+          x,
+          y,
+          statusWidth,
+          rowHeight
+        );
+
+        drawCenteredText(
+          person.statusLabel,
+          x,
+          y,
+          statusWidth,
+          rowHeight,
+          {
+            fontSize: 6.3
+          }
+        );
+
+        x +=
+          statusWidth;
+      }
+
+      visibleStrafen.forEach(
+        strafe => {
+          const count =
+            Math.max(
+              0,
+              parseInt(
+                person
+                  .strafen?.[
+                    strafe.key
+                  ] || 0,
+                10
+              ) || 0
+            );
+
+          drawCell(
+            x,
+            y,
+            penaltyColumnWidth,
+            rowHeight
+          );
+
+          drawCenteredText(
+            count > 0
+              ? count
+              : '-',
+            x,
+            y,
+            penaltyColumnWidth,
+            rowHeight,
+            {
+              fontSize: 8
+            }
+          );
+
+          x +=
+            penaltyColumnWidth;
+        }
+      );
+
+      const latePenalty =
+        getLatePdfData(
+          person
+        );
+
+      drawTimePenaltyCell(
+        latePenalty,
+        x,
+        y,
+        lateWidth,
+        rowHeight
+      );
+
+      x +=
+        lateWidth;
+
+      const earlyPenalty =
+        getEarlyPdfData(
+          person
+        );
+
+      drawTimePenaltyCell(
+        earlyPenalty,
+        x,
+        y,
+        earlyWidth,
+        rowHeight
+      );
+
+      x +=
+        earlyWidth;
+
+      drawCell(
+        x,
+        y,
+        extrasWidth,
+        rowHeight
+      );
+
+      const extraTotal =
+        getFreeAndGameTotal(
+          person
+        );
+
+      drawCenteredText(
+        extraTotal > 0
+          ? formatEuro(
+              extraTotal
+            )
+          : '-',
+        x,
+        y,
+        extrasWidth,
+        rowHeight,
+        {
+          fontSize: 6.3
+        }
+      );
+
+      x +=
+        extrasWidth;
+
+      drawCell(
+        x,
+        y,
+        penaltyTotalWidth,
+        rowHeight
+      );
+
+      drawCenteredText(
+        formatEuro(
+          person.penaltyTotal
+        ),
+        x,
+        y,
+        penaltyTotalWidth,
+        rowHeight,
+        {
+          bold: true,
+          fontSize: 7.2
+        }
+      );
+
+      x +=
+        penaltyTotalWidth;
+
+      if (
+        includeMonthlyFee
+      ) {
+        drawCell(
+          x,
+          y,
+          monthlyWidth,
+          rowHeight
+        );
+
+        drawCenteredText(
+          formatEuro(
+            person.monthlyFee
+          ),
+          x,
+          y,
+          monthlyWidth,
+          rowHeight,
+          {
+            fontSize: 7.2
+          }
+        );
+
+        x +=
+          monthlyWidth;
+      }
+
+      drawCell(
+        x,
+        y,
+        totalWidth,
+        rowHeight
+      );
+
+      drawCenteredText(
+        formatEuro(
+          person.total
+        ),
+        x,
+        y,
+        totalWidth,
+        rowHeight,
+        {
+          bold: true,
+          fontSize: 7.2
+        }
+      );
+
+      x +=
+        totalWidth;
+
+      /*
+       * Bezahlt bleibt absichtlich leer.
+       */
+      drawCell(
+        x,
+        y,
+        paidWidth,
+        rowHeight
+      );
+
+      y +=
+        rowHeight;
+    });
 
     drawOuterFrame(
       frameStartY,
@@ -3597,6 +3730,10 @@ async function generateStrafenPDF(
     return y;
   }
 
+  /*
+   * SEITE 1
+   */
+
   drawPageTitle(
     `${getPdfClubName()} - Strafenabrechnung`,
     `Abrechnung vom ${formatDate(
@@ -3604,7 +3741,7 @@ async function generateStrafenPDF(
     )}`
   );
 
-  let y =
+  let currentY =
     drawTable({
       title:
         'Mitglieder',
@@ -3622,7 +3759,7 @@ async function generateStrafenPDF(
         true
     });
 
-  y += 7;
+  currentY += 7;
 
   doc.setFont(
     'helvetica',
@@ -3643,10 +3780,10 @@ async function generateStrafenPDF(
         ?.memberTotal
     )}`,
     margin,
-    y
+    currentY
   );
 
-  y += 10;
+  currentY += 10;
 
   if (
     Array.isArray(
@@ -3655,7 +3792,7 @@ async function generateStrafenPDF(
     snapshot.guests.length
   ) {
     if (
-      y + 55 >
+      currentY + 60 >
       pageHeight -
       margin
     ) {
@@ -3668,10 +3805,10 @@ async function generateStrafenPDF(
         )}`
       );
 
-      y = 32;
+      currentY = 32;
     }
 
-    y =
+    currentY =
       drawTable({
         title:
           'Gastkegler',
@@ -3680,7 +3817,7 @@ async function generateStrafenPDF(
           snapshot.guests,
 
         startY:
-          y,
+          currentY,
 
         includeStatus:
           false,
@@ -3689,7 +3826,7 @@ async function generateStrafenPDF(
           false
       });
 
-    y += 7;
+    currentY += 7;
 
     doc.setFont(
       'helvetica',
@@ -3704,11 +3841,11 @@ async function generateStrafenPDF(
           ?.guestTotal
       )}`,
       margin,
-      y
+      currentY
     );
   }
 
-  y += 10;
+  currentY += 10;
 
   doc.setFont(
     'helvetica',
@@ -3723,7 +3860,7 @@ async function generateStrafenPDF(
         ?.grandTotal
     )}`,
     margin,
-    y
+    currentY
   );
 
   doc.setFont(
@@ -3748,13 +3885,11 @@ async function generateStrafenPDF(
   doc.text(
     infoLines,
     margin,
-    y + 6
+    currentY + 6
   );
 
   /*
-   * Seite 2:
-   * Anwesenheit, Ankunft, Gehzeit
-   * und abgeschlossene Spiele.
+   * SEITE 2
    */
 
   doc.addPage();
@@ -3766,7 +3901,7 @@ async function generateStrafenPDF(
     )}`
   );
 
-  y = 33;
+  currentY = 33;
 
   doc.setFont(
     'helvetica',
@@ -3778,10 +3913,10 @@ async function generateStrafenPDF(
   doc.text(
     'Anwesenheit',
     margin,
-    y
+    currentY
   );
 
-  y += 7;
+  currentY += 7;
 
   doc.setFont(
     'helvetica',
@@ -3795,13 +3930,13 @@ async function generateStrafenPDF(
     []
   ).forEach(person => {
     if (
-      y >
+      currentY >
       pageHeight -
       margin -
-      10
+      12
     ) {
       doc.addPage();
-      y = margin;
+      currentY = margin;
     }
 
     let detail =
@@ -3811,12 +3946,12 @@ async function generateStrafenPDF(
       person.status ===
       'present'
     ) {
-      const timeParts = [];
+      const parts = [];
 
       if (
         person.arrivalTime
       ) {
-        timeParts.push(
+        parts.push(
           `gekommen ${person.arrivalTime} Uhr`
         );
       }
@@ -3829,46 +3964,42 @@ async function generateStrafenPDF(
       if (
         departureTime
       ) {
-        timeParts.push(
+        parts.push(
           `gegangen ${departureTime} Uhr`
         );
       }
 
-      const latePenalty =
+      const late =
         getLatePdfData(
           person
         );
 
-      if (
-        latePenalty
-      ) {
-        timeParts.push(
-          `Verspätung ${latePenalty.count}x = ${formatEuro(
-            latePenalty.amount
+      if (late) {
+        parts.push(
+          `Verspätung ${late.count}x = ${formatEuro(
+            late.amount
           )}`
         );
       }
 
-      const earlyPenalty =
+      const early =
         getEarlyPdfData(
           person
         );
 
-      if (
-        earlyPenalty
-      ) {
-        timeParts.push(
-          `früher gegangen ${earlyPenalty.count}x = ${formatEuro(
-            earlyPenalty.amount
+      if (early) {
+        parts.push(
+          `früher gegangen ${early.count}x = ${formatEuro(
+            early.amount
           )}`
         );
       }
 
       if (
-        timeParts.length
+        parts.length
       ) {
         detail +=
-          ` | ${timeParts.join(
+          ` | ${parts.join(
             ' | '
           )}`;
       }
@@ -3876,7 +4007,7 @@ async function generateStrafenPDF(
 
     const lines =
       doc.splitTextToSize(
-        detail,
+        getPlainText(detail),
         pageWidth -
         margin * 2
       );
@@ -3884,10 +4015,10 @@ async function generateStrafenPDF(
     doc.text(
       lines,
       margin,
-      y
+      currentY
     );
 
-    y +=
+    currentY +=
       Math.max(
         6,
         lines.length * 4
@@ -3900,7 +4031,7 @@ async function generateStrafenPDF(
     ) &&
     snapshot.guests.length
   ) {
-    y += 4;
+    currentY += 5;
 
     doc.setFont(
       'helvetica',
@@ -3912,10 +4043,10 @@ async function generateStrafenPDF(
     doc.text(
       'Gastkegler',
       margin,
-      y
+      currentY
     );
 
-    y += 6;
+    currentY += 6;
 
     doc.setFont(
       'helvetica',
@@ -3927,24 +4058,24 @@ async function generateStrafenPDF(
     snapshot.guests.forEach(
       person => {
         if (
-          y >
+          currentY >
           pageHeight -
           margin -
-          10
+          12
         ) {
           doc.addPage();
-          y = margin;
+          currentY = margin;
         }
 
         let detail =
           person.name;
 
-        const timeParts = [];
+        const parts = [];
 
         if (
           person.arrivalTime
         ) {
-          timeParts.push(
+          parts.push(
             `gekommen ${person.arrivalTime} Uhr`
           );
         }
@@ -3957,53 +4088,49 @@ async function generateStrafenPDF(
         if (
           departureTime
         ) {
-          timeParts.push(
+          parts.push(
             `gegangen ${departureTime} Uhr`
           );
         }
 
-        const latePenalty =
+        const late =
           getLatePdfData(
             person
           );
 
-        if (
-          latePenalty
-        ) {
-          timeParts.push(
-            `Verspätung ${latePenalty.count}x = ${formatEuro(
-              latePenalty.amount
+        if (late) {
+          parts.push(
+            `Verspätung ${late.count}x = ${formatEuro(
+              late.amount
             )}`
           );
         }
 
-        const earlyPenalty =
+        const early =
           getEarlyPdfData(
             person
           );
 
-        if (
-          earlyPenalty
-        ) {
-          timeParts.push(
-            `früher gegangen ${earlyPenalty.count}x = ${formatEuro(
-              earlyPenalty.amount
+        if (early) {
+          parts.push(
+            `früher gegangen ${early.count}x = ${formatEuro(
+              early.amount
             )}`
           );
         }
 
         if (
-          timeParts.length
+          parts.length
         ) {
           detail +=
-            ` | ${timeParts.join(
+            ` | ${parts.join(
               ' | '
             )}`;
         }
 
         const lines =
           doc.splitTextToSize(
-            detail,
+            getPlainText(detail),
             pageWidth -
             margin * 2
           );
@@ -4011,10 +4138,10 @@ async function generateStrafenPDF(
         doc.text(
           lines,
           margin,
-          y
+          currentY
         );
 
-        y +=
+        currentY +=
           Math.max(
             6,
             lines.length * 4
@@ -4023,16 +4150,20 @@ async function generateStrafenPDF(
     );
   }
 
-  y += 7;
+  /*
+   * Normale Teamspiele
+   */
+
+  currentY += 8;
 
   if (
-    y >
+    currentY >
     pageHeight -
     margin -
     20
   ) {
     doc.addPage();
-    y = margin;
+    currentY = margin;
   }
 
   doc.setFont(
@@ -4043,12 +4174,202 @@ async function generateStrafenPDF(
   doc.setFontSize(13);
 
   doc.text(
-    'Teamspiele und weitere Buchungen',
+    'Teamspiele',
     margin,
-    y
+    currentY
   );
 
-  y += 7;
+  currentY += 7;
+
+  const bookedTeamGames =
+    Array.isArray(spiele)
+      ? spiele
+      : [];
+
+  if (
+    !bookedTeamGames.length
+  ) {
+    doc.setFont(
+      'helvetica',
+      'normal'
+    );
+
+    doc.setFontSize(9);
+
+    doc.text(
+      'Keine Teamspiele gebucht.',
+      margin,
+      currentY
+    );
+
+    currentY += 8;
+  } else {
+    bookedTeamGames.forEach(
+      (
+        game,
+        index
+      ) => {
+        if (
+          currentY >
+          pageHeight -
+          margin -
+          28
+        ) {
+          doc.addPage();
+          currentY = margin;
+        }
+
+        const loserName =
+          getPlainTeamName(
+            game.loser
+          );
+
+        const gameName =
+          getPlainText(
+            game.spieltyp ||
+            'Teamspiel'
+          );
+
+        const members =
+          Array.isArray(
+            game.members
+          )
+            ? game.members
+                .map(
+                  getPlainText
+                )
+                .filter(Boolean)
+            : [];
+
+        const drinksText =
+          DRINKS
+            .filter(drink =>
+              (
+                game.drinks?.[
+                  drink.key
+                ] || 0
+              ) > 0
+            )
+            .map(drink =>
+              `${
+                game.drinks[
+                  drink.key
+                ]
+              }x ${getPlainText(
+                drink.label
+              )}`
+            )
+            .join(', ');
+
+        doc.setFont(
+          'helvetica',
+          'bold'
+        );
+
+        doc.setFontSize(10);
+
+        doc.text(
+          `${index + 1}. ${gameName}`,
+          margin,
+          currentY
+        );
+
+        currentY += 5;
+
+        doc.setFont(
+          'helvetica',
+          'normal'
+        );
+
+        doc.setFontSize(8.5);
+
+        doc.text(
+          `Verlierer: ${loserName}`,
+          margin + 5,
+          currentY
+        );
+
+        currentY += 5;
+
+        const gameDetails = [
+          `Getränke: ${
+            drinksText || '-'
+          }`,
+
+          `Gesamt: ${formatEuro(
+            game.total || 0
+          )}`,
+
+          `Pro Person: ${formatEuro(
+            game.proKopf || 0
+          )}`,
+
+          `Belastete Spieler: ${
+            members.join(', ') ||
+            '-'
+          }`
+        ];
+
+        gameDetails.forEach(
+          detail => {
+            const lines =
+              doc.splitTextToSize(
+                getPlainText(detail),
+                pageWidth -
+                margin * 2 -
+                10
+              );
+
+            doc.text(
+              lines,
+              margin + 5,
+              currentY
+            );
+
+            currentY +=
+              Math.max(
+                4.5,
+                lines.length * 4
+              );
+          }
+        );
+
+        currentY += 4;
+      }
+    );
+  }
+
+  /*
+   * Abgeschlossene Spiele und
+   * weitere Buchungen
+   */
+
+  currentY += 5;
+
+  if (
+    currentY >
+    pageHeight -
+    margin -
+    20
+  ) {
+    doc.addPage();
+    currentY = margin;
+  }
+
+  doc.setFont(
+    'helvetica',
+    'bold'
+  );
+
+  doc.setFontSize(13);
+
+  doc.text(
+    'Abgeschlossene Spiele und weitere Buchungen',
+    margin,
+    currentY
+  );
+
+  currentY += 7;
 
   const history =
     (
@@ -4075,9 +4396,9 @@ async function generateStrafenPDF(
     doc.setFontSize(9);
 
     doc.text(
-      'Keine abgeschlossenen Teamspiele vorhanden.',
+      'Keine abgeschlossenen Spiele vorhanden.',
       margin,
-      y
+      currentY
     );
   } else {
     history.forEach(
@@ -4086,21 +4407,14 @@ async function generateStrafenPDF(
         index
       ) => {
         if (
-          y >
+          currentY >
           pageHeight -
           margin -
-          22
+          28
         ) {
           doc.addPage();
-          y = margin;
+          currentY = margin;
         }
-
-        doc.setFont(
-          'helvetica',
-          'bold'
-        );
-
-        doc.setFontSize(10);
 
         let gameTitle =
           'Spiel';
@@ -4129,56 +4443,57 @@ async function generateStrafenPDF(
             'Tiberius';
         }
 
+        doc.setFont(
+          'helvetica',
+          'bold'
+        );
+
+        doc.setFontSize(10);
+
         doc.text(
           `${index + 1}. ${gameTitle} | ${formatDateTimeSafe(
             entry.createdAt
           )}`,
           margin,
-          y
+          currentY
         );
 
-        y += 5;
+        currentY += 5;
 
         doc.setFont(
           'helvetica',
           'normal'
         );
 
-        doc.setFontSize(8);
+        doc.setFontSize(8.5);
 
         if (
           entry.type ===
           'tannenbaum'
         ) {
-          const t1Name =
-            typeof getGroupLabel ===
-              'function'
-              ? getGroupLabel(
-                  'T1'
-                )
-              : 'Team 1';
+          const team1 =
+            getPlainTeamName(
+              'T1'
+            );
 
-          const t2Name =
-            typeof getGroupLabel ===
-              'function'
-              ? getGroupLabel(
-                  'T2'
-                )
-              : 'Team 2';
+          const team2 =
+            getPlainTeamName(
+              'T2'
+            );
 
           doc.text(
-            `${t1Name}: ${formatEuro(
+            `${team1}: ${formatEuro(
               entry.totals?.T1 ||
               0
-            )} | ${t2Name}: ${formatEuro(
+            )} | ${team2}: ${formatEuro(
               entry.totals?.T2 ||
               0
             )}`,
             margin + 5,
-            y
+            currentY
           );
 
-          y += 5;
+          currentY += 5;
         }
 
         if (
@@ -4190,10 +4505,10 @@ async function generateStrafenPDF(
               entry.score || 0
             }`,
             margin + 5,
-            y
+            currentY
           );
 
-          y += 5;
+          currentY += 5;
         }
 
         const assignments =
@@ -4201,7 +4516,9 @@ async function generateStrafenPDF(
             entry.assignedTo ||
             []
           ).map(item =>
-            `${item.name}: ${formatEuro(
+            `${getPlainText(
+              item.name
+            )}: ${formatEuro(
               item.amount
             )}${
               item.onTop
@@ -4212,14 +4529,16 @@ async function generateStrafenPDF(
 
         const assignmentText =
           assignments.length
-            ? assignments.join(
+            ? `Belastet: ${assignments.join(
                 ', '
-              )
+              )}`
             : 'Keine Zuordnung';
 
         const assignmentLines =
           doc.splitTextToSize(
-            assignmentText,
+            getPlainText(
+              assignmentText
+            ),
             pageWidth -
             margin * 2 -
             10
@@ -4228,13 +4547,13 @@ async function generateStrafenPDF(
         doc.text(
           assignmentLines,
           margin + 5,
-          y
+          currentY
         );
 
-        y +=
+        currentY +=
           assignmentLines.length *
           4 +
-          5;
+          6;
       }
     );
   }
