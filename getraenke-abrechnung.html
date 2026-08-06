@@ -1166,6 +1166,57 @@
 
     <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahnpreis speichern</button>
   </div>
+    
+      <div class="section-title">Monatsbeitrag</div>
+
+  <div
+    style="
+      padding:16px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:var(--surface);
+      display:grid;
+      gap:14px;
+      margin-bottom:18px;
+    "
+  >
+    <div class="modal-input-row" style="margin-bottom:0;">
+      <label>Monatsbeitrag pro Mitglied (€)</label>
+
+      <input
+        id="monatsbeitrag-input"
+        type="number"
+        min="0"
+        step="0.50"
+        inputmode="decimal"
+        class="modal-euro-input"
+        placeholder="0.00"
+        onchange="saveMonatsbeitrag()"
+        oninput="previewMonatsbeitrag()"
+      >
+    </div>
+
+    <div
+      style="
+        color:var(--muted);
+        font-size:0.8rem;
+        line-height:1.4;
+      "
+    >
+      Wird bei jedem Mitglied in der Strafenabrechnung hinzugerechnet.
+      Gastkegler zahlen keinen Monatsbeitrag.
+    </div>
+
+    <button
+      type="button"
+      class="save-prices-btn"
+      onclick="saveMonatsbeitrag()"
+    >
+      💾 Monatsbeitrag speichern
+    </button>
+  </div>
+    
+    
     <div class="section-title">Strafen</div>
 
     <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -1742,24 +1793,24 @@
   style="display:none"
 >
 
-<script src="js/helpers.js?v=20260618-v35"></script>
-<script src="js/state.js?v=20260618-v35"></script>
-<script src="js/persons.js?v=20260714-v35"></script>
-<script src="js/clubs.js?v=20260618-v35"></script>
+<script src="js/helpers.js?v=20260618-v29"></script>
+<script src="js/state.js?v=20260618-v29"></script>
+<script src="js/persons.js?v=20260714-v1"></script>
+<script src="js/clubs.js?v=20260618-v29"></script>
 
-<script src="js/games/tannenbaum.js?v=20260618-v35"></script>
-<script src="js/games/darts.js?v=20260618-v35"></script>
-<script src="js/games/tiberius.js?v=20260618-v35"></script>
-<script src="js/games/lotterie.js?v=20260618-v35"></script>
-<script src="js/games/coinflip.js?v=20260618-v35"></script>
+<script src="js/games/tannenbaum.js?v=20260618-v29"></script>
+<script src="js/games/darts.js?v=20260618-v30"></script>
+<script src="js/games/tiberius.js?v=20260618-v2"></script>
+<script src="js/games/lotterie.js?v=20260618-v4"></script>
+<script src="js/games/coinflip.js?v=20260618-v30"></script>
 
-<script src="js/groups.js?v=20260618-v35"></script>
+<script src="js/groups.js?v=20260618-v29"></script>
 
-<script src="js/app.js?v=20260618-v35"></script>
+<script src="js/app.js?v=20260618-v38"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20260618-v35"
+  src="js/firebase.js?v=20260618-v29"
 ></script>
 
 </body>
