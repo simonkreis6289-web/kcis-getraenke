@@ -29,6 +29,163 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 
+// ─────────────────────────────────────────────
+// GENERISCHE LIVE-SPIELE: HILFSFUNKTIONEN
+// ─────────────────────────────────────────────
+function cleanLiveGameValue(value) {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item =>
+      cleanLiveGameValue(item)
+    );
+  }
+
+  if (
+    value instanceof Date ||
+    Object.getPrototypeOf(value) !== Object.prototype
+  ) {
+    return value;
+  }
+
+  const cleaned = {};
+
+  Object.entries(value).forEach(
+    ([key, item]) => {
+      if (
+        item === undefined ||
+        typeof item === 'function'
+      ) {
+        return;
+      }
+
+      cleaned[key] =
+        cleanLiveGameValue(item);
+    }
+  );
+
+  return cleaned;
+}
+
+function normalizeLiveGameKey(gameKey) {
+  const normalized =
+    String(gameKey || '')
+      .trim()
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9_-]+/g,
+        '_'
+      )
+      .replace(
+        /^_+|_+$/g,
+        ''
+      );
+
+  if (!normalized) {
+    throw new Error(
+      'Spielschlüssel fehlt'
+    );
+  }
+
+  return normalized;
+}
+
+function extractLegacyLiveGameState(data) {
+  if (
+    !data ||
+    typeof data !== 'object'
+  ) {
+    return {};
+  }
+
+  if (
+    data.state &&
+    typeof data.state === 'object'
+  ) {
+    return cleanLiveGameValue(
+      data.state
+    );
+  }
+
+  /*
+   * Übergang für bestehende Dokumente,
+   * bei denen der Spielstand noch direkt
+   * auf Dokumentebene liegt.
+   */
+  const legacyState = {
+    ...data
+  };
+
+  delete legacyState.gameKey;
+  delete legacyState.revision;
+  delete legacyState.updatedClientId;
+  delete legacyState.updatedClientAt;
+  delete legacyState.updatedAt;
+  delete legacyState.createdAt;
+
+  return cleanLiveGameValue(
+    legacyState
+  );
+}
+
+function normalizeLiveGameDocument(
+  gameKey,
+  data
+) {
+  if (!data) {
+    return null;
+  }
+
+  return {
+    gameKey:
+      data.gameKey ||
+      normalizeLiveGameKey(
+        gameKey
+      ),
+
+    state:
+      extractLegacyLiveGameState(
+        data
+      ),
+
+    revision:
+      Math.max(
+        0,
+        parseInt(
+          data.revision || 0,
+          10
+        ) || 0
+      ),
+
+    updatedClientId:
+      String(
+        data.updatedClientId || ''
+      ),
+
+    updatedClientAt:
+      Number(
+        data.updatedClientAt || 0
+      ) || 0,
+
+    updatedAt:
+      data.updatedAt || null,
+
+    createdAt:
+      data.createdAt || null
+  };
+}
+
 window.firestoreApi = {
 
   // ─────────────────────────────────────────────
@@ -69,6 +226,451 @@ window.firestoreApi = {
       },
       {
         merge: true
+      }
+    );
+  },
+
+  getLiveGameRef(
+    clubId,
+    gameKey
+  ) {
+    if (!clubId) {
+      throw new Error(
+        'Club-ID fehlt'
+      );
+    }
+
+    const normalizedGameKey =
+      normalizeLiveGameKey(
+        gameKey
+      );
+
+    return doc(
+      db,
+      'clubs',
+      clubId,
+      'liveGames',
+      normalizedGameKey
+    );
+  },
+
+
+  async loadLiveGameState(
+    clubId,
+    gameKey
+  ) {
+    const gameRef =
+      this.getLiveGameRef(
+        clubId,
+        gameKey
+      );
+
+    const snapshot =
+      await getDoc(
+        gameRef
+      );
+
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    return normalizeLiveGameDocument(
+      gameKey,
+      snapshot.data()
+    );
+  },
+
+
+  async saveLiveGameState(
+    clubId,
+    gameKey,
+    state = {},
+    metadata = {}
+  ) {
+    const normalizedGameKey =
+      normalizeLiveGameKey(
+        gameKey
+      );
+
+    const gameRef =
+      this.getLiveGameRef(
+        clubId,
+        normalizedGameKey
+      );
+
+    const cleanState =
+      cleanLiveGameValue(
+        state || {}
+      );
+
+    const updatedClientId =
+      String(
+        metadata.updatedClientId ||
+        ''
+      );
+
+    const updatedClientAt =
+      Number(
+        metadata.updatedClientAt ||
+        Date.now()
+      ) || Date.now();
+
+    return runTransaction(
+      db,
+      async transaction => {
+        const snapshot =
+          await transaction.get(
+            gameRef
+          );
+
+        const currentData =
+          snapshot.exists()
+            ? snapshot.data()
+            : {};
+
+        const previousRevision =
+          Math.max(
+            0,
+            parseInt(
+              currentData.revision ||
+              0,
+              10
+            ) || 0
+          );
+
+        const nextRevision =
+          previousRevision + 1;
+
+        const documentData = {
+          gameKey:
+            normalizedGameKey,
+
+          state:
+            cleanState,
+
+          revision:
+            nextRevision,
+
+          updatedClientId,
+
+          updatedClientAt,
+
+          updatedAt:
+            serverTimestamp()
+        };
+
+        if (!snapshot.exists()) {
+          documentData.createdAt =
+            serverTimestamp();
+        }
+
+        transaction.set(
+          gameRef,
+          documentData
+        );
+
+        return {
+          gameKey:
+            normalizedGameKey,
+
+          state:
+            cleanState,
+
+          revision:
+            nextRevision,
+
+          updatedClientId,
+
+          updatedClientAt
+        };
+      }
+    );
+  },
+
+
+  subscribeToLiveGameState(
+    clubId,
+    gameKey,
+    onData,
+    onError
+  ) {
+    if (
+      typeof onData !==
+      'function'
+    ) {
+      throw new Error(
+        'Live-Spiel-Callback fehlt'
+      );
+    }
+
+    const gameRef =
+      this.getLiveGameRef(
+        clubId,
+        gameKey
+      );
+
+    return onSnapshot(
+      gameRef,
+
+      snapshot => {
+        if (!snapshot.exists()) {
+          onData(null);
+          return;
+        }
+
+        onData(
+          normalizeLiveGameDocument(
+            gameKey,
+            snapshot.data()
+          )
+        );
+      },
+
+      error => {
+        console.error(
+          `Live-Spiel "${gameKey}" konnte nicht abonniert werden:`,
+          error
+        );
+
+        if (
+          typeof onError ===
+          'function'
+        ) {
+          onError(error);
+        }
+      }
+    );
+  },
+
+
+  async resetLiveGameState(
+    clubId,
+    gameKey,
+    initialState = {},
+    metadata = {}
+  ) {
+    return this.saveLiveGameState(
+      clubId,
+      gameKey,
+      initialState,
+      {
+        ...metadata,
+
+        updatedClientAt:
+          Number(
+            metadata.updatedClientAt ||
+            Date.now()
+          ) || Date.now()
+      }
+    );
+  },
+
+
+  async deleteLiveGameState(
+    clubId,
+    gameKey
+  ) {
+    const gameRef =
+      this.getLiveGameRef(
+        clubId,
+        gameKey
+      );
+
+    await deleteDoc(
+      gameRef
+    );
+
+    return true;
+  },
+
+
+  async runLiveGameTransaction(
+    clubId,
+    gameKey,
+    transactionHandler,
+    metadata = {}
+  ) {
+    if (
+      typeof transactionHandler !==
+      'function'
+    ) {
+      throw new Error(
+        'Transaktionsfunktion fehlt'
+      );
+    }
+
+    const normalizedGameKey =
+      normalizeLiveGameKey(
+        gameKey
+      );
+
+    const gameRef =
+      this.getLiveGameRef(
+        clubId,
+        normalizedGameKey
+      );
+
+    const updatedClientId =
+      String(
+        metadata.updatedClientId ||
+        ''
+      );
+
+    const requestedClientAt =
+      Number(
+        metadata.updatedClientAt ||
+        Date.now()
+      ) || Date.now();
+
+    return runTransaction(
+      db,
+      async transaction => {
+        const snapshot =
+          await transaction.get(
+            gameRef
+          );
+
+        const rawDocument =
+          snapshot.exists()
+            ? snapshot.data()
+            : {};
+
+        const normalizedDocument =
+          snapshot.exists()
+            ? normalizeLiveGameDocument(
+                normalizedGameKey,
+                rawDocument
+              )
+            : {
+                gameKey:
+                  normalizedGameKey,
+
+                state: {},
+
+                revision: 0,
+
+                updatedClientId: '',
+
+                updatedClientAt: 0,
+
+                updatedAt: null,
+
+                createdAt: null
+              };
+
+        const handlerResult =
+          await transactionHandler({
+            gameKey:
+              normalizedGameKey,
+
+            state:
+              cleanLiveGameValue(
+                normalizedDocument.state ||
+                {}
+              ),
+
+            revision:
+              normalizedDocument.revision,
+
+            document:
+              normalizedDocument,
+
+            exists:
+              snapshot.exists()
+          });
+
+        if (
+          !handlerResult ||
+          handlerResult.abort
+        ) {
+          return {
+            committed: false,
+
+            reason:
+              handlerResult?.reason ||
+              'aborted',
+
+            state:
+              normalizedDocument.state,
+
+            revision:
+              normalizedDocument.revision,
+
+            result:
+              handlerResult?.result ??
+              null
+          };
+        }
+
+        if (
+          !handlerResult.state ||
+          typeof handlerResult.state !==
+            'object'
+        ) {
+          throw new Error(
+            `Transaktion für "${normalizedGameKey}" liefert keinen gültigen State`
+          );
+        }
+
+        const nextState =
+          cleanLiveGameValue(
+            handlerResult.state
+          );
+
+        const nextRevision =
+          normalizedDocument.revision +
+          1;
+
+        const documentData = {
+          gameKey:
+            normalizedGameKey,
+
+          state:
+            nextState,
+
+          revision:
+            nextRevision,
+
+          updatedClientId,
+
+          updatedClientAt:
+            requestedClientAt,
+
+          updatedAt:
+            serverTimestamp()
+        };
+
+        if (!snapshot.exists()) {
+          documentData.createdAt =
+            serverTimestamp();
+        }
+
+        transaction.set(
+          gameRef,
+          documentData
+        );
+
+        return {
+          committed: true,
+
+          gameKey:
+            normalizedGameKey,
+
+          state:
+            nextState,
+
+          revision:
+            nextRevision,
+
+          updatedClientId,
+
+          updatedClientAt:
+            requestedClientAt,
+
+          result:
+            handlerResult.result ??
+            null
+        };
       }
     );
   },
