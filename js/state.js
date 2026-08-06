@@ -1,5 +1,5 @@
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = '2.0.0.90, © SK';
+const APPVersionSelf = '2.0.0.14, © SK';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -88,6 +88,7 @@ const ABSENT_STRAFE_EXTRA = 2;
 
 let tannenbaumThrowTeam = null;
 let tannenbaumOnTop = false;
+let monatsbeitrag = 0;
 
 const TANNENBAUM_DEFAULT_BASE = {
   1: 1,
