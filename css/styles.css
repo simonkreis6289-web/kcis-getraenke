@@ -4249,3 +4249,14 @@ body.view-only #clubBackBtn {
     min-width: 32px;
   }
 }
+
+/* V103: FastButtons nebeneinander und hervorgehobene Lotterie-Spalten */
+.quick-penalty-bar{grid-template-columns:180px repeat(6,minmax(130px,150px));overflow-x:auto}
+.quick-penalty-bar>button{white-space:nowrap}
+.kc-lotterie-complete{background:rgba(46,160,98,.20)!important;box-shadow:inset 0 0 0 1px rgba(46,160,98,.45)}
+.kc-sitzordnung,.kc-accounting-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin:12px 0}
+.kc-order-row{display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--border)}
+.kc-order-row span{flex:1}.kc-order-row button{min-width:38px;min-height:34px}
+.kc-placeholder-board{padding:30px;text-align:center;border:1px dashed var(--border);border-radius:10px}
+.kc-cash-entry{margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:10px}
+.kc-cash-entry table{width:100%;border-collapse:collapse}.kc-cash-entry th,.kc-cash-entry td{padding:7px;border-bottom:1px solid var(--border);text-align:left}
