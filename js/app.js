@@ -6367,3 +6367,58 @@ function setPenaltyStatsRangeAll() {
 
   renderPenaltyStats();
 }
+
+// Fast-Button: verlorenes Teamspiel (nur Geldstrafe, keine Getränkebuchung).
+let teamLossQuickSelection = null;
+let teamLossQuickBusy = false;
+function openTeamLossQuickModal() {
+  teamLossQuickSelection = null;
+  const modal = document.getElementById('team-loss-quick-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  updateTeamLossQuickModal();
+}
+function closeTeamLossQuickModal() {
+  if (teamLossQuickBusy) return;
+  document.getElementById('team-loss-quick-modal')?.classList.add('hidden');
+}
+function chooseTeamLossQuick(teamKey) {
+  if (teamLossQuickBusy || !['T1', 'T2'].includes(teamKey)) return;
+  teamLossQuickSelection = teamKey;
+  updateTeamLossQuickModal();
+}
+function updateTeamLossQuickModal() {
+  for (const key of ['T1', 'T2']) {
+    const btn = document.getElementById('team-loss-quick-' + key.toLowerCase());
+    if (!btn) continue;
+    btn.textContent = getGroupLabel(key);
+    btn.classList.toggle('active', teamLossQuickSelection === key);
+    btn.disabled = teamLossQuickBusy;
+  }
+  const members = teamLossQuickSelection ? getActiveTeamMembers(teamLossQuickSelection) : [];
+  const info = document.getElementById('team-loss-quick-info');
+  if (info) info.textContent = teamLossQuickSelection
+    ? `${members.length} aktive Spieler: ${members.map(p => p.name).join(', ') || 'keine'}`
+    : 'Bitte Verliererteam auswählen.';
+  const confirm = document.getElementById('team-loss-quick-confirm');
+  if (confirm) {
+    confirm.disabled = teamLossQuickBusy || !teamLossQuickSelection || !members.length || !getFirstLoserStrafeKey();
+    confirm.textContent = teamLossQuickBusy ? '⏳ Wird gebucht…' : '✅ Strafen buchen';
+  }
+}
+async function confirmTeamLossQuick() {
+  if (teamLossQuickBusy || !teamLossQuickSelection) return;
+  teamLossQuickBusy = true;
+  updateTeamLossQuickModal();
+  try {
+    const success = await addFirstLoserPenaltyToTeam(teamLossQuickSelection);
+    if (success) closeTeamLossQuickModalAfterSuccess();
+  } finally {
+    teamLossQuickBusy = false;
+    updateTeamLossQuickModal();
+  }
+}
+function closeTeamLossQuickModalAfterSuccess() {
+  document.getElementById('team-loss-quick-modal')?.classList.add('hidden');
+  teamLossQuickSelection = null;
+}
