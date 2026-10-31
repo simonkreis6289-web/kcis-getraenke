@@ -1734,6 +1734,14 @@ function calcNormalStrafenRaw(p) {
 return counted + lateAmount + earlyAmount + freeNormal + tannenbaum + getMissingGameCharges(p).filter(x => !x.onTop).reduce((sum, x) => sum + x.amount, 0);
 }
 
+// Sonderstrafe fuer den/die Gossenkoenig(e), nur einmal je Abrechnung.
+function getGosseKingBonus(p) {
+  if (!p || !p.present || !getGosseKings().includes(p.name)) return 0;
+  // Eine bereits explizit erfasste Gossenkoenig-Strafe nicht erneut buchen.
+  if ((p.freeStrafen || []).some(x => /gossen(könig|koenig)/i.test(String(x.reason || '')))) return 0;
+  return 3;
+}
+
 function calcOnTopStrafenTotal(p) {
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
 
@@ -1745,7 +1753,7 @@ function calcOnTopStrafenTotal(p) {
 function calcPersonStrafenTotalCapped(p) {
   const normal = Math.min(calcNormalStrafenRaw(p), STRAFEN_LIMIT);
   const onTop = calcOnTopStrafenTotal(p);
-  return normal + onTop;
+  return normal + onTop + getGosseKingBonus(p);
 }
 
 function calcHighestPresentStrafenTotal() {
@@ -3165,7 +3173,7 @@ function updateVersionInfo() {
   const el = document.getElementById('versionInfo');
   if (!el) return;
 
-  el.textContent = 'Version: ' + APPVersionSelf;
+  el.textContent = APPVersionSelf + ' | Letztes Update: ' + APP_LAST_UPDATE;
 }
 
 function updateHeaderDateTime() {

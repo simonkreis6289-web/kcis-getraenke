@@ -194,6 +194,8 @@ function getStrafenSnapshot() {
           ? [...person.freeStrafen.map(item => ({ ...item })), ...getMissingGameCharges(person)]
           : getMissingGameCharges(person),
 
+      isGosseKing: !!(person.present && getGosseKings().includes(person.name)),
+
       tannenbaumCharges:
         Array.isArray(
           person.tannenbaumCharges
@@ -1271,14 +1273,21 @@ async function generateStrafenPDF(snapshot) {
       const statusColor = person.status === 'present' ? [30, 155, 70] : person.status === 'excused' ? [220, 165, 30] : [205, 55, 55];
       doc.setFillColor(...statusColor);
       doc.circle(x + 4, y + rowHeight / 2, 1.8, 'F');
-      drawLeftText(
-        '      ' + person.name,
-        x,
-        y,
-        nameWidth,
-        rowHeight,
-        { bold: true, fontSize: 8 }
-      );
+      // Symbole belegen eigene feste Positionen, statt den Namen zu ueberlagern.
+      let nameOffset = 8;
+      if (person.isGosseKing) {
+        const cx = x + 9.5;
+        const cy = y + rowHeight / 2;
+        doc.setFillColor(230, 176, 28);
+        doc.triangle(cx - 2.3, cy - 1.1, cx - 1.2, cy + 1.4, cx + 2.3, cy + 1.4, 'F');
+        doc.triangle(cx - 2.3, cy - 1.1, cx + 0.2, cy + 1.4, cx + 1.2, cy - 1.1, 'F');
+        doc.rect(cx - 2.3, cy + 1.0, 4.6, 1.0, 'F');
+        nameOffset = 15;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(25, 25, 25);
+      doc.text(getPlainText(person.name), x + nameOffset, y + rowHeight / 2 + 2.5);
 
       x +=
         nameWidth;
@@ -1380,6 +1389,7 @@ async function generateStrafenPDF(snapshot) {
 
       const extraLines = [
         ...(person.freeStrafen || []).filter(item => Number(item.amount) !== 0).map(item => `${Number(item.amount) >= 0 ? '+' : ''}${formatEuro(Number(item.amount))} ${item.reason || 'Freier Betrag'}`),
+        ...(person.isGosseKing && !(person.freeStrafen || []).some(item => /gossen(könig|koenig)/i.test(String(item.reason || ''))) ? ['Gossenkönig +3,00 EUR'] : []),
         ...(person.tannenbaumCharges || []).filter(item => Number(item.amount) !== 0).map(item => `+${formatEuro(Number(item.amount))} Tannenbaum`)
       ];
       drawCenteredText(extraLines.length ? extraLines.join('\n') : '-', x, y, extrasWidth, rowHeight, {fontSize: 5.5});
