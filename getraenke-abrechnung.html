@@ -187,6 +187,8 @@
     <div class="modal-overlay hidden" id="team-loss-quick-modal">
   <div class="modal">
     <h3>🏆 Teamspiel verloren</h3>
+    <label for="team-loss-quick-game">Gespieltes Teamspiel</label>
+    <select id="team-loss-quick-game" style="width:100%;margin:8px 0 12px;padding:10px" onchange="updateTeamLossQuickModal()"></select>
     <div class="modal-sub">Welches Team hat verloren? Jedes aktive Teammitglied erhält 1 × „1. Verlierer“ (+1,00 € beim aktuellen Strafpreis).</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0">
       <button type="button" class="secondary-btn" id="team-loss-quick-t1" onclick="chooseTeamLossQuick('T1')">Team 1</button>
