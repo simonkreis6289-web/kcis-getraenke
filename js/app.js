@@ -3805,7 +3805,12 @@ function calcLeftEarlyCount(p) {
 
   if (end === null || left === null) return 0;
 
-  return calcStartedQuarterHours(end - left);
+  // Ein Kegelabend kann ueber Mitternacht gehen. Eine Uhrzeit nach
+  // 00:00 gehoert dann zum Folgetag und ist kein fruehes Gehen.
+  const start = timeStringToMinutes(timePenaltySettings.startTime || '20:00');
+  const endAbsolute = start !== null && end < start ? end + 1440 : end;
+  const leftAbsolute = start !== null && left < start ? left + 1440 : left;
+  return calcStartedQuarterHours(endAbsolute - leftAbsolute);
 }
 
 function saveTimePenaltySettings() {

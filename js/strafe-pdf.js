@@ -711,19 +711,13 @@ async function generateStrafenPDF(snapshot) {
       pageWidth -
       margin * 2;
 
-    const nameWidth =
-      includeStatus
-        ? 31
-        : 38;
+    const nameWidth = 39;
 
-    const statusWidth =
-      includeStatus
-        ? 20
-        : 0;
+    const statusWidth = 0;
 
-    const lateWidth = 22;
-    const earlyWidth = 22;
-    const extrasWidth = 23;
+    const lateWidth = 32;
+    const earlyWidth = 0;
+    const extrasWidth = 34;
     const penaltyTotalWidth = 25;
 
     const monthlyWidth =
@@ -760,7 +754,7 @@ async function generateStrafenPDF(snapshot) {
 
     const headerHeight = 29;
 
-    const rowHeight = 12;
+    const rowHeight = 18;
 
     let frameStartY =
       y;
@@ -1001,9 +995,7 @@ async function generateStrafenPDF(snapshot) {
       x +=
         nameWidth;
 
-      if (
-        includeStatus
-      ) {
+      if (false) {
         drawCell(
           x,
           y,
@@ -1073,7 +1065,7 @@ async function generateStrafenPDF(snapshot) {
       );
 
       drawCenteredText(
-        'Verspätet',
+        'Kommen / Gehen',
         x,
         y,
         lateWidth,
@@ -1098,7 +1090,7 @@ async function generateStrafenPDF(snapshot) {
       );
 
       drawCenteredText(
-        'Früher gegangen',
+        '',
         x,
         y,
         earlyWidth,
@@ -1280,24 +1272,22 @@ async function generateStrafenPDF(snapshot) {
         rowHeight
       );
 
+      const statusColor = person.status === 'present' ? [30, 155, 70] : person.status === 'excused' ? [220, 165, 30] : [205, 55, 55];
+      doc.setFillColor(...statusColor);
+      doc.circle(x + 3.1, y + rowHeight / 2, 1.5, 'F');
       drawLeftText(
-        person.name,
+        '    ' + person.name,
         x,
         y,
         nameWidth,
         rowHeight,
-        {
-          bold: true,
-          fontSize: 8
-        }
+        { bold: true, fontSize: 8 }
       );
 
       x +=
         nameWidth;
 
-      if (
-        includeStatus
-      ) {
+      if (false) {
         drawCell(
           x,
           y,
@@ -1364,29 +1354,18 @@ async function generateStrafenPDF(snapshot) {
           person
         );
 
-      drawTimePenaltyCell(
-        latePenalty,
-        x,
-        y,
-        lateWidth,
-        rowHeight
-      );
+      const earlyPenalty = getEarlyPdfData(person);
+      drawCell(x, y, lateWidth, rowHeight);
+      const timeLines = [];
+      if (latePenalty) timeLines.push(`Spaeter ${latePenalty.count}x ${formatEuro(latePenalty.amount)}`);
+      if (earlyPenalty) timeLines.push(`Frueher ${earlyPenalty.count}x ${formatEuro(earlyPenalty.amount)}`);
+      drawCenteredText(timeLines.length ? timeLines.join('\n') : '-', x, y, lateWidth, rowHeight, {fontSize: 6.2});
 
       x +=
         lateWidth;
 
-      const earlyPenalty =
-        getEarlyPdfData(
-          person
-        );
-
-      drawTimePenaltyCell(
-        earlyPenalty,
-        x,
-        y,
-        earlyWidth,
-        rowHeight
-      );
+      // Frueheres Gehen steht bereits in der kombinierten Spalte.
+      drawCell(x, y, earlyWidth, rowHeight);
 
       x +=
         earlyWidth;
@@ -1403,20 +1382,11 @@ async function generateStrafenPDF(snapshot) {
           person
         );
 
-      drawCenteredText(
-        extraTotal > 0
-          ? formatEuro(
-              extraTotal
-            )
-          : '-',
-        x,
-        y,
-        extrasWidth,
-        rowHeight,
-        {
-          fontSize: 6.3
-        }
-      );
+      const extraLines = [
+        ...(person.freeStrafen || []).filter(item => Number(item.amount) !== 0).map(item => `${Number(item.amount) >= 0 ? '+' : ''}${formatEuro(Number(item.amount))} ${item.reason || 'Freier Betrag'}`),
+        ...(person.tannenbaumCharges || []).filter(item => Number(item.amount) !== 0).map(item => `+${formatEuro(Number(item.amount))} Tannenbaum`)
+      ];
+      drawCenteredText(extraLines.length ? extraLines.join('\n') : '-', x, y, extrasWidth, rowHeight, {fontSize: 5.5});
 
       x +=
         extrasWidth;
