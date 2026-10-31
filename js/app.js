@@ -6415,6 +6415,13 @@ function openTeamLossQuickModal() {
   teamLossQuickSelection = null;
   const modal = document.getElementById('team-loss-quick-modal');
   if (!modal) return;
+  const select = document.getElementById('team-loss-quick-game');
+  if (select) {
+    select.replaceChildren();
+    SPIELE_KATALOG.slice().sort((a,b) => a.localeCompare(b,'de')).forEach(name => {
+      const option = document.createElement('option'); option.value = name; option.textContent = name; select.appendChild(option);
+    });
+  }
   modal.classList.remove('hidden');
   updateTeamLossQuickModal();
 }
@@ -6442,7 +6449,7 @@ function updateTeamLossQuickModal() {
     : 'Bitte Verliererteam auswählen.';
   const confirm = document.getElementById('team-loss-quick-confirm');
   if (confirm) {
-    confirm.disabled = teamLossQuickBusy || !teamLossQuickSelection || !members.length || !getFirstLoserStrafeKey();
+    confirm.disabled = teamLossQuickBusy || !teamLossQuickSelection || !members.length || !getFirstLoserStrafeKey() || !document.getElementById('team-loss-quick-game')?.value;
     confirm.textContent = teamLossQuickBusy ? '⏳ Wird gebucht…' : '✅ Strafen buchen';
   }
 }
@@ -6451,8 +6458,16 @@ async function confirmTeamLossQuick() {
   teamLossQuickBusy = true;
   updateTeamLossQuickModal();
   try {
-    const success = await addFirstLoserPenaltyToTeam(teamLossQuickSelection);
-    if (success) closeTeamLossQuickModalAfterSuccess();
+    const team = teamLossQuickSelection;
+    const game = document.getElementById('team-loss-quick-game')?.value;
+    const members = getActiveTeamMembers(team).map(p => p.name);
+    if (!game || !members.length) return;
+    const success = await addFirstLoserPenaltyToTeam(team);
+    if (success) {
+      strafenHistory.unshift({ type: 'teamspiel_strafe', spieltyp: game, loser: team, members, date: new Date().toISOString() });
+      persistState();
+      closeTeamLossQuickModalAfterSuccess();
+    }
   } finally {
     teamLossQuickBusy = false;
     updateTeamLossQuickModal();

@@ -1933,162 +1933,28 @@ async function generateStrafenPDF(snapshot) {
 
   currentY += 7;
 
-  const bookedTeamGames =
-    Array.isArray(spiele)
-      ? spiele
-      : [];
-
-  if (
-    !bookedTeamGames.length
-  ) {
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
-
-    doc.setFontSize(9);
-
-    doc.text(
-      'Keine Teamspiele gebucht.',
-      margin,
-      currentY
-    );
-
-    currentY += 8;
+  // Nur Geldstrafen-Teamspiele dokumentieren; Getränke gehören ausschließlich in die Getränke-PDF.
+  const bookedTeamGames = (snapshot.history || []).filter(entry => entry.type === 'teamspiel_strafe');
+  if (!bookedTeamGames.length) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text('Keine Teamspiel-Strafen gebucht.', margin, currentY); currentY += 8;
   } else {
-    bookedTeamGames.forEach(
-      (
-        game,
-        index
-      ) => {
-        if (
-          currentY >
-          pageHeight -
-          margin -
-          28
-        ) {
-          doc.addPage();
-          currentY = margin;
-        }
-
-        const loserName =
-          getPlainTeamName(
-            game.loser
-          );
-
-        const gameName =
-          getPlainText(
-            game.spieltyp ||
-            'Teamspiel'
-          );
-
-        const members =
-          Array.isArray(
-            game.members
-          )
-            ? game.members
-                .map(
-                  getPlainText
-                )
-                .filter(Boolean)
-            : [];
-
-        const drinksText =
-          DRINKS
-            .filter(drink =>
-              (
-                game.drinks?.[
-                  drink.key
-                ] || 0
-              ) > 0
-            )
-            .map(drink =>
-              `${
-                game.drinks[
-                  drink.key
-                ]
-              }x ${getPlainText(
-                drink.label
-              )}`
-            )
-            .join(', ');
-
-        doc.setFont(
-          'helvetica',
-          'bold'
-        );
-
-        doc.setFontSize(10);
-
-        doc.text(
-          `${index + 1}. ${gameName}`,
-          margin,
-          currentY
-        );
-
-        currentY += 5;
-
-        doc.setFont(
-          'helvetica',
-          'normal'
-        );
-
-        doc.setFontSize(8.5);
-
-        doc.text(
-          `Verlierer: ${loserName}`,
-          margin + 5,
-          currentY
-        );
-
-        currentY += 5;
-
-        const gameDetails = [
-          `Getränke: ${
-            drinksText || '-'
-          }`,
-
-          `Gesamt: ${formatEuro(
-            game.total || 0
-          )}`,
-
-          `Pro Person: ${formatEuro(
-            game.proKopf || 0
-          )}`,
-
-          `Belastete Spieler: ${
-            members.join(', ') ||
-            '-'
-          }`
-        ];
-
-        gameDetails.forEach(
-          detail => {
-            const lines =
-              doc.splitTextToSize(
-                getPlainText(detail),
-                pageWidth -
-                margin * 2 -
-                10
-              );
-
-            doc.text(
-              lines,
-              margin + 5,
-              currentY
-            );
-
-            currentY +=
-              Math.max(
-                4.5,
-                lines.length * 4
-              );
-          }
-        );
-
-        currentY += 4;
-      }
-    );
+    bookedTeamGames.slice().reverse().forEach((game, index) => {
+      if (currentY > pageHeight - margin - 27) { doc.addPage(); currentY = margin; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+      doc.text(`${index + 1}. Teamspiel`, margin, currentY); currentY += 5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+      const details = [
+        getPlainText(game.spieltyp || 'Teamspiel'),
+        `${getPlainTeamName(game.loser)} verloren`,
+        `Spieler: ${(game.members || []).map(getPlainText).join(', ') || '-'}`
+      ];
+      details.forEach(detail => {
+        const lines = doc.splitTextToSize(detail, pageWidth - margin * 2 - 10);
+        doc.text(lines, margin + 5, currentY); currentY += Math.max(5, lines.length * 4);
+      });
+      currentY += 4;
+    });
   }
 
   /*
