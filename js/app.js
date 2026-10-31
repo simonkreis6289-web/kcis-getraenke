@@ -1679,6 +1679,33 @@ function renderStrafenHistory() {
   }).join('');
 }
         
+// Abgeschlossene Spiele können in der Historie stehen, ohne dass ihre
+// Einzelbuchungen in freeStrafen synchronisiert wurden.
+function getMissingGameCharges(p) {
+  const entries = Array.isArray(strafenHistory) ? strafenHistory : [];
+  const existing = Array.isArray(p.freeStrafen) ? p.freeStrafen : [];
+  const result = [];
+  for (const entry of entries) {
+    if (!['lotterie', 'tiberius'].includes(entry.type)) continue;
+    const label = entry.type === 'lotterie' ? 'Lotterie' : 'Tiberius';
+    const charges = (entry.assignedTo || []).filter(x =>
+      String(x.name || '').trim().toLocaleLowerCase('de') ===
+      String(p.name || '').trim().toLocaleLowerCase('de')
+    );
+    for (const charge of charges) {
+      const amount = Number(charge.amount) || 0;
+      if (!amount) continue;
+      const alreadyBooked = existing.some(x =>
+        String(x.reason || '').toLocaleLowerCase('de').includes(label.toLocaleLowerCase('de')) &&
+        Math.abs((Number(x.amount) || 0) - amount) < 0.001 &&
+        !!x.onTop === !!charge.onTop
+      );
+      if (!alreadyBooked) result.push({amount, reason: label, onTop: !!charge.onTop});
+    }
+  }
+  return result;
+}
+
 function calcNormalStrafenRaw(p) {
   if (!p.strafen) p.strafen = {};
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
@@ -1704,13 +1731,13 @@ function calcNormalStrafenRaw(p) {
 
   const tannenbaum = getPersonTannenbaumTotal(p) || 0;
 
-return counted + lateAmount + earlyAmount + freeNormal + tannenbaum;
+return counted + lateAmount + earlyAmount + freeNormal + tannenbaum + getMissingGameCharges(p).filter(x => !x.onTop).reduce((sum, x) => sum + x.amount, 0);
 }
 
 function calcOnTopStrafenTotal(p) {
   if (!Array.isArray(p.freeStrafen)) p.freeStrafen = [];
 
-  return p.freeStrafen
+  return [...p.freeStrafen, ...getMissingGameCharges(p)]
     .filter(x => x.onTop)
     .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 }

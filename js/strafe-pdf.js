@@ -191,12 +191,8 @@ function getStrafenSnapshot() {
         Array.isArray(
           person.freeStrafen
         )
-          ? person.freeStrafen.map(
-              item => ({
-                ...item
-              })
-            )
-          : [],
+          ? [...person.freeStrafen.map(item => ({ ...item })), ...getMissingGameCharges(person)]
+          : getMissingGameCharges(person),
 
       tannenbaumCharges:
         Array.isArray(
@@ -1274,9 +1270,9 @@ async function generateStrafenPDF(snapshot) {
 
       const statusColor = person.status === 'present' ? [30, 155, 70] : person.status === 'excused' ? [220, 165, 30] : [205, 55, 55];
       doc.setFillColor(...statusColor);
-      doc.circle(x + 3.1, y + rowHeight / 2, 1.5, 'F');
+      doc.circle(x + 4, y + rowHeight / 2, 1.8, 'F');
       drawLeftText(
-        '    ' + person.name,
+        '      ' + person.name,
         x,
         y,
         nameWidth,
