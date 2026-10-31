@@ -180,8 +180,25 @@
       <button onclick="openPenaltyQuick('kranz')">👑 Kranz</button>
       <button onclick="openPenaltyQuick('durchgeworfen')">🎳 Durchgeworfen</button>
       <button onclick="openPenaltyQuick('gosse')">💀 Gosse</button>
-      <button class="quick-btn" onclick="openBuyThrowModal()">🍺 Würfe kaufen</button>  
+      <button class="quick-btn" onclick="openBuyThrowModal()">🍺 Würfe kaufen</button>
+      <button class="quick-btn" onclick="openTeamLossQuickModal()">🏆 Teamspiel verloren</button>  
     </div>
+
+    <div class="modal-overlay hidden" id="team-loss-quick-modal">
+  <div class="modal">
+    <h3>🏆 Teamspiel verloren</h3>
+    <div class="modal-sub">Welches Team hat verloren? Jedes aktive Teammitglied erhält 1 × „1. Verlierer“ (+1,00 € beim aktuellen Strafpreis).</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0">
+      <button type="button" class="secondary-btn" id="team-loss-quick-t1" onclick="chooseTeamLossQuick('T1')">Team 1</button>
+      <button type="button" class="secondary-btn" id="team-loss-quick-t2" onclick="chooseTeamLossQuick('T2')">Team 2</button>
+    </div>
+    <div id="team-loss-quick-info" style="margin:10px 0;color:var(--muted)">Team auswählen</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeTeamLossQuickModal()">Abbrechen</button>
+      <button class="primary-btn" id="team-loss-quick-confirm" onclick="confirmTeamLossQuick()" disabled>✅ Strafen buchen</button>
+    </div>
+  </div>
+</div>
 
     <div class="app-shell">
   <aside class="side-nav">
@@ -1806,7 +1823,7 @@
 
 <script src="js/groups.js?v=20260618-v29"></script>
 
-<script src="js/app.js?v=20260618-v38"></script>
+<script src="js/app.js?v=20261031-v1"></script>
     
 <script src="js/live-games.js?v=20260806-v1"></script>
 <script src="js/strafe-pdf.js?v=20260806-v1"></script>
