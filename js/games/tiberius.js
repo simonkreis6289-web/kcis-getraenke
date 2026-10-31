@@ -35,7 +35,7 @@ function initTiberiusDefaultsIfNeeded() {
 
   if (tiberiusState.active) return;
 
-  const playersCount = getActivePlayersForSoloGame().length;
+  const playersCount = getKCSoloPlayers("tiberius").length;
 
   if (!tiberiusState.columnCount && playersCount > 0) {
     tiberiusState.columnCount = playersCount;
@@ -124,7 +124,7 @@ function startTiberiusGame() {
   ensureTiberiusState();
   saveTiberiusSettings(false);
 
-  const players = getActivePlayersForSoloGame();
+  const players = getKCSoloPlayers("tiberius");
   if (!players.length) {
     showToast('Keine anwesenden Spieler für Tiberius', 'error');
     return;
@@ -168,7 +168,7 @@ function startTiberiusGame() {
 function getTiberiusCurrentAmount() {
   ensureTiberiusState();
 
-  return getActivePlayersForSoloGame()
+  return getKCSoloPlayers("tiberius")
     .reduce((sum, p) => sum + getTiberiusPenaltyForPerson(p.name), 0);
 }
     
@@ -311,7 +311,7 @@ function closeTiberiusThrowModal() {
   if (select) {
     select.innerHTML = '<option value="">Bitte Person wählen</option>';
 
-    getActivePlayersForSoloGame().forEach(p => {
+    getKCSoloPlayers("tiberius").forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.name;
       opt.textContent = p.name;
@@ -530,7 +530,7 @@ function openTiberiusHitModal() {
   if (select) {
     select.innerHTML = '<option value="">Bitte Person wählen</option>';
 
-    getActivePlayersForSoloGame().forEach(p => {
+    getKCSoloPlayers("tiberius").forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.name;
       opt.textContent = p.name;
@@ -559,7 +559,7 @@ function confirmTiberiusHitPenalty() {
     return;
   }
 
-  const players = getActivePlayersForSoloGame();
+  const players = getKCSoloPlayers("tiberius");
   const amount = (parseInt(pending.target || 0, 10) || 0) * 0.01;
 
   let payers = [];
@@ -667,7 +667,7 @@ function renderTiberius() {
     amountDisplay.textContent = euros(getTiberiusCurrentAmount());
   }
 
-  const players = getActivePlayersForSoloGame();
+  const players = getKCSoloPlayers("tiberius");
 
   if (!tiberiusState.active) {
     board.innerHTML = `
@@ -777,7 +777,7 @@ function finishTiberiusGame() {
     return;
   }
 
-  const players = getActivePlayersForSoloGame();
+  const players = getKCSoloPlayers("tiberius");
   const assignedTo = [];
 
   players.forEach(p => {

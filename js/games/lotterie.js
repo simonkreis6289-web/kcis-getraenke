@@ -194,7 +194,7 @@ function stopLiveLotterieSync() {
 
 function getActivePlayersForSoloGame() {
   return persons
-    .filter(p => p.present && !p.left)
+    .filter(p => p.present && !p.left && !p.drinksOnly)
     .sort((a, b) => {
       if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
       return a.name.localeCompare(b.name, 'de');
@@ -206,7 +206,7 @@ function roundTo10Cent(value) {
 }
 
 function getLotteriePlayerCount() {
-  return getActivePlayersForSoloGame().length;
+  return getKCSoloPlayers("lotterie").length;
 }
 
 async function startLotterieGame() {
@@ -214,7 +214,7 @@ async function startLotterieGame() {
   saveLotterieSettings(false);
 
   const players =
-    getActivePlayersForSoloGame();
+    getKCSoloPlayers("lotterie");
 
   if (!players.length) {
     showToast(
@@ -829,7 +829,7 @@ function getGosseStrafeKey() {
 function getLotterieColumnLosers(colIndex) {
   ensureLotterieState();
 
-  const players = getActivePlayersForSoloGame();
+  const players = getKCSoloPlayers("lotterie");
 
   const values = players
     .map(p => ({
@@ -910,7 +910,7 @@ function initLotterieDefaultsIfNeeded() {
 
   if (lotterieState.active) return;
 
-  const playersCount = getActivePlayersForSoloGame().length;
+  const playersCount = getKCSoloPlayers("lotterie").length;
 
   if (!lotterieState.columnCount && playersCount > 0) {
     lotterieState.columnCount = playersCount;
@@ -1029,7 +1029,7 @@ if (resetBtn) {
     randomBtn.classList.toggle('hidden', !!lotterieState.active);
   }
 
-  const players = getActivePlayersForSoloGame();
+  const players = getKCSoloPlayers("lotterie");
 
   if (!lotterieState.active) {
     board.innerHTML = `
@@ -1076,8 +1076,12 @@ if (resetBtn) {
     });
   });
 
-  const headerCols = lotterieState.columns.map(amount => `
-    <th>
+  const completeCols = lotterieState.columns.map((_, i) => players.every(person => {
+    const value = lotterieState.throws[person.name]?.[i];
+    return value !== null && value !== undefined && value !== '';
+  }));
+  const headerCols = lotterieState.columns.map((amount, colIndex) => `
+    <th class="${completeCols[colIndex] ? 'kc-lotterie-complete' : ''}">
       <div style="font-size:1.05rem;font-weight:900;color:var(--accent2);">
         ${euros(amount)}
       </div>
@@ -1098,7 +1102,7 @@ if (resetBtn) {
             : value;
 
       return `
-        <td>
+        <td class="${completeCols[colIndex] ? 'kc-lotterie-complete' : ''}">
           <button
             class="game-cell-btn ${value === null || value === undefined ? 'empty' : ''} ${isLoser ? 'loser' : ''}"
             onclick="openLotterieThrowModal('${escapeForJs(p.name)}', ${colIndex})"
@@ -1155,7 +1159,7 @@ async function finishLotterieGame() {
   }
 
   const players =
-    getActivePlayersForSoloGame();
+    getKCSoloPlayers("lotterie");
 
   if (!players.length) {
     showToast(
