@@ -65,6 +65,7 @@ function getSerializableState() {
     lotterieSettings,
     tiberiusSettings,
       strafenHistory,
+      kcCashClosures,
     bahnTimerStart,
     bahnTimerRunning,
     teamStopwatchActive,
@@ -132,6 +133,7 @@ function getFirestoreState() {
       STRAFEN_LIMIT,
       strafPrices,
       strafenHistory,
+      kcCashClosures,
       wurfSettings,
 
     updatedFrom: 'app',
@@ -319,6 +321,7 @@ function applyLoadedState(state) {
       ? state.penaltyStatsLog
       : [];
 
+  kcCashClosures = Array.isArray(state.kcCashClosures) ? state.kcCashClosures : [];
   strafenHistory =
     Array.isArray(state.strafenHistory)
       ? state.strafenHistory
@@ -5470,7 +5473,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius', 'spiele-einstellungen'],
+  spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius', 'plusminus', 'maedn', 'sichern', 'fuchsjagd', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
 };
@@ -5515,6 +5518,8 @@ function toggleSideMenu(mainKey) {
 }
 
 function showSideTab(mainKey, subKey, el) {
+  if (mainKey === 'strafen' && subKey === 'strafen-abrechnung') setTimeout(renderKCCashHistory, 0);
+  if (mainKey === 'spiele' && ['lotterie','tiberius'].includes(subKey)) setTimeout(() => renderKCSoloOrder(subKey), 0);
   document.querySelectorAll('.main-panel').forEach(panel => {
     panel.classList.add('hidden');
   });

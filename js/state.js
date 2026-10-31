@@ -1,6 +1,6 @@
 const APP_VERSION = '20260318-13';
-const APPVersionSelf = 'V102 © SK';
-const APP_LAST_UPDATE = '31.10.2026 10:29 Uhr';
+const APPVersionSelf = 'V103 © SK';
+const APP_LAST_UPDATE = '31.10.2026';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -167,3 +167,6 @@ let timePenaltySettings = {
 
 let arrivalEditPerson = null;
 let leftEarlyEditPerson = null;
+
+// Synchronisierte, unveränderliche Abschlusssnapshots je Kegeltermin.
+let kcCashClosures = [];

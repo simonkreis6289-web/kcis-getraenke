@@ -2221,6 +2221,7 @@ async function closeStrafenAndExportPDF() {
     await archiveStrafenEvent(
       snapshot
     );
+    recordKCCashClosure(snapshot);
 
     showToast(
       '✅ Straf-PDF erstellt und archiviert',
