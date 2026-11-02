@@ -181,7 +181,7 @@
       <button onclick="openPenaltyQuick('durchgeworfen')">🎳 Durchgeworfen</button>
       <button onclick="openPenaltyQuick('gosse')">💀 Gosse</button>
       <button class="quick-btn" onclick="openBuyThrowModal()">🍺 Würfe kaufen</button>
-      <button class="quick-btn" onclick="openTeamLossQuickModal()">🏆 Teamspiel verloren</button>  
+      <button class="quick-btn team-loss-btn" onclick="openTeamLossQuickModal()">🏆 Teamspiel verloren</button>  
     </div>
 
     <div class="modal-overlay hidden" id="team-loss-quick-modal">
@@ -236,14 +236,7 @@
         <strong>Spiele</strong>
       </button>
       <div class="side-submenu hidden">
-        <button onclick="showSideTab('spiele','tannenbaum',this)">🌲 Tannenbaum</button>
-        <button onclick="showSideTab('spiele','darts',this)">🎯 Darts</button>
-        <button onclick="showSideTab('spiele','lotterie',this)">🎰 Lotterie</button>
-        <button onclick="showSideTab('spiele','tiberius',this)">🏛️ Tiberius</button>
-        <button onclick="showSideTab('spiele','plusminus',this)">➕ ＋ − × ÷</button>
-        <button onclick="showSideTab('spiele','maedn',this)">🎲 Mensch ärgere dich nicht</button>
-        <button onclick="showSideTab('spiele','sichern',this)">🔒 Sichern</button>
-        <button onclick="showSideTab('spiele','fuchsjagd',this)">🦊 Fuchsjagd</button>
+        <button onclick="showSideTab('spiele','spiele-hub',this)">🎮 Spielauswahl</button>
         <button onclick="showSideTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</button>
       </div>
     </div>
@@ -338,12 +331,11 @@
           <button class="add-btn" onclick="addPerson(false)">+ Mitglied hinzufügen</button>
         </div>
 
-        <div class="subsection-title">Gäste (auch reine Trinkgäste)</div>
+        <div class="subsection-title">Gastkegler</div>
         <div class="persons-grid" id="persons-grid-guests"></div>
         <div class="add-person-row">
-          <input type="text" id="new-guest-input" placeholder="Gast oder Trinkgast hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(true)">
-          <button class="add-btn" onclick="addPerson(true)">+ Gast hinzufügen</button>
-          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="guest-drinks-only"> 🍺 Nur Getränke, kein Kegeln</label>
+          <input type="text" id="new-guest-input" placeholder="Gastkegler hinzufügen…" onkeydown="if(event.key==='Enter') addPerson(true)">
+          <button class="add-btn" onclick="addPerson(true)">+ Gastkegler hinzufügen</button>
         </div>
       </div>
 
@@ -569,6 +561,7 @@
             <button class="secondary-btn" onclick="setPenaltyStatsRangeToday()">Heute</button>
             <button class="secondary-btn" onclick="setPenaltyStatsRangeMonth()">Dieser Monat</button>
             <button class="secondary-btn" onclick="setPenaltyStatsRangeAll()">Alles</button>
+            <button class="secondary-btn" onclick="resetPenaltyStatsCounter()">↻ Zähler neu starten</button>
           </div>
 
           <div class="drinks-table-wrap">
@@ -589,22 +582,17 @@
         </div>
         
       <div id="tab-strafen-abrechnung" class="hidden">
-        <div class="kc-accounting-card">
-          <h3>📒 Kassenhistorie je Kegelabend</h3>
-          <div class="modal-input-row"><label>Von</label><input type="date" id="kc-cash-from" onchange="renderKCCashHistory()"></div>
-          <div class="modal-input-row"><label>Bis</label><input type="date" id="kc-cash-to" onchange="renderKCCashHistory()"></div>
-          <button class="secondary-btn" onclick="document.getElementById('kc-cash-from').value='';document.getElementById('kc-cash-to').value='';renderKCCashHistory()">Alle Termine</button>
-          <div id="kc-cash-history"></div>
-        </div>
-        <div class="kc-accounting-card">
-          <h3>🚫 Ausgefallener Kegeltermin</h3>
-          <p>Jedes Clubmitglied zahlt pauschal 50,00 €. Keine regulären Spielstrafen.</p>
-          <label>Termin <input type="date" id="kc-cancel-date"></label>
-          <button class="primary-btn" onclick="createCancelledKegelabend()">📄 50-€-PDF erstellen und Termin buchen</button>
-        </div>
         <div class="section-title">Strafen Abrechnung</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-          Die Abschlüsse werden mit Datum und den damaligen Salden dokumentiert.
+        <div class="cash-history-panel">
+          <h3>📒 Kassenhistorie abgeschlossener Abende</h3>
+          <p class="cash-help">Hier stehen die archivierten Strafenabschlüsse des aktuellen Clubs. Ein gelöschter Abschluss wird aus dem Firestore-Archiv entfernt. Die bereits heruntergeladene PDF bleibt unverändert.</p>
+          <div class="cash-history-filters">
+            <label>Von <input type="date" id="cash-history-from" onchange="renderCashHistory()"></label>
+            <label>Bis <input type="date" id="cash-history-to" onchange="renderCashHistory()"></label>
+            <button class="secondary-btn" onclick="refreshCashHistory()">🔄 Aktualisieren</button>
+          </div>
+          <div id="cash-history-status" class="cash-help"></div>
+          <div id="cash-history-list"></div>
         </div>
       </div>
     </div>
@@ -612,10 +600,21 @@
     <!-- SPIELE -->
     <div id="main-spiele" class="main-panel hidden">
         
-<div id="tab-plusminus" class="hidden kc-game-placeholder"><div class="section-title">➕ ＋ − × ÷</div><section class="kc-accounting-card"><h3>Spiel vorbereitet</h3><p>Die Oberfläche ist eingebunden. Die Spielregeln und Spiellogik ergänzen wir später in <code>js/games/plusminus.js</code>.</p><div id="plusminus-board" class="kc-placeholder-board">🎳 Regeln folgen</div></section></div>
-<div id="tab-maedn" class="hidden kc-game-placeholder"><div class="section-title">🎲 Mensch ärgere dich nicht</div><section class="kc-accounting-card"><h3>Spiel vorbereitet</h3><p>Die Oberfläche ist eingebunden. Die Spielregeln und Spiellogik ergänzen wir später in <code>js/games/maedn.js</code>.</p><div id="maedn-board" class="kc-placeholder-board">🎳 Regeln folgen</div></section></div>
-<div id="tab-sichern" class="hidden kc-game-placeholder"><div class="section-title">🔒 Sichern</div><section class="kc-accounting-card"><h3>Spiel vorbereitet</h3><p>Die Oberfläche ist eingebunden. Die Spielregeln und Spiellogik ergänzen wir später in <code>js/games/sichern.js</code>.</p><div id="sichern-board" class="kc-placeholder-board">🎳 Regeln folgen</div></section></div>
-<div id="tab-fuchsjagd" class="hidden kc-game-placeholder"><div class="section-title">🦊 Fuchsjagd</div><section class="kc-accounting-card"><h3>Spiel vorbereitet</h3><p>Die Oberfläche ist eingebunden. Die Spielregeln und Spiellogik ergänzen wir später in <code>js/games/fuchsjagd.js</code>.</p><div id="fuchsjagd-board" class="kc-placeholder-board">🎳 Regeln folgen</div></section></div>
+<div id="tab-spiele-hub">
+  <div class="section-title">Spielauswahl</div>
+  <div class="game-hub-grid">
+    <div class="game-hub-card" onclick="showSideTab('spiele','tannenbaum')"><div class="icon">🌲</div><div class="title">Tannenbaum</div><div class="desc">Teamspiel mit Strafboxen, Strikes und Live-Übersicht.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','darts')"><div class="icon">🎯</div><div class="title">Darts</div><div class="desc">Klassisches Countdown-Spiel für zwei Teams.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','lotterie')"><div class="icon">🎰</div><div class="title">Lotterie</div><div class="desc">Mit Startspieler-Auslosung, Sitzreihenfolge und Spaltenbeträgen.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','tiberius')"><div class="icon">🏛️</div><div class="title">Tiberius</div><div class="desc">Mit Startspieler-Auslosung, Sitzreihenfolge und Zielspalten.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','mensch')"><div class="icon">🎲</div><div class="title">Mensch ärgere dich nicht</div><div class="desc">Neu umgesetzt mit schöner Punktleiste bis genau 36.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','plusminus')"><div class="icon">➕</div><div class="title">+ − × ÷</div><div class="desc">5 Würfe pro Spieler, links-nach-rechts gerechnet, optional mit Gosse-Automatik.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Grundstruktur vorbereitet – Regeln folgen später.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','fuchsjagd')"><div class="icon">🦊</div><div class="title">Fuchsjagd</div><div class="desc">Grundstruktur vorbereitet – Regeln folgen später.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','spiele-einstellungen')"><div class="icon">⚙️</div><div class="title">Einstellungen</div><div class="desc">Spielbezogene Optionen und Standardwerte.</div></div>
+  </div>
+</div>
+
 <div id="tab-tannenbaum">
   <div class="section-title">Tannenbaum</div>
 
@@ -881,7 +880,6 @@
     </div>
         
 <div id="tab-lotterie" class="hidden">
-  <div class="kc-sitzordnung" id="lotterie-order-panel"></div>
   <div class="section-title">Lotterie</div>
 
   <div class="game-start-card" id="lotterie-setup-card">
@@ -905,6 +903,7 @@
       </div>
 
       <div id="lotterie-amount-editor"></div>
+      <div id="lotterie-order-editor" class="game-order-editor"></div>
     </div>
 
     <div class="modal-btns" style="margin-top:14px;">
@@ -912,7 +911,7 @@
         🎲 Zufällige Beträge
       </button>
 
-      <button type="button" class="primary-btn" onclick="drawSoloStarter('lotterie')">
+      <button type="button" class="primary-btn" onclick="startLotterieGame()">
         🎰 Lotterie starten
       </button>
     </div>
@@ -935,7 +934,6 @@
 </div>
 
 <div id="tab-tiberius" class="hidden">
-  <div class="kc-sitzordnung" id="tiberius-order-panel"></div>
   <div class="section-title">Tiberius</div>
 
   <div class="game-start-card" id="tiberius-start-card">
@@ -963,6 +961,7 @@
       </div>
 
       <div id="tiberius-target-editor"></div>
+      <div id="tiberius-order-editor" class="game-order-editor"></div>
     </div>
 
     <div class="modal-btns" style="margin-top:14px;">
@@ -978,7 +977,7 @@
       <button
         type="button"
         class="primary-btn"
-        onclick="drawSoloStarter('tiberius')"
+        onclick="startTiberiusGame()"
       >
         🏛️ Tiberius starten
       </button>
@@ -1040,7 +1039,61 @@
       <div id="tiberius-history-list" class="spiele-list"></div>
     </div>
         
-        <div id="tab-spiele-einstellungen" class="hidden">
+        <div id="tab-mensch" class="hidden">
+  <div class="section-title">Mensch ärgere dich nicht</div>
+  <div class="game-start-card" id="mensch-start-card">
+    <div class="modal-sub">Ziel sind genau 36 Punkte. Bei 6 darf der Spieler direkt noch einmal werfen. Wer genau 36 erreicht, beendet das Spiel.</div>
+    <div id="mensch-order-editor" class="game-order-editor"></div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="primary-btn" onclick="startMenschGame()">🎲 Spiel starten</button>
+    </div>
+  </div>
+  <div id="mensch-board"></div>
+  <div style="margin-top:14px;display:flex;gap:10px;">
+    <button class="secondary-btn" onclick="resetMenschGame()">↻ Neustart</button>
+  </div>
+  <div class="section-title">Verlauf</div>
+  <div id="mensch-history-list" class="spiele-list"></div>
+</div>
+
+<div id="tab-plusminus" class="hidden">
+  <div class="section-title">+ − × ÷</div>
+  <div class="game-start-card" id="plusminus-start-card">
+    <div class="modal-sub">Es wird von links nach rechts gerechnet: Kästchen 1 + 2 − 3 × 4 ÷ 5. Kein Punkt-vor-Strich.</div>
+    <label class="modal-check game-ontop-check">
+      <input type="checkbox" id="plusminus-smart-gosse" onchange="togglePlusminusSmartGosse()">
+      <span>Bei Gosse automatisch das schlechteste mögliche Ergebnis nehmen</span>
+    </label>
+    <div id="plusminus-order-editor" class="game-order-editor"></div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="primary-btn" onclick="startPlusminusGame()">➕ Spiel starten</button>
+    </div>
+  </div>
+  <div id="plusminus-board"></div>
+  <div style="margin-top:14px;display:flex;gap:10px;">
+    <button class="secondary-btn" onclick="resetPlusminusGame()">↻ Neustart</button>
+  </div>
+  <div class="section-title">Verlauf</div>
+  <div id="plusminus-history-list" class="spiele-list"></div>
+</div>
+
+<div id="tab-sichern" class="hidden">
+  <div class="section-title">Sichern</div>
+  <div class="game-placeholder-card">
+    <strong>Vorbereitet:</strong> Die HTML-Struktur für dieses Spiel ist angelegt.
+    <div style="margin-top:8px;">Sobald du mir die Regeln gibst, bauen wir Logik, Darstellung und Strafauswertung ein.</div>
+  </div>
+</div>
+
+<div id="tab-fuchsjagd" class="hidden">
+  <div class="section-title">Fuchsjagd</div>
+  <div class="game-placeholder-card">
+    <strong>Vorbereitet:</strong> Die HTML-Struktur für dieses Spiel ist angelegt.
+    <div style="margin-top:8px;">Sobald du mir die Regeln gibst, bauen wir Logik, Darstellung und Strafauswertung ein.</div>
+  </div>
+</div>
+
+<div id="tab-spiele-einstellungen" class="hidden">
           <div class="section-title">Spiel-Einstellungen</div>
             
             <div class="section-title">Tannenbaum</div>
@@ -1827,7 +1880,20 @@
   </div>
 </div>
     
-<div class="modal-overlay hidden" id="kc-starter-modal" style="z-index:10001"><div class="modal" style="text-align:center;max-width:430px"><h2>🎲 Wer beginnt?</h2><div id="kc-starter-name" style="font-size:2rem;font-weight:900;margin:30px 0">🎳</div><div id="kc-starter-info">Startspieler wird ausgelost …</div></div></div>
+<div class="modal-overlay hidden" id="solo-start-draw-modal">
+  <div class="modal" style="max-width:460px;text-align:center;">
+    <h3 id="solo-start-draw-title">🎲 Startspieler</h3>
+    <div class="modal-sub" id="solo-start-draw-sub">Wer beginnt das Spiel?</div>
+    <div class="solo-start-spin" id="solo-start-draw-spin">—</div>
+    <div class="solo-start-result" id="solo-start-draw-result"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeSoloStartDraw()">Abbrechen</button>
+      <button class="modal-ok" id="solo-start-draw-run-btn" onclick="runSoloStartDraw()">🎲 Auslosen</button>
+      <button class="primary-btn hidden" id="solo-start-draw-confirm-btn" onclick="confirmSoloStartDraw()">✅ Spiel starten</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
        
 <input
@@ -1844,21 +1910,20 @@
 
 <script src="js/games/tannenbaum.js?v=20260618-v29"></script>
 <script src="js/games/darts.js?v=20260618-v30"></script>
-<script src="js/games/tiberius.js?v=20260618-v2"></script>
-<script src="js/games/lotterie.js?v=20260618-v4"></script>
+<script src="js/games/tiberius.js?v=20261102-v1"></script>
+<script src="js/games/lotterie.js?v=20261102-v1"></script>
+<script src="js/games/solo-start-draw.js?v=20261102-v1"></script>
+<script src="js/games/mensch.js?v=20261102-v1"></script>
+<script src="js/games/plusminus.js?v=20261102-v1"></script>
 <script src="js/games/coinflip.js?v=20260618-v30"></script>
 
-<script src="js/games/plusminus.js?v=103"></script>
-<script src="js/games/maedn.js?v=103"></script>
-<script src="js/games/sichern.js?v=103"></script>
-<script src="js/games/fuchsjagd.js?v=103"></script>
-<script src="js/games/kc-extensions.js?v=103"></script>
 <script src="js/groups.js?v=20260618-v29"></script>
 
-<script src="js/app.js?v=20261031-v103"></script>
+<script src="js/app.js?v=20261031-v1"></script>
     
 <script src="js/live-games.js?v=20260806-v1"></script>
-<script src="js/strafe-pdf.js?v=20261031-v103"></script>
+<script src="js/strafe-pdf.js?v=20261102-v2"></script>
+<script src="js/cash-history.js?v=20261102-v2"></script>
 
 <script
   type="module"
