@@ -65,6 +65,7 @@ function getSerializableState() {
     tiberiusState,
     menschState,
     plusminusState,
+    sichernState,
     fuchsjagdState,
     lotterieSettings,
     tiberiusSettings,
@@ -138,6 +139,7 @@ function getFirestoreState() {
         tiberiusState,
         menschState,
         plusminusState,
+        sichernState,
         fuchsjagdState,
         lotterieSettings,
         tiberiusSettings,
@@ -282,6 +284,8 @@ function applyLoadedState(state) {
     state.plusminusState ||
     createPlusminusState();
 
+  sichernState = state.sichernState || createSichernState();
+  ensureSichernState();
   fuchsjagdState = state.fuchsjagdState || createFuchsjagdState();
   ensureFuchsjagdState();
   plusminusState.busy = false;
@@ -2640,6 +2644,7 @@ async function archiveEvent(snapshot) {
 async function startNewKegelabend() {
   dashboardActiveGame = null;
   fuchsjagdState = createFuchsjagdState();
+  sichernState = createSichernState();
   archiveCurrentKegelabendForStats();
   // Erst nach dem Archivieren beginnt der neue Kegelabend.
   currentEveningStartedAt = new Date().toISOString();
@@ -3795,6 +3800,7 @@ applyGroupTheme();
     renderMenschGame();
     renderPlusminusGame();
     renderFuchsjagdGame();
+    renderSichernGame();
     renderLotterieSettings();
     renderTiberiusSettings();
     renderStrafenHistory();

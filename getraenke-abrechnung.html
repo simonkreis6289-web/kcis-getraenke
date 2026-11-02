@@ -41,6 +41,8 @@
 #fuchs-board .fox-result{padding:16px;text-align:center;background:#fff3ce;border:2px solid #efa92c;border-radius:12px;font-weight:800}
 @media(max-width:650px){#fuchs-board .fox-top{grid-template-columns:1fr 1fr}#fuchs-board .fox-stat:first-child{grid-column:1/-1}#fuchs-board .fox-actions{grid-template-columns:repeat(5,minmax(0,1fr))}}
 </style>
+
+<style id="sichern-style-v125">#tab-sichern .sichern-setup{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:12px 0;padding:15px;border:1px solid #cbd2e3;border-radius:12px;background:#fafafa}#tab-sichern .sichern-setup label{display:grid;gap:5px;font-weight:700}#tab-sichern .sichern-setup select,#tab-sichern .sichern-setup input{padding:10px;min-width:140px;border:1px solid #a8afc3;border-radius:8px}#tab-sichern .sichern-setup small{flex-basis:100%}.sichern-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:10px;margin:12px 0}.sichern-card{border:2px solid #283355;border-radius:12px;padding:14px;display:grid;gap:7px;background:white}.sichern-current{border-color:#f5a623;background:#fff9e8}.sichern-card strong{font-size:20px}.sichern-card span{font-size:14px}.sichern-card b{font-size:26px}.sichern-card small{font-size:12px}.sichern-progress{height:10px;background:#e8eaf1;border-radius:9px;overflow:hidden}.sichern-progress i{display:block;height:100%;background:#169c55}.sichern-controls{padding:12px;border:1px solid #cbd2e3;border-radius:12px;margin:12px 0}.sichern-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.sichern-history{max-height:320px;overflow:auto}.sichern-history table{width:100%;border-collapse:collapse}.sichern-history th,.sichern-history td{padding:7px;border-bottom:1px solid #dadde6}.sichern-win{padding:18px;background:#e2fae9;border:1px solid #1c9958;font-size:23px;font-weight:800}.sichern-win small{display:block;font-size:14px}</style>
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -645,7 +647,7 @@
     <div class="game-hub-card" onclick="showSideTab('spiele','tiberius')"><div class="icon">🏛️</div><div class="title">Tiberius</div><div class="desc">Mit Startspieler-Auslosung, Sitzreihenfolge und Zielspalten.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','mensch')"><div class="icon">🎲</div><div class="title">Mensch ärgere dich nicht</div><div class="desc">Neu umgesetzt mit schöner Punktleiste bis genau 36.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','plusminus')"><div class="icon">➕</div><div class="title">+ − × ÷</div><div class="desc">5 Würfe pro Spieler, links-nach-rechts gerechnet, optional mit Gosse-Automatik.</div></div>
-    <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Fuchs und Jäger im Wechsel. Wer holt den Fuchs ein?</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Punkte sammeln, sichern und bei Gosse oder 5 nichts riskieren!</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','fuchsjagd')"><div class="icon">🦊</div><div class="title">Fuchsjagd</div><div class="desc">Fuchs wählen, Jäger verfolgen, Vorsprung live mitrechnen.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','spiele-einstellungen')"><div class="icon">⚙️</div><div class="title">Einstellungen</div><div class="desc">Spielbezogene Optionen und Standardwerte.</div></div>
   </div>
@@ -1122,10 +1124,9 @@
 
 <div id="tab-sichern" class="hidden">
   <div class="section-title">Sichern</div>
-  <div class="game-placeholder-card">
-    <strong>Vorbereitet:</strong> Die HTML-Struktur für dieses Spiel ist angelegt.
-    <div style="margin-top:8px;">Sobald du mir die Regeln gibst, bauen wir Logik, Darstellung und Strafauswertung ein.</div>
-  </div>
+  <div class="sichern-setup" id="sichern-start-card"><label>Spielmodus<select id="sichern-mode" onchange="renderSichernGame()"><option value="solo">Einzelspiel</option><option value="team">Teamspiel</option></select></label><label>Zielpunktzahl<input id="sichern-target" type="number" min="1" max="999" value="69"></label><button class="primary-btn" onclick="startSichernGame()">🔒 Spiel starten</button><small id="sichern-team-hint">Jeder Spieler sichert seine eigenen Punkte.</small></div>
+  <div id="sichern-board"></div>
+  <p class="game-compact-note">Bei Gosse oder 5 verfallen die offenen Punkte. Mit „Sichern“ werden sie festgeschrieben und der nächste Spieler bzw. das andere Team ist dran. Beim Teamspiel wechseln die Werfer innerhalb des Teams nach jedem Wurf.</p>
 </div>
 
 <div id="tab-fuchsjagd" class="hidden">
@@ -1976,7 +1977,7 @@
 >
 
 <script src="js/helpers.js?v=20260618-v29"></script>
-<script src="js/state.js?v=20261102-v122"></script>
+<script src="js/state.js?v=20261102-v125"></script>
 <script src="js/persons.js?v=20260714-v1"></script>
 <script src="js/clubs.js?v=20260618-v29"></script>
 
@@ -1989,11 +1990,12 @@
 <script src="js/games/mensch.js?v=20261102-v108"></script>
 <script src="js/games/plusminus.js?v=20261102-v108"></script>
 <script src="js/games/fuchsjagd.js?v=20261102-v122"></script>
+<script src="js/games/sichern.js?v=20261102-v125"></script>
 <script src="js/games/coinflip.js?v=20260618-v30"></script>
 
 <script src="js/groups.js?v=20260618-v29"></script>
 
-<script src="js/app.js?v=20261102-v122"></script>
+<script src="js/app.js?v=20261102-v125"></script>
     
 <script src="js/live-games.js?v=20260806-v1"></script>
 <script src="js/strafe-pdf.js?v=20261102-v2"></script>
