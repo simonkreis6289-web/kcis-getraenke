@@ -823,6 +823,7 @@ function finishTannenbaumGame() {
     
 function resetTannenbaumGame() {
   if (!confirm('Tannenbaum wirklich zurücksetzen?')) return;
+  dashboardActiveGame = "tannenbaum";
 
   tannenbaumState = createTannenbaumState();
 
@@ -834,6 +835,7 @@ function resetTannenbaumGame() {
 
 
 function handleTannenbaumThrow(number) {
+  dashboardActiveGame = "tannenbaum";
   ensureTannenbaumState();
 
   const team = tannenbaumThrowTeam;

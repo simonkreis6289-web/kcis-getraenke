@@ -63,6 +63,7 @@ function startPlusminusGame() {
   plusminusState.restoreCustomOrder = !!plusminusState.customOrder;
   plusminusState.customOrder = true;
   plusminusState.active = true;
+  dashboardActiveGame = "plusminus";
   plusminusState.finished = false;
   plusminusState.currentPlayerIndex = 0;
   plusminusState.currentThrowIndex = 0;

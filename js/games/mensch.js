@@ -65,6 +65,7 @@ function startMenschGameFinal(starterName) {
   menschState.restoreCustomOrder = !!menschState.customOrder;
   menschState.customOrder=true;
   menschState.active = true;
+  dashboardActiveGame = "mensch";
   menschState.finished = false;
   menschState.currentIndex = 0;
   menschState.startedAt = new Date().toISOString();

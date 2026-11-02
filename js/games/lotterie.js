@@ -322,6 +322,7 @@ async function startLotterieGameFinal(starterName) {
   lotterieState.customOrder = true;
   lotterieState.startPlayer = starterName || lotterieState.playerOrder[0] || '';
   lotterieState.active = true;
+  dashboardActiveGame = "lotterie";
   lotterieState.finished = false;
   lotterieState.amountsGenerated = true;
   lotterieState.throws = {};

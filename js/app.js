@@ -97,11 +97,13 @@ function getTodayMeta() {
   };
 }
 
+let dashboardActiveGame = null;
 function getFirestoreState() {
   recalcTeamExtras();
 
   return {
     ...getTodayMeta(),
+    dashboardActiveGame,
     persons,
     seatingOrder,
     spiele,
@@ -151,6 +153,7 @@ function applyLoadedState(state) {
     return false;
   }
 
+  dashboardActiveGame = state.dashboardActiveGame || null;
   persons = Array.isArray(state.persons)
     ? state.persons
     : [];
@@ -2189,7 +2192,7 @@ function queueAutoSave() {
   autoSaveTimer = setTimeout(async () => {
     saveClubSystem();
     await saveToFirestore(false);
-  }, 800);
+  }, 200);
 }
     
 function getDrinksSnapshot() {
@@ -2621,6 +2624,7 @@ async function archiveEvent(snapshot) {
 }
 
 async function startNewKegelabend() {
+  dashboardActiveGame = null;
   archiveCurrentKegelabendForStats();
 
   persons.forEach(person => {

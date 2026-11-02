@@ -40,6 +40,7 @@ function startDartsGame() {
 
   dartsState = createDartsState();
   dartsState.active = true;
+  dashboardActiveGame = "darts";
   dartsState.startValue = startValue;
   dartsState.scores.T1 = startValue;
   dartsState.scores.T2 = startValue;
