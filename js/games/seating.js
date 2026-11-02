@@ -1,12 +1,12 @@
 /* V105: Sitzordnung für alle Einzelspiele */
-const SOLO_GAME_IDS = ['lotterie','tiberius','mensch','plusminus'];
+const SOLO_GAME_IDS = ['lotterie','tiberius','mensch','plusminus','sichern'];
 function seatingActiveNames() {return getActivePlayersForSoloGame().map(p => p.name);}
 function getGlobalSeatOrder() {
   const active = seatingActiveNames();
   const seated = (seatingOrder || []).filter(name => name && active.includes(name));
   return [...new Set([...seated, ...active])];
 }
-function getSoloState(id) {return ({lotterie:lotterieState,tiberius:tiberiusState,mensch:menschState,plusminus:plusminusState})[id];}
+function getSoloState(id) {return ({lotterie:lotterieState,tiberius:tiberiusState,mensch:menschState,plusminus:plusminusState,sichern:sichernState})[id];}
 function getSoloNames(id) {
   const active = seatingActiveNames(), state = getSoloState(id);
   const custom = state && state.customOrder && Array.isArray(state.playerOrder) ? state.playerOrder : [];
