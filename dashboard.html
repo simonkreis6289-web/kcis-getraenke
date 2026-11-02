@@ -9,10 +9,10 @@
 <style>
 :root{--bg:#ffffff;--panel:#ffffff;--panel2:#f5f5f5;--line:#2e3350;--text:#000000;--muted:#50535c;--gold:#f5a623;--ok:#009844;--warn:#d62828;--header:#4a4a4a;--accent:#f5a623}
 *{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg)}
-.dashboard{height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:80px minmax(0,1fr);gap:8px}
+.dashboard{height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:100px minmax(0,1fr);gap:8px}
 header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px clamp(14px,2.4vw,32px);gap:15px;border-radius:10px;border-bottom:4px solid var(--accent)}
-.club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:12px;color:#ededed;margin-top:4px}.header-right{text-align:right;display:flex;align-items:center;gap:16px}.header-time{text-align:right}.fullscreen-btn{border:1px solid #fff;background:#f5a623;color:#111;border-radius:7px;padding:10px 13px;font:700 13px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap}.fullscreen-btn:hover{background:#ffd075}.fullscreen-btn:focus-visible{outline:3px solid white;outline-offset:3px}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
-.side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{padding:8px 12px 14px;min-height:0;overflow:auto;scrollbar-width:thin}.listrow{display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-bottom:1px solid #dedede;font-size:clamp(12px,1.1vw,16px)}.listrow:last-child{border:0}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
+.club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:11px;color:#ededed;margin-top:3px;line-height:1.35}.header-right{text-align:right;display:flex;align-items:center;gap:16px}.header-time{text-align:right}.fullscreen-btn{border:1px solid #fff;background:#f5a623;color:#111;border-radius:7px;padding:10px 13px;font:700 13px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap}.fullscreen-btn:hover{background:#ffd075}.fullscreen-btn:focus-visible{outline:3px solid white;outline-offset:3px}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
+.side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{flex:1;padding:8px 12px 14px;min-height:0;overflow:auto;scrollbar-width:thin}.listrow{display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-bottom:1px solid #dedede;font-size:clamp(12px,1.1vw,16px)}.listrow:last-child{border:0}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
 .stage{position:relative;display:flex;flex-direction:column;background:#fff}.stage-title{background:var(--panel2);padding:13px 18px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:2px solid var(--line);border-left:6px solid var(--accent)}.stage-title h1{font-size:clamp(16px,1.7vw,24px);margin:0}.stage-title .tag{font-size:12px;color:var(--muted)}.stage-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:20px}.placeholder{text-align:center;color:var(--muted);max-width:600px}.placeholder .symbol{font-size:clamp(55px,8vw,115px)}.placeholder h3{font-size:clamp(23px,3vw,42px);color:var(--text);margin:5px 0}.placeholder p{line-height:1.65}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0;background:white}.game-data{width:min(100%,850px);text-align:center}.game-data h3{font-size:clamp(26px,4vw,54px);margin:12px 0}.game-data .desc{font-size:clamp(15px,1.7vw,24px);white-space:pre-wrap;line-height:1.6;color:var(--muted)}.footnote{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);opacity:.78}
 @media(max-width:850px){.dashboard{min-height:980px;height:auto;grid-template-columns:1fr 1fr;grid-template-rows:80px minmax(430px,1fr) minmax(340px,auto)}.stage{grid-column:1/-1;grid-row:2}.side{grid-row:3;grid-template-rows:1fr 1fr;min-height:340px}.side.left{grid-column:1}.side.right{grid-column:2}}
 @media(max-width:520px){.dashboard{grid-template-columns:1fr;grid-template-rows:78px 450px auto auto}.stage{grid-row:2}.side.left{grid-row:3;grid-column:1}.side.right{grid-row:4;grid-column:1}.side{min-height:380px}.club{font-size:22px}.clock{font-size:23px}header{padding:10px}.sub{font-size:10px}}
@@ -34,8 +34,8 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V110";
-const DASH_RELEASE="02.11.2026 · 10:49 Uhr";
+const DASH_VERSION="V111";
+const DASH_RELEASE="02.11.2026 · 10:57 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -57,6 +57,8 @@ window.addEventListener('online',()=>{if(clubId){status('Internet wieder da · S
 function list(id,rows,format,empty){const box=$(id);box.replaceChildren();if(!rows.length){const x=document.createElement('div');x.className='empty';x.textContent=empty;box.append(x)}for(const r of rows){const line=document.createElement('div');line.className='listrow', n=document.createElement('span'),v=document.createElement('span');n.className='name';n.textContent=r.name;v.className='value';v.textContent=format(r);line.append(n,v);box.append(line)}}
 let state=null, clubId='', unsub=null, liveUnsub=null, gameUnsubs=[], livePersons={};
 let liveGames={};
+let channels={state:false,persons:false,games:false};
+function channelStatus(){const bits=[`Abend: ${channels.state?"✓":"–"}`,`Personen: ${channels.persons?"✓":"–"}`,`Spiele: ${channels.games?"✓":"–"}`];$("club-name").textContent=`${clubId} · ${bits.join(" · ")}`;}
 const games=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus'];
 const gameNames={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷'};
 const chosen=localStorage.getItem('kc_dashboard_game')||'auto';$('game-select').value=games.includes(chosen)?chosen:'auto';
@@ -81,23 +83,24 @@ function paint(){if(!state)return;
  for(const x of live){if(!people.some(p=>p.name===x.name))people.push(x)}
  const drinks=state.DRINKS||[],prices=state.prices||{};
  const gosseKeys=metaKeys(/gosse/i),nineKeys=metaKeys(/9er|kranz|durchgeworfen/i);
- const counts=people.filter(p=>p.present).map(p=>({name:p.name,count:gosseKeys.reduce((a,k)=>a+withCount(p,k),0)}));
+ const counts=visible.filter(p=>!p.isGuest).map(p=>({name:p.name,count:gosseKeys.reduce((a,k)=>a+withCount(p,k),0)}));
  const max=Math.max(0,...counts.map(p=>p.count));const kings=max>0?counts.filter(p=>p.count===max).map(p=>p.name):[];
- const drinkRows=people.filter(p=>p.present||p.isGuest).map(p=>({name:p.name,amount:drinks.reduce((a,d)=>a+numeric(p.drinks?.[d.key])*numeric(prices[d.key]),0)+numeric(p.teamExtra)+numeric(p.roundExtra)})).sort((a,b)=>b.amount-a.amount);
- const fineRows=people.filter(p=>p.present).map(p=>({name:(kings.includes(p.name)?'👑 ':'')+p.name,amount:totalPerson(p,kings)})).sort((a,b)=>b.amount-a.amount);
+ const show=people.filter(p=>p.present||p.isGuest||p.left);const visible=show.length?show:people;
+ const drinkRows=visible.map(p=>({name:p.name,amount:drinks.reduce((a,d)=>a+numeric(p.drinks?.[d.key])*numeric(prices[d.key]),0)+numeric(p.teamExtra)+numeric(p.roundExtra)})).sort((a,b)=>b.amount-a.amount);
+ const fineRows=visible.filter(p=>!p.isGuest).map(p=>({name:(kings.includes(p.name)?'👑 ':'')+p.name,amount:totalPerson(p,kings)})).sort((a,b)=>b.amount-a.amount);
  const high=Math.max(0,...fineRows.map(x=>x.amount));for(const p of people.filter(x=>!x.present&&!x.isGuest)){if(high>0)fineRows.push({name:p.name+' (abwesend)',amount:high+2})}
- list('drinks',drinkRows,r=>fmt.format(r.amount),'Noch keine Getränke');list('fines',fineRows,r=>fmt.format(r.amount),'Noch keine Strafen');
+ list('drinks',drinkRows,r=>fmt.format(r.amount),'Keine Personen geladen');list('fines',fineRows,r=>fmt.format(r.amount),'Keine Personen geladen');
  $('drinks-total').textContent=fmt.format(drinkRows.reduce((a,x)=>a+x.amount,0));$('fines-total').textContent=fmt.format(fineRows.reduce((a,x)=>a+x.amount,0));
  list('gutters',counts.sort((a,b)=>b.count-a.count).map(x=>({...x,name:(kings.includes(x.name)?'👑 ':'')+x.name})),r=>r.count+' ×','Noch keine Gossen');
- const ach=people.map(p=>({name:p.name,nines:nineKeys.reduce((a,k)=>a+withCount(p,k),0)})).sort((a,b)=>b.nines-a.nines);
+ const ach=visible.map(p=>({name:p.name,nines:nineKeys.reduce((a,k)=>a+withCount(p,k),0)})).sort((a,b)=>b.nines-a.nines);
  list('achievements',ach,r=>r.nines+' × 9er/Kranz','Noch keine Treffer');
- $('updated').textContent='Datenstand: '+new Date(lastReceived||Date.now()).toLocaleString('de-DE');paintGame();
+ $('updated').textContent=`${people.length} Personen · ${drinks.length} Getränkearten · ${state.STRAFEN?.length||0} Strafarten`;paintGame();
 }
 function gameState(k){const live=liveGames[k];const value=live?.state||live?.gameState||live?.payload||live?.data||(live?.teams||live?.throws||live?.scores||live?.active?live:null);return value&&typeof value==='object'?value:state?.[k+'State']}
 function chosenGame(){const v=$('game-select').value;if(v!=='auto')return v;return games.find(k=>gameState(k)?.active)||games.find(k=>gameState(k)&& (gameState(k).history?.length||gameState(k).throws?.length))||null}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present).map(p=>p.name);return [...new Set([...(Array.isArray(order)?order:[]).filter(n=>names.includes(n)),...names])]}
+function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present).map(p=>p.name); if(!names.length)names.push(...(state?.persons||[]).map(p=>p.name));return [...new Set([...(Array.isArray(order)?order:[]).filter(n=>names.includes(n)),...names])]}
 function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
 function renderTree(d){const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};const teams=d.teams||{};const team1=teams.T1||{},team2=teams.T2||{};const teamLabel=k=>safe(state?.groupSettings?.[k]?.name||({T1:'Wand',T2:'TV'}[k]));const remaining=(t,n)=>Math.max(0,Number(t?.remaining?.[n]??base[n]??0));const won=t=>Object.keys(base).every(n=>remaining(t,n)===0);const balls=(t,n,side)=>{if(won(t))return n==='5'?`<div class="tree-win">🏆 ${teamLabel(side==='wand'?'T1':'T2')}</div>`:'';const rem=remaining(t,n),len=Math.max(Number(base[n])||0,rem);return Array.from({length:len},(_,i)=>`<div class="tree-ball ${side} ${(side==='wand'?i<len-rem:i>=rem)?'crossed':''}">${safe(n)}</div>`).join('')};const strikes=(t,n)=>(t.strikes||[]).filter(x=>String(x.number)===String(n)).length;const sum=t=>Object.keys(base).reduce((a,n)=>a+remaining(t,n),0);return `<div class="tv-board tree-board"><div class="tv-stats"><div class="tv-stat">${teamLabel('T1')}<strong>${sum(team1)} offen</strong></div><div class="tv-stat">${teamLabel('T2')}<strong>${sum(team2)} offen</strong></div></div><div class="tree-header"><span>Striche</span><span>${teamLabel('T1')}</span><span>Zahl</span><span>${teamLabel('T2')}</span><span>Striche</span></div>${Object.keys(base).map(n=>`<div class="tree-row"><div class="tree-strikes">${strikes(team1,n)?'┃'.repeat(strikes(team1,n)):'0'}</div><div class="tree-side">${balls(team1,n,'wand')}</div><div class="tree-number">${safe(n)}</div><div class="tree-side">${balls(team2,n,'tv')}</div><div class="tree-strikes">${strikes(team2,n)?'┃'.repeat(strikes(team2,n)):'0'}</div></div>`).join('')}</div>`}
 function renderLottery(d){const columns=d.columns||[],names=activeNames(d.playerOrder);if(!columns.length)return null;const complete=columns.map((_,i)=>names.length>0&&names.every(n=>d.throws?.[n]?.[i]!=null));const losers=columns.map((_,i)=>{if(!complete[i])return [];const arr=names.map(n=>({n,v:Number(d.throws?.[n]?.[i])})).filter(x=>Number.isFinite(x.v));const min=Math.min(...arr.map(x=>x.v));return arr.filter(x=>x.v===min).map(x=>x.n)});const heads=['Spieler',...columns.map((c,i)=>`${fmt.format(Number(c)||0)}${complete[i]?' ✓':''}`)];const rows=names.map(n=>[n,...columns.map((_,i)=>({v:d.throws?.[n]?.[i],done:complete[i],lose:losers[i].includes(n)}))]);return `<div class="tv-board"><h2 class="tv-headline">🎰 Lotterie</h2>${makeTable(heads,rows,v=>`<div class="tv-cell ${v.lose?'miss':v.done?'done':v.v==null?'pending':''}">${v.v==null?'–':v.v===12?'K':safe(v.v)}</div>`)}</div>`}
@@ -110,7 +113,7 @@ function unsubscribe(){
  connectionEpoch++;if(fallbackTimer)clearInterval(fallbackTimer);fallbackTimer=null;
  try{unsub?.()}catch(e){console.warn(e)}try{liveUnsub?.()}catch(e){console.warn(e)}
  for(const f of gameUnsubs)try{f?.()}catch(e){console.warn(e)}
- unsub=null;liveUnsub=null;gameUnsubs=[];liveGames={};livePersons={};firstSnapshot=false;lastReceived=0;
+ unsub=null;liveUnsub=null;gameUnsubs=[];liveGames={};livePersons={};firstSnapshot=false;lastReceived=0;channels={state:false,persons:false,games:false};
 }
 async function pollState(epoch){
  if(epoch!==connectionEpoch||fallbackBusy||!clubId||firstSnapshot)return;
@@ -118,27 +121,28 @@ async function pollState(epoch){
  try{
   const data=await Promise.race([api.loadClubState(clubId),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firestore antwortet nicht innerhalb von 9 Sekunden')),9000))]);
   if(epoch!==connectionEpoch||firstSnapshot)return;
-  if(data){state=data;received('poll');paint()}else status('Verbunden, aber kein aktueller Kegelabend gespeichert');
+  if(data){state=data;channels.state=true;channelStatus();received('poll');paint()}else status('Verbunden, aber kein aktueller Kegelabend gespeichert');
  }catch(e){if(epoch===connectionEpoch&&!firstSnapshot)fail('Firestore-Leseversuch fehlgeschlagen',e)}finally{fallbackBusy=false}
 }
 function connect(id,name){
- unsubscribe();const epoch=connectionEpoch;clubId=id;
+ unsubscribe();const epoch=connectionEpoch;clubId=id;channelStatus();
  $('club-name').textContent=name+' · '+id;status('Verbinde mit Firebase …');connectStarted=Date.now();
  try{
   unsub=api.subscribeToClubState(id,data=>{
    if(epoch!==connectionEpoch)return;
-   firstSnapshot=true;
+   firstSnapshot=true;channels.state=!!data;channelStatus();
    if(!data){status('Live verbunden · Noch kein aktueller Kegelabend',true);received('live');return}
    state=data;received('live');paint();
   },e=>{if(epoch===connectionEpoch){firstSnapshot=false;fail('Live-Verbindung fehlgeschlagen',e)}});
  }catch(e){fail('Live-Listener konnte nicht starten',e)}
  for(const g of games){
-  try{gameUnsubs.push(api.subscribeToLiveGameState(id,g,d=>{if(epoch!==connectionEpoch)return;liveGames[g]=d;if(firstSnapshot)received('live');paintGame()},e=>console.warn('Live-Spiel',g,e)))}
+  try{gameUnsubs.push(api.subscribeToLiveGameState(id,g,d=>{if(epoch!==connectionEpoch)return;liveGames[g]=d;if(d)channels.games=true;channelStatus();if(firstSnapshot)received('live');paintGame()},e=>console.warn('Live-Spiel',g,e)))}
   catch(e){console.warn('Live-Spiel',g,e)}
  }
  try{liveUnsub=api.subscribeToLivePersons(id,changes=>{
   if(epoch!==connectionEpoch)return;
   for(const c of changes){if(c.type==='removed')delete livePersons[c.id];else livePersons[c.id]=c.data}
+  channels.persons=true;channelStatus();
   if(firstSnapshot)received('live');paint();
  },e=>console.warn('Live-Personen',e))}catch(e){console.warn(e)}
  fallbackTimer=setInterval(()=>{
