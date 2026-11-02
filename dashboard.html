@@ -11,7 +11,7 @@
 *{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg)}
 .dashboard{height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:80px minmax(0,1fr);gap:8px}
 header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px clamp(14px,2.4vw,32px);gap:15px;border-radius:10px;border-bottom:4px solid var(--accent)}
-.club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:12px;color:#ededed;margin-top:4px}.header-right{text-align:right}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
+.club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:12px;color:#ededed;margin-top:4px}.header-right{text-align:right;display:flex;align-items:center;gap:16px}.header-time{text-align:right}.fullscreen-btn{border:1px solid #fff;background:#f5a623;color:#111;border-radius:7px;padding:10px 13px;font:700 13px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap}.fullscreen-btn:hover{background:#ffd075}.fullscreen-btn:focus-visible{outline:3px solid white;outline-offset:3px}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
 .side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{padding:8px 12px 14px;min-height:0;overflow:auto;scrollbar-width:thin}.listrow{display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-bottom:1px solid #dedede;font-size:clamp(12px,1.1vw,16px)}.listrow:last-child{border:0}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
 .stage{position:relative;display:flex;flex-direction:column;background:#fff}.stage-title{background:var(--panel2);padding:13px 18px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:2px solid var(--line);border-left:6px solid var(--accent)}.stage-title h1{font-size:clamp(16px,1.7vw,24px);margin:0}.stage-title .tag{font-size:12px;color:var(--muted)}.stage-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:20px}.placeholder{text-align:center;color:var(--muted);max-width:600px}.placeholder .symbol{font-size:clamp(55px,8vw,115px)}.placeholder h3{font-size:clamp(23px,3vw,42px);color:var(--text);margin:5px 0}.placeholder p{line-height:1.65}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0;background:white}.game-data{width:min(100%,850px);text-align:center}.game-data h3{font-size:clamp(26px,4vw,54px);margin:12px 0}.game-data .desc{font-size:clamp(15px,1.7vw,24px);white-space:pre-wrap;line-height:1.6;color:var(--muted)}.footnote{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);opacity:.78}
 @media(max-width:850px){.dashboard{min-height:980px;height:auto;grid-template-columns:1fr 1fr;grid-template-rows:80px minmax(430px,1fr) minmax(340px,auto)}.stage{grid-column:1/-1;grid-row:2}.side{grid-row:3;grid-template-rows:1fr 1fr;min-height:340px}.side.left{grid-column:1}.side.right{grid-column:2}}
@@ -20,51 +20,80 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 </head>
 <body>
 <main class="dashboard">
-<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Kegelabend · Dashboard</div></div><div class="header-right"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection">Keine Datenquelle konfiguriert</span></div></div></header>
+<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Kegelabend · Dashboard</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection">Keine Datenquelle konfiguriert</span></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div></header>
 <section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
-<section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><span class="tag" id="game-info">Noch kein Spiel geladen</span></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
+<section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🎯</span>9er &amp; Kränze</h2><div class="contents" id="achievements"></div></article></section>
 </main>
-<script>
-'use strict';
-// DATENANBINDUNG:
-// Eine JSON-Adresse kann hier gesetzt werden oder über ?data=/pfad/dashboard.json
-// Das Dashboard fragt diese Adresse automatisch alle 5 Sekunden ab.
-// Für zwei PCs muss die Adresse über das Netzwerk erreichbar sein.
-const DATA_URL = new URLSearchParams(location.search).get('data') || '';
-const REFRESH_MS = 5000;
-const euro = new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
-const $=id=>document.getElementById(id);
-const safeText=v=>String(v??'');
-function clock(){ $('clock').textContent=new Date().toLocaleTimeString('de-DE'); }
-setInterval(clock,1000);clock();
-function list(id,items,formatter,emptyText){
- const root=$(id);root.replaceChildren();
- if(!Array.isArray(items)||!items.length){const e=document.createElement('div');e.className='empty';e.textContent=emptyText;root.append(e);return;}
- for(const item of items){const line=document.createElement('div');line.className='listrow';const name=document.createElement('span');name.className='name';name.textContent=safeText(item.name);const value=document.createElement('span');value.className='value';value.textContent=formatter(item);line.append(name,value);root.append(line);}
+<script type="module">
+import './js/firebase.js';
+const api=window.firestoreApi;
+const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
+const qs=new URLSearchParams(location.search);
+const numeric=v=>Number(v)||0;
+const button=$('fullscreen-btn');
+function fullLabel(){button.textContent=document.fullscreenElement?'⤢ Vollbild verlassen':'⛶ Vollbild'}
+button.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){console.error(e)}};
+document.addEventListener('fullscreenchange',fullLabel); fullLabel();
+setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString('de-DE'),1000);$('clock').textContent=new Date().toLocaleTimeString('de-DE');
+function status(msg,ok=false){$('connection').textContent=msg;$('indicator').className='dot'+(ok?' ok':'')}
+function list(id,rows,format,empty){const box=$(id);box.replaceChildren();if(!rows.length){const x=document.createElement('div');x.className='empty';x.textContent=empty;box.append(x)}for(const r of rows){const line=document.createElement('div');line.className='listrow', n=document.createElement('span'),v=document.createElement('span');n.className='name';n.textContent=r.name;v.className='value';v.textContent=format(r);line.append(n,v);box.append(line)}}
+let state=null, clubId='', unsub=null, liveUnsub=null, gameUnsubs=[], livePersons={};
+let liveGames={};
+const games=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus'];
+const gameNames={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷'};
+const chosen=localStorage.getItem('kc_dashboard_game')||'auto';$('game-select').value=games.includes(chosen)?chosen:'auto';
+$('game-select').onchange=e=>{localStorage.setItem('kc_dashboard_game',e.target.value);paintGame()};
+function withCount(p,key){return numeric((p.strafen||{})[key])}
+function metaKeys(pattern){return (state?.STRAFEN||[]).filter(x=>pattern.test(String(x.label||''))).map(x=>x.key)}
+function totalPerson(p,kings){
+ const fines=state.STRAFEN||[],prices=state.strafPrices||{};
+ const counted=fines.reduce((sum,x)=>sum+withCount(p,x.key)*numeric(prices[x.key]),0);
+ const free=p.freeStrafen||[];
+ const normalFree=free.filter(x=>!x.onTop).reduce((a,x)=>a+numeric(x.amount),0);
+ const topFree=free.filter(x=>x.onTop).reduce((a,x)=>a+numeric(x.amount),0);
+ const tree=(p.tannenbaumCharges||[]).reduce((a,x)=>a+numeric(x.amount),0);
+ const max=numeric(state.STRAFEN_LIMIT)||30;
+ const kingBonus=p.present&&kings.includes(p.name)&&!free.some(x=>/gossen(könig|koenig)/i.test(String(x.reason||'')))?3:0;
+ return Math.min(counted+normalFree+tree,max)+topFree+kingBonus;
 }
-function render(data){
- const drinks=data.drinks||[], fines=data.fines||[], gutters=data.gutters||[], ach=data.achievements||[];
- list('drinks',drinks,x=>euro.format(Number(x.amount)||0),'Noch keine Getränke erfasst');
- list('fines',fines,x=>euro.format(Number(x.amount)||0),'Noch keine Strafen erfasst');
- list('gutters',gutters,x=>`${Number(x.count)||0} ×`,'Noch keine Gossen erfasst');
- list('achievements',ach,x=>`9er: ${Number(x.nines)||0} · Kränze: ${Number(x.wreaths)||0}`,'Noch keine 9er oder Kränze erfasst');
- $('drinks-total').textContent=euro.format(drinks.reduce((s,x)=>s+(Number(x.amount)||0),0));
- $('fines-total').textContent=euro.format(fines.reduce((s,x)=>s+(Number(x.amount)||0),0));
- $('version').textContent=['Kegelabend',data.version||'',data.date||''].filter(Boolean).join(' · ');
- const game=data.game||{};$('game-title').textContent=game.name?`🎯 ${game.name}`:'🎯 Aktives Spiel';$('game-info').textContent=game.subtitle||'';
- const body=$('game-body');body.replaceChildren();
- if(game.embedUrl){
-   try{const u=new URL(game.embedUrl,location.href);if(u.origin===location.origin){const frame=document.createElement('iframe');frame.title=game.name||'Aktives Spiel';frame.src=u.href;body.append(frame);}else throw Error('Nur gleiche Herkunft erlaubt');}
-   catch{const el=document.createElement('div');el.className='empty';el.textContent='Die Spielansicht kann nicht eingebettet werden.';body.append(el);}
- }else if(game.name){const wrap=document.createElement('div');wrap.className='game-data';const title=document.createElement('h3');title.textContent=game.name;const p=document.createElement('div');p.className='desc';p.textContent=game.description||'Spiel läuft';wrap.append(title,p);body.append(wrap);}
- else{const wrap=document.createElement('div');wrap.className='placeholder';wrap.innerHTML='<div class="symbol">🎳</div><h3>Kein aktives Spiel</h3><p>Hier wird die Spielansicht eingeblendet, sobald ein Spiel gestartet wurde.</p>';body.append(wrap);}
- $('updated').textContent='Letzte Aktualisierung: '+new Date().toLocaleTimeString('de-DE');
+function paint(){if(!state)return;const people=Array.isArray(state.persons)?state.persons:[],drinks=state.DRINKS||[],prices=state.prices||{};
+ const gosseKeys=metaKeys(/gosse/i),nineKeys=metaKeys(/9er|kranz/i);
+ const counts=people.filter(p=>p.present).map(p=>({name:p.name,count:gosseKeys.reduce((a,k)=>a+withCount(p,k),0)}));
+ const max=Math.max(0,...counts.map(p=>p.count));const kings=max>0?counts.filter(p=>p.count===max).map(p=>p.name):[];
+ const drinkRows=people.map(p=>({name:p.name,amount:drinks.reduce((a,d)=>a+numeric(p.drinks?.[d.key])*numeric(prices[d.key]),0)+numeric(p.teamExtra)+numeric(p.roundExtra)})).filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
+ const fineRows=people.filter(p=>p.present).map(p=>({name:(kings.includes(p.name)?'👑 ':'')+p.name,amount:totalPerson(p,kings)})).filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
+ const high=Math.max(0,...fineRows.map(x=>x.amount));for(const p of people.filter(x=>!x.present&&!x.isGuest)){if(high>0)fineRows.push({name:p.name+' (abwesend)',amount:high+2})}
+ list('drinks',drinkRows,r=>fmt.format(r.amount),'Noch keine Getränke');list('fines',fineRows,r=>fmt.format(r.amount),'Noch keine Strafen');
+ $('drinks-total').textContent=fmt.format(drinkRows.reduce((a,x)=>a+x.amount,0));$('fines-total').textContent=fmt.format(fineRows.reduce((a,x)=>a+x.amount,0));
+ list('gutters',counts.filter(x=>x.count>0).sort((a,b)=>b.count-a.count).map(x=>({...x,name:(kings.includes(x.name)?'👑 ':'')+x.name})),r=>r.count+' ×','Noch keine Gossen');
+ const ach=people.map(p=>({name:p.name,nines:nineKeys.reduce((a,k)=>a+withCount(p,k),0)})).filter(p=>p.nines>0).sort((a,b)=>b.nines-a.nines);
+ list('achievements',ach,r=>r.nines+' × 9er/Kranz','Noch keine Treffer');
+ $('version').textContent='Kegelabend · '+(state.date||'')+' · '+(state.status||'');$('updated').textContent='Letzte Aktualisierung: '+new Date().toLocaleTimeString('de-DE');paintGame();
 }
-async function refresh(){if(!DATA_URL)return;try{const res=await fetch(DATA_URL,{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);const data=await res.json();render(data);$('connection').textContent='Live · alle 5 Sekunden';$('indicator').className='dot ok';}catch(err){$('connection').textContent='Keine Verbindung zur Datenquelle';$('indicator').className='dot';console.warn('Dashboard:',err);}}
-if(DATA_URL){refresh();setInterval(refresh,REFRESH_MS);}else{
- for(const [id,msg] of [['drinks','Wartet auf Daten aus der App'],['fines','Wartet auf Daten aus der App'],['gutters','Wartet auf Daten aus der App'],['achievements','Wartet auf Daten aus der App']])list(id,[],()=>'',msg);
+function gameState(k){const live=liveGames[k];const value=live?.state||live?.gameState||live?.payload||live?.data||live;return value&&typeof value==='object'?value:state?.[k+'State']}
+function chosenGame(){const v=$('game-select').value;if(v!=='auto')return v;return games.find(k=>gameState(k)?.active)||games.find(k=>gameState(k)&& (gameState(k).history?.length||gameState(k).throws?.length))||null}
+function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e}
+function paintGame(){const key=chosenGame(),data=key?gameState(key):null,body=$('game-body');body.replaceChildren();$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';
+ if(!data){const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald ein Spielstand vorliegt, wird er hier angezeigt.'));body.append(w);return}
+ const wrap=node('div',null,'game-data');wrap.style.cssText='max-height:100%;overflow:auto;width:100%;text-align:left;padding:5px 10px';
+ const table=node('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:clamp(14px,1.55vw,23px)';
+ function row(a,b){const tr=node('tr');for(const [i,val] of [a,b].entries()){const td=node('td',val);td.style.cssText='padding:9px;border-bottom:1px solid #ddd;'+(i?'text-align:right;font-weight:700':'');tr.append(td)}table.append(tr)}
+ if(key==='tannenbaum'&&data.teams){for(const [id,t] of Object.entries(data.teams)){row(state?.groupSettings?.[id]?.name||id,(t.finished?'🏆 Gewonnen · ':'')+'Rest: '+Object.values(t.remaining||{}).reduce((a,b)=>a+numeric(b),0));const d=node('div',Object.entries(t.remaining||{}).map(([n,c])=>n+': '+c).join('  ·  '));d.style.cssText='font-size:clamp(13px,1.6vw,21px);padding:8px 0;color:#555';wrap.append(d)}}
+ else if(key==='darts'&&data.teams){for(const [id,t] of Object.entries(data.teams))row(state?.groupSettings?.[id]?.name||id,JSON.stringify(t.scores||t.remaining||t.points||{}))}
+ else if(key==='lotterie'||key==='tiberius'){const names=data.playerOrder||[];for(const name of names){const throws=data.throws?.[name];row(name,Array.isArray(throws)?throws.map(x=>typeof x==='object'?JSON.stringify(x):x).join(' · '):typeof throws==='object'?JSON.stringify(throws||{}):String(throws??'–'))}}
+ else if(data.scores){for(const [name,score] of Object.entries(data.scores))row(name,score)}
+ else if(data.rows){for(const [name,r] of Object.entries(data.rows))row(name,Array.isArray(r)?r.map(x=>x?.value??x?.pins??'–').join('  |  '):JSON.stringify(r))}
+ if(table.children.length)wrap.append(table);
+ if(!table.children.length){wrap.append(node('h3',gameNames[key]));const pre=node('pre',JSON.stringify(data,null,2));pre.style.cssText='text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px';wrap.append(pre)}body.append(wrap)
 }
+function unsubscribe(){unsub?.();liveUnsub?.();for(const f of gameUnsubs)f();gameUnsubs=[];liveGames={};livePersons={}}
+function connect(id,name){unsubscribe();clubId=id;$('club-name').textContent=name+' · '+id;status('Verbinde mit Firebase …');unsub=api.subscribeToClubState(id,data=>{if(!data){status('Kein aktueller Kegelabend');return}state=data;paint();status('Live verbunden',true)},e=>{status('Firestore-Zugriff fehlgeschlagen');console.error(e)});
+ // Live-Spielstände sind bei einigen Spielen zusätzlich separat gespeichert.
+ for(const g of games){try{gameUnsubs.push(api.subscribeToLiveGameState(id,g,d=>{liveGames[g]=d;paintGame()},e=>console.warn('Live-Spiel',g,e)))}catch(e){console.warn(e)}}
+ // Die Haupt-App speichert einzelne Zähler auch als Live-Personen.
+ try{liveUnsub=api.subscribeToLivePersons(id,changes=>{for(const c of changes){if(c.type==='removed')delete livePersons[c.id];else livePersons[c.id]=c.data}/* Daten bleiben am Abrechnungszustand ausgerichtet */},e=>console.warn('Live-Personen',e))}catch(e){console.warn(e)}
+}
+try{const all=await api.loadClubList();const preferred=qs.get('club');const found=all.find(x=>x.id===preferred||x.name===preferred)||all.find(x=>/invaliden|schwadron/i.test(x.name||x.id))||all[0];if(found)connect(found.id,found.name||found.id);else status('Kein Club in Firebase gefunden')}catch(e){status('Clubliste nicht lesbar');console.error(e)}
 </script>
-</body>
-</html>
+</body></html>
