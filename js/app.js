@@ -62,10 +62,11 @@ function getSerializableState() {
       kegelAbende,
       lotterieState,
     tiberiusState,
+    menschState,
+    plusminusState,
     lotterieSettings,
     tiberiusSettings,
       strafenHistory,
-      kcCashClosures,
     bahnTimerStart,
     bahnTimerRunning,
     teamStopwatchActive,
@@ -127,13 +128,14 @@ function getFirestoreState() {
       tannenbaumHardRule,
       dartsState,
         tiberiusState,
+        menschState,
+        plusminusState,
         lotterieSettings,
         tiberiusSettings,
       STRAFEN,
       STRAFEN_LIMIT,
       strafPrices,
       strafenHistory,
-      kcCashClosures,
       wurfSettings,
 
     updatedFrom: 'app',
@@ -255,6 +257,18 @@ function applyLoadedState(state) {
 
   ensureTiberiusState();
 
+  menschState =
+    state.menschState ||
+    createMenschState();
+
+  ensureMenschState();
+
+  plusminusState =
+    state.plusminusState ||
+    createPlusminusState();
+
+  ensurePlusminusState();
+
   lotterieSettings =
     state.lotterieSettings || {
       minAmount: 0.10,
@@ -321,7 +335,6 @@ function applyLoadedState(state) {
       ? state.penaltyStatsLog
       : [];
 
-  kcCashClosures = Array.isArray(state.kcCashClosures) ? state.kcCashClosures : [];
   strafenHistory =
     Array.isArray(state.strafenHistory)
       ? state.strafenHistory
@@ -2772,6 +2785,12 @@ async function startNewKegelabend() {
   tiberiusState =
     createTiberiusState();
 
+  menschState =
+    createMenschState();
+
+  plusminusState =
+    createPlusminusState();
+
   if (
     typeof saveLiveLotterieState ===
     'function'
@@ -3586,9 +3605,9 @@ function createLotterieState() {
     columnCount: 0,
     columns: [],
     throws: {},
-
     throwMeta: {},
-
+    playerOrder: [],
+    startPlayer: '',
     finished: false,
     history: []
   };
@@ -3606,6 +3625,8 @@ function createTiberiusState() {
     undoStack: [],
     penalties: {},
     pendingHit: null,
+    playerOrder: [],
+    startPlayer: '',
     finished: false,
     history: []
   };
@@ -3644,6 +3665,12 @@ function ensureLotterieState() {
     lotterieState.history = [];
   }
 
+  if (!Array.isArray(lotterieState.playerOrder)) {
+    lotterieState.playerOrder = [];
+  }
+
+  lotterieState.startPlayer = lotterieState.startPlayer || '';
+
   lotterieState.active =
     !!lotterieState.active;
 
@@ -3671,6 +3698,8 @@ function ensureTiberiusState() {
     if (!Array.isArray(tiberiusState.undoStack)) tiberiusState.undoStack = [];
   if (!tiberiusState.penalties) tiberiusState.penalties = {};
   if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
+  if (!Array.isArray(tiberiusState.playerOrder)) tiberiusState.playerOrder = [];
+  tiberiusState.startPlayer = tiberiusState.startPlayer || '';
 
   tiberiusState.columnCount = parseInt(tiberiusState.columnCount || 0, 10) || 0;
   tiberiusState.score = parseInt(tiberiusState.score || 0, 10) || 0;
@@ -3732,6 +3761,8 @@ applyGroupTheme();
     renderWurfSettings();
     renderLotterie();
     renderTiberius();
+    renderMenschGame();
+    renderPlusminusGame();
     renderLotterieSettings();
     renderTiberiusSettings();
     renderStrafenHistory();
@@ -5473,7 +5504,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['tannenbaum', 'darts', 'lotterie', 'tiberius', 'plusminus', 'maedn', 'sichern', 'fuchsjagd', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'sichern', 'fuchsjagd', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
 };
@@ -5481,7 +5512,7 @@ const subTabMap = {
 const defaultSubTab = {
   organisation: 'anwesenheit',
   getraenke: 'getraenke-uebersicht',
-  spiele: 'tannenbaum',
+  spiele: 'spiele-hub',
   strafen: 'strafen-uebersicht',
   verwaltung: 'spiele'
 };
@@ -5518,8 +5549,6 @@ function toggleSideMenu(mainKey) {
 }
 
 function showSideTab(mainKey, subKey, el) {
-  if (mainKey === 'strafen' && subKey === 'strafen-abrechnung') setTimeout(renderKCCashHistory, 0);
-  if (mainKey === 'spiele' && ['lotterie','tiberius'].includes(subKey)) setTimeout(() => renderKCSoloOrder(subKey), 0);
   document.querySelectorAll('.main-panel').forEach(panel => {
     panel.classList.add('hidden');
   });
@@ -5544,6 +5573,7 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
+  if (mainKey === 'strafen' && subKey === 'strafen-abrechnung' && typeof refreshCashHistory === 'function') refreshCashHistory();
     
 // Nach Auswahl wieder einklappen
 document.querySelectorAll('.side-menu-item').forEach(item => {
@@ -6411,6 +6441,18 @@ function setPenaltyStatsRangeAll() {
   document.getElementById('penalty-stats-to').value = '';
 
   renderPenaltyStats();
+}
+
+function resetPenaltyStatsCounter() {
+  if (!confirm('Statistik-Zähler wirklich neu starten? Anwesenheiten und Straf-Statistik werden zurückgesetzt.')) return;
+
+  penaltyStatsLog = [];
+  kegelAbende = [];
+
+  renderPenaltyStats();
+  persistState();
+
+  showToast('↻ Strafen-Statistik wurde zurückgesetzt', 'success');
 }
 
 // Fast-Button: verlorenes Teamspiel (nur Geldstrafe, keine Getränkebuchung).

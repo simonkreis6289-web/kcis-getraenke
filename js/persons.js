@@ -1451,7 +1451,6 @@ async function addPerson(
 
     isGuest:
       !!isGuest,
-    drinksOnly: !!(isGuest && document.getElementById('guest-drinks-only')?.checked),
 
     present:
       false,

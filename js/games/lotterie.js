@@ -6,6 +6,7 @@ let isApplyingLiveLotterie = false;
 
 function getLiveLotteriePayload() {
   ensureLotterieState();
+  syncLotteriePlayerOrder();
 
   return {
     active: !!lotterieState.active,
@@ -24,6 +25,15 @@ function getLiveLotteriePayload() {
     )
       ? [...lotterieState.columns]
       : [],
+
+    playerOrder: Array.isArray(
+      lotterieState.playerOrder
+    )
+      ? [...lotterieState.playerOrder]
+      : [],
+
+    startPlayer:
+      lotterieState.startPlayer || '',
 
     throws: {
       ...(lotterieState.throws || {})
@@ -101,6 +111,12 @@ function applyLiveLotterieState(
         ? [...remoteState.columns]
         : [],
 
+      playerOrder: Array.isArray(remoteState.playerOrder)
+        ? [...remoteState.playerOrder]
+        : [],
+
+      startPlayer: remoteState.startPlayer || '',
+
       throws:
         remoteState.throws &&
         typeof remoteState.throws ===
@@ -125,6 +141,7 @@ function applyLiveLotterieState(
     ensureLotterieState();
     renderLotterie();
     renderLotterieAmountEditor();
+    renderLotteriePlayerOrderEditor();
     renderLotterieHistory();
   } finally {
     isApplyingLiveLotterie = false;
@@ -194,11 +211,88 @@ function stopLiveLotterieSync() {
 
 function getActivePlayersForSoloGame() {
   return persons
-    .filter(p => p.present && !p.left && !p.drinksOnly)
+    .filter(p => p.present && !p.left && !p.drinkOnly)
     .sort((a, b) => {
       if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
       return a.name.localeCompare(b.name, 'de');
     });
+}
+
+function sortPlayersByNameOrder(players, order) {
+  const indexMap = new Map((order || []).map((name, index) => [name, index]));
+  return players.slice().sort((a, b) => {
+    const ai = indexMap.has(a.name) ? indexMap.get(a.name) : 9999;
+    const bi = indexMap.has(b.name) ? indexMap.get(b.name) : 9999;
+    if (ai !== bi) return ai - bi;
+    if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+}
+
+function syncLotteriePlayerOrder() {
+  ensureLotterieState();
+  const activeNames = getActivePlayersForSoloGame().map(p => p.name);
+  const existing = Array.isArray(lotterieState.playerOrder) ? lotterieState.playerOrder.filter(name => activeNames.includes(name)) : [];
+  const missing = activeNames.filter(name => !existing.includes(name));
+  lotterieState.playerOrder = [...existing, ...missing];
+  return lotterieState.playerOrder;
+}
+
+function getLotteriePlayers() {
+  const active = getActivePlayersForSoloGame();
+  const order = syncLotteriePlayerOrder();
+  return sortPlayersByNameOrder(active, order);
+}
+
+function moveLotterieOrder(index, delta) {
+  syncLotteriePlayerOrder();
+  const target = index + delta;
+  if (target < 0 || target >= lotterieState.playerOrder.length) return;
+  const arr = lotterieState.playerOrder.slice();
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+  lotterieState.playerOrder = arr;
+  renderLotteriePlayerOrderEditor();
+  persistState();
+}
+
+function resetLotterieOrder() {
+  lotterieState.playerOrder = getActivePlayersForSoloGame().map(p => p.name);
+  renderLotteriePlayerOrderEditor();
+  persistState();
+}
+
+function renderLotteriePlayerOrderEditor() {
+  const editor = document.getElementById('lotterie-order-editor');
+  if (!editor) return;
+  const players = getLotteriePlayers();
+  if (!players.length) {
+    editor.innerHTML = '<div class="game-order-editor-title">Sitzreihenfolge</div><div style="color:var(--muted);font-size:0.85rem;">Keine aktiven Spieler vorhanden.</div>';
+    return;
+  }
+  editor.innerHTML = `
+    <div class="game-order-editor-title">Sitzreihenfolge für Lotterie</div>
+    <div class="game-order-list">
+      ${players.map((player, index) => `
+        <div class="game-order-item">
+          <div class="game-order-item-name">${index + 1}. ${player.name}</div>
+          <div class="game-order-actions">
+            <button class="order-move-btn" onclick="moveLotterieOrder(${index}, -1)">↑</button>
+            <button class="order-move-btn" onclick="moveLotterieOrder(${index}, 1)">↓</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:10px;">
+      <button type="button" class="secondary-btn" onclick="resetLotterieOrder()">↻ Alphabetisch</button>
+    </div>
+  `;
+}
+
+function rotateNameOrder(order, starterName) {
+  const list = Array.isArray(order) ? order.slice() : [];
+  const idx = list.indexOf(starterName);
+  if (idx < 0) return list;
+  return [...list.slice(idx), ...list.slice(0, idx)];
 }
 
 function roundTo10Cent(value) {
@@ -206,15 +300,14 @@ function roundTo10Cent(value) {
 }
 
 function getLotteriePlayerCount() {
-  return getKCSoloPlayers("lotterie").length;
+  return getLotteriePlayers().length;
 }
 
 async function startLotterieGame() {
   ensureLotterieState();
   saveLotterieSettings(false);
 
-  const players =
-    getKCSoloPlayers("lotterie");
+  const players = getLotteriePlayers();
 
   if (!players.length) {
     showToast(
@@ -236,29 +329,35 @@ async function startLotterieGame() {
     return;
   }
 
-  lotterieState.columnCount = colCount;
+  openSoloStartDraw({
+    title: '🎰 Lotterie',
+    subtitle: 'Wer beginnt die Lotterie?',
+    players: players.map(p => p.name),
+    onConfirm: starterName => startLotterieGameFinal(starterName)
+  });
+}
 
-  lotterieState.columns = Array.from(
-    { length: colCount },
-    (_, index) =>
-      roundTo10Cent(
-        lotterieState.columns[index] || 0
-      )
-  );
+async function startLotterieGameFinal(starterName) {
+  ensureLotterieState();
+  saveLotterieSettings(false);
 
-  const missingAmounts =
-    lotterieState.columns.some(
-      amount => amount <= 0
-    );
+  const players = getLotteriePlayers();
 
-  if (missingAmounts) {
-    showToast(
-      'Bitte alle Beträge eingeben oder zufällig erzeugen',
-      'error'
-    );
+  if (!players.length) {
+    showToast('Keine anwesenden Spieler für Lotterie', 'error');
     return;
   }
 
+  const colCount = lotterieState.columnCount || getLotterieColumnCountInput();
+
+  if (!colCount || colCount < 1) {
+    showToast('Bitte Spaltenanzahl eingeben', 'error');
+    return;
+  }
+
+  lotterieState.columnCount = colCount;
+  lotterieState.playerOrder = rotateNameOrder(syncLotteriePlayerOrder(), starterName || players[0].name);
+  lotterieState.startPlayer = starterName || lotterieState.playerOrder[0] || '';
   lotterieState.active = true;
   lotterieState.finished = false;
   lotterieState.amountsGenerated = true;
@@ -829,7 +928,7 @@ function getGosseStrafeKey() {
 function getLotterieColumnLosers(colIndex) {
   ensureLotterieState();
 
-  const players = getKCSoloPlayers("lotterie");
+  const players = getLotteriePlayers();
 
   const values = players
     .map(p => ({
@@ -910,7 +1009,7 @@ function initLotterieDefaultsIfNeeded() {
 
   if (lotterieState.active) return;
 
-  const playersCount = getKCSoloPlayers("lotterie").length;
+  const playersCount = getLotteriePlayers().length;
 
   if (!lotterieState.columnCount && playersCount > 0) {
     lotterieState.columnCount = playersCount;
@@ -1020,6 +1119,7 @@ if (resetBtn) {
 }
     
     renderLotterieAmountEditor();
+    renderLotteriePlayerOrderEditor();
 
   if (onTopCheck) {
     onTopCheck.checked = !!lotterieState.onTop;
@@ -1029,7 +1129,7 @@ if (resetBtn) {
     randomBtn.classList.toggle('hidden', !!lotterieState.active);
   }
 
-  const players = getKCSoloPlayers("lotterie");
+  const players = getLotteriePlayers();
 
   if (!lotterieState.active) {
     board.innerHTML = `
@@ -1076,17 +1176,20 @@ if (resetBtn) {
     });
   });
 
-  const completeCols = lotterieState.columns.map((_, i) => players.every(person => {
-    const value = lotterieState.throws[person.name]?.[i];
-    return value !== null && value !== undefined && value !== '';
-  }));
-  const headerCols = lotterieState.columns.map((amount, colIndex) => `
-    <th class="${completeCols[colIndex] ? 'kc-lotterie-complete' : ''}">
+  const headerCols = lotterieState.columns.map((amount, colIndex) => {
+    const isComplete = players.every(p => {
+      const value = lotterieState.throws[p.name]?.[colIndex];
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    return `
+    <th class="${isComplete ? 'lotterie-complete-col' : ''}">
       <div style="font-size:1.05rem;font-weight:900;color:var(--accent2);">
         ${euros(amount)}
       </div>
     </th>
-  `).join('');
+  `;
+  }).join('');
 
   const bodyRows = players.map(p => {
     const cells = lotterieState.columns.map((amount, colIndex) => {
@@ -1101,8 +1204,13 @@ if (resetBtn) {
             ? 'K'
             : value;
 
+      const isComplete = players.every(lp => {
+        const check = lotterieState.throws[lp.name]?.[colIndex];
+        return check !== null && check !== undefined && check !== '';
+      });
+
       return `
-        <td class="${completeCols[colIndex] ? 'kc-lotterie-complete' : ''}">
+        <td class="${isComplete ? 'lotterie-complete-cell' : ''}">
           <button
             class="game-cell-btn ${value === null || value === undefined ? 'empty' : ''} ${isLoser ? 'loser' : ''}"
             onclick="openLotterieThrowModal('${escapeForJs(p.name)}', ${colIndex})"
@@ -1159,7 +1267,7 @@ async function finishLotterieGame() {
   }
 
   const players =
-    getKCSoloPlayers("lotterie");
+    getLotteriePlayers();
 
   if (!players.length) {
     showToast(

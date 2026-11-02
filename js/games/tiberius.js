@@ -35,7 +35,7 @@ function initTiberiusDefaultsIfNeeded() {
 
   if (tiberiusState.active) return;
 
-  const playersCount = getKCSoloPlayers("tiberius").length;
+  const playersCount = getTiberiusPlayers().length;
 
   if (!tiberiusState.columnCount && playersCount > 0) {
     tiberiusState.columnCount = playersCount;
@@ -45,6 +45,79 @@ function initTiberiusDefaultsIfNeeded() {
   }
 }
                                                     
+function getTiberiusPlayers() {
+  const active = getActivePlayersForSoloGame();
+  syncTiberiusPlayerOrder();
+  const indexMap = new Map((tiberiusState.playerOrder || []).map((name, index) => [name, index]));
+  return active.slice().sort((a, b) => {
+    const ai = indexMap.has(a.name) ? indexMap.get(a.name) : 9999;
+    const bi = indexMap.has(b.name) ? indexMap.get(b.name) : 9999;
+    if (ai !== bi) return ai - bi;
+    if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+}
+
+function syncTiberiusPlayerOrder() {
+  ensureTiberiusState();
+  const activeNames = getActivePlayersForSoloGame().map(p => p.name);
+  const existing = Array.isArray(tiberiusState.playerOrder) ? tiberiusState.playerOrder.filter(name => activeNames.includes(name)) : [];
+  const missing = activeNames.filter(name => !existing.includes(name));
+  tiberiusState.playerOrder = [...existing, ...missing];
+  return tiberiusState.playerOrder;
+}
+
+function moveTiberiusOrder(index, delta) {
+  syncTiberiusPlayerOrder();
+  const target = index + delta;
+  if (target < 0 || target >= tiberiusState.playerOrder.length) return;
+  const arr = tiberiusState.playerOrder.slice();
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+  tiberiusState.playerOrder = arr;
+  renderTiberiusPlayerOrderEditor();
+  persistState();
+}
+
+function resetTiberiusOrder() {
+  tiberiusState.playerOrder = getActivePlayersForSoloGame().map(p => p.name);
+  renderTiberiusPlayerOrderEditor();
+  persistState();
+}
+
+function renderTiberiusPlayerOrderEditor() {
+  const editor = document.getElementById('tiberius-order-editor');
+  if (!editor) return;
+  const players = getTiberiusPlayers();
+  if (!players.length) {
+    editor.innerHTML = '<div class="game-order-editor-title">Sitzreihenfolge</div><div style="color:var(--muted);font-size:0.85rem;">Keine aktiven Spieler vorhanden.</div>';
+    return;
+  }
+  editor.innerHTML = `
+    <div class="game-order-editor-title">Sitzreihenfolge für Tiberius</div>
+    <div class="game-order-list">
+      ${players.map((player, index) => `
+        <div class="game-order-item">
+          <div class="game-order-item-name">${index + 1}. ${player.name}</div>
+          <div class="game-order-actions">
+            <button class="order-move-btn" onclick="moveTiberiusOrder(${index}, -1)">↑</button>
+            <button class="order-move-btn" onclick="moveTiberiusOrder(${index}, 1)">↓</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:10px;">
+      <button type="button" class="secondary-btn" onclick="resetTiberiusOrder()">↻ Alphabetisch</button>
+    </div>
+  `;
+}
+
+function rotateTiberiusOrder(order, starterName) {
+  const list = Array.isArray(order) ? order.slice() : [];
+  const idx = list.indexOf(starterName);
+  if (idx < 0) return list;
+  return [...list.slice(idx), ...list.slice(0, idx)];
+}
+
 function getTiberiusColumnCountInput() {
   const input = document.getElementById('tiberius-column-count');
   return Math.max(1, parseInt(input?.value || '0', 10) || 0);
@@ -65,6 +138,7 @@ function prepareTiberiusColumns() {
   tiberiusState.targetsGenerated = tiberiusState.targets.some(v => v > 0);
 
   renderTiberiusTargetEditor();
+  renderTiberiusPlayerOrderEditor();
   persistState();
 }
 
@@ -124,32 +198,47 @@ function startTiberiusGame() {
   ensureTiberiusState();
   saveTiberiusSettings(false);
 
-  const players = getKCSoloPlayers("tiberius");
+  const players = getTiberiusPlayers();
+
   if (!players.length) {
     showToast('Keine anwesenden Spieler für Tiberius', 'error');
     return;
   }
 
-  const colCount = tiberiusState.columnCount || getTiberiusColumnCountInput();
-
-  if (!colCount || colCount < 1) {
+  const count = tiberiusState.columnCount || getTiberiusColumnCountInput();
+  if (!count || count < 1) {
     showToast('Bitte Spaltenanzahl eingeben', 'error');
     return;
   }
 
-  tiberiusState.columnCount = colCount;
-
-  tiberiusState.targets = Array.from({ length: colCount }, (_, i) => {
-    return parseInt(tiberiusState.targets[i] || 0, 10) || 0;
+  openSoloStartDraw({
+    title: '🏛️ Tiberius',
+    subtitle: 'Wer beginnt Tiberius?',
+    players: players.map(p => p.name),
+    onConfirm: starterName => startTiberiusGameFinal(starterName)
   });
+}
 
-  const missingTargets = tiberiusState.targets.some(v => !v || v <= 0);
+function startTiberiusGameFinal(starterName) {
+  ensureTiberiusState();
+  saveTiberiusSettings(false);
 
-  if (missingTargets) {
-    showToast('Bitte alle Zielwerte eingeben oder zufällig erzeugen', 'error');
+  const players = getTiberiusPlayers();
+
+  if (!players.length) {
+    showToast('Keine anwesenden Spieler für Tiberius', 'error');
     return;
   }
 
+  const count = tiberiusState.columnCount || getTiberiusColumnCountInput();
+  if (!count || count < 1) {
+    showToast('Bitte Spaltenanzahl eingeben', 'error');
+    return;
+  }
+
+  tiberiusState.columnCount = count;
+  tiberiusState.playerOrder = rotateTiberiusOrder(syncTiberiusPlayerOrder(), starterName || players[0].name);
+  tiberiusState.startPlayer = starterName || tiberiusState.playerOrder[0] || '';
   tiberiusState.active = true;
   tiberiusState.finished = false;
   tiberiusState.score = 0;
@@ -168,7 +257,7 @@ function startTiberiusGame() {
 function getTiberiusCurrentAmount() {
   ensureTiberiusState();
 
-  return getKCSoloPlayers("tiberius")
+  return getTiberiusPlayers()
     .reduce((sum, p) => sum + getTiberiusPenaltyForPerson(p.name), 0);
 }
     
@@ -179,6 +268,7 @@ function resetTiberiusGame() {
 
   renderTiberius();
   renderTiberiusTargetEditor();
+  renderTiberiusPlayerOrderEditor();
   persistState();
 
   showToast('↻ Tiberius zurückgesetzt', 'success');
@@ -238,6 +328,7 @@ function generateTiberiusTargets() {
   tiberiusState.targetsGenerated = true;
 
   renderTiberiusTargetEditor();
+  renderTiberiusPlayerOrderEditor();
   renderTiberius();
   persistState();
 
@@ -311,7 +402,7 @@ function closeTiberiusThrowModal() {
   if (select) {
     select.innerHTML = '<option value="">Bitte Person wählen</option>';
 
-    getKCSoloPlayers("tiberius").forEach(p => {
+    getTiberiusPlayers().forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.name;
       opt.textContent = p.name;
@@ -530,7 +621,7 @@ function openTiberiusHitModal() {
   if (select) {
     select.innerHTML = '<option value="">Bitte Person wählen</option>';
 
-    getKCSoloPlayers("tiberius").forEach(p => {
+    getTiberiusPlayers().forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.name;
       opt.textContent = p.name;
@@ -559,7 +650,7 @@ function confirmTiberiusHitPenalty() {
     return;
   }
 
-  const players = getKCSoloPlayers("tiberius");
+  const players = getTiberiusPlayers();
   const amount = (parseInt(pending.target || 0, 10) || 0) * 0.01;
 
   let payers = [];
@@ -643,6 +734,7 @@ function renderTiberius() {
   }
 
   renderTiberiusTargetEditor();
+  renderTiberiusPlayerOrderEditor();
 
   if (scoreDisplay) {
     scoreDisplay.textContent = tiberiusState.score || 0;
@@ -667,7 +759,7 @@ function renderTiberius() {
     amountDisplay.textContent = euros(getTiberiusCurrentAmount());
   }
 
-  const players = getKCSoloPlayers("tiberius");
+  const players = getTiberiusPlayers();
 
   if (!tiberiusState.active) {
     board.innerHTML = `
@@ -777,7 +869,7 @@ function finishTiberiusGame() {
     return;
   }
 
-  const players = getKCSoloPlayers("tiberius");
+  const players = getTiberiusPlayers();
   const assignedTo = [];
 
   players.forEach(p => {

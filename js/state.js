@@ -1,6 +1,6 @@
-const APP_VERSION = '20260318-13';
-const APPVersionSelf = 'V103 © SK';
-const APP_LAST_UPDATE = '31.10.2026';
+const APP_VERSION = '20261102-01';
+const APPVersionSelf = 'V104 © SK';
+const APP_LAST_UPDATE = '02.11.2026 08:35 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -133,6 +133,8 @@ let dartsThrowTeam = null;
 let tannenbaumState = null;
 let lotterieState = null;
 let tiberiusState = null;
+let menschState = null;
+let plusminusState = null;
 
 let lotterieSettings = {
   minAmount: 0.10,
@@ -167,6 +169,3 @@ let timePenaltySettings = {
 
 let arrivalEditPerson = null;
 let leftEarlyEditPerson = null;
-
-// Synchronisierte, unveränderliche Abschlusssnapshots je Kegeltermin.
-let kcCashClosures = [];

@@ -873,6 +873,27 @@ subscribeToLiveLotterie(
   },
 
 
+  // Geschlossene Kegelabende für die Kassenhistorie laden und löschen.
+  async listArchivedStrafenEvents(clubId) {
+    const ref = collection(db, 'clubs', clubId, 'archive');
+    const snapshot = await getDocs(ref);
+    return snapshot.docs
+      .map(item => ({ ...item.data(), id: item.id }))
+      .filter(item => item.category === 'strafen')
+      .sort((a, b) => String(b.closedAt || b.date || '').localeCompare(String(a.closedAt || a.date || '')));
+  },
+
+  async deleteArchivedStrafenEvent(clubId, archiveId) {
+    if (!clubId || !archiveId || !/^strafen_[0-9TZ:.-]+$/.test(archiveId)) {
+      throw new Error('Ungültiger Archiv-Eintrag');
+    }
+    const ref = doc(db, 'clubs', clubId, 'archive', archiveId);
+    const snapshot = await getDoc(ref);
+    if (!snapshot.exists()) throw new Error('Abschluss ist nicht mehr vorhanden');
+    if (snapshot.data().category !== 'strafen') throw new Error('Eintrag ist kein Strafenabschluss');
+    await deleteDoc(ref);
+  },
+
   // ─────────────────────────────────────────────
   // CLUB-METADATEN
   // ─────────────────────────────────────────────
