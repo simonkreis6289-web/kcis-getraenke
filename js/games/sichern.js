@@ -65,7 +65,13 @@ async function sichernThrow(pins){
       s.turnThrows.push({name,pins});
       const total=(Number(s.secured[key])||0)+(Number(s.open[key])||0);
       s.throwHistory.push({name,key,pins,failed:false,total,at:new Date().toISOString()});
-      if(total>=s.target){await finishSichernGame(key);return;}
+      if(total>=s.target){
+        // Der letzte Wurf muss auch bei einer fehlgeschlagenen Strafbuchung erhalten bleiben.
+        persistState();
+        const completed=await finishSichernGame(key);
+        if(!completed){renderSichernGame();showToast('Ziel erreicht, Abschluss noch offen. Über „Spiel abschließen“ erneut versuchen.','error');}
+        return;
+      }
     }
     renderSichernGame();persistState();
   }catch(e){console.error('Sichern-Wurf',e);showToast('Wurf konnte nicht gespeichert werden','error');}
@@ -101,7 +107,16 @@ async function finishSichernGame(winner){
       }
     }
     if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'🔒 Sichern abgeschlossen')))return false;
-    s.winner=winner;s.ranking=ranking;s.message=(s.mode==='team'?sichernTeamLabel(winner):winner)+' gewinnt!';s.finished=true;s.active=false;renderAll();persistState();showToast('🔒 '+s.message,'success');return true;
+    s.winner=winner;s.ranking=ranking;s.message=(s.mode==='team'?sichernTeamLabel(winner):winner)+' gewinnt!';s.finished=true;s.active=false;
+    // Abschlussergebnis vor dem Rendering speichern, damit eine fremde Renderfunktion
+    // den Abschluss nicht blockieren kann.
+    persistState();
+    try{renderAll();}catch(renderError){console.error('Sichern: Abschlussanzeige',renderError);renderSichernGame();}
+    showToast('🔒 '+s.message,'success');return true;
+  }catch(error){
+    console.error('Sichern: Abschluss fehlgeschlagen',error);
+    showToast('Abschluss nicht möglich. Spielstand bleibt erhalten.','error');
+    return false;
   }finally{s.closing=false;}
 }
 async function undoSichernThrow(){
@@ -120,7 +135,8 @@ function renderSichernGame(){
   const mode=document.getElementById('sichern-mode');if(mode){const hint=document.getElementById('sichern-team-hint');if(hint)hint.textContent=mode.value==='team'?'Teams werden aus Wand/TV und der Sitzordnung übernommen.':'Die Reihenfolge folgt der Sitzordnung bzw. Spielerreihenfolge.';}
   const teamName=k=>s.mode==='team'?sichernTeamLabel(k):k;
   const cards=(s.order||[]).map(k=>{const secured=Number(s.secured[k])||0,open=Number(s.open[k])||0,total=secured+open;return `<div class="sichern-card ${s.active&&k===sichernCurrent()?'sichern-current':''}"><div class="sichern-card-top"><strong>${sichernEscape(teamName(k))}</strong><b>${total} / ${s.target}</b></div><div class="sichern-stat-row"><span>🔒 Gesichert</span><span>${secured}</span></div><div class="sichern-stat-row"><span>📦 Offen</span><span>+${open}</span></div><div class="sichern-progress"><i style="width:${Math.min(100,total/s.target*100)}%"></i></div>${s.mode==='team'?`<small>${(s.teams[k]||[]).map(sichernEscape).join(' · ')}</small>`:''}</div>`;}).join('');
-  const controls=s.active?`<div class="sichern-controls"><div class="sichern-turnline"><b>🎳 ${sichernEscape(sichernThrower())}</b><span>am Wurf · ${sichernEscape(teamName(sichernCurrent()))}</span></div><div class="sichern-buttons"><button class="pinpad-btn special gosse" type="button" onclick="sichernThrow(0)">Gosse</button>${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pinpad-btn" type="button" onclick="sichernThrow(${n})">${n}</button>`).join('')}<button class="pinpad-btn special kranz" type="button" onclick="sichernThrow(12)">Kranz</button><button class="primary-btn" type="button" onclick="sichernSave()">🔒 Sichern</button><button class="secondary-btn" type="button" onclick="undoSichernThrow()">↩ Rückgängig</button></div><div class="sichern-help">Bei <b>Gosse</b> oder <b>5</b> fällt der offene Stand auf den zuletzt gesicherten Wert zurück. <b>9er</b> und <b>Kranz</b> zählen strafmäßig wie in den anderen Spielen.</div></div>`:'';
+  const needsFinish=s.active&&s.order.some(k=>(Number(s.secured[k])||0)+(Number(s.open[k])||0)>=s.target);
+  const controls=s.active?`<div class="sichern-controls"><div class="sichern-turnline"><b>🎳 ${sichernEscape(sichernThrower())}</b><span>am Wurf · ${sichernEscape(teamName(sichernCurrent()))}</span></div><div class="sichern-buttons"><button class="pinpad-btn special gosse" type="button" onclick="sichernThrow(0)">Gosse</button>${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pinpad-btn" type="button" onclick="sichernThrow(${n})">${n}</button>`).join('')}<button class="pinpad-btn special kranz" type="button" onclick="sichernThrow(12)">Kranz</button><button class="primary-btn" type="button" onclick="sichernSave()">🔒 Sichern</button><button class="secondary-btn" type="button" onclick="undoSichernThrow()">↩ Rückgängig</button></div>${needsFinish?`<button type="button" class="primary-btn" style="margin-top:10px" onclick="finishSichernGame(sichernState.order.find(k=>(Number(sichernState.secured[k])||0)+(Number(sichernState.open[k])||0)>=sichernState.target))">🏁 Spiel abschließen</button>`:``}<div class="sichern-help">Bei <b>Gosse</b> oder <b>5</b> fällt der offene Stand auf den zuletzt gesicherten Wert zurück. <b>9er</b> und <b>Kranz</b> zählen strafmäßig wie in den anderen Spielen.</div></div>`:'';
   const rows=s.throwHistory.slice(-12).reverse().map(x=>`<tr><td>${sichernEscape(x.name)}</td><td>${x.saved?'🔒 gesichert':x.pins===0?'Gosse':x.pins===12?'Kranz':x.pins}</td><td>${x.failed?'❌ Rückfall':x.saved?'✓':x.total}</td></tr>`).join('');
   board.innerHTML=`${s.finished?`<div class="sichern-win">🏆 ${sichernEscape(s.message)}${s.ranking.length?`<small>${s.ranking.map(g=>g.rank+'. Verlierer: '+g.names.join(', ')).join(' · ')}</small>`:''}</div>`:''}${!s.order.length?'<div class="game-placeholder-card">Modus und Ziel wählen, dann Spiel starten.</div>':`<div class="sichern-grid">${cards}</div>`}${controls}${s.order.length?`<div class="sichern-history"><strong>Wurfverlauf</strong><table><thead><tr><th>Spieler</th><th>Wurf</th><th>Stand</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Noch keine Würfe</td></tr>'}</tbody></table></div>`:''}`;
 }
