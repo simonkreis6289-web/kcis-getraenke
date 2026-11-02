@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#4a4a4a">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>KC Invaliden Schwadron · Live-Dashboard</title>
+<style>
+:root{--bg:#ffffff;--panel:#ffffff;--panel2:#f5f5f5;--line:#2e3350;--text:#000000;--muted:#50535c;--gold:#f5a623;--ok:#009844;--warn:#d62828;--header:#4a4a4a;--accent:#f5a623}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg)}
+.dashboard{height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:80px minmax(0,1fr);gap:8px}
+header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px clamp(14px,2.4vw,32px);gap:15px;border-radius:10px;border-bottom:4px solid var(--accent)}
+.club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:12px;color:#ededed;margin-top:4px}.header-right{text-align:right}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
+.side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{padding:8px 12px 14px;min-height:0;overflow:auto;scrollbar-width:thin}.listrow{display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-bottom:1px solid #dedede;font-size:clamp(12px,1.1vw,16px)}.listrow:last-child{border:0}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
+.stage{position:relative;display:flex;flex-direction:column;background:#fff}.stage-title{background:var(--panel2);padding:13px 18px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:2px solid var(--line);border-left:6px solid var(--accent)}.stage-title h1{font-size:clamp(16px,1.7vw,24px);margin:0}.stage-title .tag{font-size:12px;color:var(--muted)}.stage-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:20px}.placeholder{text-align:center;color:var(--muted);max-width:600px}.placeholder .symbol{font-size:clamp(55px,8vw,115px)}.placeholder h3{font-size:clamp(23px,3vw,42px);color:var(--text);margin:5px 0}.placeholder p{line-height:1.65}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0;background:white}.game-data{width:min(100%,850px);text-align:center}.game-data h3{font-size:clamp(26px,4vw,54px);margin:12px 0}.game-data .desc{font-size:clamp(15px,1.7vw,24px);white-space:pre-wrap;line-height:1.6;color:var(--muted)}.footnote{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);opacity:.78}
+@media(max-width:850px){.dashboard{min-height:980px;height:auto;grid-template-columns:1fr 1fr;grid-template-rows:80px minmax(430px,1fr) minmax(340px,auto)}.stage{grid-column:1/-1;grid-row:2}.side{grid-row:3;grid-template-rows:1fr 1fr;min-height:340px}.side.left{grid-column:1}.side.right{grid-column:2}}
+@media(max-width:520px){.dashboard{grid-template-columns:1fr;grid-template-rows:78px 450px auto auto}.stage{grid-row:2}.side.left{grid-row:3;grid-column:1}.side.right{grid-row:4;grid-column:1}.side{min-height:380px}.club{font-size:22px}.clock{font-size:23px}header{padding:10px}.sub{font-size:10px}}
+</style>
+</head>
+<body>
+<main class="dashboard">
+<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Kegelabend · Dashboard</div></div><div class="header-right"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection">Keine Datenquelle konfiguriert</span></div></div></header>
+<section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
+<section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><span class="tag" id="game-info">Noch kein Spiel geladen</span></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
+<section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🎯</span>9er &amp; Kränze</h2><div class="contents" id="achievements"></div></article></section>
+</main>
+<script>
+'use strict';
+// DATENANBINDUNG:
+// Eine JSON-Adresse kann hier gesetzt werden oder über ?data=/pfad/dashboard.json
+// Das Dashboard fragt diese Adresse automatisch alle 5 Sekunden ab.
+// Für zwei PCs muss die Adresse über das Netzwerk erreichbar sein.
+const DATA_URL = new URLSearchParams(location.search).get('data') || '';
+const REFRESH_MS = 5000;
+const euro = new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
+const $=id=>document.getElementById(id);
+const safeText=v=>String(v??'');
+function clock(){ $('clock').textContent=new Date().toLocaleTimeString('de-DE'); }
+setInterval(clock,1000);clock();
+function list(id,items,formatter,emptyText){
+ const root=$(id);root.replaceChildren();
+ if(!Array.isArray(items)||!items.length){const e=document.createElement('div');e.className='empty';e.textContent=emptyText;root.append(e);return;}
+ for(const item of items){const line=document.createElement('div');line.className='listrow';const name=document.createElement('span');name.className='name';name.textContent=safeText(item.name);const value=document.createElement('span');value.className='value';value.textContent=formatter(item);line.append(name,value);root.append(line);}
+}
+function render(data){
+ const drinks=data.drinks||[], fines=data.fines||[], gutters=data.gutters||[], ach=data.achievements||[];
+ list('drinks',drinks,x=>euro.format(Number(x.amount)||0),'Noch keine Getränke erfasst');
+ list('fines',fines,x=>euro.format(Number(x.amount)||0),'Noch keine Strafen erfasst');
+ list('gutters',gutters,x=>`${Number(x.count)||0} ×`,'Noch keine Gossen erfasst');
+ list('achievements',ach,x=>`9er: ${Number(x.nines)||0} · Kränze: ${Number(x.wreaths)||0}`,'Noch keine 9er oder Kränze erfasst');
+ $('drinks-total').textContent=euro.format(drinks.reduce((s,x)=>s+(Number(x.amount)||0),0));
+ $('fines-total').textContent=euro.format(fines.reduce((s,x)=>s+(Number(x.amount)||0),0));
+ $('version').textContent=['Kegelabend',data.version||'',data.date||''].filter(Boolean).join(' · ');
+ const game=data.game||{};$('game-title').textContent=game.name?`🎯 ${game.name}`:'🎯 Aktives Spiel';$('game-info').textContent=game.subtitle||'';
+ const body=$('game-body');body.replaceChildren();
+ if(game.embedUrl){
+   try{const u=new URL(game.embedUrl,location.href);if(u.origin===location.origin){const frame=document.createElement('iframe');frame.title=game.name||'Aktives Spiel';frame.src=u.href;body.append(frame);}else throw Error('Nur gleiche Herkunft erlaubt');}
+   catch{const el=document.createElement('div');el.className='empty';el.textContent='Die Spielansicht kann nicht eingebettet werden.';body.append(el);}
+ }else if(game.name){const wrap=document.createElement('div');wrap.className='game-data';const title=document.createElement('h3');title.textContent=game.name;const p=document.createElement('div');p.className='desc';p.textContent=game.description||'Spiel läuft';wrap.append(title,p);body.append(wrap);}
+ else{const wrap=document.createElement('div');wrap.className='placeholder';wrap.innerHTML='<div class="symbol">🎳</div><h3>Kein aktives Spiel</h3><p>Hier wird die Spielansicht eingeblendet, sobald ein Spiel gestartet wurde.</p>';body.append(wrap);}
+ $('updated').textContent='Letzte Aktualisierung: '+new Date().toLocaleTimeString('de-DE');
+}
+async function refresh(){if(!DATA_URL)return;try{const res=await fetch(DATA_URL,{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);const data=await res.json();render(data);$('connection').textContent='Live · alle 5 Sekunden';$('indicator').className='dot ok';}catch(err){$('connection').textContent='Keine Verbindung zur Datenquelle';$('indicator').className='dot';console.warn('Dashboard:',err);}}
+if(DATA_URL){refresh();setInterval(refresh,REFRESH_MS);}else{
+ for(const [id,msg] of [['drinks','Wartet auf Daten aus der App'],['fines','Wartet auf Daten aus der App'],['gutters','Wartet auf Daten aus der App'],['achievements','Wartet auf Daten aus der App']])list(id,[],()=>'',msg);
+}
+</script>
+</body>
+</html>
