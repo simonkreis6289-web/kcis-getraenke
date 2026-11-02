@@ -65,6 +65,7 @@ function getSerializableState() {
     tiberiusState,
     menschState,
     plusminusState,
+    fuchsjagdState,
     lotterieSettings,
     tiberiusSettings,
       strafenHistory,
@@ -98,12 +99,15 @@ function getTodayMeta() {
 }
 
 let dashboardActiveGame = null;
+// Startzeit des laufenden Abends, unabhängig vom Kalendertag.
+let currentEveningStartedAt = null;
 function getFirestoreState() {
   recalcTeamExtras();
 
   return {
     ...getTodayMeta(),
     dashboardActiveGame,
+    currentEveningStartedAt,
     persons,
     seatingOrder,
     spiele,
@@ -154,6 +158,7 @@ function applyLoadedState(state) {
   }
 
   dashboardActiveGame = state.dashboardActiveGame || null;
+  currentEveningStartedAt = state.currentEveningStartedAt || null;
   persons = Array.isArray(state.persons)
     ? state.persons
     : [];
@@ -276,6 +281,8 @@ function applyLoadedState(state) {
     state.plusminusState ||
     createPlusminusState();
 
+  fuchsjagdState = state.fuchsjagdState || createFuchsjagdState();
+  ensureFuchsjagdState();
   plusminusState.busy = false;
   ensurePlusminusState();
 
@@ -2625,7 +2632,10 @@ async function archiveEvent(snapshot) {
 
 async function startNewKegelabend() {
   dashboardActiveGame = null;
+  fuchsjagdState = createFuchsjagdState();
   archiveCurrentKegelabendForStats();
+  // Erst nach dem Archivieren beginnt der neue Kegelabend.
+  currentEveningStartedAt = new Date().toISOString();
 
   persons.forEach(person => {
     person.present = false;
@@ -3777,6 +3787,7 @@ applyGroupTheme();
     renderTiberius();
     renderMenschGame();
     renderPlusminusGame();
+    renderFuchsjagdGame();
     renderLotterieSettings();
     renderTiberiusSettings();
     renderStrafenHistory();

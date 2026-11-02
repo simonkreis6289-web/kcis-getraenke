@@ -135,6 +135,7 @@ let lotterieState = null;
 let tiberiusState = null;
 let menschState = null;
 let plusminusState = null;
+let fuchsjagdState = null;
 
 let lotterieSettings = {
   minAmount: 0.10,
