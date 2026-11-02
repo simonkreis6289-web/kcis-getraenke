@@ -2243,7 +2243,10 @@ async function archiveStrafenEvent(snapshot) {
   if (!window.firestoreApi || !ACTIVE_CLUB) return;
 
   const clubId = getClubFirestoreId(ACTIVE_CLUB);
-  const archiveId = 'strafen_' + new Date().toISOString().replace(/[:.]/g, '-');
+  // Ein Abschluss pro Kegelabend: wiederholtes PDF-Erstellen erzeugt
+  // keinen weiteren Firestore-Archiveintrag desselben Abends.
+  const eveningKey = String(currentEveningStartedAt || snapshot.date || new Date().toISOString().slice(0,10));
+  const archiveId = 'strafen_abend_' + eveningKey.replace(/[^a-zA-Z0-9_-]/g, '_');
 
   await window.firestoreApi.archiveClubEvent(clubId, archiveId, {
     ...snapshot,

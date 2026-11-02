@@ -16,6 +16,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css?v=20261102-v5">
 
+<style id="fuchsjagd-ui-v124">
+#tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
+#tab-fuchsjagd .fox-setup label{display:grid;gap:5px;flex:1;min-width:200px}
+#tab-fuchsjagd .fox-setup select{min-height:43px;width:100%}
+#tab-fuchsjagd .fox-setup .fox-help{flex-basis:100%;font-size:13px;color:#666}
+#fuchs-board .fox-layout{width:100%;max-width:1300px;margin:0 auto;display:grid;gap:12px}
+#fuchs-board .fox-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#fuchs-board .fox-stat{padding:16px;border:2px solid #313653;border-radius:13px;background:#fffaf0;text-align:center;min-width:0}
+#fuchs-board .fox-stat small{display:block;font-size:13px;color:#666;font-weight:600}
+#fuchs-board .fox-stat strong{display:block;font-size:clamp(20px,3vw,40px);line-height:1.2;overflow-wrap:anywhere}
+#fuchs-board .fox-score{background:#fff2ca;border-color:#efa92c}
+#fuchs-board .fox-turn{padding:14px;border:1px solid #ced3df;border-radius:12px;background:#f6f6f9;text-align:center;font-weight:700}
+#fuchs-board .fox-actions{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:7px}
+#fuchs-board .fox-actions button{padding:13px 4px;min-height:53px;font-size:18px;font-weight:800;border-radius:9px}
+#fuchs-board .fox-actions .fox-special{grid-column:span 2}
+#fuchs-board .fox-table-wrap{overflow-x:auto;border:1px solid #ccd1de;border-radius:10px}
+#fuchs-board .fox-table{width:100%;border-collapse:collapse;table-layout:fixed}
+#fuchs-board .fox-table th,#fuchs-board .fox-table td{padding:10px;border-bottom:1px solid #ddd;text-align:center;font-size:15px}
+#fuchs-board .fox-table th{background:#e9eaf0;color:#24283b}
+#fuchs-board .fox-table tr:nth-child(even){background:#f7f7f9}
+#fuchs-board .fox-table .fox-plus{color:#177d35;font-weight:800}
+#fuchs-board .fox-table .fox-minus{color:#bd2020;font-weight:800}
+#fuchs-board .fox-result{padding:16px;text-align:center;background:#fff3ce;border:2px solid #efa92c;border-radius:12px;font-weight:800}
+@media(max-width:650px){#fuchs-board .fox-top{grid-template-columns:1fr 1fr}#fuchs-board .fox-stat:first-child{grid-column:1/-1}#fuchs-board .fox-actions{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -621,7 +646,7 @@
     <div class="game-hub-card" onclick="showSideTab('spiele','mensch')"><div class="icon">🎲</div><div class="title">Mensch ärgere dich nicht</div><div class="desc">Neu umgesetzt mit schöner Punktleiste bis genau 36.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','plusminus')"><div class="icon">➕</div><div class="title">+ − × ÷</div><div class="desc">5 Würfe pro Spieler, links-nach-rechts gerechnet, optional mit Gosse-Automatik.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Fuchs und Jäger im Wechsel. Wer holt den Fuchs ein?</div></div>
-    <div class="game-hub-card" onclick="showSideTab('spiele','fuchsjagd')"><div class="icon">🦊</div><div class="title">Fuchsjagd</div><div class="desc">Grundstruktur vorbereitet – Regeln folgen später.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','fuchsjagd')"><div class="icon">🦊</div><div class="title">Fuchsjagd</div><div class="desc">Fuchs wählen, Jäger verfolgen, Vorsprung live mitrechnen.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','spiele-einstellungen')"><div class="icon">⚙️</div><div class="title">Einstellungen</div><div class="desc">Spielbezogene Optionen und Standardwerte.</div></div>
   </div>
 </div>
@@ -1105,12 +1130,9 @@
 
 <div id="tab-fuchsjagd" class="hidden">
   <div class="section-title">🦊 Fuchsjagd</div>
-  <div class="game-start-card" style="padding:14px;margin-bottom:12px">
-    <label for="fuchs-select">Fuchs auswählen</label>
-    <select id="fuchs-select" aria-label="Fuchs auswählen"></select>
-    <button class="btn" onclick="startFuchsjagdGame()">🦊 Neue Fuchsjagd starten</button>
-    <div style="margin-top:8px">Zwei Startwürfe Fuchs (+). Danach abwechselnd Jäger (−) und Fuchs (+). 9er und Kränze bestrafen wie gewohnt die anderen Spieler.</div>
-  </div>
+  <div class="fox-setup"><label><strong>Fuchs auswählen</strong><select id="fuchs-select" aria-label="Fuchs auswählen"></select></label>
+  <button class="primary-btn" type="button" onclick="startFuchsjagdGame()">🦊 Neue Fuchsjagd starten</button>
+  <div class="fox-help">Zwei Startwürfe des Fuchses (+), danach abwechselnd Jäger (−) und Fuchs (+). Wird der Vorsprung 0 oder kleiner, ist der Fuchs erlegt.</div></div>
   <div id="fuchs-board"></div>
 </div>
 

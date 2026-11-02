@@ -57,6 +57,16 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .tv-current .tv-name{background:#fff3cc}
 .tv-result{font-weight:800}
 </style>
+<style id="fox-tv-style">
+.fox-tv-board{display:flex;flex-direction:column;gap:10px}
+.fox-tv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fox-tv-card{border:2px solid #303650;border-radius:13px;padding:14px;text-align:center;background:#fffdf6;font-weight:700;font-size:clamp(14px,1.6vw,22px)}
+.fox-tv-card strong{display:block;font-size:clamp(26px,3.2vw,54px);line-height:1.3;overflow-wrap:anywhere}
+.fox-tv-score{background:#fff1c6;border-color:#f5a623}
+.fox-tv-phase{text-align:center;padding:12px;border-radius:9px;background:#e9eaf0;font-weight:800;font-size:clamp(16px,1.7vw,25px)}
+.fox-tv-result{text-align:center;background:#fff1c6;border:2px solid #f5a623;padding:12px;border-radius:10px;font-weight:800}
+.fox-tv-table{table-layout:fixed}.fox-tv-table td{padding:7px!important}.fox-tv-table th{padding:8px!important}
+</style>
 </head>
 <body>
 <main class="dashboard">
@@ -68,8 +78,8 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V122";
-const DASH_RELEASE="02.11.2026 · 12:29 Uhr";
+const DASH_VERSION="V124";
+const DASH_RELEASE="02.11.2026 · Fuchsjagd-Fix";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -158,18 +168,22 @@ function paint(){if(!state)return;
  // Treffer gehören dem Werfer, nicht den Mitspielern mit 1-€-Strafe.
  // penaltyStatsLog wird in der Haupt-App bei jedem 9er/Kranz mit thrower gespeichert.
  // Nur Ereignisse des aktuellen Kegelabends anzeigen (soweit dessen Datum bekannt ist).
- const today=new Date(); const localToday=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
- const eventDate=String(state?.currentKegelabendDate||state?.kegelabendDate||state?.eventDate||localToday).slice(0,10);
- const sessionStart=state?.currentEveningStartedAt ? Date.parse(state.currentEveningStartedAt) : NaN;
+ // Nur Treffer des aktiven Abends, nach Werfer und nicht nach Strafempfängern.
+ // Neue Protokolleinträge besitzen eine stabile Abendkennung. Alte Einträge
+ // werden nur nach ihrer expliziten Zeit eingeschlossen (niemals pauschal
+ // anhand des heutigen Datums, da mehrere Abende am selben Tag möglich sind).
+ const sessionKey=String(state?.currentEveningStartedAt||'');
+ const sessionStart=sessionKey?Date.parse(sessionKey):NaN;
  const events=Array.isArray(state?.penaltyStatsLog)?state.penaltyStatsLog:[];
  const throwCounts=new Map();
  for(const event of events){
-   if(!event||!event.thrower)continue;
-   // Neue Abende sind auch dann getrennt, wenn sie am gleichen Tag stattfinden.
-   if(Number.isFinite(sessionStart)){
+   if(!event||!event.thrower||!Number.isFinite(sessionStart))continue;
+   const eventSession=String(event.eveningStartedAt||'');
+   if(eventSession){if(eventSession!==sessionKey)continue;}
+   else{
      const eventTime=Date.parse(event.createdAt||'');
      if(!Number.isFinite(eventTime)||eventTime<sessionStart)continue;
-   }else if(eventDate && String(event.eventDate||event.createdAt||'').slice(0,10)!==eventDate)continue;
+   }
    const kind=String(event.type||'').toLocaleLowerCase('de').trim();
    if(!(/9er|kranz|durchgeworfen/.test(kind)))continue;
    const name=String(event.thrower).trim().toLocaleLowerCase('de');
@@ -276,12 +290,12 @@ if(typeof ResizeObserver!=='undefined'){
 window.addEventListener('resize',()=>requestAnimationFrame(fitTvBoard));
 
 function renderFuchsjagdBoard(d){
- const fox=safe(d.fox||'–'),score=Number(d.score)||0;
- const current=d.active?(d.phase==='hunt'?d.hunters?.[d.hunterIndex]:d.fox):'';
- const rows=(d.throws||[]).slice().reverse().map(x=>[x.name,x.pins,(x.delta>=0?'+':'')+x.delta,x.score]);
- return `<div class="tv-board"><h2 class="tv-headline">🦊 Fuchsjagd</h2><div class="tv-stats"><div class="tv-stat">Fuchs<strong>${fox}</strong></div><div class="tv-stat">Vorsprung<strong>${score} Holz</strong></div><div class="tv-stat">Am Wurf<strong>${safe(current||'🏁')}</strong></div><div class="tv-stat">Jäger<strong>${(d.hunterIndex||0)+1} / ${(d.hunters||[]).length}</strong></div></div>${d.result?`<h2 style="text-align:center">${safe(d.result)}</h2>`:''}<div style="max-width:860px;margin:auto">${makeTable(['Werfer','Wurf','±','Vorsprung'],rows)}</div></div>`;
+ const fox=safe(d.fox||'–'),score=Number(d.score)||0, hunters=d.hunters||[];
+ const current=d.active?(d.phase==='hunt'?hunters[d.hunterIndex]:d.fox):'🏁';
+ const phase=d.phase==='start'?`Startwurf ${(d.startThrows||0)+1}/2`:d.phase==='hunt'?'Jäger jagt den Fuchs':d.phase==='fox'?'Fuchs baut Vorsprung aus':'Spiel abgeschlossen';
+ const rows=(d.throws||[]).slice().reverse().map((x,i)=>`<tr><td>${d.throws.length-i}</td><td class="tv-name">${safe(x.name)}</td><td>${x.pins===12?'🎳 Kranz':x.pins===0?'Gosse':safe(x.pins)}</td><td style="font-weight:800;color:${x.delta<0?'#be2323':'#177e3b'}">${x.delta>0?'+':''}${safe(x.delta)}</td><td><strong>${safe(x.score)}</strong></td></tr>`).join('');
+ return `<div class="tv-board fox-tv-board"><h2 class="tv-headline">🦊 Fuchsjagd</h2><div class="fox-tv-grid"><div class="fox-tv-card">🦊 Fuchs<strong>${fox}</strong></div><div class="fox-tv-card fox-tv-score">Vorsprung<strong>${score} Holz</strong></div><div class="fox-tv-card">🎳 Am Wurf<strong>${safe(current||'🏁')}</strong></div></div><div class="fox-tv-phase">${safe(phase)} · ${hunters.length} Jäger</div>${d.result?`<div class="fox-tv-result">🏆 ${safe(d.result)}</div>`:''}<table class="tv-table fox-tv-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;
 }
-
 function paintGame(){const key=chosenGame(),data=key?gameState(key):null,body=$('game-body');body.replaceChildren();$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';let html=null;if(data){try{html=key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data):key==='plusminus'?renderPlusminusBoard(data):key==='fuchsjagd'?renderFuchsjagdBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;requestAnimationFrame(fitTvBoard);return}const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
 
 function unsubscribe(){

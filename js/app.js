@@ -138,6 +138,7 @@ function getFirestoreState() {
         tiberiusState,
         menschState,
         plusminusState,
+        fuchsjagdState,
         lotterieSettings,
         tiberiusSettings,
       STRAFEN,
@@ -1263,6 +1264,9 @@ function saveMonatsbeitrag() {
 
 function addPenaltyStatsEntry(type, throwerName, punishedNames) {
   if (!Array.isArray(penaltyStatsLog)) penaltyStatsLog = [];
+  // Altbestand ohne Startzeit: ab dem ersten neuen Treffer sauber abgrenzen.
+  // Keine Zähler zurücksetzen und keinen neuen Kegelabend auslösen.
+  if (!currentEveningStartedAt) currentEveningStartedAt = new Date().toISOString();
 
   const now = new Date();
 
@@ -1270,6 +1274,9 @@ function addPenaltyStatsEntry(type, throwerName, punishedNames) {
     id: 'penalty_' + Date.now() + '_' + Math.random().toString(36).slice(2),
     type,
     thrower: throwerName,
+    // Die Abendkennung ist unabhängig vom Kalenderdatum. Auch mehrere Abende
+    // am gleichen Tag dürfen sich nicht gegenseitig beeinflussen.
+    eveningStartedAt: currentEveningStartedAt || null,
     punished: punishedNames || [],
     club: ACTIVE_CLUB || '',
     createdAt: now.toISOString(),
