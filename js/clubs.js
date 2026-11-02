@@ -524,7 +524,7 @@ if (
           return;
         }
 
-        if (incomingClientAt && incomingClientAt < lastRemoteChangeAt) {
+        if (incomingClientAt && incomingClientAt < Math.max(lastRemoteChangeAt, lastLocalChangeAt) && incomingClientId !== CLIENT_ID) {
           console.log('Älteren Firestore-Stand ignoriert', {
             incomingClientAt,
             lastRemoteChangeAt

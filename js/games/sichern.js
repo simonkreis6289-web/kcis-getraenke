@@ -1,6 +1,6 @@
 /* KC Invaliden Schwadron – Sichern V127. Spielstand im Club-Firestore-State. */
-function createSichernState(){return {active:false,finished:false,mode:'solo',target:69,order:[],teams:{},secured:{},open:{},currentIndex:0,turnThrows:[],throwHistory:[],undo:[],winner:'',ranking:[],message:'',startedAt:''};}
-function ensureSichernState(){if(!sichernState||typeof sichernState!=='object')sichernState=createSichernState();for(const k of ['order','turnThrows','throwHistory','undo','ranking'])if(!Array.isArray(sichernState[k]))sichernState[k]=[];for(const k of ['teams','secured','open'])if(!sichernState[k]||typeof sichernState[k]!=='object')sichernState[k]={};}
+function createSichernState(){return {active:false,finished:false,mode:'solo',target:69,order:[],teams:{},teamTurns:{},secured:{},open:{},currentIndex:0,turnThrows:[],throwHistory:[],undo:[],winner:'',ranking:[],message:'',startedAt:''};}
+function ensureSichernState(){if(!sichernState||typeof sichernState!=='object')sichernState=createSichernState();for(const k of ['order','turnThrows','throwHistory','undo','ranking'])if(!Array.isArray(sichernState[k]))sichernState[k]=[];for(const k of ['teams','teamTurns','secured','open'])if(!sichernState[k]||typeof sichernState[k]!=='object')sichernState[k]={};}
 function sichernEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function sichernOrderedPlayers(){
   const active=getActivePlayersForSoloGame();
@@ -24,7 +24,7 @@ function getSichernTeamPlayers(teamKey){
 }
 function sichernCurrent(){ensureSichernState();return sichernState.order[sichernState.currentIndex]||'';}
 function sichernTeamLabel(key){return key==='T1'?getGroupLabel('T1'):key==='T2'?getGroupLabel('T2'):key;}
-function sichernThrower(){const s=sichernState,k=sichernCurrent();if(s.mode==='solo')return k;const players=s.teams[k]||[];return players[(s.turnThrows.length)%players.length]||'';}
+function sichernThrower(){const s=sichernState,k=sichernCurrent();if(s.mode==='solo')return k;const players=s.teams[k]||[];return players[((Number(s.teamTurns[k])||0)%players.length)]||'';}
 function startSichernGame(){
   const mode=document.getElementById('sichern-mode')?.value==='team'?'team':'solo';
   const target=Math.max(1,Math.min(999,parseInt(document.getElementById('sichern-target')?.value,10)||69));
@@ -39,12 +39,12 @@ function startSichernGame(){
     order=players.map(p=>p.name);
   }
   sichernState={...createSichernState(),active:true,mode,target,order,teams,startedAt:new Date().toISOString()};
-  for(const key of order){sichernState.secured[key]=0;sichernState.open[key]=0;}
+  for(const key of order){sichernState.secured[key]=0;sichernState.open[key]=0;sichernState.teamTurns[key]=0;}
   if(typeof dashboardActiveGame!=='undefined')dashboardActiveGame='sichern';
   renderSichernGame();persistState();
 }
-function sichernSnapshot(){const s=sichernState;return {secured:{...s.secured},open:{...s.open},currentIndex:s.currentIndex,turnThrows:s.turnThrows.slice(),throwHistory:s.throwHistory.slice(),finished:s.finished,active:s.active,winner:s.winner,ranking:Array.isArray(s.ranking)?s.ranking.slice():[],message:s.message};}
-function sichernAdvance(){const s=sichernState;s.turnThrows=[];s.currentIndex=(s.currentIndex+1)%s.order.length;}
+function sichernSnapshot(){const s=sichernState;return {secured:{...s.secured},open:{...s.open},teamTurns:{...s.teamTurns},currentIndex:s.currentIndex,turnThrows:s.turnThrows.slice(),throwHistory:s.throwHistory.slice(),finished:s.finished,active:s.active,winner:s.winner,ranking:Array.isArray(s.ranking)?s.ranking.slice():[],message:s.message};}
+function sichernAdvance(){const s=sichernState;const key=sichernCurrent();if(s.mode==='team')s.teamTurns[key]=(Number(s.teamTurns[key])||0)+1;s.turnThrows=[];s.currentIndex=(s.currentIndex+1)%s.order.length;}
 async function sichernThrow(pins){
   ensureSichernState();const s=sichernState;if(!s.active||s.busy)return;
   pins=Number(pins);if(!Number.isInteger(pins)||pins<0||pins>12)return;

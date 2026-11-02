@@ -1436,6 +1436,7 @@ function calcStrafenTotal(p) {
 }
 
 function renderStrafen() {
+  if (typeof reapplyLivePersonCounters === 'function') reapplyLivePersonCounters();
   const header = document.getElementById('strafen-header');
   const body = document.getElementById('strafen-body');
   if (!header || !body) return;

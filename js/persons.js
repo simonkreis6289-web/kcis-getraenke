@@ -794,6 +794,8 @@ function reapplyLivePersonCounters() {
 
 function renderLivePersonChanges() {
   renderAnwesenheit();
+  if (typeof renderSitzordnung === 'function') renderSitzordnung();
+  if (typeof updateStats === 'function') updateStats();
 
   if (
     typeof renderGruppen ===
