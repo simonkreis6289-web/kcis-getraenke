@@ -2063,6 +2063,18 @@ function openLeftEarlyModalByName(
   );
 }
 
+// Nach bestätigtem Firestore-Schreibvorgang sofort den tatsächlichen Serverwert
+// anzeigen. Live-Snapshots bleiben für alle anderen Clients zuständig.
+function applyConfirmedLiveCounter(personName, category, key, value) {
+  const person = persons.find(p => p.name === personName);
+  if (!person || !['drinks','strafen'].includes(category)) return;
+  if (!person[category] || typeof person[category] !== 'object') person[category] = {};
+  person[category][key] = value;
+  const cached = livePersonCounters.get(personName) || {};
+  const updated = {...(cached[category] || {}), [key]: value};
+  livePersonCounters.set(personName, {...cached, [category]: updated});
+}
+
 async function changeSyncedPersonCounter(
   personName,
   category,
@@ -2132,7 +2144,7 @@ async function changeSyncedPersonCounter(
         ACTIVE_CLUB
       );
 
-    await window.firestoreApi
+    const newValue = await window.firestoreApi
       .changeLivePersonCounter(
         clubId,
         personName,
@@ -2141,6 +2153,11 @@ async function changeSyncedPersonCounter(
         Number(delta || 0)
       );
 
+    if (!Number.isFinite(Number(newValue))) {
+      throw new Error('Firestore hat keinen gültigen Zählerstand bestätigt');
+    }
+    applyConfirmedLiveCounter(personName, category, key, Number(newValue));
+    renderLivePersonChanges();
     return true;
   } catch (error) {
     console.error(
@@ -2238,11 +2255,17 @@ async function changeMultipleSyncedPersonCounters(
         ACTIVE_CLUB
       );
 
-    await window.firestoreApi
+    const results = await window.firestoreApi
       .changeMultipleLivePersonCounters(
         clubId,
         validChanges
       );
+    if (!Array.isArray(results) || results.length !== validChanges.length ||
+        results.some(r => !Number.isFinite(Number(r.value)))) {
+      throw new Error('Firestore hat die Mehrfachbuchung nicht vollständig bestätigt');
+    }
+    results.forEach(r => applyConfirmedLiveCounter(r.personName, r.category, r.key, Number(r.value)));
+    renderLivePersonChanges();
 
     if (successMessage) {
       showToast(
