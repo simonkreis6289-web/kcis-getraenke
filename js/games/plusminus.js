@@ -7,6 +7,8 @@ function createPlusminusState() {
     currentThrowIndex: 0,
     selectedSlot: 0,
     rows: {},
+    undoStack: [],
+    editTarget: null,
     smartGosse: false,
     history: [],
     startedAt: ''
@@ -18,6 +20,7 @@ function ensurePlusminusState() {
   if (!Array.isArray(plusminusState.playerOrder)) plusminusState.playerOrder = [];
   if (!plusminusState.rows || typeof plusminusState.rows !== 'object') plusminusState.rows = {};
   if (!Array.isArray(plusminusState.history)) plusminusState.history = [];
+  if (!Array.isArray(plusminusState.undoStack)) plusminusState.undoStack = [];
   plusminusState.active = !!plusminusState.active;
   plusminusState.finished = !!plusminusState.finished;
   plusminusState.currentPlayerIndex = parseInt(plusminusState.currentPlayerIndex || 0, 10) || 0;
@@ -66,6 +69,8 @@ function startPlusminusGame() {
   plusminusState.selectedSlot=0;
   plusminusState.startedAt = new Date().toISOString();
   plusminusState.rows = {};
+  plusminusState.undoStack = [];
+  plusminusState.editTarget = null;
   players.forEach(player => {
     plusminusState.rows[player.name] = Array.from({ length: 5 }, () => null);
   });
@@ -83,8 +88,8 @@ async function applyPlusminusThrow(value,isGosse=false) {
   const pins=Number(value);if(!Number.isInteger(pins)||pins<0||pins>12)return;
   plusminusState.busy=true;
   try{
-    const kind=isGosse?'gosse':pins===9?'9er':pins===12?'kranz':null;
-    if(kind&&!(await bookSoloSpecialThrow(player.name,pins,kind)))return;
+    if(!(await changeSoloThrowPenalty(player.name,null,{value:pins,isGosse:!!isGosse})))return;
+    plusminusState.undoStack.push({player:player.name,slot,oldIndex:plusminusState.currentPlayerIndex,oldSelectedSlot:plusminusState.selectedSlot});
     row[slot]={value:pins,isGosse:!!isGosse};plusminusState.rows[player.name]=row;
     let i=plusminusState.currentPlayerIndex+1;
     if(i>=players.length)i=0;
@@ -104,6 +109,72 @@ function choosePlusminusSlot(index){
   const p=getPlusminusPlayers()[plusminusState.currentPlayerIndex];if(!p)return;
   if(plusminusState.rows[p.name]?.[index]){showToast('Dieses Kästchen ist bereits belegt','error');return;}
   plusminusState.selectedSlot=index;renderPlusminusGame();
+}
+
+async function undoPlusminusThrow() {
+  ensurePlusminusState();
+  if (plusminusState.busy || !plusminusState.undoStack.length) {showToast('Kein Wurf zum Rückgängigmachen vorhanden','error');return;}
+  const last=plusminusState.undoStack[plusminusState.undoStack.length-1];
+  const slot=plusminusState.rows[last.player]?.[last.slot];
+  if(!slot)return;
+  plusminusState.busy=true;
+  try {
+    if(!(await changeSoloThrowPenalty(last.player,slot,null)))return;
+    if(plusminusState.finished){
+      plusminusState.finished=false;
+      plusminusState.active=true;
+      plusminusState.customOrder=true;
+      plusminusState.history.shift();
+    }
+    plusminusState.rows[last.player][last.slot]=null;
+    plusminusState.currentPlayerIndex=last.oldIndex;
+    plusminusState.selectedSlot=last.oldSelectedSlot;
+    plusminusState.undoStack.pop();
+    plusminusState.busy=false;
+    renderAll();persistState();showToast('↩ Letzter Wurf zurückgenommen','success');
+  } catch(error) {console.error(error);showToast('Rücknahme fehlgeschlagen','error');}
+  finally {plusminusState.busy=false;}
+}
+
+function openPlusminusSlotEdit(name, slotIndex) {
+  if(plusminusState.busy)return;
+  const old=plusminusState.rows?.[name]?.[slotIndex];
+  if(!old){showToast('Kästchen ist noch leer','error');return;}
+  plusminusState.editTarget={name,slotIndex};
+  const modal=document.getElementById('plusminus-edit-modal');
+  if(!modal)return;
+  document.getElementById('plusminus-edit-sub').textContent=`${name} · Kästchen ${slotIndex+1} · bislang ${old.isGosse?'Gosse':old.value}`;
+  modal.classList.remove('hidden');
+}
+function closePlusminusSlotEdit(){
+  document.getElementById('plusminus-edit-modal')?.classList.add('hidden');
+  plusminusState.editTarget=null;
+}
+async function confirmPlusminusSlotEdit(value,isGosse=false) {
+  ensurePlusminusState();
+  const target=plusminusState.editTarget;
+  if(!target||plusminusState.busy)return;
+  const old=plusminusState.rows?.[target.name]?.[target.slotIndex];
+  if(!old)return;
+  const updated={value:Number(value),isGosse:!!isGosse};
+  if(old.value===updated.value&&!!old.isGosse===updated.isGosse){closePlusminusSlotEdit();return;}
+  plusminusState.busy=true;
+  try {
+    if(!(await changeSoloThrowPenalty(target.name,old,updated)))return;
+    plusminusState.rows[target.name][target.slotIndex]=updated;
+    // Falls das bearbeitete Feld der letzte eingegebene Wurf war, auch
+    // die Undo-Information erhalten; beim Rückgängigmachen gilt der neue Wert.
+    if(plusminusState.finished&&plusminusState.history[0]?.type==='plusminus'){
+      const players=getPlusminusPlayers();
+      const entry=plusminusState.history[0];
+      entry.rows=JSON.parse(JSON.stringify(plusminusState.rows));
+      entry.results=players.map(player=>({name:player.name,...computePlusminusResult(plusminusState.rows[player.name]||[],plusminusState.smartGosse)}))
+        .sort((a,b)=>(b.result??-Infinity)-(a.result??-Infinity));
+    }
+    closePlusminusSlotEdit();plusminusState.busy=false;renderAll();persistState();
+    showToast('✅ Kästchen korrigiert','success');
+  }catch(error){console.error(error);showToast('Korrektur fehlgeschlagen','error');}
+  finally {plusminusState.busy=false;}
 }
 
 function resolvePlusminusValue(slotIndex, slot, partialBefore, smart) {
@@ -176,13 +247,13 @@ function renderPlusminusGame(){
   if(!setup||!board||!history)return;
   setup.classList.toggle('hidden',!!plusminusState.active);
   const players=getPlusminusPlayers();
-  if(!plusminusState.active){board.innerHTML='<div class="game-placeholder-card">Spieler nach Sitzordnung. Nach dem Start wählt der aktive Spieler sein gewünschtes Kästchen selbst.</div>';}
+  if(!plusminusState.active&&!plusminusState.finished){board.innerHTML='<div class="game-placeholder-card">Spieler nach Sitzordnung. Nach dem Start wählt der aktive Spieler sein gewünschtes Kästchen selbst.</div>';}
   else{
     const current=players[plusminusState.currentPlayerIndex];
-    board.innerHTML=`<div class="game-throw-toolbar"><strong>🎳 ${current?.name||'—'} · Kästchen ${plusminusState.selectedSlot+1} wählen</strong>${[1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyPlusminusThrow(${n},false)">${n===12?'Kranz':n}</button>`).join('')}<button class="pinpad-btn special" onclick="applyPlusminusThrow(0,true)">Gosse</button></div>
+    board.innerHTML=`<div class="game-throw-toolbar"><strong>${plusminusState.finished?'🏁 Spiel beendet':'🎳 '+(current?.name||'—')+' · Kästchen '+(plusminusState.selectedSlot+1)+' wählen'}</strong><button class="secondary-btn" onclick="undoPlusminusThrow()" ${plusminusState.undoStack.length?'':'disabled'}>↩ Letzten Wurf</button>${plusminusState.active?`${[1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyPlusminusThrow(${n},false)">${n===12?'Kranz':n}</button>`).join('')}<button class="pinpad-btn special" onclick="applyPlusminusThrow(0,true)">Gosse</button>`:''}</div>
     <div class="game-compact-wrap"><table class="game-compact-table"><thead><tr><th>Spieler</th><th>① +</th><th>② −</th><th>③ ×</th><th>④ ÷</th><th>⑤</th><th>Ergebnis</th></tr></thead><tbody>
-    ${players.map((p,i)=>{const row=plusminusState.rows[p.name]||Array(5).fill(null);const result=computePlusminusResult(row,plusminusState.smartGosse);return `<tr class="${i===plusminusState.currentPlayerIndex?'current':''}"><td>${p.name}</td>${row.map((slot,j)=>`<td><button class="game-slot ${slot?'filled':''} ${i===plusminusState.currentPlayerIndex&&j===plusminusState.selectedSlot?'selected':''}" onclick="${i===plusminusState.currentPlayerIndex?`choosePlusminusSlot(${j})`:''}" ${i!==plusminusState.currentPlayerIndex||slot?'disabled':''}>${slot?(slot.isGosse?'G':slot.value):'+'}</button></td>`).join('')}<td class="game-compact-score">${result.complete?Number(result.result.toFixed(2)).toLocaleString('de-DE'):'—'}</td></tr>`;}).join('')}
-    </tbody></table></div><div class="game-compact-note">Jeder Spieler hat fünf Würfe, die er auf seine freien Kästchen verteilt. Berechnung immer von links nach rechts.</div>`;
+    ${players.map((p,i)=>{const row=plusminusState.rows[p.name]||Array(5).fill(null);const result=computePlusminusResult(row,plusminusState.smartGosse);return `<tr class="${i===plusminusState.currentPlayerIndex?'current':''}"><td>${p.name}</td>${row.map((slot,j)=>`<td><button class="game-slot ${slot?'filled':''} ${i===plusminusState.currentPlayerIndex&&j===plusminusState.selectedSlot?'selected':''}" onclick="${slot?`openPlusminusSlotEdit(${JSON.stringify(p.name)},${j})`:(plusminusState.active&&i===plusminusState.currentPlayerIndex?`choosePlusminusSlot(${j})`:'')}" ${!slot&&(!plusminusState.active||i!==plusminusState.currentPlayerIndex)?'disabled':''}>${slot?(slot.isGosse?'G':slot.value):'+'}</button></td>`).join('')}<td class="game-compact-score">${result.complete?Number(result.result.toFixed(2)).toLocaleString('de-DE'):'—'}</td></tr>`;}).join('')}
+    </tbody></table></div><div class="game-compact-note">Zum Korrigieren ein belegtes Kästchen antippen. Es zählt kein zusätzlicher Wurf. Die Strafbuchungen werden angepasst.</div>`;
   }
   history.innerHTML=(plusminusState.history||[]).map(entry=>`<div class="spiel-card"><div class="spiel-info"><strong>➕ Spiel abgeschlossen</strong><div class="spiel-detail">${(entry.results||[]).map((x,i)=>`${i+1}. ${x.name}: ${x.display}`).join(' · ')}</div></div></div>`).join('')||'<div class="game-compact-note">Noch kein Verlauf.</div>';
 }

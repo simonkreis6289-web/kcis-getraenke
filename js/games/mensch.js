@@ -8,6 +8,7 @@ function createMenschState() {
     currentIndex: 0,
     scores: {},
     throws: {},
+    undoStack: [],
     history: [],
     winner: '',
     ranking: [],
@@ -21,6 +22,7 @@ function ensureMenschState() {
   if (!menschState.scores || typeof menschState.scores !== 'object') menschState.scores = {};
   if (!menschState.throws || typeof menschState.throws !== 'object') menschState.throws = {};
   if (!Array.isArray(menschState.history)) menschState.history = [];
+  if (!Array.isArray(menschState.undoStack)) menschState.undoStack = [];
   menschState.active = !!menschState.active;
   menschState.finished = !!menschState.finished;
   menschState.currentIndex = parseInt(menschState.currentIndex || 0, 10) || 0;
@@ -70,6 +72,7 @@ function startMenschGameFinal(starterName) {
   menschState.ranking = [];
   menschState.scores = {};
   menschState.throws = {};
+  menschState.undoStack = [];
   getMenschPlayers().forEach(player => {
     menschState.scores[player.name] = 0;
     menschState.throws[player.name] = [];
@@ -80,9 +83,40 @@ function startMenschGameFinal(starterName) {
 }
 
 function getLoserPenaltyKeyByRank(rank) {
-  const target = `${rank}. verlierer`;
-  const found = STRAFEN.find(item => String(item.label || '').trim().toLowerCase().startsWith(target));
-  return found ? found.key : null;
+  // Bestandsdaten können leicht unterschiedlich beschriftet sein.
+  if (rank === 1 && typeof getFirstLoserStrafeKey === 'function') {
+    const firstKey = getFirstLoserStrafeKey();
+    if (firstKey) return firstKey;
+  }
+
+  const pattern = new RegExp('^' + rank + '\\.\\s*verlierer(?:\\b|\\s|$)', 'i');
+  const found = STRAFEN.find(item => {
+    const label = String(item.label || '').trim();
+    const key = String(item.key || '').trim();
+    return pattern.test(label) || pattern.test(key);
+  });
+  return found?.key || null;
+}
+
+function getMenschLoserGroups(winnerName, scoreMap, players) {
+  const losers = players
+    .filter(player => player.name !== winnerName)
+    .map(player => ({
+      name: player.name,
+      score: Number(scoreMap[player.name]) || 0
+    }))
+    .sort((a, b) => a.score - b.score || a.name.localeCompare(b.name, 'de'));
+
+  const groups = [];
+  for (const loser of losers) {
+    const previous = groups[groups.length - 1];
+    if (!previous || previous.score !== loser.score) {
+      groups.push({ score: loser.score, names: [loser.name] });
+    } else {
+      previous.names.push(loser.name);
+    }
+  }
+  return groups;
 }
 
 async function applyMenschThrow(value) {
@@ -93,8 +127,9 @@ async function applyMenschThrow(value) {
   try {
     const current=players[menschState.currentIndex];if(!current)return;
     const pins=Number(value); if(!Number.isInteger(pins)||pins<0||pins>12)return;
-    const kind=pins===0?'gosse':pins===9?'9er':pins===12?'kranz':null;
-    if(kind && !(await bookSoloSpecialThrow(current.name,pins,kind)))return;
+    const before = {player:current.name,pins,oldScores:{...menschState.scores},oldIndex:menschState.currentIndex, oldWinner:menschState.winner};
+    if (!(await changeSoloThrowPenalty(current.name,null,{pins,isGosse:pins===0}))) return;
+    menschState.undoStack.push(before);
     const oldScore=Number(menschState.scores[current.name])||0;
     let newScore=oldScore+pins;
     if(newScore>MENSCH_TARGET_SCORE)newScore=MENSCH_TARGET_SCORE-(newScore-MENSCH_TARGET_SCORE);
@@ -110,7 +145,7 @@ async function applyMenschThrow(value) {
         }
       }
     }
-    if(newScore===MENSCH_TARGET_SCORE){finishMenschGame(current.name);return;}
+    if(newScore===MENSCH_TARGET_SCORE){await finishMenschGame(current.name);return;}
     if(pins!==6)menschState.currentIndex=(menschState.currentIndex+1)%players.length;
     renderMenschGame();persistState();
     if(bumped.length)showToast(`💥 ${bumped.join(', ')} zurück auf 0!`,'success');
@@ -118,52 +153,130 @@ async function applyMenschThrow(value) {
   finally{menschState.busy=false;}
 }
 
-function finishMenschGame(winnerName) {
-  const players = getMenschPlayers();
-  menschState.active = false;
-  menschState.customOrder = !!menschState.restoreCustomOrder;
-  menschState.finished = true;
-  menschState.winner = winnerName;
-  const others = players.filter(p => p.name !== winnerName).map(p => ({ name: p.name, score: menschState.scores[p.name] || 0 }));
-  others.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name, 'de'));
-  const groups = [];
-  others.forEach(item => {
-    const last = groups[groups.length - 1];
-    if (!last || last.score !== item.score) {
-      groups.push({ score: item.score, names: [item.name] });
-    } else {
-      last.names.push(item.name);
+async function finishMenschGame(winnerName) {
+  ensureMenschState();
+  if (!menschState.active || menschState.finished || menschState.closing) return false;
+  menschState.closing = true;
+  try {
+    const players = getMenschPlayers();
+    if (!players.some(player => player.name === winnerName)) return false;
+
+    // Platzgleichheit (dichte Rangfolge): 0/0/5/12 bedeutet 1./1./2./3.
+    const groups = getMenschLoserGroups(winnerName, menschState.scores, players);
+    const rankedGroups = groups.slice(0, 3);
+    const missing = rankedGroups
+      .map((group, index) => ({ rank: index + 1, key: getLoserPenaltyKeyByRank(index + 1) }))
+      .filter(item => !item.key);
+    if (missing.length) {
+      showToast(`❌ Strafart fehlt: ${missing.map(item => `${item.rank}. Verlierer`).join(', ')}`, 'error');
+      return false;
     }
-  });
-  const assigned = [];
-  groups.forEach((group, index) => {
-    const rank = index + 1;
-    const key = getLoserPenaltyKeyByRank(rank);
-    if (!key) return;
-    group.names.forEach(name => {
-      const person = persons.find(p => p.name === name);
-      if (!person) return;
-      if (!person.strafen) person.strafen = {};
-      person.strafen[key] = (parseInt(person.strafen[key] || 0, 10) || 0) + 1;
-      assigned.push({ name, rank, score: group.score });
+
+    const changes = [];
+    const assigned = [];
+    rankedGroups.forEach((group, index) => {
+      const rank = index + 1;
+      const key = getLoserPenaltyKeyByRank(rank);
+      for (const name of group.names) {
+        changes.push({ personName: name, category: 'strafen', key, delta: 1 });
+        assigned.push({ name, rank, score: group.score });
+      }
     });
-  });
-  const entry = {
-    id: 'mensch_' + Date.now(),
-    type: 'mensch',
-    createdAt: new Date().toISOString(),
-    winner: winnerName,
-    scores: JSON.parse(JSON.stringify(menschState.scores)),
-    throws: JSON.parse(JSON.stringify(menschState.throws)),
-    ranking: groups,
-    assigned
-  };
-  menschState.history.unshift(entry);
-  if (!Array.isArray(strafenHistory)) strafenHistory = [];
-  strafenHistory.unshift(entry);
-  renderMenschGame();
-  persistState();
-  showToast(`🏁 ${winnerName} gewinnt Mensch ärgere dich nicht`, 'success');
+
+    // Ein einziger synchronisierter Vorgang, damit kein Rang stillschweigend
+    // nur lokal oder auf einem zweiten Tablet anders gebucht wird.
+    if (changes.length) {
+      const saved = await changeMultipleSyncedPersonCounters(
+        changes,
+        '🏁 Verlierer-Strafen für Mensch ärgere dich nicht gebucht'
+      );
+      if (!saved) {
+        showToast('❌ Abschluss nicht gebucht. Bitte erneut abschließen.', 'error');
+        return false;
+      }
+    }
+
+    const entry = {
+      id: 'mensch_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: 'mensch',
+      createdAt: new Date().toISOString(),
+      winner: winnerName,
+      scores: JSON.parse(JSON.stringify(menschState.scores)),
+      throws: JSON.parse(JSON.stringify(menschState.throws)),
+      ranking: groups,
+      assigned
+    };
+    menschState.active = false;
+    menschState.finished = true;
+    menschState.customOrder = !!menschState.restoreCustomOrder;
+    menschState.winner = winnerName;
+    menschState.ranking = groups;
+    menschState.history.unshift(entry);
+    if (!Array.isArray(strafenHistory)) strafenHistory = [];
+    strafenHistory.unshift(entry);
+    renderAll();
+    persistState();
+    showToast(`🏁 ${winnerName} gewinnt. Verlierer gebucht!`, 'success');
+    return true;
+  } catch (error) {
+    console.error('Mensch-Abschluss fehlgeschlagen:', error);
+    showToast('❌ Abschluss fehlgeschlagen', 'error');
+    return false;
+  } finally {
+    menschState.closing = false;
+  }
+}
+
+async function undoMenschThrow() {
+  ensureMenschState();
+  if (menschState.busy || menschState.closing || !menschState.undoStack.length) {
+    showToast('Kein Wurf zum Rückgängigmachen vorhanden','error');return;
+  }
+  const last=menschState.undoStack[menschState.undoStack.length-1];
+  menschState.busy=true;
+  try {
+    // Falls der letzte Wurf zum Sieg geführt hat, ebenfalls die dadurch
+    // verbuchten Verlierer-Strafen in der gleichen Gegenbuchung aufheben.
+    const winnerEntry=menschState.finished ? menschState.history[0] : null;
+    const isWinnerUndo=!!(winnerEntry && winnerEntry.winner===last.player);
+    const original=getSoloThrowPenalty(last.player,last.pins,last.pins===0);
+    if(original && !original.key){showToast('Strafart nicht mehr vorhanden','error');return;}
+    const deltas=new Map();
+    const add=(name,key,delta)=>{
+      const id=JSON.stringify([name,key]);deltas.set(id,(deltas.get(id)||0)+delta);
+    };
+    if(original?.key)original.punished.forEach(name=>add(name,original.key,-1));
+    if(isWinnerUndo){
+      for(const item of winnerEntry.assigned||[]){
+        const key=getLoserPenaltyKeyByRank(item.rank);
+        if(!key){showToast(`${item.rank}. Verlierer fehlt als Strafart`,'error');return;}
+        add(item.name,key,-1);
+      }
+    }
+    const changes=[...deltas.entries()].filter(([,delta])=>delta).map(([id,delta])=>{
+      const [personName,key]=JSON.parse(id);return {personName,category:'strafen',key,delta};
+    });
+    if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes)))return;
+    if(original?.kind)removeOneSoloStatsEntry(last.player,original.kind);
+    menschState.scores={...last.oldScores};
+    menschState.currentIndex=last.oldIndex;
+    (menschState.throws[last.player]||[]).pop();
+    menschState.undoStack.pop();
+    if(isWinnerUndo){
+      menschState.active=true;menschState.finished=false;menschState.winner='';
+      menschState.customOrder=true;
+      menschState.ranking=[];
+      menschState.history.shift();
+      if(Array.isArray(strafenHistory)){
+        const ix=strafenHistory.findIndex(item=>item.id===winnerEntry.id);
+        if(ix>=0)strafenHistory.splice(ix,1);
+      }
+    }
+    menschState.busy=false;
+    renderAll();persistState();
+    showToast('↩ Letzter Wurf von '+last.player+' zurückgenommen','success');
+  } catch(error) {console.error(error);showToast('Rücknahme fehlgeschlagen','error');}
+  finally {menschState.busy=false;}
 }
 
 function resetMenschGame() {
@@ -180,10 +293,11 @@ function renderMenschGame(){
   setup.classList.toggle('hidden',!!menschState.active);
   const players=getMenschPlayers();
   if(!menschState.active){
-    board.innerHTML=menschState.finished?`<div class="game-throw-toolbar">🏁 Sieger: <strong>${menschState.winner}</strong></div>`:'<div class="game-placeholder-card">Spieler sitzen nach der Sitzordnung. Einfach starten oder optional Startspieler auslosen.</div>';
+    board.innerHTML=menschState.finished?`<div class="game-throw-toolbar">🏁 Sieger: <strong>${menschState.winner}</strong><button class="secondary-btn" onclick="undoMenschThrow()" ${menschState.undoStack.length?'':'disabled'}>↩ Siegwurf rückgängig</button></div>`:'<div class="game-placeholder-card">Spieler sitzen nach der Sitzordnung. Einfach starten oder optional Startspieler auslosen.</div>';
   } else {
     const current=players[menschState.currentIndex];
-    board.innerHTML=`<div class="game-throw-toolbar"><strong>🎳 ${current?.name||'—'} ist dran</strong><span>Ziel: genau 36</span>${[0,1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyMenschThrow(${n})">${n===0?'G':n===12?'Kranz':n}</button>`).join('')}</div>
+    board.innerHTML=`<div class="game-throw-toolbar"><strong>🎳 ${current?.name||'—'} ist dran</strong><span>Ziel: genau 36</span><button class="secondary-btn" onclick="undoMenschThrow()" ${menschState.undoStack.length?'':'disabled'}>↩ Letzten Wurf</button>${[0,1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyMenschThrow(${n})">${n===0?'G':n===12?'Kranz':n}</button>`).join('')}</div>
+      ${Object.entries(menschState.scores).some(([name, score]) => Number(score) === MENSCH_TARGET_SCORE) ? `<button class="primary-btn" onclick="finishMenschGame(Object.keys(menschState.scores).find(name => Number(menschState.scores[name]) === 36))">✅ Abschluss erneut versuchen</button>` : ''}
       <div class="game-compact-wrap"><table class="game-compact-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody>
       ${players.map((p,i)=>{const score=Number(menschState.scores[p.name])||0;const recent=(menschState.throws[p.name]||[]).slice(-5).map(t=>t.pins===0?'G':t.pins===12?'K':t.pins).join(' · ')||'—';return `<tr class="${i===menschState.currentIndex?'current':''}"><td>${p.name}</td><td class="game-compact-score">${score}</td><td style="min-width:170px"><div class="game-compact-progress"><span style="width:${score/36*100}%"></span></div></td><td>${recent}</td></tr>`;}).join('')}
       </tbody></table></div><div class="game-compact-note">Bei 6 nochmal werfen · gleiche Punktzahl wirft den vorherigen Spieler auf 0 · über 36 wird rückwärts gezählt.</div>`;

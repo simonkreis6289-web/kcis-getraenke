@@ -144,3 +144,45 @@ async function bookSoloSpecialThrow(name,pins,kind) {
     return true;
   }finally{soloPinPenaltyBusy=false;}
 }
+
+
+// V108: Gegenbuchungen fuer korrigierte Solospiel-Wuerfe.
+function getSoloThrowPenalty(name, value, isGosse) {
+  const kind = isGosse || value === 0 ? 'gosse' : value === 9 ? '9er' : value === 12 ? 'kranz' : null;
+  if (!kind) return null;
+  const key = getPenaltyKeyByType(kind);
+  if (!key) return { kind, key: null, punished: [] };
+  const punished = kind === 'gosse' ? [name] : getActivePlayersForSoloGame().filter(p => p.name !== name).map(p => p.name);
+  return { kind, key, punished };
+}
+function removeOneSoloStatsEntry(name, kind) {
+  if (!Array.isArray(penaltyStatsLog)) return;
+  const index = penaltyStatsLog.findIndex(x => x.thrower === name && normalizePenaltyStatsType(x.type) === normalizePenaltyStatsType(kind));
+  if (index >= 0) penaltyStatsLog.splice(index, 1);
+}
+async function changeSoloThrowPenalty(name, oldThrow, newThrow) {
+  // Beim Korrigieren alle Straf-Deltas in EINEM synchronisierten Schreibvorgang buchen.
+  const oldValue = oldThrow ? Number(oldThrow.pins ?? oldThrow.value) : null;
+  const newValue = newThrow ? Number(newThrow.pins ?? newThrow.value) : null;
+  const oldPenalty = oldThrow ? getSoloThrowPenalty(name, oldValue, !!oldThrow.isGosse) : null;
+  const newPenalty = newThrow ? getSoloThrowPenalty(name, newValue, !!newThrow.isGosse) : null;
+  if (newPenalty && !newPenalty.key) { showToast('Strafenart nicht vorhanden: '+newPenalty.kind,'error'); return false; }
+  if (oldPenalty && !oldPenalty.key) { showToast('Alte Strafenart nicht mehr vorhanden: '+oldPenalty.kind,'error'); return false; }
+  const deltas = new Map();
+  const add = (penalty, amount) => {
+    if (!penalty?.key) return;
+    for (const personName of penalty.punished) {
+      const id = JSON.stringify([personName,penalty.key]);
+      deltas.set(id,(deltas.get(id)||0)+amount);
+    }
+  };
+  add(oldPenalty,-1); add(newPenalty,1);
+  const changes = [...deltas.entries()].filter(([,delta])=>delta!==0).map(([id,delta])=>{
+    const [personName,key]=JSON.parse(id);
+    return {personName,category:'strafen',key,delta};
+  });
+  if (changes.length && !(await changeMultipleSyncedPersonCounters(changes))) return false;
+  if (oldPenalty?.kind) removeOneSoloStatsEntry(name,oldPenalty.kind);
+  if (newPenalty?.kind) addPenaltyStatsEntry(newPenalty.kind,name,newPenalty.punished);
+  return true;
+}

@@ -265,12 +265,15 @@ function applyLoadedState(state) {
     state.menschState ||
     createMenschState();
 
+  menschState.busy = false;
+  menschState.closing = false;
   ensureMenschState();
 
   plusminusState =
     state.plusminusState ||
     createPlusminusState();
 
+  plusminusState.busy = false;
   ensurePlusminusState();
 
   lotterieSettings =
