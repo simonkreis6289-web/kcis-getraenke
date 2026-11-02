@@ -3412,7 +3412,7 @@ body.view-only #clubBackBtn {
 /* ── QUICK BAR EINHEITLICH ── */
 .quick-penalty-bar {
   display: grid;
-  grid-template-columns: 180px repeat(5, 150px);
+  grid-template-columns: 180px 120px 120px 150px 120px 160px 205px;
   gap: 8px;
   align-items: center;
   justify-content: start;
@@ -3448,6 +3448,269 @@ body.view-only #clubBackBtn {
 
 .quick-penalty-bar button:hover {
   transform: translateY(-1px);
+}
+
+.quick-penalty-bar .team-loss-btn {
+  min-width: 205px;
+}
+
+.game-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.game-hub-card {
+  background: linear-gradient(180deg, #fffdf0 0%, #fff7cc 100%);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+}
+
+.game-hub-card:hover {
+  transform: translateY(-2px);
+}
+
+.game-hub-card .icon {
+  font-size: 1.8rem;
+}
+
+.game-hub-card .title {
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.game-hub-card .desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.game-order-editor {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.72);
+}
+
+.game-order-editor-title {
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.game-order-list {
+  display: grid;
+  gap: 8px;
+}
+
+.game-order-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.game-order-item-name {
+  font-weight: 700;
+}
+
+.game-order-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.order-move-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff8cc;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.lotterie-complete-col {
+  background: rgba(0, 194, 0, 0.15) !important;
+}
+
+.lotterie-complete-cell .game-cell-btn {
+  box-shadow: inset 0 0 0 2px rgba(0, 168, 56, 0.35);
+}
+
+.solo-start-spin {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--accent2);
+  min-height: 2.6rem;
+  margin: 18px 0 12px;
+}
+
+.solo-start-result {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.game-placeholder-card {
+  padding: 18px;
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  background: rgba(255,248,204,0.38);
+  color: var(--muted);
+}
+
+.mensch-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.mensch-live-head, .plusminus-live-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fffdf0;
+  margin-bottom: 14px;
+}
+
+.mensch-current-player, .plusminus-current-player {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.pinpad-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 10px;
+}
+
+.pinpad-btn {
+  min-height: 54px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pinpad-btn.special {
+  background: #fff3d6;
+}
+
+.mensch-player-card {
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px;
+}
+
+.mensch-player-card.active {
+  box-shadow: 0 0 0 3px rgba(245,166,35,0.22);
+  border-color: var(--accent);
+}
+
+.mensch-player-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mensch-player-score {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: var(--accent2);
+}
+
+.mensch-track {
+  position: relative;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f5f5f5 0%, #fff2c1 100%);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.mensch-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #f5a623 0%, #e8412a 100%);
+  opacity: 0.28;
+}
+
+.mensch-track-marker {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 24px;
+  background: var(--border);
+  right: 0;
+}
+
+.mensch-last-throws {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.plusminus-boxes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+  gap: 8px;
+}
+
+.plusminus-box {
+  min-height: 54px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 900;
+  background: #fff;
+}
+
+.plusminus-box.pending {
+  background: rgba(245,166,35,0.12);
+  border-style: dashed;
+}
+
+.plusminus-op-line {
+  display: grid;
+  grid-template-columns: repeat(9, auto);
+  gap: 8px;
+  align-items: center;
+  justify-content: start;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.plusminus-result {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--accent2);
 }
 
 .stats-filter-card {
@@ -4250,13 +4513,18 @@ body.view-only #clubBackBtn {
   }
 }
 
-/* V103: FastButtons nebeneinander und hervorgehobene Lotterie-Spalten */
-.quick-penalty-bar{grid-template-columns:180px repeat(6,minmax(130px,150px));overflow-x:auto}
-.quick-penalty-bar>button{white-space:nowrap}
-.kc-lotterie-complete{background:rgba(46,160,98,.20)!important;box-shadow:inset 0 0 0 1px rgba(46,160,98,.45)}
-.kc-sitzordnung,.kc-accounting-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin:12px 0}
-.kc-order-row{display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--border)}
-.kc-order-row span{flex:1}.kc-order-row button{min-width:38px;min-height:34px}
-.kc-placeholder-board{padding:30px;text-align:center;border:1px dashed var(--border);border-radius:10px}
-.kc-cash-entry{margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:10px}
-.kc-cash-entry table{width:100%;border-collapse:collapse}.kc-cash-entry th,.kc-cash-entry td{padding:7px;border-bottom:1px solid var(--border);text-align:left}
+/* Kassenhistorie: Tablet-optimierte Archivkarten mit Löschfunktion */
+.cash-history-panel {padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--surface);}
+.cash-history-panel h3 {margin:0 0 10px;font-size:1.1rem;}
+.cash-help {font-size:.79rem;color:var(--muted);opacity:.8;line-height:1.5;margin:8px 0;}
+.cash-history-filters {display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:14px 0 16px;}
+.cash-history-filters label {display:flex;flex-direction:column;gap:5px;font-size:.8rem;font-weight:700;}
+.cash-history-filters input {padding:9px;border:1px solid var(--border);border-radius:8px;background:#fff;color:#111;}
+.cash-entry {border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;background:#fffdf0;}
+.cash-entry-top {display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.cash-delete-btn {padding:9px 14px;color:#a01818;background:#fff;border:1.5px solid #ad3030;border-radius:9px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.cash-delete-btn:hover {background:#ffe9e9;}
+.cash-entry details summary {cursor:pointer;font-weight:700;font-size:.82rem;margin-top:8px;}
+.cash-table-scroller {overflow-x:auto;margin-top:10px;}
+.cash-table {border-collapse:collapse;min-width:440px;width:100%;}
+.cash-table th,.cash-table td {padding:9px;border-bottom:1px solid #ddd;text-align:left;font-size:.82rem;}
