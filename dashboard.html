@@ -17,6 +17,8 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 @media(max-width:850px){.dashboard{min-height:980px;height:auto;grid-template-columns:1fr 1fr;grid-template-rows:80px minmax(430px,1fr) minmax(340px,auto)}.stage{grid-column:1/-1;grid-row:2}.side{grid-row:3;grid-template-rows:1fr 1fr;min-height:340px}.side.left{grid-column:1}.side.right{grid-column:2}}
 @media(max-width:520px){.dashboard{grid-template-columns:1fr;grid-template-rows:78px 450px auto auto}.stage{grid-row:2}.side.left{grid-row:3;grid-column:1}.side.right{grid-row:4;grid-column:1}.side{min-height:380px}.club{font-size:22px}.clock{font-size:23px}header{padding:10px}.sub{font-size:10px}}
 
+/* Statuspunkte dürfen neben dem Namen Platz beanspruchen. */
+#gutters .listrow .name{font-size:clamp(10px,.8vw,14px)}
 /* TV-Spielbretter */
 .stage-body{align-items:stretch;justify-content:stretch;overflow:auto;padding:clamp(8px,1.2vw,18px)}
 .tv-board{width:100%;max-height:100%;overflow:auto;align-self:stretch}.tv-headline{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:clamp(23px,2.5vw,39px);text-align:center;margin:0 0 12px;color:#3e4359}
@@ -35,6 +37,16 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .stage-body .tv-stats{margin:0 0 7px}
 .stage-body .tv-stat{padding:4px 9px}
 </style>
+<style id="plusminus-tv-style">
+.tv-plusminus{width:100%;table-layout:fixed}
+.tv-plusminus th:first-child,.tv-plusminus td:first-child{width:18%}
+.tv-plusminus th:last-child,.tv-plusminus td:last-child{width:14%}
+.tv-slot{display:flex;align-items:center;justify-content:center;min-height:28px;border:1px solid #cbd2e2;border-radius:6px;background:white;font-weight:700}
+.tv-slot-filled{background:#edf1f8;color:#10213f}
+.tv-slot-selected{box-shadow:inset 0 0 0 2px #f4a01c}
+.tv-current .tv-name{background:#fff3cc}
+.tv-result{font-weight:800}
+</style>
 </head>
 <body>
 <main class="dashboard">
@@ -46,8 +58,8 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V117";
-const DASH_RELEASE="02.11.2026 · 11:55 Uhr";
+const DASH_VERSION="V119";
+const DASH_RELEASE="02.11.2026 · 12:25 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -92,26 +104,27 @@ function gamePenalty(name,key,includeInactive=false){
  return 0;
 }
 function totalPerson(p,kings){
+ // Nur bereits in der Strafentabelle verbuchte Beträge, keine offenen
+ // Lotterie-/Tiberius-Spielstände vor ihrer Buchung.
  const fines=state?.STRAFEN||[],prices=state?.strafPrices||{};
  const counted=fines.reduce((sum,x)=>sum+withCount(p,x.key)*numeric(prices[x.key]),0);
  const free=Array.isArray(p.freeStrafen)?p.freeStrafen:[];
- const missing=(state?.strafenHistory||[]).filter(x=>/^(lotterie|tiberius)$/i.test(String(x.type||'')))
-   .flatMap(x=>(x.assignedTo||[]).filter(y=>String(y.name||'').toLocaleLowerCase('de')===String(p.name||'').toLocaleLowerCase('de')).map(y=>({amount:numeric(y.amount),onTop:!!y.onTop,reason:x.type})))
-   .filter(x=>!free.some(y=>String(y.reason||'').toLocaleLowerCase('de').includes(x.reason.toLocaleLowerCase('de'))&&Math.abs(numeric(y.amount)-x.amount)<.001&&!!y.onTop===x.onTop));
+ const history=Array.isArray(state?.strafenHistory)?state.strafenHistory:[];
+ const missing=history.filter(x=>['lotterie','tiberius'].includes(String(x.type||'').toLowerCase()))
+  .flatMap(x=>(x.assignedTo||[]).filter(y=>String(y.name||'').toLocaleLowerCase('de')===String(p.name||'').toLocaleLowerCase('de')).map(y=>({amount:numeric(y.amount),onTop:!!y.onTop,reason:x.type})))
+  .filter(x=>!free.some(y=>String(y.reason||'').toLocaleLowerCase('de').includes(x.reason)&&Math.abs(numeric(y.amount)-x.amount)<.001&&!!y.onTop===x.onTop));
  const all=[...free,...missing];
  const normalFree=all.filter(x=>!x.onTop).reduce((a,x)=>a+numeric(x.amount),0);
  const topFree=all.filter(x=>x.onTop).reduce((a,x)=>a+numeric(x.amount),0);
  const tree=(p.tannenbaumCharges||[]).reduce((a,x)=>a+numeric(x.amount),0);
- const lateKey=fines.find(x=>/zu spät|verspät/i.test(x.label||''))?.key;
- const earlyKey=fines.find(x=>/früher gegangen/i.test(x.label||''))?.key;
- // Zeitstrafen werden in der Haupt-App zusätzlich aus den Ankunfts-/Abgangsdaten abgeleitet.
- const storedGame=key=>free.filter(x=>String(x.reason||'').toLowerCase()===key).reduce((a,x)=>a+numeric(x.amount),0);
- const unbookedLottery=Math.max(0,gamePenalty(p.name,'lotterie')-storedGame('lotterie'));
- const unbookedTiberius=Math.max(0,gamePenalty(p.name,'tiberius')-storedGame('tiberius'));
- const liveNormal=unbookedLottery+unbookedTiberius;
  const max=numeric(state?.STRAFEN_LIMIT)||30;
  const kingBonus=p.present&&kings.includes(p.name)&&!free.some(x=>/gossen(könig|koenig)/i.test(String(x.reason||'')))?3:0;
- return Math.min(counted+normalFree+tree+liveNormal,max)+topFree+kingBonus;
+ return Math.min(counted+normalFree+tree,max)+topFree+kingBonus;
+}
+function buyThrowIndicators(p){
+ const max=Math.max(0,Number(state?.wurfSettings?.maxBuys)||3);
+ const used=Math.max(0,Number(p.boughtThrows)||0);
+ return Array.from({length:Math.min(max,12)},(_,i)=>i<used?'🔴':'🟢').join('');
 }
 
 function paint(){if(!state)return;
@@ -131,7 +144,7 @@ function paint(){if(!state)return;
  
  list('drinks',drinkRows,r=>fmt.format(r.amount),'Keine Personen geladen');list('fines',fineRows,r=>fmt.format(r.amount),'Keine Personen geladen');
  $('drinks-total').textContent=fmt.format(drinkRows.reduce((a,x)=>a+x.amount,0));$('fines-total').textContent=fmt.format(fineRows.reduce((a,x)=>a+x.amount,0));
- list('gutters',counts.sort((a,b)=>b.count-a.count).map(x=>({...x,name:(kings.includes(x.name)?'👑 ':'')+x.name})),r=>r.count+' ×','Noch keine Gossen');
+ list('gutters',counts.sort((a,b)=>b.count-a.count).map(x=>({...x,name:(kings.includes(x.name)?'👑 ':'')+buyThrowIndicators(visible.find(p=>p.name===x.name)||{})+' '+x.name})),r=>r.count+' ×','Noch keine Gossen');
  // Treffer gehören dem Werfer, nicht den Mitspielern mit 1-€-Strafe.
  // penaltyStatsLog wird in der Haupt-App bei jedem 9er/Kranz mit thrower gespeichert.
  // Nur Ereignisse des aktuellen Kegelabends anzeigen (soweit dessen Datum bekannt ist).
@@ -165,6 +178,50 @@ function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-t
 function renderTree(d){const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};const teams=d.teams||{};const team1=teams.T1||{},team2=teams.T2||{};const teamLabel=k=>safe(state?.groupSettings?.[k]?.name||({T1:'Wand',T2:'TV'}[k]));const remaining=(t,n)=>Math.max(0,Number(t?.remaining?.[n]??base[n]??0));const won=t=>Object.keys(base).every(n=>remaining(t,n)===0);const balls=(t,n,side)=>{if(won(t))return n==='5'?`<div class="tree-win">🏆 ${teamLabel(side==='wand'?'T1':'T2')}</div>`:'';const rem=remaining(t,n),len=Math.max(Number(base[n])||0,rem);return Array.from({length:len},(_,i)=>`<div class="tree-ball ${side} ${(side==='wand'?i<len-rem:i>=rem)?'crossed':''}">${safe(n)}</div>`).join('')};const strikes=(t,n)=>(t.strikes||[]).filter(x=>String(x.number)===String(n)).length;const sum=t=>Object.keys(base).reduce((a,n)=>a+remaining(t,n),0);return `<div class="tv-board tree-board"><div class="tv-stats"><div class="tv-stat">${teamLabel('T1')}<strong>${fmt.format(Object.keys(base).reduce((a,n)=>a+remaining(team1,n)*Number(n)*.10,0)+((team1.strikes||[]).reduce((a,x)=>a+numeric(x.amount),0))+numeric(team1.bonus))} · ${sum(team1)} offen</strong></div><div class="tv-stat">${teamLabel('T2')}<strong>${fmt.format(Object.keys(base).reduce((a,n)=>a+remaining(team2,n)*Number(n)*.10,0)+((team2.strikes||[]).reduce((a,x)=>a+numeric(x.amount),0))+numeric(team2.bonus))} · ${sum(team2)} offen</strong></div></div><div class="tree-header"><span>Striche</span><span>${teamLabel('T1')}</span><span>Zahl</span><span>${teamLabel('T2')}</span><span>Striche</span></div>${Object.keys(base).map(n=>`<div class="tree-row"><div class="tree-strikes">${strikes(team1,n)?'┃'.repeat(strikes(team1,n)):'0'}</div><div class="tree-side">${balls(team1,n,'wand')}</div><div class="tree-number">${safe(n)}</div><div class="tree-side">${balls(team2,n,'tv')}</div><div class="tree-strikes">${strikes(team2,n)?'┃'.repeat(strikes(team2,n)):'0'}</div></div>`).join('')}</div>`}
 function renderLottery(d){const columns=d.columns||[],names=activeNames(d.playerOrder);if(!columns.length)return null;const complete=columns.map((_,i)=>names.length>0&&names.every(n=>d.throws?.[n]?.[i]!=null));const losers=columns.map((_,i)=>{const arr=names.map(n=>({n,raw:d.throws?.[n]?.[i]})).filter(x=>x.raw!==null&&x.raw!==undefined&&x.raw!=='').map(x=>({n:x.n,v:Number(x.raw)})).filter(x=>Number.isFinite(x.v));const min=Math.min(...arr.map(x=>x.v));return arr.filter(x=>x.v===min).map(x=>x.n)});const heads=['Spieler','Strafen',...columns.map((c,i)=>`${fmt.format(Number(c)||0)}${complete[i]?' ✓':''}`)];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'lotterie',true)),...columns.map((_,i)=>({v:d.throws?.[n]?.[i],done:complete[i],lose:losers[i].includes(n)}))]);return `<div class="tv-board"><h2 class="tv-headline">🎰 Lotterie</h2>${makeTable(heads,rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.lose?'miss':v.done?'done':v.v==null?'pending':''}">${v.v==null?'–':v.v===12?'K':safe(v.v)}</div>`)}</div>`}
 function renderTiberiusBoard(d){const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;const score=Number(d.score)||0;const next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);return `<div class="tv-board"><h2 class="tv-headline">🏛️ Tiberius</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`)}</div>`}
+function plusminusSlotValue(idx,slot,partial,smart){
+ if(!slot)return null;
+ if(!slot.isGosse)return Number.parseInt(slot.value||0,10)||0;
+ if(!smart)return [0,0,9,0,9][idx];
+ if(idx<=1)return 0;
+ if(idx===2)return 9;
+ if(idx===3)return partial<0?9:0;
+ if(idx===4)return partial<0?1:9;
+ return 0;
+}
+function plusminusResult(row,smart){
+ let a=plusminusSlotValue(0,row[0],0,smart);
+ if(a===null)return null;
+ let b=plusminusSlotValue(1,row[1],a,smart);
+ if(b===null)return null;
+ let val=a+b;
+ let c=plusminusSlotValue(2,row[2],val,smart);
+ if(c===null)return null;
+ val-=c;
+ let d=plusminusSlotValue(3,row[3],val,smart);
+ if(d===null)return null;
+ val*=d;
+ let e=plusminusSlotValue(4,row[4],val,smart);
+ if(e===null)return null;
+ return e===0?0:val/e;
+}
+function renderPlusminusBoard(d){
+ const names=activeNames(d.playerOrder);
+ const rows=d.rows||{};
+ if(!names.length)return null;
+ const selected=Number(d.currentPlayerIndex)||0;
+ const current=names[selected]||'—';
+ const operators=['① +','② −','③ ×','④ ÷','⑤'];
+ const tableRows=names.map((n,i)=>{
+  const r=Array.isArray(rows[n])?rows[n]:[];
+  const value=plusminusResult(r,!!d.smartGosse);
+  return `<tr class="${d.active&&current===n?'tv-current':''}"><td class="tv-name">${safe(n)}</td>${Array.from({length:5},(_,j)=>{
+   const slot=r[j];const v=slot?(slot.isGosse?'G':slot.value):'–';
+   const highlight=d.active&&i===selected&&j===(Number(d.selectedSlot)||0);
+   return `<td><span class="tv-slot ${slot?'tv-slot-filled':''} ${highlight?'tv-slot-selected':''}">${safe(v)}</span></td>`;
+  }).join('')}<td class="tv-result">${value===null?'–':safe(Number(value.toFixed(2)).toLocaleString('de-DE'))}</td></tr>`;
+ }).join('');
+ return `<div class="tv-board plusminus-board"><h2 class="tv-headline">➕ + − × ÷</h2><div class="tv-stats"><div class="tv-stat">${d.finished?'Spiel abgeschlossen':'Aktueller Spieler'}<strong>${safe(d.finished?'🏁':current)}</strong></div><div class="tv-stat">Gewähltes Feld<strong>${d.finished?'–':(Number(d.selectedSlot)||0)+1}</strong></div></div><table class="tv-table tv-plusminus"><thead><tr><th>Spieler</th>${operators.map(x=>`<th>${x}</th>`).join('')}<th>Ergebnis</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
+}
 function renderMenschBoard(d){const names=activeNames(d.playerOrder),scores=d.scores||{};if(!names.length)return null;return `<div class="tv-board"><h2 class="tv-headline">🎲 Mensch ärgere dich nicht</h2><div class="tv-stats"><div class="tv-stat">Ziel<strong>36 Punkte</strong></div><div class="tv-stat">Am Wurf<strong>${safe(names[d.currentIndex]||'–')}</strong></div></div><table class="tv-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody>${names.map((n,i)=>{const score=Number(scores[n])||0;const throws=(d.throws?.[n]||[]).slice(-5).map(t=>t.pins===0?'G':t.pins===12?'K':safe(t.pins)).join(' · ');return `<tr><td class="tv-name ${i===d.currentIndex?'tv-current':''}">${safe(n)} ${d.winner===n?'🏆':''}</td><td><strong>${score}</strong></td><td><div class="tv-progress"><span style="width:${Math.min(100,Math.max(0,score/36*100))}%"></span></div></td><td>${throws||'–'}</td></tr>`}).join('')}</tbody></table><div class="tv-note">Bei 6 nochmal werfen · Punktgleichheit wirft zurück auf 0 · über 36 rückwärts zählen</div></div>`}
 function renderDartsBoard(d){
  const scores=d.scores||{}, start=Number(d.startValue)||301;
@@ -207,7 +264,7 @@ if(typeof ResizeObserver!=='undefined'){
  tvFitObserver.observe(document.getElementById('game-body'));
 }
 window.addEventListener('resize',()=>requestAnimationFrame(fitTvBoard));
-function paintGame(){const key=chosenGame(),data=key?gameState(key):null,body=$('game-body');body.replaceChildren();$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';let html=null;if(data){try{html=key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;requestAnimationFrame(fitTvBoard);return}const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
+function paintGame(){const key=chosenGame(),data=key?gameState(key):null,body=$('game-body');body.replaceChildren();$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';let html=null;if(data){try{html=key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data):key==='plusminus'?renderPlusminusBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;requestAnimationFrame(fitTvBoard);return}const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
 
 function unsubscribe(){
  connectionEpoch++;if(fallbackTimer)clearInterval(fallbackTimer);fallbackTimer=null;

@@ -196,7 +196,6 @@ function startTiberiusGameFinal(starterName) {
   tiberiusState.customOrder = true;
   tiberiusState.startPlayer = starterName || tiberiusState.playerOrder[0] || '';
   tiberiusState.active = true;
-  dashboardActiveGame = "tiberius";
   tiberiusState.finished = false;
   tiberiusState.score = 0;
   tiberiusState.throws = [];
@@ -411,6 +410,16 @@ function confirmTiberiusThrower() {
     }
   }
 
+  // Strafzähler betreffen die Mitspieler; das Trefferprotokoll zählt den Werfer.
+  if (value === 9 || value === 12) {
+    if (typeof addPenaltyStatsEntry === 'function') {
+      addPenaltyStatsEntry(value === 9 ? '9er' : 'Kranz', personName,
+        persons.filter(p => p.present && !p.left && p.name !== personName).map(p => p.name));
+    }
+  }
+  if (Array.isArray(tiberiusState.throws) && tiberiusState.throws.length) {
+    tiberiusState.throws[tiberiusState.throws.length - 1].thrower = personName;
+  }
   closeTiberiusThrowerModal();
   continueTiberiusAfterThrower(personName);
 }
