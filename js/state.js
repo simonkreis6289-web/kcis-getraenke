@@ -1,6 +1,6 @@
 const APP_VERSION = '20261102-01';
-const APPVersionSelf = 'V104 © SK';
-const APP_LAST_UPDATE = '02.11.2026 08:35 Uhr';
+const APPVersionSelf = 'V105 © SK';
+const APP_LAST_UPDATE = '02.11.2026 10:00 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -169,3 +169,6 @@ let timePenaltySettings = {
 
 let arrivalEditPerson = null;
 let leftEarlyEditPerson = null;
+
+// Zentrale Sitzordnung, Index 0 = Platz 1.
+let seatingOrder = Array(16).fill('');

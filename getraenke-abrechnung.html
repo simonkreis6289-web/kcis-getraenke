@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20260521-v16">
+  <link rel="stylesheet" href="css/styles.css?v=20261102-v5">
 
 </head>
 
@@ -212,6 +212,7 @@
       </button>
       <div class="side-submenu">
         <button class="active" onclick="showSideTab('organisation','anwesenheit',this)">👋 Anwesenheit</button>
+        <button onclick="showSideTab('organisation','sitzordnung',this)">🪑 Sitzordnung</button>
         <button onclick="showSideTab('organisation','gruppen',this)">👥 Gruppen</button>
         <button onclick="showSideTab('organisation','gruppen-einstellungen',this)">🎨 Gruppen einstellen</button>
       </div>
@@ -339,6 +340,16 @@
         </div>
       </div>
 
+      <div id="tab-sitzordnung" class="hidden">
+        <div class="section-title">🪑 Sitzordnung für den Kegelabend</div>
+        <p class="seating-hint">Sitzplätze 1–8: <strong id="seating-t2-name">TV</strong>, Sitzplätze 9–16: <strong id="seating-t1-name">Wand</strong>. Platz anklicken und eine Person zuweisen. Diese Reihenfolge gilt automatisch für die Spiele.</p>
+        <div class="seating-layout">
+          <div id="seating-left" class="seating-side"></div>
+          <div class="seating-table">🎳<span>Tisch</span></div>
+          <div id="seating-right" class="seating-side"></div>
+        </div>
+        <div class="seating-actions"><button class="secondary-btn" onclick="clearSeatingOrder()">↻ Alle Plätze leeren</button></div>
+      </div>
       <div id="tab-gruppen" class="hidden">
         <div class="section-title">Seiten-Zuweisung</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">
@@ -903,7 +914,9 @@
       </div>
 
       <div id="lotterie-amount-editor"></div>
-      <div id="lotterie-order-editor" class="game-order-editor"></div>
+      <label class="modal-check"><input type="checkbox" id="lotterie-random-starter"> 🎲 Startspieler zufällig auslosen</label>
+      <label class="modal-check"><input type="checkbox" id="lotterie-custom-order" onchange="toggleSoloOrderOverride('lotterie')"> Sitzordnung für dieses Spiel ändern</label>
+      <div id="lotterie-order-editor" class="game-order-editor hidden"></div>
     </div>
 
     <div class="modal-btns" style="margin-top:14px;">
@@ -961,7 +974,9 @@
       </div>
 
       <div id="tiberius-target-editor"></div>
-      <div id="tiberius-order-editor" class="game-order-editor"></div>
+      <label class="modal-check"><input type="checkbox" id="tiberius-random-starter"> 🎲 Startspieler zufällig auslosen</label>
+      <label class="modal-check"><input type="checkbox" id="tiberius-custom-order" onchange="toggleSoloOrderOverride('tiberius')"> Sitzordnung für dieses Spiel ändern</label>
+      <div id="tiberius-order-editor" class="game-order-editor hidden"></div>
     </div>
 
     <div class="modal-btns" style="margin-top:14px;">
@@ -1043,7 +1058,9 @@
   <div class="section-title">Mensch ärgere dich nicht</div>
   <div class="game-start-card" id="mensch-start-card">
     <div class="modal-sub">Ziel sind genau 36 Punkte. Bei 6 darf der Spieler direkt noch einmal werfen. Wer genau 36 erreicht, beendet das Spiel.</div>
-    <div id="mensch-order-editor" class="game-order-editor"></div>
+    <label class="modal-check"><input type="checkbox" id="mensch-random-starter"> 🎲 Startspieler zufällig auslosen</label>
+      <label class="modal-check"><input type="checkbox" id="mensch-custom-order" onchange="toggleSoloOrderOverride('mensch')"> Sitzordnung für dieses Spiel ändern</label>
+      <div id="mensch-order-editor" class="game-order-editor hidden"></div>
     <div class="modal-btns" style="margin-top:14px;">
       <button type="button" class="primary-btn" onclick="startMenschGame()">🎲 Spiel starten</button>
     </div>
@@ -1059,12 +1076,13 @@
 <div id="tab-plusminus" class="hidden">
   <div class="section-title">+ − × ÷</div>
   <div class="game-start-card" id="plusminus-start-card">
-    <div class="modal-sub">Es wird von links nach rechts gerechnet: Kästchen 1 + 2 − 3 × 4 ÷ 5. Kein Punkt-vor-Strich.</div>
+    <div class="modal-sub">Jeder Spieler erhält fünf Würfe und entscheidet selbst, in welches freie Kästchen er den aktuellen Wurf einträgt. Berechnet wird streng von links nach rechts.</div>
     <label class="modal-check game-ontop-check">
       <input type="checkbox" id="plusminus-smart-gosse" onchange="togglePlusminusSmartGosse()">
       <span>Bei Gosse automatisch das schlechteste mögliche Ergebnis nehmen</span>
     </label>
-    <div id="plusminus-order-editor" class="game-order-editor"></div>
+    <label class="modal-check"><input type="checkbox" id="plusminus-custom-order" onchange="toggleSoloOrderOverride('plusminus')"> Sitzordnung für dieses Spiel ändern</label>
+      <div id="plusminus-order-editor" class="game-order-editor hidden"></div>
     <div class="modal-btns" style="margin-top:14px;">
       <button type="button" class="primary-btn" onclick="startPlusminusGame()">➕ Spiel starten</button>
     </div>
@@ -1894,6 +1912,14 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="seating-choice-modal">
+  <div class="modal" style="max-width:430px">
+    <h3 id="seating-choice-title">🪑 Sitzplatz zuweisen</h3>
+    <div class="modal-sub">Name auswählen. Bereits belegte Plätze werden automatisch freigegeben.</div>
+    <div class="modal-input-row" style="margin-top:12px"><label for="seating-choice-person">Kegler</label><select id="seating-choice-person" class="modal-select"></select></div>
+    <div class="modal-btns"><button class="modal-cancel" onclick="closeSeatChoice()">Abbrechen</button><button class="primary-btn" onclick="confirmSeatChoice()">✅ Übernehmen</button></div>
+  </div>
+</div>
 <div id="toast"></div>
        
 <input
@@ -1910,16 +1936,17 @@
 
 <script src="js/games/tannenbaum.js?v=20260618-v29"></script>
 <script src="js/games/darts.js?v=20260618-v30"></script>
-<script src="js/games/tiberius.js?v=20261102-v1"></script>
-<script src="js/games/lotterie.js?v=20261102-v1"></script>
+<script src="js/games/tiberius.js?v=20261102-v2"></script>
+<script src="js/games/lotterie.js?v=20261102-v2"></script>
 <script src="js/games/solo-start-draw.js?v=20261102-v1"></script>
-<script src="js/games/mensch.js?v=20261102-v1"></script>
-<script src="js/games/plusminus.js?v=20261102-v1"></script>
+<script src="js/games/seating.js?v=20261102-v2"></script>
+<script src="js/games/mensch.js?v=20261102-v2"></script>
+<script src="js/games/plusminus.js?v=20261102-v2"></script>
 <script src="js/games/coinflip.js?v=20260618-v30"></script>
 
 <script src="js/groups.js?v=20260618-v29"></script>
 
-<script src="js/app.js?v=20261031-v1"></script>
+<script src="js/app.js?v=20261102-v2"></script>
     
 <script src="js/live-games.js?v=20260806-v1"></script>
 <script src="js/strafe-pdf.js?v=20261102-v2"></script>

@@ -239,21 +239,12 @@ function syncLotteriePlayerOrder() {
 }
 
 function getLotteriePlayers() {
-  const active = getActivePlayersForSoloGame();
-  const order = syncLotteriePlayerOrder();
-  return sortPlayersByNameOrder(active, order);
+  const names=getSoloNames('lotterie');
+  const active=getActivePlayersForSoloGame();
+  return names.map(name=>active.find(p=>p.name===name)).filter(Boolean);
 }
 
-function moveLotterieOrder(index, delta) {
-  syncLotteriePlayerOrder();
-  const target = index + delta;
-  if (target < 0 || target >= lotterieState.playerOrder.length) return;
-  const arr = lotterieState.playerOrder.slice();
-  [arr[index], arr[target]] = [arr[target], arr[index]];
-  lotterieState.playerOrder = arr;
-  renderLotteriePlayerOrderEditor();
-  persistState();
-}
+function moveLotterieOrder(index,delta) { moveSoloName('lotterie',index,delta); }
 
 function resetLotterieOrder() {
   lotterieState.playerOrder = getActivePlayersForSoloGame().map(p => p.name);
@@ -261,32 +252,7 @@ function resetLotterieOrder() {
   persistState();
 }
 
-function renderLotteriePlayerOrderEditor() {
-  const editor = document.getElementById('lotterie-order-editor');
-  if (!editor) return;
-  const players = getLotteriePlayers();
-  if (!players.length) {
-    editor.innerHTML = '<div class="game-order-editor-title">Sitzreihenfolge</div><div style="color:var(--muted);font-size:0.85rem;">Keine aktiven Spieler vorhanden.</div>';
-    return;
-  }
-  editor.innerHTML = `
-    <div class="game-order-editor-title">Sitzreihenfolge für Lotterie</div>
-    <div class="game-order-list">
-      ${players.map((player, index) => `
-        <div class="game-order-item">
-          <div class="game-order-item-name">${index + 1}. ${player.name}</div>
-          <div class="game-order-actions">
-            <button class="order-move-btn" onclick="moveLotterieOrder(${index}, -1)">↑</button>
-            <button class="order-move-btn" onclick="moveLotterieOrder(${index}, 1)">↓</button>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <div style="margin-top:10px;">
-      <button type="button" class="secondary-btn" onclick="resetLotterieOrder()">↻ Alphabetisch</button>
-    </div>
-  `;
-}
+function renderLotteriePlayerOrderEditor() { renderSoloOrderSettings('lotterie'); }
 
 function rotateNameOrder(order, starterName) {
   const list = Array.isArray(order) ? order.slice() : [];
@@ -329,12 +295,7 @@ async function startLotterieGame() {
     return;
   }
 
-  openSoloStartDraw({
-    title: '🎰 Lotterie',
-    subtitle: 'Wer beginnt die Lotterie?',
-    players: players.map(p => p.name),
-    onConfirm: starterName => startLotterieGameFinal(starterName)
-  });
+  prepareSoloStarter('lotterie', starterName => startLotterieGameFinal(starterName));
 }
 
 async function startLotterieGameFinal(starterName) {
@@ -356,7 +317,9 @@ async function startLotterieGameFinal(starterName) {
   }
 
   lotterieState.columnCount = colCount;
-  lotterieState.playerOrder = rotateNameOrder(syncLotteriePlayerOrder(), starterName || players[0].name);
+  lotterieState.playerOrder = rotateNameOrder(getSoloNames('lotterie'), starterName || players[0].name);
+  lotterieState.restoreCustomOrder = !!lotterieState.customOrder;
+  lotterieState.customOrder = true;
   lotterieState.startPlayer = starterName || lotterieState.playerOrder[0] || '';
   lotterieState.active = true;
   lotterieState.finished = false;
@@ -1383,6 +1346,7 @@ async function finishLotterieGame() {
 
   lotterieState.finished = true;
   lotterieState.active = false;
+  lotterieState.customOrder = !!lotterieState.restoreCustomOrder;
 
   const saved =
     await saveLiveLotterieState();

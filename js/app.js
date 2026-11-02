@@ -45,6 +45,7 @@ async function startApp() {
 function getSerializableState() {
   return {
     persons,
+    seatingOrder,
       groupSettings,
     spiele,
     DRINKS,
@@ -102,6 +103,7 @@ function getFirestoreState() {
   return {
     ...getTodayMeta(),
     persons,
+    seatingOrder,
     spiele,
     DRINKS,
       groupSettings,
@@ -152,6 +154,8 @@ function applyLoadedState(state) {
   persons = Array.isArray(state.persons)
     ? state.persons
     : [];
+
+  seatingOrder = Array.isArray(state.seatingOrder) ? state.seatingOrder.slice(0,16) : Array(16).fill('');
 
   spiele = Array.isArray(state.spiele)
     ? state.spiele
@@ -2785,6 +2789,8 @@ async function startNewKegelabend() {
   tiberiusState =
     createTiberiusState();
 
+  seatingOrder = Array(16).fill('');
+
   menschState =
     createMenschState();
 
@@ -3748,6 +3754,7 @@ applyGroupTheme();
     renderPenaltyStats();
   renderTannenbaum();
   renderAnwesenheit();
+  renderSeatingOrder();
   renderGruppen();
   renderGetraenke();
   renderTeamspiele();
@@ -5502,7 +5509,7 @@ function deleteSpielFromKatalog(name) {
 
 // ── SIDEBAR / TABS ──
 const subTabMap = {
-  organisation: ['anwesenheit', 'gruppen', 'gruppen-einstellungen'],
+  organisation: ['anwesenheit', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
   spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'sichern', 'fuchsjagd', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],

@@ -4528,3 +4528,33 @@ body.view-only #clubBackBtn {
 .cash-table-scroller {overflow-x:auto;margin-top:10px;}
 .cash-table {border-collapse:collapse;min-width:440px;width:100%;}
 .cash-table th,.cash-table td {padding:9px;border-bottom:1px solid #ddd;text-align:left;font-size:.82rem;}
+
+/* V105: Sitzplan und kompakte Spiele */
+.seating-hint {margin: 0 0 14px; font-size:.85rem;color:var(--muted)}
+.seating-layout {display:grid;grid-template-columns:minmax(145px,1fr) minmax(110px,2fr) minmax(145px,1fr);gap:10px;max-width:850px;margin:0 auto}
+.seating-side{display:grid;grid-template-rows:repeat(8,minmax(46px,1fr));gap:6px}
+.seating-chair{min-height:46px;border:2px solid #12394a;border-radius:7px;background:#1b6382;color:#fff;cursor:pointer;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:700;font-size:.75rem;min-width:0}
+.seating-chair span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seating-chair strong{font-size:.9rem}
+.seating-chair.occupied{background:#1d8064;border-color:#0e5741}
+.seating-table{background:#101820;color:#fff;border-radius:9px;min-height:410px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:1.3rem;font-weight:900}
+.seating-actions{display:flex;justify-content:center;margin-top:12px}
+@media(max-width:700px){.seating-layout{grid-template-columns:minmax(85px,1fr) minmax(85px,1.2fr) minmax(85px,1fr);gap:5px}.seating-chair{font-size:.67rem;padding:5px;flex-direction:column;gap:0}.seating-table{min-height:400px;font-size:1rem}}
+.game-order-editor.hidden{display:none!important}
+.game-compact-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;max-width:100%}
+.game-compact-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem}
+.game-compact-table th,.game-compact-table td{padding:7px 6px;text-align:center;border-bottom:1px solid #dde0e4;white-space:nowrap}
+.game-compact-table th{background:#fff8cc;font-weight:900}
+.game-compact-table td:first-child,.game-compact-table th:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:2;min-width:112px;max-width:180px}
+.game-compact-table tr.current td{background:#fff6d4}.game-compact-table tr.current td:first-child{background:#fff6d4}
+.game-compact-table tr:last-child td{border-bottom:0}
+.game-compact-score{font-size:1rem;font-weight:900;color:var(--accent2)}
+.game-compact-progress{height:7px;border-radius:9px;background:#e4e6e9;overflow:hidden;margin-top:5px}
+.game-compact-progress span{height:100%;display:block;background:#e5a02e;border-radius:9px}
+.game-slot{min-width:54px;min-height:40px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-weight:800;cursor:pointer}
+.game-slot.selected{border-color:#e7980a;background:#ffedbb;box-shadow:0 0 0 2px #f0c762}
+.game-slot.filled{background:#e9f3f6}.game-slot:disabled{opacity:.65;cursor:default}
+.game-throw-toolbar{background:#f7f8fa;border:1px solid var(--border);border-radius:12px;padding:10px;margin:0 0 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.game-throw-toolbar strong{margin-right:auto}
+.game-throw-toolbar .pinpad-btn{min-height:36px;min-width:37px;padding:4px 8px;border-radius:7px;font-size:.85rem}
+.game-compact-note{font-size:.75rem;color:var(--muted);margin:7px 0}

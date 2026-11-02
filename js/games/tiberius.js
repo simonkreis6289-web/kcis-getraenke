@@ -46,16 +46,9 @@ function initTiberiusDefaultsIfNeeded() {
 }
                                                     
 function getTiberiusPlayers() {
-  const active = getActivePlayersForSoloGame();
-  syncTiberiusPlayerOrder();
-  const indexMap = new Map((tiberiusState.playerOrder || []).map((name, index) => [name, index]));
-  return active.slice().sort((a, b) => {
-    const ai = indexMap.has(a.name) ? indexMap.get(a.name) : 9999;
-    const bi = indexMap.has(b.name) ? indexMap.get(b.name) : 9999;
-    if (ai !== bi) return ai - bi;
-    if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
-    return a.name.localeCompare(b.name, 'de');
-  });
+  const names=getSoloNames('tiberius');
+  const active=getActivePlayersForSoloGame();
+  return names.map(name=>active.find(p=>p.name===name)).filter(Boolean);
 }
 
 function syncTiberiusPlayerOrder() {
@@ -67,16 +60,7 @@ function syncTiberiusPlayerOrder() {
   return tiberiusState.playerOrder;
 }
 
-function moveTiberiusOrder(index, delta) {
-  syncTiberiusPlayerOrder();
-  const target = index + delta;
-  if (target < 0 || target >= tiberiusState.playerOrder.length) return;
-  const arr = tiberiusState.playerOrder.slice();
-  [arr[index], arr[target]] = [arr[target], arr[index]];
-  tiberiusState.playerOrder = arr;
-  renderTiberiusPlayerOrderEditor();
-  persistState();
-}
+function moveTiberiusOrder(index,delta) { moveSoloName('tiberius',index,delta); }
 
 function resetTiberiusOrder() {
   tiberiusState.playerOrder = getActivePlayersForSoloGame().map(p => p.name);
@@ -84,32 +68,7 @@ function resetTiberiusOrder() {
   persistState();
 }
 
-function renderTiberiusPlayerOrderEditor() {
-  const editor = document.getElementById('tiberius-order-editor');
-  if (!editor) return;
-  const players = getTiberiusPlayers();
-  if (!players.length) {
-    editor.innerHTML = '<div class="game-order-editor-title">Sitzreihenfolge</div><div style="color:var(--muted);font-size:0.85rem;">Keine aktiven Spieler vorhanden.</div>';
-    return;
-  }
-  editor.innerHTML = `
-    <div class="game-order-editor-title">Sitzreihenfolge für Tiberius</div>
-    <div class="game-order-list">
-      ${players.map((player, index) => `
-        <div class="game-order-item">
-          <div class="game-order-item-name">${index + 1}. ${player.name}</div>
-          <div class="game-order-actions">
-            <button class="order-move-btn" onclick="moveTiberiusOrder(${index}, -1)">↑</button>
-            <button class="order-move-btn" onclick="moveTiberiusOrder(${index}, 1)">↓</button>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <div style="margin-top:10px;">
-      <button type="button" class="secondary-btn" onclick="resetTiberiusOrder()">↻ Alphabetisch</button>
-    </div>
-  `;
-}
+function renderTiberiusPlayerOrderEditor() { renderSoloOrderSettings('tiberius'); }
 
 function rotateTiberiusOrder(order, starterName) {
   const list = Array.isArray(order) ? order.slice() : [];
@@ -211,12 +170,7 @@ function startTiberiusGame() {
     return;
   }
 
-  openSoloStartDraw({
-    title: '🏛️ Tiberius',
-    subtitle: 'Wer beginnt Tiberius?',
-    players: players.map(p => p.name),
-    onConfirm: starterName => startTiberiusGameFinal(starterName)
-  });
+  prepareSoloStarter('tiberius', starterName => startTiberiusGameFinal(starterName));
 }
 
 function startTiberiusGameFinal(starterName) {
@@ -237,7 +191,9 @@ function startTiberiusGameFinal(starterName) {
   }
 
   tiberiusState.columnCount = count;
-  tiberiusState.playerOrder = rotateTiberiusOrder(syncTiberiusPlayerOrder(), starterName || players[0].name);
+  tiberiusState.playerOrder = rotateTiberiusOrder(getSoloNames('tiberius'), starterName || players[0].name);
+  tiberiusState.restoreCustomOrder = !!tiberiusState.customOrder;
+  tiberiusState.customOrder = true;
   tiberiusState.startPlayer = starterName || tiberiusState.playerOrder[0] || '';
   tiberiusState.active = true;
   tiberiusState.finished = false;
@@ -919,6 +875,7 @@ function finishTiberiusGame() {
 
   tiberiusState.finished = true;
   tiberiusState.active = false;
+  tiberiusState.customOrder = !!tiberiusState.restoreCustomOrder;
 
   renderAll();
   persistState();
