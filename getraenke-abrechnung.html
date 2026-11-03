@@ -40,6 +40,8 @@
 #fuchs-board .fox-table .fox-minus{color:#bd2020;font-weight:800}
 #fuchs-board .fox-result{padding:16px;text-align:center;background:#fff3ce;border:2px solid #efa92c;border-radius:12px;font-weight:800}
 @media(max-width:650px){#fuchs-board .fox-top{grid-template-columns:1fr 1fr}#fuchs-board .fox-stat:first-child{grid-column:1/-1}#fuchs-board .fox-actions{grid-template-columns:repeat(5,minmax(0,1fr))}}
+/* V139 Tor: gemeinsames Spielfeld mit 9 Kegeln */
+.tor-layout{max-width:850px;margin:16px auto;display:grid;gap:16px;text-align:center}.tor-scoreboard{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}.tor-team{border:3px solid var(--tor-color);border-radius:15px;padding:14px;background:var(--surface,#fff);display:grid;gap:4px}.tor-team strong{font-size:clamp(40px,6vw,85px)}.tor-team small{font-weight:800;font-size:18px}.tor-active{box-shadow:0 0 0 4px #f5a62366}.tor-vs{font-size:25px;font-weight:900}.tor-vs small{display:block;font-size:12px;font-weight:500}.tor-turn{background:#fff8da;border:1px solid #e5bb5c;padding:12px;border-radius:10px;font-weight:800}.tor-pins{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:330px;margin:auto}.tor-pin{min-height:83px;border:2px solid #333a55;border-radius:15px;background:#fff;font-size:30px;cursor:pointer}.tor-pin small{display:block;font-size:12px}.tor-pin.selected{background:#c8f2d4;border-color:#178044}.tor-pin.down{opacity:.25}.tor-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}.tor-actions button{min-height:44px}.tor-history{font-size:13px;color:#555}.tor-remaining{font-weight:700}@media(max-width:550px){.tor-scoreboard{gap:5px}.tor-vs{font-size:18px}.tor-team{padding:8px}.tor-team strong{font-size:42px}}
 </style>
 
 <style id="sichern-style-v127">#tab-sichern .sichern-setup{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:12px 0;padding:16px;border:1px solid #cbd2e3;border-radius:14px;background:#fafafa}#tab-sichern .sichern-setup label{display:grid;gap:5px;font-weight:700}#tab-sichern .sichern-setup select,#tab-sichern .sichern-setup input{padding:10px 12px;min-width:150px;border:1px solid #a8afc3;border-radius:10px}#tab-sichern .sichern-setup small{flex-basis:100%;color:#586178}.sichern-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:12px 0}.sichern-card{border:2px solid #283355;border-radius:14px;padding:14px;display:grid;gap:8px;background:#fff;box-shadow:0 2px 8px rgba(20,25,40,.05)}.sichern-current{border-color:#f5a623;background:#fff9e8}.sichern-card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.sichern-card strong{font-size:22px;line-height:1.1}.sichern-card b{font-size:28px;line-height:1}.sichern-card small{font-size:12px;color:#586178}.sichern-stat-row{display:flex;justify-content:space-between;font-size:15px;font-weight:700}.sichern-progress{height:12px;background:#e8eaf1;border-radius:9px;overflow:hidden}.sichern-progress i{display:block;height:100%;background:#169c55}.sichern-controls{padding:14px;border:1px solid #cbd2e3;border-radius:14px;margin:14px 0;background:#fff}.sichern-turnline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;font-size:24px}.sichern-turnline span{font-size:18px;color:#44506b}.sichern-buttons{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sichern-buttons .pinpad-btn{min-width:52px;min-height:56px;padding:10px 12px;border-radius:14px;border:2px solid #283355;background:#fff;font-size:28px;font-weight:800;box-shadow:none}.sichern-buttons .pinpad-btn.special{min-width:88px;font-size:18px}.sichern-buttons .pinpad-btn.gosse{background:#fff8e8}.sichern-buttons .pinpad-btn.kranz{background:#f5f0ff}.sichern-help{margin-top:12px;font-size:14px;color:#586178}.sichern-history{max-height:320px;overflow:auto}.sichern-history table{width:100%;border-collapse:collapse}.sichern-history th,.sichern-history td{padding:8px;border-bottom:1px solid #dadde6}.sichern-win{padding:18px;background:#e2fae9;border:1px solid #1c9958;font-size:23px;font-weight:800;border-radius:14px}.sichern-win small{display:block;font-size:14px;margin-top:6px}@media (max-width:900px){.sichern-buttons .pinpad-btn{min-width:46px;min-height:50px;font-size:24px}.sichern-buttons .pinpad-btn.special{min-width:74px;font-size:16px}.sichern-turnline{font-size:20px}.sichern-turnline span{font-size:16px}}</style>
@@ -648,6 +650,7 @@
     <div class="game-hub-card" onclick="showSideTab('spiele','mensch')"><div class="icon">🎲</div><div class="title">Mensch ärgere dich nicht</div><div class="desc">Neu umgesetzt mit schöner Punktleiste bis genau 36.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','plusminus')"><div class="icon">➕</div><div class="title">+ − × ÷</div><div class="desc">5 Würfe pro Spieler, links-nach-rechts gerechnet, optional mit Gosse-Automatik.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Punkte sammeln, sichern und bei Gosse oder 5 nichts riskieren!</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','tor')"><div class="icon">⚽</div><div class="title">Tor</div><div class="desc">Kegel abräumen, Tore erzielen, zwei Tore Vorsprung.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','fuchsjagd')"><div class="icon">🦊</div><div class="title">Fuchsjagd</div><div class="desc">Fuchs wählen, Jäger verfolgen, Vorsprung live mitrechnen.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','spiele-einstellungen')"><div class="icon">⚙️</div><div class="title">Einstellungen</div><div class="desc">Spielbezogene Optionen und Standardwerte.</div></div>
   </div>
@@ -1129,6 +1132,7 @@
   <p class="game-compact-note">Bei Gosse oder 5 verfallen die offenen Punkte. Mit „Sichern“ werden sie festgeschrieben und der nächste Spieler bzw. das andere Team ist dran. Beim Teamspiel wechseln die Werfer innerhalb des Teams nach jedem Wurf.</p>
 </div>
 
+<div id="tab-tor" class="hidden"><div class="section-title">⚽ Tor</div><p>Beide Teams räumen ab. Bei Treffern bleibt das Team dran, bei Vorbei oder Gosse wechselt der Zug. Nach einem Tor beginnt das andere Team.</p><button class="primary-btn" type="button" onclick="startTorGame()">🪙 Neues Tor-Spiel mit Münzwurf</button><div id="tor-board"></div></div>
 <div id="tab-fuchsjagd" class="hidden">
   <div class="section-title">🦊 Fuchsjagd</div>
   <div class="fox-setup"><label><strong>Fuchs auswählen</strong><select id="fuchs-select" aria-label="Fuchs auswählen"></select></label>
@@ -1976,35 +1980,36 @@
   style="display:none"
 >
 
-<script src="js/helpers.js?v=20261103-v138"></script>
-<script src="js/state.js?v=20261103-v138"></script>
-<script src="js/persons.js?v=20261103-v138"></script>
-<script src="js/clubs.js?v=20261103-v138"></script>
+<script src="js/helpers.js?v=20261103-v139"></script>
+<script src="js/state.js?v=20261103-v139"></script>
+<script src="js/persons.js?v=20261103-v139"></script>
+<script src="js/clubs.js?v=20261103-v139"></script>
 
-<script src="js/games/avatar-select.js?v=20261103-v138"></script>
-<script src="js/games/tannenbaum.js?v=20261103-v138"></script>
-<script src="js/games/darts.js?v=20261103-v138"></script>
-<script src="js/games/tiberius.js?v=20261103-v138"></script>
-<script src="js/games/lotterie.js?v=20261103-v138"></script>
-<script src="js/games/solo-start-draw.js?v=20261103-v138"></script>
-<script src="js/games/seating.js?v=20261103-v138"></script>
-<script src="js/games/mensch.js?v=20261103-v138"></script>
-<script src="js/games/plusminus.js?v=20261103-v138"></script>
-<script src="js/games/fuchsjagd.js?v=20261103-v138"></script>
-<script src="js/games/sichern.js?v=20261103-v138"></script>
-<script src="js/games/coinflip.js?v=20261103-v138"></script>
+<script src="js/games/avatar-select.js?v=20261103-v139"></script>
+<script src="js/games/tannenbaum.js?v=20261103-v139"></script>
+<script src="js/games/darts.js?v=20261103-v139"></script>
+<script src="js/games/tiberius.js?v=20261103-v139"></script>
+<script src="js/games/lotterie.js?v=20261103-v139"></script>
+<script src="js/games/solo-start-draw.js?v=20261103-v139"></script>
+<script src="js/games/seating.js?v=20261103-v139"></script>
+<script src="js/games/mensch.js?v=20261103-v139"></script>
+<script src="js/games/plusminus.js?v=20261103-v139"></script>
+<script src="js/games/fuchsjagd.js?v=20261103-v139"></script>
+<script src="js/games/sichern.js?v=20261103-v139"></script>
+<script src="js/games/tor.js?v=20261103-v139"></script>
+<script src="js/games/coinflip.js?v=20261103-v139"></script>
 
-<script src="js/groups.js?v=20261103-v138"></script>
+<script src="js/groups.js?v=20261103-v139"></script>
 
-<script src="js/app.js?v=20261103-v138"></script>
+<script src="js/app.js?v=20261103-v139"></script>
     
-<script src="js/live-games.js?v=20261103-v138"></script>
-<script src="js/strafe-pdf.js?v=20261103-v138"></script>
-<script src="js/cash-history.js?v=20261103-v138"></script>
+<script src="js/live-games.js?v=20261103-v139"></script>
+<script src="js/strafe-pdf.js?v=20261103-v139"></script>
+<script src="js/cash-history.js?v=20261103-v139"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261103-v138"
+  src="js/firebase.js?v=20261103-v139"
 ></script>
 
 </body>

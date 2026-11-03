@@ -66,6 +66,7 @@ function getSerializableState() {
     menschState,
     plusminusState,
     sichernState,
+    torState,
     fuchsjagdState,
     lotterieSettings,
     tiberiusSettings,
@@ -140,6 +141,8 @@ function getFirestoreState() {
         menschState,
         plusminusState,
         sichernState,
+        torState,
+    torState,
         fuchsjagdState,
         lotterieSettings,
         tiberiusSettings,
@@ -285,6 +288,8 @@ function applyLoadedState(state) {
     createPlusminusState();
 
   sichernState = state.sichernState || createSichernState();
+  torState = state.torState || createTorState();
+  ensureTorState();
   ensureSichernState();
   fuchsjagdState = state.fuchsjagdState || createFuchsjagdState();
   ensureFuchsjagdState();
@@ -2646,6 +2651,7 @@ async function startNewKegelabend() {
   dashboardActiveGame = null;
   fuchsjagdState = createFuchsjagdState();
   sichernState = createSichernState();
+  torState = createTorState();
   archiveCurrentKegelabendForStats();
   // Erst nach dem Archivieren beginnt der neue Kegelabend.
   currentEveningStartedAt = new Date().toISOString();
@@ -3802,6 +3808,7 @@ applyGroupTheme();
     renderPlusminusGame();
     renderFuchsjagdGame();
     renderSichernGame();
+    renderTorGame();
     renderLotterieSettings();
     renderTiberiusSettings();
     renderStrafenHistory();
@@ -5549,7 +5556,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'sichern', 'fuchsjagd', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'sichern', 'fuchsjagd', 'tor', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
 };

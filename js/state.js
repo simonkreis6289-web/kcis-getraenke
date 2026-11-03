@@ -1,6 +1,6 @@
 const APP_VERSION = '20261103-08';
-const APPVersionSelf = 'V138 © SK';
-const APP_LAST_UPDATE = '03.11.2026 09:00 Uhr';
+const APPVersionSelf = 'V139 © SK';
+const APP_LAST_UPDATE = '03.11.2026 10:00 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -136,6 +136,7 @@ let tiberiusState = null;
 let menschState = null;
 let plusminusState = null;
 let sichernState = null;
+let torState = null;
 
 let lotterieSettings = {
   minAmount: 0.10,
