@@ -1108,6 +1108,14 @@ async function confirmAttendanceStatus(
     return;
   }
 
+  // Bei "Da" erst die Ankunftszeit bestaetigen. Noch nichts speichern.
+  // So kann ein Live-Update das zweite Dialogfenster nicht unterbrechen.
+  if (status === ATTENDANCE_STATUS.PRESENT) {
+    closeAttendanceStatusModal();
+    openArrivalModal(person);
+    return;
+  }
+
   const previousState = {
     present:
       !!person.present,
@@ -1173,18 +1181,6 @@ async function confirmAttendanceStatus(
   syncCurrentClubToStore();
   saveClubSystem();
 
-  if (
-    !wasPresent &&
-    person.present
-  ) {
-    playSound(
-      sounds.welcome
-    );
-
-    openArrivalModal(
-      person
-    );
-  }
 }
 
 function getPersonCardStatusClass(
@@ -1879,6 +1875,10 @@ async function confirmArrivalTime() {
   }
 
   closeArrivalModal();
+
+  if (!previousState.present) {
+    playSound(sounds.welcome);
+  }
 
   syncCurrentClubToStore();
   saveClubSystem();

@@ -375,55 +375,58 @@ function closeTiberiusThrowerModal() {
   document.getElementById('tiberius-thrower-modal').classList.add('hidden');
 }
 
-function confirmTiberiusThrower() {
+let tiberiusThrowerBookingBusy = false;
+
+async function confirmTiberiusThrower() {
+  if (tiberiusThrowerBookingBusy) return;
   const select = document.getElementById('tiberius-thrower-select');
   const personName = select?.value || '';
-
   if (!personName) {
     showToast('Bitte Spieler auswählen', 'error');
     return;
   }
+  const pending = tiberiusPendingThrower;
+  if (!pending) return;
 
-  if (!tiberiusPendingThrower) return;
-
-  const value = tiberiusPendingThrower.value;
-
+  const value = pending.value;
+  const changes = [];
   if (value === 0) {
-    const p = persons.find(x => x.name === personName);
-    const gosseKey = getGosseStrafeKey();
-
-    if (p && gosseKey) {
-      if (!p.strafen) p.strafen = {};
-      p.strafen[gosseKey] = (p.strafen[gosseKey] || 0) + 1;
+    const key = getGosseStrafeKey();
+    if (!key) {
+      showToast('Gossen-Strafe nicht gefunden', 'error');
+      return;
     }
-  }
-
-  if (value === 9 || value === 12) {
-    const kranzKey = getKranzStrafeKey();
-
-    if (kranzKey) {
-      persons.forEach(p => {
-        if (!p.present || p.left) return;
-        if (p.name === personName) return;
-
-        if (!p.strafen) p.strafen = {};
-        p.strafen[kranzKey] = (p.strafen[kranzKey] || 0) + 1;
-      });
+    changes.push({ personName, category: 'strafen', key, delta: 1 });
+  } else if (value === 9 || value === 12) {
+    const key = getKranzStrafeKey();
+    if (!key) {
+      showToast('9er/Kranz-Strafe nicht gefunden', 'error');
+      return;
     }
+    persons.filter(p => p.present && !p.left && p.name !== personName)
+      .forEach(p => changes.push({ personName: p.name, category: 'strafen', key, delta: 1 }));
   }
 
-  // Strafzähler betreffen die Mitspieler; das Trefferprotokoll zählt den Werfer.
-  if (value === 9 || value === 12) {
-    if (typeof addPenaltyStatsEntry === 'function') {
-      addPenaltyStatsEntry(value === 9 ? '9er' : 'Kranz', personName,
-        persons.filter(p => p.present && !p.left && p.name !== personName).map(p => p.name));
+  tiberiusThrowerBookingBusy = true;
+  try {
+    if (changes.length) {
+      const success = await changeMultipleSyncedPersonCounters(changes);
+      if (!success) return; // Dialog offen lassen; keine doppelte Buchung
     }
+    if (value === 9 || value === 12) {
+      if (typeof addPenaltyStatsEntry === 'function') {
+        addPenaltyStatsEntry(value === 9 ? '9er' : 'Kranz', personName,
+          changes.map(change => change.personName));
+      }
+    }
+    if (Array.isArray(tiberiusState.throws) && tiberiusState.throws.length) {
+      tiberiusState.throws[tiberiusState.throws.length - 1].thrower = personName;
+    }
+    closeTiberiusThrowerModal();
+    continueTiberiusAfterThrower(personName);
+  } finally {
+    tiberiusThrowerBookingBusy = false;
   }
-  if (Array.isArray(tiberiusState.throws) && tiberiusState.throws.length) {
-    tiberiusState.throws[tiberiusState.throws.length - 1].thrower = personName;
-  }
-  closeTiberiusThrowerModal();
-  continueTiberiusAfterThrower(personName);
 }
 
 function continueTiberiusAfterThrower(personName = '') {
