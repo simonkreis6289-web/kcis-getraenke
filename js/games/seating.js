@@ -3,6 +3,7 @@ const SOLO_GAME_IDS = ['lotterie','tiberius','mensch','plusminus','sichern'];
 function seatingActiveNames() {return getActivePlayersForSoloGame().map(p => p.name);}
 function getGlobalSeatOrder() {
   const active = seatingActiveNames();
+  // Tischumlauf: Platz 1 unten links -> 8 oben links -> 9 oben rechts -> 16 unten rechts.
   const seated = Array.isArray(seatingOrder) ? seatingOrder.slice(0,16).filter(name => name && active.includes(name)) : [];
   return [...new Set([...seated, ...active])];
 }
@@ -45,7 +46,7 @@ function renderSeatingOrder() {
   if(!Array.isArray(seatingOrder))seatingOrder=Array(16).fill('');
   const button=(n)=>{const name=seatingOrder[n-1]||'frei';return `<button class="seating-chair ${name==='frei'?'':'occupied'}" onclick="chooseSeat(${n})"><strong>${n}</strong><span>${name.replaceAll('&','&amp;').replaceAll('<','&lt;')}</span></button>`;};
   left.innerHTML=Array.from({length:8},(_,i)=>button(8-i)).join('');
-  right.innerHTML=Array.from({length:8},(_,i)=>button(16-i)).join('');
+  right.innerHTML=Array.from({length:8},(_,i)=>button(9+i)).join('');
 }
 // Aenderungen unabhaengig vom gesamten Club-Spielstand publizieren.
 let seatingLiveWriteQueue = Promise.resolve();
