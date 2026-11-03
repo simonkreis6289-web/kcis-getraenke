@@ -103,6 +103,15 @@ function getTodayMeta() {
 let dashboardActiveGame = null;
 // Startzeit des laufenden Abends, unabhängig vom Kalendertag.
 let currentEveningStartedAt = null;
+function getFirestorePersonsWithFineTotals() {
+  // Haupt-App ist die einzige Quelle der berechneten Strafbetraege.
+  // Niemals die lokalen Personenobjekte nur fuer die Uebertragung veraendern.
+  return persons.map(person => ({
+    ...person,
+    strafTotal: Math.round(calcPersonStrafenTotalCapped(person) * 100) / 100
+  }));
+}
+
 function getFirestoreState() {
   recalcTeamExtras();
 
@@ -110,7 +119,7 @@ function getFirestoreState() {
     ...getTodayMeta(),
     dashboardActiveGame,
     currentEveningStartedAt,
-    persons,
+    persons: getFirestorePersonsWithFineTotals(),
     seatingOrder,
     spiele,
     DRINKS,
