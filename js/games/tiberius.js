@@ -196,6 +196,8 @@ function startTiberiusGameFinal(starterName) {
   tiberiusState.customOrder = true;
   tiberiusState.startPlayer = starterName || tiberiusState.playerOrder[0] || '';
   tiberiusState.active = true;
+  dashboardActiveGame = "tiberius";
+  tiberiusState.startedAt = new Date().toISOString();
   tiberiusState.finished = false;
   tiberiusState.score = 0;
   tiberiusState.throws = [];

@@ -1233,8 +1233,11 @@ async saveLivePerson(
             : "unknown"
         );
 
-  await setDoc(
-    personRef,
+  await runTransaction(db, async transaction => {
+    const existingSnap = await transaction.get(personRef);
+    const existing = existingSnap.exists() ? existingSnap.data() : null;
+    const preserveCounters = !!existing && !payload.forceCounterReset;
+    const personData =
     {
       name:
         personName,
@@ -1262,13 +1265,9 @@ async saveLivePerson(
       leftEarlyAt:
         payload.leftEarlyAt || "",
 
-      drinks: {
-        ...(payload.drinks || {})
-      },
+      drinks: preserveCounters ? {...(existing.drinks || {})} : {...(payload.drinks || {})},
 
-      strafen: {
-        ...(payload.strafen || {})
-      },
+      strafen: preserveCounters ? {...(existing.strafen || {})} : {...(payload.strafen || {})},
         
         freeStrafen:
           Array.isArray(
@@ -1318,7 +1317,9 @@ async saveLivePerson(
     {
       merge: true
     }
-  );
+  ;
+    transaction.set(personRef, personData, {merge:true});
+  });
 
   return true;
 },

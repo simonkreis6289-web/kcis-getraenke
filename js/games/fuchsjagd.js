@@ -27,13 +27,13 @@ async function applyFuchsjagdThrow(pins){
      if(s.startThrows===2)s.phase='hunt';
    }else if(s.phase==='hunt'){
      if(s.score<=0){await finishFuchsjagd(false,thrower);return;}
+     // Der letzte Jäger hat den letzten Wurf, kein zusätzlicher Fuchswurf.
+     if(s.hunterIndex===s.hunters.length-1){await finishFuchsjagd(true,'');return;}
      s.phase='fox';
    }else{
-     if(s.phase==='finalFox'){await finishFuchsjagd(true,'');return;}
      s.hunterIndex++;
      s.round++;
-     if(s.hunterIndex>=s.hunters.length){s.phase='finalFox';}
-     else s.phase='hunt';
+     s.phase='hunt';
    }
    renderFuchsjagdGame();persistState();
  }catch(e){console.error('Fuchsjagd',e);showToast('Wurf konnte nicht gespeichert werden','error')}
@@ -60,7 +60,7 @@ async function undoFuchsjagdThrow(){
   const history=s.throws.slice(),fox=s.fox,hunters=s.hunters.slice(),startedAt=s.startedAt;
   fuchsjagdState={...createFuchsjagdState(),fox,hunters,active:true,startedAt};
   const t=fuchsjagdState;
-  for(const x of history){t.score+=x.delta;t.throws.push(x);if(t.phase==='start'){t.startThrows++;if(t.startThrows===2)t.phase='hunt';}else if(t.phase==='hunt')t.phase='fox';else{t.hunterIndex++;t.round++;t.phase=t.hunterIndex<hunters.length?'hunt':'finalFox';}}
+  for(const x of history){t.score+=x.delta;t.throws.push(x);if(t.phase==='start'){t.startThrows++;if(t.startThrows===2)t.phase='hunt';}else if(t.phase==='hunt')t.phase='fox';else{t.hunterIndex++;t.round++;t.phase='hunt';}}
   renderFuchsjagdGame();persistState();
  }finally{fuchsjagdState.busy=false;}
 }

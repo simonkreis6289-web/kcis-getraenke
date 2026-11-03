@@ -2719,6 +2719,7 @@ async function startNewKegelabend() {
                   ...getLivePersonStatusPayload(
                     person
                   ),
+                  forceCounterReset: true,
 
                   drinks: {
                     ...(person.drinks || {})
@@ -5709,6 +5710,7 @@ async function confirmReset() {
                   ...getLivePersonStatusPayload(
                     person
                   ),
+                  forceCounterReset: true,
 
                   drinks: {
                     ...(person.drinks || {})
