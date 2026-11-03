@@ -243,6 +243,13 @@ function getAvatarHtml(
       .toUpperCase()
       .slice(0, 2);
 
+  // Gastkegler erhalten immer Initialen, niemals ein Bild.
+  const guest = typeof persons !== 'undefined' &&
+    persons.some(person => person.name === name && person.isGuest);
+  if (guest) {
+    return `<div class="person-avatar ${extraClass}"><span class="person-avatar-fallback" style="display:flex;">${initials}</span></div>`;
+  }
+
   const candidates =
     getAvatarFileCandidates(name);
 

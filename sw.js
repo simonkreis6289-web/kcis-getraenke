@@ -1,10 +1,10 @@
-const CACHE_NAME = 'kcis-cache-v42';
+const CACHE_NAME = 'kcis-cache-v150';
 
 const ASSETS = [
   './',
-  './manifest.json?v=20260714-v16',
-  './icon-192.png?v=20260318-v15',
-  './icon-512.png?v=20260318-v15'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -13,7 +13,10 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache => Promise.allSettled(ASSETS.map(async asset => {
+        const response = await fetch(asset, {cache:'no-store'});
+        if (response.ok) await cache.put(asset, response);
+      })))
   );
 });
 

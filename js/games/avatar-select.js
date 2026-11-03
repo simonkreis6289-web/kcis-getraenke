@@ -20,9 +20,13 @@
         const img = document.createElement('img');
         img.alt=''; img.loading='lazy';
         const names = person?.name || option.value;
-        img.src='bilder/'+names.toLocaleLowerCase('de-DE').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9-]/g,'')+'.jpg';
-        img.onerror=()=>{img.style.display='none';avatar.textContent='👤';};
-        avatar.append(img);
+        if (person?.isGuest) {
+          avatar.textContent = names.trim().split(/\s+/).map(part => part[0] || '').join('').toUpperCase().slice(0, 2);
+        } else {
+          img.src='bilder/'+names.toLocaleLowerCase('de-DE').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9-]/g,'')+'.jpg';
+          img.onerror=()=>{img.style.display='none';avatar.textContent=names.trim().split(/\s+/).map(part=>part[0]||'').join('').toUpperCase().slice(0,2);};
+          avatar.append(img);
+        }
         const label=document.createElement('span');label.textContent=option.textContent;
         button.append(avatar,label);
         button.onclick=()=>{
