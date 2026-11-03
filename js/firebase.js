@@ -1316,11 +1316,7 @@ async saveLivePerson(
 
       updatedAt:
         serverTimestamp()
-    },
-    {
-      merge: true
-    }
-  ;
+    };
     transaction.set(personRef, personData, {merge:true});
   });
 
