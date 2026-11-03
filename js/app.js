@@ -1465,7 +1465,8 @@ function calcStrafenTotal(p) {
 }
 
 function renderStrafen() {
-  if (typeof reapplyLivePersonCounters === 'function') reapplyLivePersonCounters();
+  // Beim Rendern keine Live-Daten erneut einspielen: sonst wird der gerade
+  // bestaetigte Anwesenheitsstatus durch den alten Cache ueberschrieben.
   const header = document.getElementById('strafen-header');
   const body = document.getElementById('strafen-body');
   if (!header || !body) return;
