@@ -4388,11 +4388,17 @@ async function confirmGiveRound() {
         person
       );
 
-    closeRoundModal();
-    renderAll();
-
-    syncCurrentClubToStore();
-    saveClubSystem();
+    // Firestore hat die Runde bereits bestätigt. Ein Darstellungsfehler
+    // darf danach nicht fälschlich „Runde konnte nicht gespeichert werden“ melden.
+    try {
+      closeRoundModal();
+      syncCurrentClubToStore();
+      saveClubSystem();
+      renderAll();
+      if (navigator.onLine) queueAutoSave();
+    } catch (renderError) {
+      console.error('Runde gespeichert, Anzeigeaktualisierung fehlgeschlagen:', renderError);
+    }
 
     showToast(
       `🍻 Runde auf ${person.name} gebucht`,
@@ -4405,7 +4411,7 @@ async function confirmGiveRound() {
     );
 
     showToast(
-      '❌ Runde konnte nicht gespeichert werden',
+      '❌ Runde konnte nicht gespeichert werden: ' + (error?.message || 'Firebase-Fehler'),
       'error'
     );
   }
