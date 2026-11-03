@@ -741,12 +741,13 @@ async changeLiveLotterieThrow(
           ? snap.data()
           : {};
 
+      const existingState = current.state && typeof current.state === "object" ? current.state : {};
       const throws = {
-        ...(current.throws || {})
+        ...(existingState.throws || current.throws || {})
       };
 
       const throwMetaMap = {
-        ...(current.throwMeta || {})
+        ...(existingState.throwMeta || current.throwMeta || {})
       };
 
       const personThrows =
@@ -774,8 +775,10 @@ async changeLiveLotterieThrow(
       transaction.set(
         ref,
         {
-          throws,
-          throwMeta: throwMetaMap,
+          state: { ...existingState, throws, throwMeta: throwMetaMap },
+          revision: (Number(current.revision) || 0) + 1,
+          updatedClientId: "lotterie-throw",
+          updatedClientAt: Date.now(),
           updatedAt: serverTimestamp()
         },
         {

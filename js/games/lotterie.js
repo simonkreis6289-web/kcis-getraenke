@@ -840,6 +840,11 @@ try {
   return;
 }
 
+  // Sofort lokal anzeigen; der Firestore-Listener gleicht danach alle Geräte ab.
+  lotterieState.throws[personName][colIndex] = value;
+  lotterieState.throwMeta[personName][colIndex] = nextMeta;
+  renderLotterie();
+
   if (
     nextMeta &&
     typeof addPenaltyStatsEntry ===
