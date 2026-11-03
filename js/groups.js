@@ -156,6 +156,7 @@ function saveGroupSettings() {
     renderGroupLabelsEverywhere();
   renderAll();
   persistState();
+  if (typeof publishSeatingLive === 'function') publishSeatingLive();
 
   showToast('✅ Gruppen gespeichert', 'success');
 }

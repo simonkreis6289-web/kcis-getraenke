@@ -47,6 +47,21 @@ function renderSeatingOrder() {
   left.innerHTML=Array.from({length:8},(_,i)=>button(8-i)).join('');
   right.innerHTML=Array.from({length:8},(_,i)=>button(16-i)).join('');
 }
+// Aenderungen unabhaengig vom gesamten Club-Spielstand publizieren.
+let seatingLiveWriteQueue = Promise.resolve();
+function publishSeatingLive() {
+  if (!ACTIVE_CLUB || !navigator.onLine || !window.firestoreApi?.saveSeatingLive) return;
+  const clubId = getClubFirestoreId(ACTIVE_CLUB);
+  const payload = {
+    seatingOrder: [...seatingOrder],
+    groupSettings: JSON.parse(JSON.stringify(groupSettings)),
+    updatedClientAt: Date.now(),
+    updatedClientId: typeof CLIENT_ID !== 'undefined' ? CLIENT_ID : ''
+  };
+  seatingLiveWriteQueue = seatingLiveWriteQueue.catch(() => {}).then(() =>
+    window.firestoreApi.saveSeatingLive(clubId, payload)
+  ).catch(e => console.error('Sitzordnung-Live-Speicherung fehlgeschlagen:', e));
+}
 let seatingEditPlace=0;
 
 // Platz 1–8 = T2 (links), Platz 9–16 = T1 (rechts).
@@ -117,6 +132,7 @@ function confirmSeatChoice() {
   seatingOrder[seatingEditPlace - 1] = name;
   closeSeatChoice();
   persistState();
+  publishSeatingLive();
   renderAll();
 }
 function randomizeSeatingOrder(){
@@ -128,11 +144,11 @@ function randomizeSeatingOrder(){
   names.slice(0,8).forEach((name,i)=>next[start+i]=name);
   if(names.length>8)showToast('Mehr als 8 Spieler in '+getGroupLabel(team)+': Nicht alle haben Platz','error');
  }
- seatingOrder=next;persistState();renderAll();showToast('🎲 Sitzordnung zufällig verteilt','success');
+ seatingOrder=next;persistState();publishSeatingLive();renderAll();showToast('🎲 Sitzordnung zufällig verteilt','success');
 }
 function clearSeatingOrder() {
   if(!confirm('Alle 16 Sitzplätze leeren?'))return;
-  seatingOrder=Array(16).fill('');persistState();renderAll();
+  seatingOrder=Array(16).fill('');persistState();publishSeatingLive();renderAll();
 }
 function shouldDrawSoloStart(id) {return !!document.getElementById(id+'-random-starter')?.checked;}
 function prepareSoloStarter(id, callback) {

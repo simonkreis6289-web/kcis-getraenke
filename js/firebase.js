@@ -818,6 +818,16 @@ subscribeToLiveLotterie(
 },    
     
 
+  // Separate Live-Daten fuer Sitzordnung und Gruppeneinstellungen.
+  async saveSeatingLive(clubId, payload) {
+    const ref = doc(db, 'clubs', clubId, 'live', 'seating');
+    await setDoc(ref, { ...payload, updatedAt: serverTimestamp() });
+  },
+  subscribeToSeatingLive(clubId, onData, onError) {
+    const ref = doc(db, 'clubs', clubId, 'live', 'seating');
+    return onSnapshot(ref, snap => onData(snap.exists() ? snap.data() : null), onError);
+  },
+
   subscribeToClubState(clubId, onData, onError) {
     const ref = doc(
       db,

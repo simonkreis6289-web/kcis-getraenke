@@ -500,6 +500,7 @@ async function selectClub(clubName) {
   } else {
     renderAll();
     updateAppHeader();
+    if (typeof publishSeatingLive === 'function') publishSeatingLive();
   }
     
 await startLivePersonSync(clubId);
