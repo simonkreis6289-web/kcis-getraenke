@@ -57,6 +57,7 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .tv-seat small{font-size:9px;color:#666;min-width:12px}
 .tv-seat .seat-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 @media(max-width:850px){.tv-seats{min-height:260px}}
+.dart-v137-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.85fr) minmax(0,1fr);align-items:stretch;gap:12px;margin:2vh auto;max-width:1250px}.dart-v137-layout .dart-card{padding:clamp(10px,2vw,24px)}.dart-v137-layout .dart-score{font-size:clamp(66px,8vw,142px)}.dart-v137-center{border:2px solid #d7a43a;border-radius:18px;background:#fff9e8;padding:clamp(12px,2vw,25px);text-align:center;display:flex;flex-direction:column;gap:12px;justify-content:center}.dart-center-heading{font-size:clamp(16px,2vw,26px);font-weight:800}.dart-center-total{font-size:clamp(25px,3vw,45px);color:#273452}.dart-round-team{display:flex;flex-direction:column;border-top:1px solid #e2d7b9;padding:8px 0;font-size:clamp(13px,1.5vw,20px)}.dart-round-team small{color:#555}.dart-center-buffer{font-weight:700}.dart-values{max-width:1200px;margin:10px auto;text-align:center;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fafafa}.dart-values>div{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 18px;margin-top:7px}.dart-values span{white-space:nowrap}@media(max-width:700px){.dart-v137-layout{grid-template-columns:1fr 1fr}.dart-v137-center{grid-column:1/-1;grid-row:2}.dart-v137-layout .dart-card{grid-row:1}.dart-v137-layout .dart-score{font-size:clamp(52px,10vw,85px)}}
 </style>
 <style id="plusminus-tv-style">
 .tv-plusminus{width:100%;table-layout:fixed}
@@ -81,7 +82,7 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 </head>
 <body>
 <main class="dashboard">
-<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V135 · Update 03.11.2026, 09:30 Uhr</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div></header>
+<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V137 · Update 03.11.2026, 10:00 Uhr</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div></header>
 <section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="sichern">🔒 Sichern</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
@@ -89,8 +90,8 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V135";
-const DASH_RELEASE="03.11.2026, 09:30 Uhr";
+const DASH_VERSION="V137";
+const DASH_RELEASE="03.11.2026, 10:00 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -247,7 +248,7 @@ function gameState(k){
 }
 function chosenGame(){
  const v=$('game-select').value;if(v!=='auto')return v;
- const running=games.filter(k=>gameState(k)?.active&&!gameState(k)?.finished);
+ const running=games.filter(k=>{const s=gameState(k);return s && !s.finished && (s.active || (k==='tannenbaum' && Array.isArray(s.history) && s.history.length>0));});
  if(running.length){
    const newest=running.sort((a,b)=>{
      const stamp=k=>Math.max(Number(liveGames[k]?.updatedClientAt)||0,Date.parse(gameState(k)?.startedAt||'')||0);
@@ -312,9 +313,15 @@ function renderPlusminusBoard(d){
 function renderMenschBoard(d){const names=activeNames(d.playerOrder),scores=d.scores||{};if(!names.length)return null;return `<div class="tv-board"><h2 class="tv-headline">🎲 Mensch ärgere dich nicht</h2><div class="tv-stats"><div class="tv-stat">Ziel<strong>36 Punkte</strong></div><div class="tv-stat">Am Wurf<strong>${safe(names[d.currentIndex]||'–')}</strong></div></div><table class="tv-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody>${names.map((n,i)=>{const score=Number(scores[n])||0;const throws=(d.throws?.[n]||[]).slice(-5).map(t=>t.pins===0?'G':t.pins===12?'K':safe(t.pins)).join(' · ');return `<tr><td class="tv-name ${i===d.currentIndex?'tv-current':''}">${safe(n)} ${d.winner===n?'🏆':''}</td><td><strong>${score}</strong></td><td><div class="tv-progress"><span style="width:${Math.min(100,Math.max(0,score/36*100))}%"></span></div></td><td>${throws||'–'}</td></tr>`}).join('')}</tbody></table><div class="tv-note">Bei 6 nochmal werfen · Punktgleichheit wirft zurück auf 0 · über 36 rückwärts zählen</div></div>`}
 function renderDartsBoard(d){
  const scores=d.scores||{}, start=Number(d.startValue)||301;
- const roundThrows=d.roundThrows||{};
+ const roundThrows=d.roundThrows||{}, keys=['T1','T2'];
  const roundTotal=k=>(Array.isArray(roundThrows[k])?roundThrows[k]:[]).reduce((sum,t)=>sum+numeric(t?.value),0);
- return `<div class="tv-board darts-board"><h2 class="tv-headline">🎯 DARTS</h2><div class="dart-cards">${Object.entries(scores).map(([k,v])=>{const val=numeric(v);const label=state?.groupSettings?.[k]?.name||k;const progress=Math.max(0,Math.min(100,(start-val)/start*100));return `<article class="dart-card"><div class="dart-team">${safe(label)}</div><div class="dart-score">${safe(val)}</div><div class="dart-start">von ${safe(start)} Punkten</div><div class="dart-round">🎯 Aktuelle Runde: <strong>${safe(roundTotal(k))} Punkte</strong> · ${(roundThrows[k]||[]).length} Würfe</div><div class="dart-meter"><span style="width:${progress}%"></span></div><div class="dart-note">${val===0?'🏆 AUSGEWORFEN':`${Math.round(progress)} % geschafft`}</div></article>`}).join('')}</div><div class="tv-note">Live-Punktestand des aktuellen Darts-Spiels</div></div>`;
+ const team=k=>safe(state?.groupSettings?.[k]?.name||({T1:'Wand',T2:'TV'}[k]));
+ const card=k=>{const val=numeric(scores[k]??start),progress=Math.max(0,Math.min(100,(start-val)/start*100));return `<article class="dart-card"><div class="dart-team">${team(k)}</div><div class="dart-score">${safe(val)}</div><div class="dart-start">von ${safe(start)} Punkten</div><div class="dart-meter"><span style="width:${progress}%"></span></div><div class="dart-note">${val===0?'🏆 AUSGEWORFEN':`${Math.round(progress)} % geschafft`}</div></article>`};
+ const total=keys.reduce((sum,k)=>sum+roundTotal(k),0);
+ const rounds=keys.map(k=>`<div class="dart-round-team"><span>${team(k)}</span><strong>${roundTotal(k)} Punkte</strong><small>${(roundThrows[k]||[]).length} Würfe</small></div>`).join('');
+ const values=d.valueMap||{};
+ const mapping=Object.entries(values).map(([key,val])=>`<span>${safe(key)}: <strong>${safe(val)}</strong></span>`).join('');
+ return `<div class="tv-board darts-board"><h2 class="tv-headline">🎯 DARTS</h2><div class="dart-v137-layout">${card('T1')}<div class="dart-v137-center"><div class="dart-center-heading">🎯 Aktuelle Runde</div><strong class="dart-center-total">${total} Punkte</strong>${rounds}<div class="dart-center-buffer">Puffer: <strong>${safe(d.buffer||0)}</strong></div></div>${card('T2')}</div><div class="dart-values"><strong>Punktevergabe</strong><div>${mapping||'Keine Werte hinterlegt'}</div></div></div>`;
 }
 function renderGeneric(d,k){if(k==='darts')return renderDartsBoard(d);const names=activeNames(d.playerOrder);if(d.scores){return `<div class="tv-board"><h2 class="tv-headline">${safe(gameNames[k])}</h2>${makeTable(['Spieler','Punkte'],Object.entries(d.scores))}</div>`}if(d.teams){return `<div class="tv-board"><h2 class="tv-headline">${safe(gameNames[k])}</h2>${makeTable(['Team','Stand'],Object.entries(d.teams).map(([k,v])=>[state?.groupSettings?.[k]?.name||k,typeof v==='object'?JSON.stringify(v.scores||v.remaining||v):v]))}</div>`}return null}
 // Passt die gesamte Spieltafel (auch bei 14+ Spielern) automatisch in den TV-Bereich ein.

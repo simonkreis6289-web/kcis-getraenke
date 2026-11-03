@@ -837,6 +837,8 @@ function resetTannenbaumGame() {
 function handleTannenbaumThrow(number) {
   dashboardActiveGame = "tannenbaum";
   ensureTannenbaumState();
+  tannenbaumState.active = true;
+  if (!tannenbaumState.startedAt) tannenbaumState.startedAt = new Date().toISOString();
 
   const team = tannenbaumThrowTeam;
   if (!team) return;

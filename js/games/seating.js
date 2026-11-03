@@ -3,7 +3,7 @@ const SOLO_GAME_IDS = ['lotterie','tiberius','mensch','plusminus','sichern'];
 function seatingActiveNames() {return getActivePlayersForSoloGame().map(p => p.name);}
 function getGlobalSeatOrder() {
   const active = seatingActiveNames();
-  const seated = (seatingOrder || []).filter(name => name && active.includes(name));
+  const seated = Array.isArray(seatingOrder) ? seatingOrder.slice(0,16).filter(name => name && active.includes(name)) : [];
   return [...new Set([...seated, ...active])];
 }
 function getSoloState(id) {return ({lotterie:lotterieState,tiberius:tiberiusState,mensch:menschState,plusminus:plusminusState,sichern:sichernState})[id];}

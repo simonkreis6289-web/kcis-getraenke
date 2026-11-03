@@ -4568,3 +4568,11 @@ body.view-only #clubBackBtn {
 #seating-choice-grid .quick-penalty-person-btn{width:100%;min-width:0;max-width:none;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
 #seating-choice-grid .quick-penalty-person-btn span{max-width:100%;overflow-wrap:anywhere;text-align:center}
 @media(min-width:540px){#seating-choice-grid.seating-avatar-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+
+/* V137: einheitliche Avatar-Kacheln in Spieler-Auswahldialogen */
+.kc-avatar-original-select{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;}
+.kc-avatar-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));gap:10px;width:100%;margin:12px 0;max-height:48vh;overflow:auto;}
+.kc-avatar-option{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 4px;background:#fff;color:#161923;border:2px solid #343a56;border-radius:13px;font:600 13px inherit;cursor:pointer;overflow-wrap:anywhere;}
+.kc-avatar-option.selected{border-color:#13a538;background:#e6ffe9;box-shadow:inset 0 0 0 2px #13a538;}
+.kc-avatar-image{display:flex;align-items:center;justify-content:center;width:49px;height:57px;border-radius:50%;overflow:hidden;font-size:28px;}
+.kc-avatar-image img{width:100%;height:100%;object-fit:cover;}
