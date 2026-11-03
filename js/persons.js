@@ -2160,6 +2160,7 @@ async function changeSyncedPersonCounter(
     }
     applyConfirmedLiveCounter(personName, category, key, Number(newValue));
     renderLivePersonChanges();
+    persistState();
     return true;
   } catch (error) {
     console.error(
@@ -2268,6 +2269,7 @@ async function changeMultipleSyncedPersonCounters(
     }
     results.forEach(r => applyConfirmedLiveCounter(r.personName, r.category, r.key, Number(r.value)));
     renderLivePersonChanges();
+    persistState();
 
     if (successMessage) {
       showToast(

@@ -241,7 +241,12 @@ function syncCurrentClubToStore() {
 
   CLUBS[ACTIVE_CLUB] = {
     avatar: existingClub.avatar || '',
-    persons: JSON.parse(JSON.stringify(persons)),
+    // Verbindlicher Strafbetrag aus der Strafentabelle der Haupt-App.
+    // Dashboard darf diese Summe nicht selbst aus Preisen/Zählern nachbilden.
+    persons: JSON.parse(JSON.stringify(persons.map(person => ({
+      ...person,
+      strafTotal: Number(calcPersonStrafenTotalCapped(person).toFixed(2))
+    })))),
     prices: JSON.parse(JSON.stringify(prices)),
     DRINKS: JSON.parse(JSON.stringify(DRINKS)),
     SPIELE_KATALOG: JSON.parse(JSON.stringify(SPIELE_KATALOG)),
