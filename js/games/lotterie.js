@@ -94,47 +94,48 @@ async function saveLiveLotterieState() {
 function applyLiveLotterieState(
   remoteState
 ) {
-  if (!remoteState) {
-    return;
-  }
+  if (!remoteState) return;
+  // Legacy records had top-level fields; current records use `state`.
+  const incoming = remoteState.state && typeof remoteState.state === 'object'
+    ? remoteState.state : remoteState;
 
   isApplyingLiveLotterie = true;
 
   try {
     lotterieState = {
       ...createLotterieState(),
-      ...remoteState,
+      ...incoming,
 
       columns: Array.isArray(
-        remoteState.columns
+        incoming.columns
       )
-        ? [...remoteState.columns]
+        ? [...incoming.columns]
         : [],
 
-      playerOrder: Array.isArray(remoteState.playerOrder)
-        ? [...remoteState.playerOrder]
+      playerOrder: Array.isArray(incoming.playerOrder)
+        ? [...incoming.playerOrder]
         : [],
 
-      startPlayer: remoteState.startPlayer || '',
+      startPlayer: incoming.startPlayer || '',
 
       throws:
-        remoteState.throws &&
-        typeof remoteState.throws ===
+        incoming.throws &&
+        typeof incoming.throws ===
           'object'
-          ? remoteState.throws
+          ? incoming.throws
           : {},
 
       throwMeta:
-        remoteState.throwMeta &&
-        typeof remoteState.throwMeta ===
+        incoming.throwMeta &&
+        typeof incoming.throwMeta ===
           'object'
-          ? remoteState.throwMeta
+          ? incoming.throwMeta
           : {},
 
       history: Array.isArray(
-        remoteState.history
+        incoming.history
       )
-        ? [...remoteState.history]
+        ? [...incoming.history]
         : []
     };
 

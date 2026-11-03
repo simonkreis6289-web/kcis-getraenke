@@ -691,28 +691,22 @@ async loadLiveLotterie(clubId) {
     : null;
 },
 
-async saveLiveLotterie(
-  clubId,
-  state = {}
-) {
-  const ref = doc(
-    db,
-    'clubs',
-    clubId,
-    'liveGames',
-    'lotterie'
-  );
-
-  await setDoc(
-    ref,
-    {
-      ...state,
+async saveLiveLotterie(clubId, state = {}) {
+  // Lotterie uses the same canonical `state` envelope as every other live game.
+  // Keep the revision monotonic so the app and dashboard see the same snapshot.
+  const ref = doc(db, 'clubs', clubId, 'liveGames', 'lotterie');
+  return runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(ref);
+    const previous = snapshot.exists() ? snapshot.data() : {};
+    transaction.set(ref, {
+      gameKey: 'lotterie',
+      state: cleanLiveGameValue(state),
+      revision: (Number(previous.revision) || 0) + 1,
+      updatedClientId: typeof CLIENT_ID !== 'undefined' ? CLIENT_ID : 'lotterie',
+      updatedClientAt: Date.now(),
       updatedAt: serverTimestamp()
-    },
-    {
-      merge: true
-    }
-  );
+    });
+  });
 },
 
 async changeLiveLotterieThrow(
