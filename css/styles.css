@@ -4558,3 +4558,7 @@ body.view-only #clubBackBtn {
 .game-throw-toolbar strong{margin-right:auto}
 .game-throw-toolbar .pinpad-btn{min-height:36px;min-width:37px;padding:4px 8px;border-radius:7px;font-size:.85rem}
 .game-compact-note{font-size:.75rem;color:var(--muted);margin:7px 0}
+
+/* V133: Sitzplatzwahl mit Avataren */
+.seating-avatar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:10px;margin-top:18px;max-height:52vh;overflow-y:auto}
+.seating-avatar-grid .quick-penalty-person-btn{min-width:0;overflow-wrap:anywhere}

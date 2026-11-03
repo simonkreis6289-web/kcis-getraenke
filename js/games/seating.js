@@ -45,7 +45,7 @@ function renderSeatingOrder() {
   if(!Array.isArray(seatingOrder))seatingOrder=Array(16).fill('');
   const button=(n)=>{const name=seatingOrder[n-1]||'frei';return `<button class="seating-chair ${name==='frei'?'':'occupied'}" onclick="chooseSeat(${n})"><strong>${n}</strong><span>${name.replaceAll('&','&amp;').replaceAll('<','&lt;')}</span></button>`;};
   left.innerHTML=Array.from({length:8},(_,i)=>button(8-i)).join('');
-  right.innerHTML=Array.from({length:8},(_,i)=>button(9+i)).join('');
+  right.innerHTML=Array.from({length:8},(_,i)=>button(16-i)).join('');
 }
 let seatingEditPlace=0;
 
@@ -68,49 +68,52 @@ function availablePeopleForSeat(place) {
     .sort((a,b) => a.name.localeCompare(b.name, 'de'));
 }
 
+let seatingSelectedName = '';
 function chooseSeat(number) {
   if (!Number.isInteger(number) || number < 1 || number > 16) return;
   seatingEditPlace = number;
-  const sel = document.getElementById('seating-choice-person');
-  if (!sel) return;
   const teamName = getGroupLabel(getSeatTeam(number));
   const title = document.getElementById('seating-choice-title');
   if (title) title.textContent = `🪑 Platz ${number} (${teamName}) belegen`;
   const info = document.getElementById('seating-choice-info');
   if (info) info.textContent = `Nur anwesende Spieler aus ${teamName}, die noch keinen anderen Sitzplatz belegen.`;
-  sel.replaceChildren();
-  const empty = document.createElement('option');
-  empty.value = '';
-  empty.textContent = 'Platz freilassen';
-  sel.appendChild(empty);
+  seatingSelectedName = seatingOrder[number - 1] || '';
+  const grid = document.getElementById('seating-choice-grid');
+  if (!grid) return;
   const people = availablePeopleForSeat(number);
-  people.forEach(p => {
-    const option = document.createElement('option');
-    option.value = p.name;
-    option.textContent = p.name;
-    sel.appendChild(option);
+  const escapeText = v => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  grid.innerHTML = '';
+  people.forEach(person => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quick-penalty-person-btn' + (person.name === seatingSelectedName ? ' selected' : '');
+    btn.innerHTML = getAvatarHtml(person.name).replace(/class="person-avatar[^"]*"/, 'class="quick-penalty-avatar"') + `<span>${escapeText(person.name)}</span>`;
+    btn.onclick = () => {
+      seatingSelectedName = person.name;
+      grid.querySelectorAll('button').forEach(el => el.classList.toggle('selected', el === btn));
+    };
+    grid.appendChild(btn);
   });
-  const current = seatingOrder[number - 1] || '';
-  sel.value = people.some(p => p.name === current) ? current : '';
-  if (people.length === 0 && info) {
-    info.textContent = `Für ${teamName} ist aktuell kein weiterer freier Spieler verfügbar. Du kannst diesen Platz freilassen.`;
-  }
+  if (!people.length && info) info.textContent = `Für ${teamName} ist kein weiterer freier Spieler verfügbar. Du kannst den Platz leeren.`;
   document.getElementById('seating-choice-modal')?.classList.remove('hidden');
+}
+function clearSeatChoiceSelection() {
+  seatingSelectedName = '';
+  document.querySelectorAll('#seating-choice-grid button').forEach(el => el.classList.remove('selected'));
 }
 function closeSeatChoice() {
   document.getElementById('seating-choice-modal')?.classList.add('hidden');
   seatingEditPlace = 0;
+  seatingSelectedName = '';
 }
 function confirmSeatChoice() {
   if (!seatingEditPlace) return;
-  const sel = document.getElementById('seating-choice-person');
-  const name = sel?.value || '';
+  const name = seatingSelectedName;
   if (name && !availablePeopleForSeat(seatingEditPlace).some(p => p.name === name)) {
     showToast('Spieler ist bereits gesetzt oder gehört zur anderen Gruppe', 'error');
     chooseSeat(seatingEditPlace);
     return;
   }
-  // Keine automatische Verschiebung belegter Plätze.
   seatingOrder[seatingEditPlace - 1] = name;
   closeSeatChoice();
   persistState();

@@ -5618,6 +5618,7 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
+  if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();
   if (mainKey === 'strafen' && subKey === 'strafen-abrechnung' && typeof refreshCashHistory === 'function') refreshCashHistory();
     
 // Nach Auswahl wieder einklappen

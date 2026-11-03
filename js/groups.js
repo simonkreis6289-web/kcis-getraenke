@@ -14,6 +14,8 @@ function getGroupTheme(colorKey) {
   return themes[colorKey] || themes.black;
 }
 
+function getGroupThemeKeys() { return {red:1,orange:1,yellow:1,green:1,blue:1,purple:1,black:1,white:1,brown:1}; }
+
 function normalizeGroupColorKey(value, fallback = 'black') {
   const map = {
     '#d62828': 'red',
@@ -29,7 +31,8 @@ function normalizeGroupColorKey(value, fallback = 'black') {
     '#8b5e3c': 'brown'
   };
      
-  return map[String(value || '').toLowerCase()] || value || fallback;
+  const key = String(value || '').trim().toLowerCase();
+  return map[key] || (Object.prototype.hasOwnProperty.call(getGroupThemeKeys(), key) ? key : fallback);
 }
 
 function getGroupLabel(teamKey) {
