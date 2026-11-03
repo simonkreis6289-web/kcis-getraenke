@@ -544,13 +544,28 @@ async function saveToFirestore(
 }
 
 async function manualSaveAll() {
-  syncCurrentClubToStore();
-  saveClubSystem();
-
-  showToast(
-    '✅ Lokal gespeichert. Live-Daten synchronisieren automatisch.',
-    'success'
-  );
+  const button = document.getElementById('saveBtn');
+  if (button?.disabled) return;
+  if (button) {
+    button.disabled = true;
+    button.textContent = '⏳ Speichere …';
+  }
+  try {
+    syncCurrentClubToStore();
+    saveClubSystem();
+    const success = await saveToFirestore(true);
+    if (!success && (!window.firestoreApi || !ACTIVE_CLUB)) {
+      showToast('❌ Firebase nicht bereit: Nur lokal gespeichert', 'error');
+    }
+  } catch (error) {
+    console.error('Manuelles Speichern fehlgeschlagen:', error);
+    showToast('❌ Speichern fehlgeschlagen', 'error');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = '💾 Speichern';
+    }
+  }
 }
 
 function findUndefinedPaths(
