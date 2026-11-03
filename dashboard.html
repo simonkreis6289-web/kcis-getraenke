@@ -58,6 +58,26 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .tv-seat .seat-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 @media(max-width:850px){.tv-seats{min-height:260px}}
 .dart-v137-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.85fr) minmax(0,1fr);align-items:stretch;gap:12px;margin:2vh auto;max-width:1250px}.dart-v137-layout .dart-card{padding:clamp(10px,2vw,24px)}.dart-v137-layout .dart-score{font-size:clamp(66px,8vw,142px)}.dart-v137-center{border:2px solid #d7a43a;border-radius:18px;background:#fff9e8;padding:clamp(12px,2vw,25px);text-align:center;display:flex;flex-direction:column;gap:12px;justify-content:center}.dart-center-heading{font-size:clamp(16px,2vw,26px);font-weight:800}.dart-center-total{font-size:clamp(25px,3vw,45px);color:#273452}.dart-round-team{display:flex;flex-direction:column;border-top:1px solid #e2d7b9;padding:8px 0;font-size:clamp(13px,1.5vw,20px)}.dart-round-team small{color:#555}.dart-center-buffer{font-weight:700}.dart-values{max-width:1200px;margin:10px auto;text-align:center;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fafafa}.dart-values>div{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 18px;margin-top:7px}.dart-values span{white-space:nowrap}@media(max-width:700px){.dart-v137-layout{grid-template-columns:1fr 1fr}.dart-v137-center{grid-column:1/-1;grid-row:2}.dart-v137-layout .dart-card{grid-row:1}.dart-v137-layout .dart-score{font-size:clamp(52px,10vw,85px)}}
+
+/* V138: Tannenbaum im Stil der Haupt-App, mit live geladenen Teamfarben. */
+.tree-v138{justify-content:flex-start;gap:12px}
+.tree-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%}
+.tree-summary-card{min-width:0;border:2px solid #303652;border-radius:13px;background:#fff;padding:8px 6px;text-align:center;box-shadow:0 2px 10px color-mix(in srgb,var(--team-color) 12%,transparent)}
+.tree-summary-label{font-size:clamp(10px,.8vw,14px);font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+.tree-summary-card strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:clamp(23px,2.5vw,43px);line-height:1.1}
+.tree-summary-team{font-size:clamp(11px,1vw,16px);font-weight:750;display:flex;gap:5px;align-items:center;justify-content:center}
+.tree-team-dot{width:11px;height:11px;border-radius:50%;background:var(--team-color);display:inline-block;flex:none}
+.tree-table-v138{border:2px solid #303652;border-radius:13px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0}
+.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(34px,.6fr) minmax(0,3fr) 48px minmax(0,3fr) minmax(34px,.6fr);gap:5px}
+.tree-v138 .tree-header{background:#fafafa;border-bottom:1px solid #dedee2;padding:7px 0}
+.tree-v138 .tree-row{flex:1;min-height:33px;border-bottom:1px solid #e6e6e8;padding:2px 0}
+.tree-v138 .tree-row:nth-child(odd){background:#f7f7f8}
+.tree-v138 .tree-row:last-child{border-bottom:0}
+.tree-v138 .tree-number{background:transparent;color:#111;font-size:clamp(23px,2.6vw,42px)}
+.tree-v138 .tree-ball{border-color:var(--ball-color);color:var(--ball-color);border-radius:9px}
+.tree-v138 .tree-ball.crossed{border-color:#b4b4b8;color:#a2a2a7;background:#f1f1f1}
+.tree-v138 .tree-strikes{color:#a6a8ae}
+@media(max-width:650px){.tree-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:26px minmax(0,1fr) 30px minmax(0,1fr) 26px;gap:2px}.tree-v138 .tree-ball{min-width:18px;height:25px;font-size:12px}.tree-v138 .tree-side{min-height:25px}}
 </style>
 <style id="plusminus-tv-style">
 .tv-plusminus{width:100%;table-layout:fixed}
@@ -82,7 +102,7 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 </head>
 <body>
 <main class="dashboard">
-<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V137 · Update 03.11.2026, 10:00 Uhr</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div></header>
+<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V138 · Update 03.11.2026, 09:00 Uhr</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div></header>
 <section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="sichern">🔒 Sichern</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
@@ -90,8 +110,8 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V137";
-const DASH_RELEASE="03.11.2026, 10:00 Uhr";
+const DASH_VERSION="V138";
+const DASH_RELEASE="03.11.2026, 09:00 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -263,7 +283,29 @@ function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.drinkOnly).map(p=>p.name);const ordered=Array.isArray(order)?order:[];return [...new Set([...ordered,...names])].filter(Boolean)}
 function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
-function renderTree(d){const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};const teams=d.teams||{};const team1=teams.T1||{},team2=teams.T2||{};const teamLabel=k=>safe(state?.groupSettings?.[k]?.name||({T1:'Wand',T2:'TV'}[k]));const remaining=(t,n)=>Math.max(0,Number(t?.remaining?.[n]??base[n]??0));const won=t=>Object.keys(base).every(n=>remaining(t,n)===0);const balls=(t,n,side)=>{if(won(t))return n==='5'?`<div class="tree-win">🏆 ${teamLabel(side==='wand'?'T1':'T2')}</div>`:'';const rem=remaining(t,n),len=Math.max(Number(base[n])||0,rem);return Array.from({length:len},(_,i)=>`<div class="tree-ball ${side} ${(side==='wand'?i<len-rem:i>=rem)?'crossed':''}">${safe(n)}</div>`).join('')};const strikes=(t,n)=>(t.strikes||[]).filter(x=>String(x.number)===String(n)).length;const sum=t=>Object.keys(base).reduce((a,n)=>a+remaining(t,n),0);return `<div class="tv-board tree-board"><div class="tv-stats"><div class="tv-stat">${teamLabel('T1')}<strong>${fmt.format(Object.keys(base).reduce((a,n)=>a+remaining(team1,n)*Number(n)*.10,0)+((team1.strikes||[]).reduce((a,x)=>a+numeric(x.amount),0))+numeric(team1.bonus))} · ${sum(team1)} offen</strong></div><div class="tv-stat">${teamLabel('T2')}<strong>${fmt.format(Object.keys(base).reduce((a,n)=>a+remaining(team2,n)*Number(n)*.10,0)+((team2.strikes||[]).reduce((a,x)=>a+numeric(x.amount),0))+numeric(team2.bonus))} · ${sum(team2)} offen</strong></div></div><div class="tree-header"><span>Striche</span><span>${teamLabel('T1')}</span><span>Zahl</span><span>${teamLabel('T2')}</span><span>Striche</span></div>${Object.keys(base).map(n=>`<div class="tree-row"><div class="tree-strikes">${strikes(team1,n)?'┃'.repeat(strikes(team1,n)):'0'}</div><div class="tree-side">${balls(team1,n,'wand')}</div><div class="tree-number">${safe(n)}</div><div class="tree-side">${balls(team2,n,'tv')}</div><div class="tree-strikes">${strikes(team2,n)?'┃'.repeat(strikes(team2,n)):'0'}</div></div>`).join('')}</div>`}
+function renderTree(d){
+ const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};
+ const teams=d.teams||{};
+ const settings=seatingLive?.groupSettings||state?.groupSettings||{};
+ const label=k=>safe(settings[k]?.name||({T1:'Wand',T2:'TV'}[k]));
+ const color=k=>dashboardTeamColor(k);
+ const remaining=(t,n)=>Math.max(0,Number(t?.remaining?.[n]??base[n]??0));
+ const won=t=>Object.keys(base).every(n=>remaining(t,n)===0);
+ const balls=(t,n,k)=>{
+  if(won(t))return n==='5'?`<div class="tree-win">🏆 ${label(k)}</div>`:'';
+  const rem=remaining(t,n),len=Math.max(Number(base[n])||0,rem);
+  return Array.from({length:len},(_,i)=>`<div class="tree-ball ${k==='T1'?'wand':'tv'} ${(k==='T1'?i<len-rem:i>=rem)?'crossed':''}" style="--ball-color:${color(k)}">${safe(n)}</div>`).join('');
+ };
+ const strikes=(t,n)=>(t.strikes||[]).filter(x=>String(x.number)===String(n)).length;
+ const open=t=>Object.keys(base).reduce((a,n)=>a+remaining(t,n)*Number(n)*.1,0);
+ const charge=t=>(t.strikes||[]).reduce((a,x)=>a+numeric(x.amount),0)+numeric(t.bonus);
+ const summary=(k,t,kind)=>`<div class="tree-summary-card" style="--team-color:${color(k)}"><div class="tree-summary-label">${kind==='charge'?'Strafbetrag':'Noch offen'}</div><strong>${fmt.format(kind==='charge'?charge(t):open(t))}</strong><div class="tree-summary-team"><span class="tree-team-dot"></span>${label(k)}</div></div>`;
+ const t1=teams.T1||{},t2=teams.T2||{};
+ return `<div class="tv-board tree-board tree-v138" style="--tree-t1:${color('T1')};--tree-t2:${color('T2')}">
+ <div class="tree-summary-grid">${summary('T1',t1,'charge')}${summary('T1',t1,'open')}${summary('T2',t2,'charge')}${summary('T2',t2,'open')}</div>
+ <div class="tree-table-v138"><div class="tree-header"><span>Striche</span><span class="tree-team-name" style="color:var(--tree-t1)">● ${label('T1')}</span><span>Zahl</span><span class="tree-team-name" style="color:var(--tree-t2)">● ${label('T2')}</span><span>Striche</span></div>
+ ${Object.keys(base).map(n=>`<div class="tree-row"><div class="tree-strikes">${strikes(t1,n)?'┃'.repeat(strikes(t1,n)):'0'}</div><div class="tree-side">${balls(t1,n,'T1')}</div><div class="tree-number">${safe(n)}</div><div class="tree-side">${balls(t2,n,'T2')}</div><div class="tree-strikes">${strikes(t2,n)?'┃'.repeat(strikes(t2,n)):'0'}</div></div>`).join('')}</div></div>`;
+}
 function renderLottery(d){const columns=d.columns||[],names=activeNames(d.playerOrder);if(!columns.length)return null;const complete=columns.map((_,i)=>names.length>0&&names.every(n=>d.throws?.[n]?.[i]!=null));const losers=columns.map((_,i)=>{const arr=names.map(n=>({n,raw:d.throws?.[n]?.[i]})).filter(x=>x.raw!==null&&x.raw!==undefined&&x.raw!=='').map(x=>({n:x.n,v:Number(x.raw)})).filter(x=>Number.isFinite(x.v));const min=Math.min(...arr.map(x=>x.v));return arr.filter(x=>x.v===min).map(x=>x.n)});const heads=['Spieler','Strafen',...columns.map((c,i)=>`${fmt.format(Number(c)||0)}${complete[i]?' ✓':''}`)];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'lotterie',true)),...columns.map((_,i)=>({v:d.throws?.[n]?.[i],done:complete[i],lose:losers[i].includes(n)}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🎰 Lotterie</h2>${makeTable(heads,rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.lose?'miss':v.done?'done':v.v==null?'pending':''}">${v.v==null?'–':v.v===12?'K':safe(v.v)}</div>`)}</div>`}
 function renderTiberiusBoard(d){const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;const score=Number(d.score)||0;const next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🏛️ Tiberius</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`)}</div>`}
 function plusminusSlotValue(idx,slot,partial,smart){
