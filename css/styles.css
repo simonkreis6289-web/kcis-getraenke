@@ -4562,3 +4562,9 @@ body.view-only #clubBackBtn {
 /* V133: Sitzplatzwahl mit Avataren */
 .seating-avatar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:10px;margin-top:18px;max-height:52vh;overflow-y:auto}
 .seating-avatar-grid .quick-penalty-person-btn{min-width:0;overflow-wrap:anywhere}
+
+/* V134: feste Avatar-Kachelspalten statt einspaltiger Liste */
+#seating-choice-grid.seating-avatar-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;align-content:start;max-height:50vh;overflow-y:auto}
+#seating-choice-grid .quick-penalty-person-btn{width:100%;min-width:0;max-width:none;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+#seating-choice-grid .quick-penalty-person-btn span{max-width:100%;overflow-wrap:anywhere;text-align:center}
+@media(min-width:540px){#seating-choice-grid.seating-avatar-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
