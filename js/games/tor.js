@@ -27,7 +27,7 @@ function startTorGame(){
  dashboardActiveGame='tor';renderTorGame();persistState();
  // Münzwurf mit wechselnden Teamfarben; das Ergebnis wird erst nach der Animation übernommen.
  let ticks=0;const result=document.getElementById('tor-coin-result');
- const timer=setInterval(()=>{if(!torState?.coinPending){clearInterval(timer);return;}if(result)result.textContent=(ticks++%2?'🪙 '+getGroupLabel('T1'):'🪙 '+getGroupLabel('T2'));if(ticks>=14){clearInterval(timer);const winner=Math.random()<.5?'T1':'T2';torState.current=winner;torState.coinWinner=winner;torState.coinPending=false;renderTorGame();persistState();}},90);
+ const timer=setInterval(()=>{if(!torState?.coinPending){clearInterval(timer);return;}if(result)result.textContent=(ticks++%2?'🪙 '+getGroupLabel('T1'):'🪙 '+getGroupLabel('T2'));if(ticks>=14){clearInterval(timer);const winner=Math.random()<.5?'T1':'T2';torState.current=winner;torState.coinWinner=winner;torState.coinPending=false;renderTorGame();if(typeof announceDashboardStarter==='function')announceDashboardStarter('🪙 '+getGroupLabel(winner)+' beginnt!');persistState();}},90);
 }
 function torTogglePin(n){ensureTorState();const s=torState;if(!s.active||s.coinPending||s.busy||!s.standing.includes(n))return;s.selected=s.selected.includes(n)?s.selected.filter(x=>x!==n):[...s.selected,n];renderTorGame();}
 function torOther(t){return t==='T1'?'T2':'T1';}

@@ -85,6 +85,7 @@ function runCoinFlip() {
         result.textContent = `${getGroupLabel(winner)} beginnt`;
       }
 
+      if (typeof announceDashboardStarter === 'function') announceDashboardStarter('🪙 ' + getGroupLabel(winner) + ' beginnt!');
       coinFlipRunning = false;
     }
   }, 90);

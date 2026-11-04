@@ -73,6 +73,7 @@ function confirmSoloStartDraw() {
   const callback = soloStartDrawState.onConfirm;
   const starter = soloStartDrawState.selected;
   closeSoloStartDraw();
+  if (typeof announceDashboardStarter === 'function') announceDashboardStarter('🎲 ' + starter + ' beginnt!');
   if (typeof callback === 'function') {
     callback(starter);
   }

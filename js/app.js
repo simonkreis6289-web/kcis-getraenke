@@ -118,6 +118,7 @@ function getFirestoreState() {
   return {
     ...getTodayMeta(),
     dashboardActiveGame,
+    dashboardAnnouncement: window.kcDashboardAnnouncement || null,
     currentEveningStartedAt,
     persons: getFirestorePersonsWithFineTotals(),
     seatingOrder,
@@ -240,6 +241,11 @@ function applyLoadedState(state) {
 
   bahnTimerRunning =
     !!state.bahnTimerRunning;
+
+  if (state.dashboardAnnouncement && (!window.kcDashboardAnnouncement ||
+      Date.parse(state.dashboardAnnouncement.at) > Date.parse(window.kcDashboardAnnouncement.at))) {
+    window.kcDashboardAnnouncement = state.dashboardAnnouncement;
+  }
 
   teamStopwatchActive =
     !!state.teamStopwatchActive;
@@ -903,6 +909,13 @@ function hydrateState() {
       ] = 0;
     }
   });
+}
+
+function announceDashboardStarter(label) {
+  const value = String(label || '').trim();
+  if (!value) return;
+  window.kcDashboardAnnouncement = { text: value, at: new Date().toISOString(), id: String(Date.now()) };
+  persistState();
 }
 
 function persistState() {
