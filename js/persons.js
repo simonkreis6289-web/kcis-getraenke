@@ -173,7 +173,7 @@ function getLivePersonStatusPayload(
 }
 
 function getMembers() {
-  return persons.filter(person => !person.isGuest);
+  return persons.filter(person => !person.isGuest && !person.isDrinksOnly);
 }
 
 function getGuests() {
@@ -248,11 +248,13 @@ function getAvatarHtml(
       .toUpperCase()
       .slice(0, 2);
 
-  // Gastkegler erhalten immer Initialen, niemals ein Bild.
-  const guest = typeof persons !== 'undefined' &&
-    persons.some(person => person.name === name && person.isGuest);
-  if (guest) {
-    return `<div class="person-avatar ${extraClass}"><span class="person-avatar-fallback" style="display:flex;">${initials}</span></div>`;
+  // Individuelle Bilder haben Vorrang, sonst Initialen bei Gaesten.
+  const person = typeof persons !== 'undefined' ? persons.find(p => p.name === name) : null;
+  if (person?.avatarData && /^data:image\/(jpeg|png|webp);base64,/.test(person.avatarData)) {
+    return `<div class="person-avatar ${extraClass}"><img src="${person.avatarData}" alt=""><span class="person-avatar-fallback" style="display:none">${initials}</span></div>`;
+  }
+  if (person?.isGuest || person?.isDrinksOnly) {
+    return `<div class="person-avatar ${extraClass}"><span class="person-avatar-fallback" style="display:flex">${initials}</span></div>`;
   }
 
   const candidates =
@@ -2489,21 +2491,91 @@ async function saveLivePersonTeam(
 
 // Mitgliederverwaltung: dauerhaftes Aktiv/Inaktiv, unabhaengig von Abend-Anwesenheit.
 function renderMemberManagement() {
- const box=document.getElementById('member-management-list');
- if(!box)return;
- box.replaceChildren();
- const ordered=[...persons].sort((a,b)=>Number(!!a.inactive)-Number(!!b.inactive)||a.name.localeCompare(b.name,'de'));
- ordered.forEach(person=>{
-  const row=document.createElement('div');row.className='member-manage-row';
-  const name=document.createElement('span');name.textContent=person.name;
-  const kind=document.createElement('small');kind.textContent=person.isDrinksOnly?'🍺 Sauftourist':person.isGuest?'🎳 Gastkegler':'👤 Mitglied';
-  const btn=document.createElement('button');btn.type='button';btn.className='add-btn';
-  btn.textContent=person.inactive?'▶ Aktivieren':'⏸ Inaktiv setzen';
-  btn.disabled=!!person.isDrinksOnly || !!person.isGuest;
-  btn.onclick=()=>setMemberInactive(person.name,!person.inactive);
-  row.classList.toggle('member-manage-inactive',!!person.inactive);
-  row.append(name,kind,btn);box.appendChild(row);
- });
+  const root = document.getElementById('member-management-list');
+  if (!root) return;
+  root.replaceChildren();
+  const sections = [
+    {title:'👥 Clubmitglieder', people:persons.filter(p=>!p.isGuest&&!p.isDrinksOnly), canToggle:true},
+    {title:'🎳 Gastkegler', people:persons.filter(p=>p.isGuest&&!p.isDrinksOnly), canToggle:false},
+    {title:'🍺 Sauftouristen', people:persons.filter(p=>p.isDrinksOnly), canToggle:false}
+  ];
+  for (const section of sections) {
+    const heading=document.createElement('div'); heading.className='subsection-title';heading.textContent=section.title;
+    root.appendChild(heading);
+    const grid=document.createElement('div');grid.className='member-manage-grid';root.appendChild(grid);
+    const ordered=section.people.slice().sort((a,b)=>Number(!!a.inactive)-Number(!!b.inactive)||a.name.localeCompare(b.name,'de'));
+    if(!ordered.length){const empty=document.createElement('p');empty.textContent='Noch keine Personen';grid.appendChild(empty);}
+    for(const person of ordered){
+      const card=document.createElement('div');card.className='member-manage-card'+(person.inactive?' member-manage-inactive':'');
+      const avatar=document.createElement('div');avatar.className='member-manage-avatar';
+      if(person.avatarData && /^data:image\/(jpeg|png|webp);base64,/.test(person.avatarData)){
+        const img=document.createElement('img');img.src=person.avatarData;img.alt='';avatar.appendChild(img);
+      }else{
+        avatar.textContent=person.name.trim().split(/\s+/).map(part=>part[0]||'').join('').slice(0,2).toUpperCase();
+      }
+      const info=document.createElement('div');info.className='member-manage-info';
+      const name=document.createElement('strong');name.textContent=person.name;
+      const kind=document.createElement('small');kind.textContent=section.canToggle?(person.inactive?'Inaktiv':'Aktiv'):section.title.slice(2);
+      info.append(name,kind);
+      const actions=document.createElement('div');actions.className='member-manage-actions';
+      const photo=document.createElement('button');photo.type='button';photo.className='secondary-btn';photo.textContent='📷 Bild';
+      photo.onclick=()=>pickMemberAvatar(person.name);
+      actions.appendChild(photo);
+      if(person.avatarData){
+        const remove=document.createElement('button');remove.type='button';remove.className='secondary-btn';remove.textContent='✕ Bild';
+        remove.onclick=()=>setMemberAvatar(person.name,'');
+        actions.appendChild(remove);
+      }
+      if(section.canToggle){
+        const toggle=document.createElement('button');toggle.type='button';toggle.className='add-btn';
+        toggle.textContent=person.inactive?'▶ Aktivieren':'⏸ Inaktiv';
+        toggle.onclick=()=>setMemberInactive(person.name,!person.inactive);
+        actions.appendChild(toggle);
+      }
+      card.append(avatar,info,actions);grid.appendChild(card);
+    }
+  }
+}
+
+function pickMemberAvatar(name) {
+  const picker=document.createElement('input');picker.type='file';picker.accept='image/png,image/jpeg,image/webp';
+  picker.onchange=async()=>{
+    const file=picker.files?.[0];if(!file)return;
+    if(file.size>8*1024*1024){showToast('Bild ist zu groß (max. 8 MB)','error');return;}
+    try{
+      const data=await new Promise((resolve,reject)=>{
+        const image=new Image();const url=URL.createObjectURL(file);
+        image.onload=()=>{
+          try{
+            const canvas=document.createElement('canvas');const ratio=Math.min(1,180/Math.max(image.naturalWidth,image.naturalHeight));
+            canvas.width=Math.max(1,Math.round(image.naturalWidth*ratio));canvas.height=Math.max(1,Math.round(image.naturalHeight*ratio));
+            canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+            const data=canvas.toDataURL('image/jpeg',0.72);URL.revokeObjectURL(url);resolve(data);
+          }catch(e){URL.revokeObjectURL(url);reject(e);}
+        };
+        image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Bild nicht lesbar'));};
+        image.src=url;
+      });
+      if(data.length>100000)throw new Error('Bild zu groß nach Verarbeitung');
+      await setMemberAvatar(name,data);
+    }catch(e){console.error(e);showToast('Bild konnte nicht gespeichert werden','error');}
+  };
+  picker.click();
+}
+async function setMemberAvatar(name,data) {
+  const person=persons.find(p=>p.name===name);if(!person)return;
+  const previous=person.avatarData||'';
+  person.avatarData=data;
+  try{
+    if(!ACTIVE_CLUB||!window.firestoreApi)throw new Error('Firebase nicht bereit');
+    const saved=await saveToFirestore(false);
+    if(!saved)throw new Error('Speichern fehlgeschlagen');
+    renderAll();
+    showToast(data?'Avatar gespeichert':'Avatar entfernt','success');
+  }catch(e){
+    person.avatarData=previous;renderAll();console.error(e);
+    showToast('Avatar konnte nicht gespeichert werden','error');
+  }
 }
 async function setMemberInactive(name,inactive) {
  const person=persons.find(p=>p.name===name&&!p.isGuest);
