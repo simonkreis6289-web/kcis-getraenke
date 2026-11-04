@@ -351,7 +351,7 @@ function renderNextClubEvents(){
  const birthdayEl=$('kc-next-birthdays');if(!birthdayEl)return;
  const boundaries=Object.values(nextByType).filter(Boolean).map(e=>new Date(e.date+'T'+e.time).getTime());
  const limit=boundaries.length?Math.min(...boundaries):null;
- const birthdayEvents=all.filter(e=>e.type==='geburtstag'&&e.date&&new Date(e.date+'T'+(e.time||'00:00')).getTime()>=now&&limit!==null&&new Date(e.date+'T'+(e.time||'00:00')).getTime()<=limit)
+ const birthdayEvents=all.filter(e=>e.type==='geburtstag'&&e.date&&new Date(e.date+'T23:59').getTime()>=now&&limit!==null&&new Date(e.date+'T00:00').getTime()<=limit)
   .sort((a,b)=>a.date.localeCompare(b.date));
  birthdayEl.textContent=birthdayEvents.length?'🎂 Geburtstage bis zum nächsten Termin: '+birthdayEvents.map(e=>new Date(e.date+'T12:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+(e.note?' '+e.note:'')).join(' · '):'';
 }
