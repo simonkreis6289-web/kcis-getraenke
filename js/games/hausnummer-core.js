@@ -123,8 +123,9 @@ function hausCloseThrowModal(){
   const modal=document.getElementById('haus-throw-modal');
   if(modal)modal.remove();
 }
-function hausOpenThrowModal(mode,name,place){
+function hausOpenThrowModal(mode,playerIndex,place){
   const s=ensureHausState(mode);
+  const name=s.playerOrder[playerIndex];
   if(!s.active||s.busy||s.playerOrder[s.currentPlayerIndex]!==name||s.rows[name]?.[place])return;
   hausCloseThrowModal();
   const overlay=document.createElement('div');
@@ -158,12 +159,12 @@ function renderHausGame(mode) {
   const current=s.playerOrder[s.currentPlayerIndex];
   const label=mode==='hoch'?'🔢 Hohe Hausnummer':'🔽 Tiefe Hausnummer';
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const rows=names.map(name=>{
+  const rows=names.map((name,playerIndex)=>{
     const r=s.rows[name]||[null,null,null],num=hausNumber(mode,r);
     const active=s.active&&current===name;
     const cells=[0,1,2].map(i=>{
       const filled=!!r[i],value=filled?String(hausThrowValue(mode,r[i])):'–';
-      return '<td class="haus-cell"><button type="button" class="haus-slot '+(filled?'haus-slot-filled':active?'haus-slot-active':'')+'" '+(!filled&&active?'onclick="hausOpenThrowModal(\''+mode+'\',\''+esc(name).replace(/&#39;/g,'\\&#39;')+'\','+i+')"':'disabled')+'>'+esc(value)+'</button></td>';
+      return '<td class="haus-cell"><button type="button" class="haus-slot '+(filled?'haus-slot-filled':active?'haus-slot-active':'')+'" '+(!filled&&active?'onclick="hausOpenThrowModal(\\''+mode+'\\','+playerIndex+','+i+')"':'disabled')+'>'+esc(value)+'</button></td>';
     }).join('');
     return '<tr class="'+(active?'haus-current-row':'')+'"><td class="haus-player">'+esc(name)+(active?' <span class="haus-turn-tag">🎳 Am Wurf</span>':'')+'</td>'+cells+'<td class="haus-score">'+(num===null?'–':num)+'</td></tr>';
   }).join('');
