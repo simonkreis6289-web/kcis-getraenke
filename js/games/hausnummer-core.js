@@ -72,7 +72,7 @@ function hausNextPlayer(mode) {
     if(incomplete.includes(names[idx])){s.currentPlayerIndex=idx;break;}
   }
 }
-async function hausThrow(mode,pins,isGosse=false) {
+async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
   const s=ensureHausState(mode);
   if(!s.active||s.busy)return;
   const name=s.playerOrder[s.currentPlayerIndex],row=s.rows[name];
@@ -80,15 +80,15 @@ async function hausThrow(mode,pins,isGosse=false) {
   const n=Number(pins);
   if(!Number.isInteger(n)||n<0||n>12)return;
   const free=row.map((x,i)=>x?null:i).filter(x=>x!==null);
-  const place=free.length===1?free[0]:Number(document.getElementById('haus-'+mode+'-place')?.value);
+  const place=chosenPlace===null ? (free.length===1?free[0]:Number(document.getElementById('haus-'+mode+'-place')?.value)) : Number(chosenPlace);
   if(!free.includes(place)){showToast('Bitte eine freie Stelle wählen','error');return;}
   s.busy=true;
   try {
     const throwData={value:n,isGosse:!!isGosse};
-    if(!(await changeSoloThrowPenalty(name,null,throwData)))return;
+    if(!(await changeSoloThrowPenalty(name,null,throwData)))return false;
     row[place]=throwData;
     s.undoStack.push({name,place,index:s.currentPlayerIndex});
-    hausNextPlayer(mode);renderHausGame(mode);persistState();
+    hausNextPlayer(mode);renderHausGame(mode);persistState();return true;
   }finally{s.busy=false;}
 }
 async function undoHausThrow(mode) {
@@ -119,6 +119,37 @@ function resetHausGame(mode) {
   const fresh=createHausState();fresh.history=old.history;
   setHausState(mode,fresh);renderHausGame(mode);persistState();
 }
+function hausCloseThrowModal(){
+  const modal=document.getElementById('haus-throw-modal');
+  if(modal)modal.remove();
+}
+function hausOpenThrowModal(mode,playerIndex,place){
+  const s=ensureHausState(mode);
+  const name=s.playerOrder[playerIndex];
+  if(!s.active||s.busy||s.playerOrder[s.currentPlayerIndex]!==name||s.rows[name]?.[place])return;
+  hausCloseThrowModal();
+  const overlay=document.createElement('div');
+  overlay.id='haus-throw-modal';overlay.className='haus-modal-overlay';
+  const card=document.createElement('div');card.className='haus-modal-card';
+  const title=document.createElement('h3');title.textContent='🎳 Wurf eintragen';
+  const subtitle=document.createElement('p');subtitle.textContent=name+' · '+['Hunderter','Zehner','Einer'][place];
+  const grid=document.createElement('div');grid.className='haus-modal-grid';
+  const options=[...Array(10).keys()].map(n=>({label:String(n),pins:n,gosse:false}));
+  options.push({label:'👑 Kranz',pins:12,gosse:false},{label:'💀 Gosse',pins:0,gosse:true});
+  for(const opt of options){
+    const button=document.createElement('button');button.type='button';
+    button.textContent=opt.label;button.className='haus-modal-option';
+    button.onclick=async()=>{if(button.disabled)return;grid.querySelectorAll('button').forEach(b=>b.disabled=true);
+      try{const booked=await hausThrow(mode,opt.pins,opt.gosse,place);if(booked)hausCloseThrowModal();else grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
+      catch(err){console.error(err);grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
+    };
+    grid.append(button);
+  }
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='haus-modal-cancel';cancel.textContent='Abbrechen';cancel.onclick=hausCloseThrowModal;
+  card.append(title,subtitle,grid,cancel);overlay.append(card);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)hausCloseThrowModal()});
+  document.body.append(overlay);
+}
 function renderHausGame(mode) {
   const s=ensureHausState(mode),id=hausId(mode),board=document.getElementById(id+'-board');
   if(!board)return;
@@ -126,20 +157,19 @@ function renderHausGame(mode) {
   if(start)start.classList.toggle('hidden',s.active);
   const names=s.playerOrder.length?s.playerOrder:hausPlayers(mode).map(p=>p.name);
   const current=s.playerOrder[s.currentPlayerIndex];
-  const row=s.rows[current]||[null,null,null];
-  const free=row.map((x,i)=>x?null:i).filter(x=>x!==null);
   const label=mode==='hoch'?'🔢 Hohe Hausnummer':'🔽 Tiefe Hausnummer';
-  const options=free.map(i=>'<option value="'+i+'">'+['Hunderter','Zehner','Einer'][i]+'</option>').join('');
-  const buttons=[1,2,3,4,5,6,7,8,9,12].map(n=>'<button class="pinpad-btn" onclick="hausThrow(\''+mode+'\','+n+')">'+(n===12?'👑 Kranz':n)+'</button>').join('');
-  const rows=names.map(name=>{
+  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const rows=names.map((name,playerIndex)=>{
     const r=s.rows[name]||[null,null,null],num=hausNumber(mode,r);
-    return '<tr><td>'+name.replaceAll('&','&amp;').replaceAll('<','&lt;')+'</td><td>'+hausDisplay(mode,r)+'</td><td><strong>'+(num===null?'–':num)+'</strong></td></tr>';
+    const active=s.active&&current===name;
+    const cells=[0,1,2].map(i=>{
+      const filled=!!r[i],value=filled?String(hausThrowValue(mode,r[i])):'–';
+      return `<td class="haus-cell"><button type="button" class="haus-slot ${filled?'haus-slot-filled':active?'haus-slot-active':''}" ${!filled&&active?`onclick="hausOpenThrowModal('${mode}',${playerIndex},${i})"`:'disabled'}>${esc(value)}</button></td>`;
+    }).join('');
+    return '<tr class="'+(active?'haus-current-row':'')+'"><td class="haus-player">'+esc(name)+(active?' <span class="haus-turn-tag">🎳 Am Wurf</span>':'')+'</td>'+cells+'<td class="haus-score">'+(num===null?'–':num)+'</td></tr>';
   }).join('');
-  board.innerHTML='<div class="game-throw-toolbar"><strong>'+label+(s.active?' · Am Wurf: '+current:'')+'</strong>'+
-    (s.undoStack.length?'<button class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+
-    (s.active?'<label>Stelle <select id="haus-'+mode+'-place">'+options+'</select></label>'+buttons+
-      '<button class="pinpad-btn special" onclick="hausThrow(\''+mode+'\',0,true)">💀 Gosse</button>':'')+
-    '</div><div class="game-compact-wrap"><table class="game-compact-table"><thead><tr><th>Spieler</th><th>Hunderter | Zehner | Einer</th><th>Hausnummer</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<div class="game-compact-note">Jeder Wurf wird sofort einer freien Stelle zugeordnet. Kranz kann zwei Ziffern ergeben. Sonderwurf-Strafen werden synchron gebucht.</div>'+
-    (s.finished?'<div class="game-compact-note">🏆 '+(s.history[0]?.results[0]?.name||'')+' gewinnt!</div>':'');
+  board.innerHTML='<div class="haus-game-header"><strong>'+label+'</strong><span>'+(s.active?'Am Wurf: '+esc(current):s.finished?'🏁 Beendet':'Spiel starten, um Würfe einzutragen')+'</span>'+(s.undoStack.length?'<button type="button" class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+'</div>'+
+  '<div class="haus-table-wrap"><table class="haus-table"><thead><tr><th>Spieler</th><th>Hunderter</th><th>Zehner</th><th>Einer</th><th>Hausnummer</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  '<p class="haus-help">Tippe beim aktuellen Spieler auf ein freies Kästchen und wähle den Wurf. Kranz und Gosse werden automatisch in der Strafentabelle berücksichtigt.</p>'+
+  (s.finished?'<div class="haus-winner">🏆 '+esc(s.history[0]?.results[0]?.name||'')+' gewinnt!</div>':'');
 }
