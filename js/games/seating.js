@@ -74,7 +74,7 @@ function availablePeopleForSeat(place) {
   const team = getSeatTeam(place);
   const currentName = seatingOrder[place - 1] || '';
   return persons
-    .filter(p => p.present && !p.left && !p.drinkOnly)
+    .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
     .filter(p => normalizeTisch(p.tisch) === team)
     .filter(p => {
       const existing = seatingOrder.indexOf(p.name);
@@ -140,7 +140,7 @@ function randomizeSeatingOrder(){
  if(!confirm('Anwesende Kegler zufällig auf die Plätze ihrer Teams verteilen? Die bisherige Sitzordnung wird ersetzt.'))return;
  const next=Array(16).fill('');
  for(const [team,start] of [['T2',0],['T1',8]]){
-  const names=persons.filter(p=>p.present&&!p.left&&!p.drinkOnly&&normalizeTisch(p.tisch)===team).map(p=>p.name);
+  const names=persons.filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly&&normalizeTisch(p.tisch)===team).map(p=>p.name);
   for(let i=names.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[names[i],names[j]]=[names[j],names[i]];}
   names.slice(0,8).forEach((name,i)=>next[start+i]=name);
   if(names.length>8)showToast('Mehr als 8 Spieler in '+getGroupLabel(team)+': Nicht alle haben Platz','error');
