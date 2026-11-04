@@ -123,7 +123,7 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 </head>
 <body>
 <main class="dashboard">
-<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V163 · Update 04.11.2026</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div><div id="tv-countdown" aria-live="off"><div class="timer-label">⏳ Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></header>
+<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V164 · Update 04.11.2026</div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div><div id="tv-countdown" aria-live="off"><div class="timer-label">⏳ Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></header>
 <div id="tv-announcement" role="status" aria-live="polite"></div>
 <section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div><div class="drinks-paid-total"><span>✓ Bereits bezahlt</span><strong id="drinks-paid-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="sichern">🔒 Sichern</option><option value="tor">⚽ Tor</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
@@ -132,7 +132,7 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V163";
+const DASH_VERSION="V164";
 const DASH_RELEASE="04.11.2026, 10:45 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
@@ -340,6 +340,8 @@ function gameState(k){
 }
 function chosenGame(){
  const v=$('game-select').value;if(v!=='auto')return v;
+ const preferred=state?.dashboardActiveGame;
+ if(preferred==='tannenbaum' && games.includes(preferred))return preferred;
  const running=games.filter(k=>{const s=gameState(k);return s && !s.finished && (s.active || (k==='tannenbaum' && Array.isArray(s.history) && s.history.length>0));});
  if(running.length){
    const newest=running.sort((a,b)=>{
@@ -348,12 +350,11 @@ function chosenGame(){
    });
    return newest[0];
  }
- const preferred=state?.dashboardActiveGame;
  return games.includes(preferred)?preferred:games.find(k=>gameState(k)?.active)||null;
 }
 function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.drinkOnly).map(p=>p.name);const ordered=Array.isArray(order)?order:[];return [...new Set([...ordered,...names])].filter(Boolean)}
+function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly).map(p=>p.name);const allowed=new Set(names);const ordered=Array.isArray(order)?order.filter(name=>allowed.has(name)):[];return [...new Set([...ordered,...names])].filter(Boolean)}
 function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
 function renderTree(d){
  const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};
