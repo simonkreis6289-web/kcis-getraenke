@@ -56,7 +56,7 @@ function startHausGame(mode) {
   const players=hausPlayers(mode);
   if(!players.length){showToast('Keine anwesenden Kegler','error');return;}
   const s=ensureHausState(mode);
-  s.active=true;s.finished=false;s.startedAt=new Date().toISOString();
+  s.active=true;s.finished=false;s.closing=false;s.startedAt=new Date().toISOString();
   s.playerOrder=players.map(p=>p.name);s.rows={};s.undoStack=[];s.currentPlayerIndex=0;
   for(const p of players)s.rows[p.name]=[null,null,null];
   dashboardActiveGame=hausId(mode);
@@ -65,7 +65,7 @@ function startHausGame(mode) {
 function hausNextPlayer(mode) {
   const s=ensureHausState(mode),names=s.playerOrder;
   const incomplete=names.filter(n=>(s.rows[n]||[]).some(v=>!v));
-  if(!incomplete.length){finishHausGame(mode);return;}
+  if(!incomplete.length){s.closing=true;return;}
   let idx=s.currentPlayerIndex;
   for(let i=0;i<names.length;i++){
     idx=(idx+1)%names.length;
@@ -88,7 +88,9 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
     if(!(await changeSoloThrowPenalty(name,null,throwData)))return false;
     row[place]=throwData;
     s.undoStack.push({name,place,index:s.currentPlayerIndex});
-    hausNextPlayer(mode);renderHausGame(mode);persistState();return true;
+    hausNextPlayer(mode);renderHausGame(mode);persistState();
+    if(s.closing){s.closing=false;await finishHausGame(mode);}
+    return true;
   }finally{s.busy=false;}
 }
 async function undoHausThrow(mode) {
@@ -99,19 +101,71 @@ async function undoHausThrow(mode) {
   s.busy=true;
   try{
     if(!(await changeSoloThrowPenalty(last.name,row[last.place],null)))return;
-    row[last.place]=null;s.undoStack.pop();s.active=true;s.finished=false;
+    row[last.place]=null;s.undoStack.pop();s.active=true;s.finished=false;s.closing=false;
     s.currentPlayerIndex=last.index;
     renderHausGame(mode);persistState();
   }finally{s.busy=false;}
 }
-function finishHausGame(mode) {
+function hausIsSchnapszahl(row) {
+  return Array.isArray(row)&&row.length===3&&row.every(Boolean)&&
+    row.every(x=>Number(x.value)===Number(row[0].value)&&!!x.isGosse===!!row[0].isGosse);
+}
+async function finishHausGame(mode) {
   const s=ensureHausState(mode);
-  s.active=false;s.finished=true;
-  const results=s.playerOrder.map(name=>({name,number:hausNumber(mode,s.rows[name])}))
-    .sort((a,b)=>mode==='hoch'?b.number-a.number:a.number-b.number);
-  s.history.unshift({id:hausId(mode)+'_'+Date.now(),createdAt:new Date().toISOString(),
-    results,rows:JSON.parse(JSON.stringify(s.rows)),settings:JSON.parse(JSON.stringify(hausnummerSettings[mode]))});
-  showToast('Hausnummer-Spiel abgeschlossen','success');
+  if(!s.active||s.finished||s.finishing)return false;
+  if(s.playerOrder.some(name=>hausNumber(mode,s.rows[name])===null))return false;
+  s.finishing=true;
+  try{
+    const results=s.playerOrder.map(name=>({
+      name,number:hausNumber(mode,s.rows[name]),schnapszahl:hausIsSchnapszahl(s.rows[name])
+    })).sort((a,b)=>mode==='hoch'?b.number-a.number:a.number-b.number);
+    // Gleichstand: dichte Rangfolge, wie bei Mensch ärgere dich nicht.
+    // Alle Spieler mit dem besten Wert gewinnen; sie erhalten keine Verlierer-Strafe.
+    const winnerNumber=results[0]?.number;
+    const losers=results.filter(x=>x.number!==winnerNumber)
+      .sort((a,b)=>mode==='hoch'?a.number-b.number:b.number-a.number);
+    const groups=[];
+    for(const player of losers){
+      const last=groups[groups.length-1];
+      if(last&&last.score===player.number)last.names.push(player.name);
+      else groups.push({score:player.number,names:[player.name]});
+    }
+    const ranked=groups.slice(0,3);
+    const missing=ranked.map((g,i)=>({rank:i+1,key:getLoserPenaltyKeyByRank(i+1)})).filter(x=>!x.key);
+    if(missing.length){
+      showToast('❌ Strafart fehlt: '+missing.map(x=>x.rank+'. Verlierer').join(', '),'error');
+      return false;
+    }
+    const changes=[],assigned=[];
+    ranked.forEach((group,index)=>{
+      const rank=index+1,key=getLoserPenaltyKeyByRank(rank);
+      for(const name of group.names){
+        changes.push({personName:name,category:'strafen',key,delta:1});
+        assigned.push({name,rank,score:group.score});
+      }
+    });
+    if(changes.length){
+      const ok=await changeMultipleSyncedPersonCounters(changes,'🏁 Hausnummer-Verlierer gebucht');
+      if(!ok){showToast('❌ Verlierer-Strafen konnten nicht gebucht werden','error');return false;}
+    }
+    const entry={id:hausId(mode)+'_'+Date.now(),type:hausId(mode),
+      createdAt:new Date().toISOString(),winner:results.filter(x=>x.number===winnerNumber).map(x=>x.name).join(', '),
+      results,ranking:groups.map((g,i)=>({...g,rank:i+1})),assigned,
+      rows:JSON.parse(JSON.stringify(s.rows)),
+      settings:JSON.parse(JSON.stringify(hausnummerSettings[mode]))};
+    s.history.unshift(entry);
+    if(!Array.isArray(strafenHistory))strafenHistory=[];
+    strafenHistory.unshift(entry);
+    s.active=false;s.finished=true;s.closing=false;
+    persistState();
+    try{renderAll();}catch(error){console.error('Hausnummer Abschlussansicht',error);renderHausGame(mode);}
+    showToast('🏁 Hausnummer beendet: Verlierer-Strafen gebucht','success');
+    return true;
+  }catch(error){
+    console.error('Hausnummer Abschluss',error);
+    showToast('❌ Abschluss fehlgeschlagen. Bitte erneut versuchen.','error');
+    return false;
+  }finally{s.finishing=false;}
 }
 function resetHausGame(mode) {
   if(!confirm('Hausnummer-Spiel wirklich zurücksetzen?'))return;
