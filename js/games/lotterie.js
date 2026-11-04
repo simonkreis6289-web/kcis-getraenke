@@ -212,7 +212,7 @@ function stopLiveLotterieSync() {
 
 function getActivePlayersForSoloGame() {
   return persons
-    .filter(p => p.present && !p.left && !p.drinkOnly)
+    .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
     .sort((a, b) => {
       if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
       return a.name.localeCompare(b.name, 'de');
@@ -736,7 +736,7 @@ async function confirmLotterieThrow(
       persons.filter(
         person =>
           person.present &&
-          !person.left
+          !person.left && !person.inactive && !person.isDrinksOnly
       );
 
     const punishedNames =
