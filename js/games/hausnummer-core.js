@@ -95,7 +95,7 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
 }
 async function undoHausThrow(mode) {
   const s=ensureHausState(mode);
-  if(s.busy||!s.undoStack.length)return;
+  if(s.busy||s.finished||!s.undoStack.length)return;
   const last=s.undoStack[s.undoStack.length-1],row=s.rows[last.name];
   if(!row||!row[last.place])return;
   s.busy=true;
@@ -222,8 +222,9 @@ function renderHausGame(mode) {
     }).join('');
     return '<tr class="'+(active?'haus-current-row':'')+'"><td class="haus-player">'+esc(name)+(active?' <span class="haus-turn-tag">🎳 Am Wurf</span>':'')+'</td>'+cells+'<td class="haus-score">'+(num===null?'–':num)+'</td></tr>';
   }).join('');
-  board.innerHTML='<div class="haus-game-header"><strong>'+label+'</strong><span>'+(s.active?'Am Wurf: '+esc(current):s.finished?'🏁 Beendet':'Spiel starten, um Würfe einzutragen')+'</span>'+(s.undoStack.length?'<button type="button" class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+'</div>'+
+  board.innerHTML='<div class="haus-game-header"><strong>'+label+'</strong><span>'+(s.active?'Am Wurf: '+esc(current):s.finished?'🏁 Beendet':'Spiel starten, um Würfe einzutragen')+'</span>'+(s.undoStack.length&&!s.finished?'<button type="button" class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+'</div>'+
   '<div class="haus-table-wrap"><table class="haus-table"><thead><tr><th>Spieler</th><th>Hunderter</th><th>Zehner</th><th>Einer</th><th>Hausnummer</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
   '<p class="haus-help">Tippe beim aktuellen Spieler auf ein freies Kästchen und wähle den Wurf. Kranz und Gosse werden automatisch in der Strafentabelle berücksichtigt.</p>'+
-  (s.finished?'<div class="haus-winner">🏆 '+esc(s.history[0]?.results[0]?.name||'')+' gewinnt!</div>':'');
+  (s.finished?'<div class="haus-winner">🏆 '+esc(s.history[0]?.winner||'')+' gewinnt!'+(s.history[0]?.assigned?.length?' · '+s.history[0].assigned.map(x=>esc(x.name)+' ('+x.rank+'. Verlierer)').join(', '):'')+'</div>':'')+
+  (s.active&&s.playerOrder.length&&s.playerOrder.every(name=>hausNumber(mode,s.rows[name])!==null)?'<button type="button" class="secondary-btn" onclick="finishHausGame(\''+mode+'\')">🏁 Abschluss erneut buchen</button>':'');
 }
