@@ -340,6 +340,8 @@ function gameState(k){
 }
 function chosenGame(){
  const v=$('game-select').value;if(v!=='auto')return v;
+ const preferred=state?.dashboardActiveGame;
+ if(preferred==='tannenbaum' && games.includes(preferred))return preferred;
  const running=games.filter(k=>{const s=gameState(k);return s && !s.finished && (s.active || (k==='tannenbaum' && Array.isArray(s.history) && s.history.length>0));});
  if(running.length){
    const newest=running.sort((a,b)=>{
@@ -348,12 +350,11 @@ function chosenGame(){
    });
    return newest[0];
  }
- const preferred=state?.dashboardActiveGame;
  return games.includes(preferred)?preferred:games.find(k=>gameState(k)?.active)||null;
 }
 function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.drinkOnly).map(p=>p.name);const ordered=Array.isArray(order)?order:[];return [...new Set([...ordered,...names])].filter(Boolean)}
+function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly).map(p=>p.name);const allowed=new Set(names);const ordered=Array.isArray(order)?order.filter(name=>allowed.has(name)):[];return [...new Set([...ordered,...names])].filter(Boolean)}
 function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
 function renderTree(d){
  const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};
