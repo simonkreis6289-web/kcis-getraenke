@@ -69,6 +69,7 @@ function getSerializableState() {
     haustiefState,
     hausnummerSettings,
     clubTermine,
+    clubTerminGruende,
     sichernState,
     torState,
     fuchsjagdState,
@@ -123,6 +124,7 @@ function getFirestoreState() {
     ...getTodayMeta(),
     dashboardActiveGame,
     clubTermine,
+    clubTerminGruende,
     dashboardAnnouncement: window.kcDashboardAnnouncement || null,
     currentEveningStartedAt,
     persons: getFirestorePersonsWithFineTotals(),
@@ -183,6 +185,7 @@ function applyLoadedState(state) {
 
   dashboardActiveGame = state.dashboardActiveGame || null;
   clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
+  clubTerminGruende = Array.isArray(state.clubTerminGruende) && state.clubTerminGruende.length ? state.clubTerminGruende : clubTerminGruende;
   currentEveningStartedAt = state.currentEveningStartedAt || null;
   persons = Array.isArray(state.persons)
     ? state.persons
@@ -5631,7 +5634,7 @@ const subTabMap = {
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
   spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
-  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen', 'info']
+  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info']
 };
 
 const defaultSubTab = {
@@ -5690,6 +5693,7 @@ function showSideTab(mainKey, subKey, el) {
   });
 
   if (el) el.classList.add('active');
+  document.querySelectorAll('.kc-admin-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.kcTab===subKey));
 
   Object.values(subTabMap).flat().forEach(id => {
     const node = document.getElementById('tab-' + id);
@@ -5699,6 +5703,7 @@ function showSideTab(mainKey, subKey, el) {
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
   if (subKey === 'termine') kcRenderTermine();
+  if (subKey === 'termingruende') kcRenderTerminGruende();
   if (subKey === 'info') kcShowInfo();
   if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();
   if (mainKey === 'strafen' && subKey === 'strafen-abrechnung' && typeof refreshCashHistory === 'function') refreshCashHistory();
