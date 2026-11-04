@@ -283,7 +283,7 @@ function paintDashboardExtras(){
   }
 }
 setInterval(()=>{if(state)paintDashboardExtras()},250);
-function paint(){if(!state)return;
+function paint(){if(!state)return;renderNextClubEvents();
  paintDashboardExtras();
  // Nur die vom aktuellen Kegelabend gespeicherten Teilnehmer zulassen.
  // Live-Personen dürfen vorhandene Teilnehmer aktualisieren, aber keine
