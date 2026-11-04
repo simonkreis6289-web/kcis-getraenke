@@ -137,7 +137,7 @@ function openDartsPenaltyPlayerModal(type, team, points) {
     select.innerHTML = '<option value="">Bitte Person wählen</option>';
 
     persons
-      .filter(p => p.present && !p.left)
+      .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
       .sort((a, b) => a.name.localeCompare(b.name, 'de'))
       .forEach(p => {
         const opt = document.createElement('option');
@@ -189,7 +189,7 @@ async function confirmDartsPenaltyPlayer() {
   }
 
   const activePlayers = persons.filter(
-    p => p.present && !p.left
+    p => p.present && !p.left && !p.inactive && !p.isDrinksOnly
   );
 
   let punishedNames = [];

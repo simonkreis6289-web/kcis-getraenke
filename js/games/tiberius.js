@@ -403,7 +403,7 @@ async function confirmTiberiusThrower() {
       showToast('9er/Kranz-Strafe nicht gefunden', 'error');
       return;
     }
-    persons.filter(p => p.present && !p.left && p.name !== personName)
+    persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && p.name !== personName)
       .forEach(p => changes.push({ personName: p.name, category: 'strafen', key, delta: 1 }));
   }
 

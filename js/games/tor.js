@@ -5,7 +5,7 @@ function torEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','
 // Tor ist ein Teamspiel: der Werfer wird nur bei einer persönlichen Strafe gewählt.
 function torChoosePenaltyPlayer(team, reason) {
  return new Promise(resolve => {
-  const names=(torState?.teams?.[team]||[]).filter(name=>persons.some(p=>p.name===name&&p.present&&!p.left));
+  const names=(torState?.teams?.[team]||[]).filter(name=>persons.some(p=>p.name===name&&p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly));
   if(!names.length){showToast('Keine anwesenden Spieler für '+getGroupLabel(team),'error');resolve(null);return;}
   const backdrop=document.createElement('div');backdrop.className='tor-person-backdrop';
   backdrop.style.cssText='position:fixed;inset:0;z-index:99999;background:#0009;display:grid;place-items:center;padding:16px';

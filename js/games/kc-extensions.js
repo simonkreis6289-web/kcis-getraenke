@@ -95,7 +95,7 @@ function renderKCCashHistory() {
 async function createCancelledKegelabend() {
   const date = document.getElementById('kc-cancel-date')?.value;
   if (!date) { showToast('Bitte Datum auswählen','error');return; }
-  const members = persons.filter(p=>!p.isGuest).map(p=>({name:p.name,penaltyCents:5000,feeCents:0,chargedCents:5000}));
+  const members = persons.filter(p=>!p.isGuest&&!p.isDrinksOnly&&!p.inactive).map(p=>({name:p.name,penaltyCents:5000,feeCents:0,chargedCents:5000}));
   if (!members.length) {showToast('Keine Mitglieder vorhanden','error');return;}
   if (kcCashClosures.some(e=>e.kind==='cancelled' && e.date.slice(0,10)===date)) {showToast('Ausfalltermin bereits erfasst','error');return;}
   if (!confirm(`Kegeltermin ${date} als ausgefallen buchen? ${members.length} Mitglieder zahlen jeweils 50,00 €.`)) return;
