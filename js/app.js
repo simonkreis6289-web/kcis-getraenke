@@ -6301,6 +6301,12 @@ async function confirmQuickPenalty() {
       !person.left && !person.inactive && !person.isDrinksOnly
     );
 
+  const validNames = new Set(activePersons.map(person => person.name));
+  if (selectedNames.some(name => !validNames.has(name))) {
+    showToast('Nur anwesende Kegler dürfen Strafen erhalten', 'error');
+    return;
+  }
+
   const selectedCount =
     selectedNames.length;
 
