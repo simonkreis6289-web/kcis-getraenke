@@ -82,7 +82,7 @@
 .drinks-only-card.present{background:#e6f9e8;border-color:#39b76a}
 .drinks-only-card.unknown{background:#fff8e9;border-color:#e5ba74}
 .drinks-only-card.left{background:#f0f0f0;border-color:#a9a9a9}
-</style></head>
+</style><style id="kc-compact-v166">#tab-spiele-einstellungen .settings-card{max-width:1000px;padding:12px!important;margin-bottom:12px}#tab-spiele-einstellungen .settings-card .modal-input-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}#tab-spiele-einstellungen .settings-card input{max-width:80px;min-height:38px}#tab-spiele-einstellungen .save-prices-btn{width:auto!important;min-width:220px;max-width:360px;padding:10px 16px!important}#tab-spiele-einstellungen .section-title{margin:14px 0 8px}#tab-einstellungen>div:not(.section-title){max-width:1050px}#tab-einstellungen .modal-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}#tab-einstellungen input[type=number]{max-width:125px}#tab-einstellungen .save-prices-btn{width:auto!important;padding:10px 18px!important}.kc-catalog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:950px}.kc-catalog-grid button,.kc-info-actions a{border:1px solid var(--border,#cdd2df);border-radius:10px;background:var(--surface,#fff);padding:12px;font-weight:700;cursor:pointer;color:inherit;text-decoration:none}.kc-event-form{display:flex;align-items:end;flex-wrap:wrap;gap:10px;max-width:1100px;padding:14px;border:1px solid var(--border,#ddd);border-radius:12px}.kc-event-form label,.kc-info-panel label{display:grid;gap:5px;font-weight:700}.kc-event-form input,.kc-event-form select,.kc-info-panel input{min-height:42px;border:1px solid #aab1c4;border-radius:8px;padding:7px}.kc-event-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #ddd;max-width:1100px}.kc-info-panel{max-width:1000px}.kc-info-panel input{width:100%}.kc-info-actions{display:flex;gap:12px;align-items:center;margin-top:12px}@media(max-width:700px){.kc-catalog-grid{grid-template-columns:1fr}.kc-event-form{display:grid;grid-template-columns:1fr 1fr}.kc-event-form label:last-of-type{grid-column:1/-1}}</style></head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -305,8 +305,8 @@
       </button>
       <div class="side-submenu hidden">
         <button onclick="showSideTab('spiele','spiele-hub',this)">🎮 Spielauswahl</button>
-        <button onclick="showSideTab('spiele','haushoch',this)">🔢 Hohe Hausnummer</button>
-        <button onclick="showSideTab('spiele','haustief',this)">🔽 Tiefe Hausnummer</button>
+
+
         <button onclick="showSideTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</button>
       </div>
     </div>
@@ -330,11 +330,9 @@
         <strong>Verwaltung</strong>
       </button>
       <div class="side-submenu hidden">
-        <button onclick="showSideTab('verwaltung','spiele',this)">🎲 Spiele</button>
-        <button onclick="showSideTab('verwaltung','getraenkepreise',this)">🍺 Getränkepreise</button>
-        <button onclick="showSideTab('verwaltung','strafpreise',this)">🚨 Strafpreise</button>
+        <button onclick="showSideTab('verwaltung','kataloge',this)">📚 Kataloge & Preise</button>
         <button onclick="showSideTab('verwaltung','termine',this)">📅 Termine</button>
-        <button onclick="showSideTab('verwaltung','einstellungen',this)">⚙️ Einstellungen</button>
+        <button onclick="showSideTab('verwaltung','einstellungen',this)">⚙️ Einstellungen</button><button onclick="showSideTab('verwaltung','info',this)">ℹ️ Info</button>
       </div>
     </div>
 
@@ -1246,7 +1244,7 @@
     </div>
 
     <!-- VERWALTUNG -->
-    <div id="main-verwaltung" class="main-panel hidden">
+    <div id="main-verwaltung" class="main-panel hidden"><div id="tab-kataloge"><div class="section-title">📚 Kataloge & Preise</div><div class="kc-catalog-grid"><button onclick="showSideTab('verwaltung','spiele')">🎲 Spiele & Rundengründe</button><button onclick="showSideTab('verwaltung','getraenkepreise')">🍺 Getränkepreise</button><button onclick="showSideTab('verwaltung','strafpreise')">🚨 Strafpreise</button></div></div>
       <div id="tab-spiele">
         <div class="section-title">Spiele anlegen</div>
         <div class="add-person-row">
@@ -1298,14 +1296,7 @@
             <button class="save-prices-btn" onclick="saveStrafPrices()">💾 Strafpreise speichern</button>
       </div>
 
-      <div id="tab-termine" class="hidden">
-        <div class="section-title">Termine</div>
-        <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-          Hier kommt später die Terminverwaltung rein.
-        </div>
-      </div>
-        
-<div id="tab-einstellungen" class="hidden">
+      <div id="tab-termine" class="hidden"><div class="section-title">📅 Termine</div><div class="kc-event-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="19:00"></label><label>Bemerkung<input id="kc-event-note" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-info" class="hidden"><div class="section-title">ℹ️ Info & Dashboard</div><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="tab-einstellungen" class="hidden">
   <div class="section-title">Countdown</div>
 
   <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -2032,39 +2023,39 @@
   style="display:none"
 >
 
-<script src="js/helpers.js?v=20261104-v165"></script>
-<script src="js/state.js?v=20261104-v165"></script>
-<script src="js/persons.js?v=20261104-v165"></script>
-<script src="js/clubs.js?v=20261104-v165"></script>
+<script src="js/helpers.js?v=20261104-v166"></script>
+<script src="js/state.js?v=20261104-v166"></script>
+<script src="js/persons.js?v=20261104-v166"></script>
+<script src="js/clubs.js?v=20261104-v166"></script>
 
-<script src="js/games/avatar-select.js?v=20261104-v165"></script>
-<script src="js/games/tannenbaum.js?v=20261104-v165"></script>
-<script src="js/games/darts.js?v=20261104-v165"></script>
-<script src="js/games/tiberius.js?v=20261104-v165"></script>
-<script src="js/games/lotterie.js?v=20261104-v165"></script>
-<script src="js/games/solo-start-draw.js?v=20261104-v165"></script>
-<script src="js/games/seating.js?v=20261104-v165"></script>
-<script src="js/games/mensch.js?v=20261104-v165"></script>
-<script src="js/games/plusminus.js?v=20261104-v165"></script>
-<script src="js/games/hausnummer-core.js?v=20261104-v165"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261104-v165"></script>
-<script src="js/games/hausnummer-tief.js?v=20261104-v165"></script>
-<script src="js/games/fuchsjagd.js?v=20261104-v165"></script>
-<script src="js/games/sichern.js?v=20261104-v165"></script>
-<script src="js/games/tor.js?v=20261104-v165"></script>
-<script src="js/games/coinflip.js?v=20261104-v165"></script>
+<script src="js/games/avatar-select.js?v=20261104-v166"></script>
+<script src="js/games/tannenbaum.js?v=20261104-v166"></script>
+<script src="js/games/darts.js?v=20261104-v166"></script>
+<script src="js/games/tiberius.js?v=20261104-v166"></script>
+<script src="js/games/lotterie.js?v=20261104-v166"></script>
+<script src="js/games/solo-start-draw.js?v=20261104-v166"></script>
+<script src="js/games/seating.js?v=20261104-v166"></script>
+<script src="js/games/mensch.js?v=20261104-v166"></script>
+<script src="js/games/plusminus.js?v=20261104-v166"></script>
+<script src="js/games/hausnummer-core.js?v=20261104-v166"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261104-v166"></script>
+<script src="js/games/hausnummer-tief.js?v=20261104-v166"></script>
+<script src="js/games/fuchsjagd.js?v=20261104-v166"></script>
+<script src="js/games/sichern.js?v=20261104-v166"></script>
+<script src="js/games/tor.js?v=20261104-v166"></script>
+<script src="js/games/coinflip.js?v=20261104-v166"></script>
 
-<script src="js/groups.js?v=20261104-v165"></script>
+<script src="js/groups.js?v=20261104-v166"></script>
 
-<script src="js/app.js?v=20261104-v165"></script>
+<script src="js/app.js?v=20261104-v166"></script><script src="js/club-termine.js?v=20261104-v166"></script>
     
-<script src="js/live-games.js?v=20261104-v165"></script>
-<script src="js/strafe-pdf.js?v=20261104-v165"></script>
-<script src="js/cash-history.js?v=20261104-v165"></script>
+<script src="js/live-games.js?v=20261104-v166"></script>
+<script src="js/strafe-pdf.js?v=20261104-v166"></script>
+<script src="js/cash-history.js?v=20261104-v166"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261104-v165"
+  src="js/firebase.js?v=20261104-v166"
 ></script>
 
 </body>

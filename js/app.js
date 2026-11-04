@@ -68,6 +68,7 @@ function getSerializableState() {
     haushochState,
     haustiefState,
     hausnummerSettings,
+    clubTermine,
     sichernState,
     torState,
     fuchsjagdState,
@@ -121,6 +122,7 @@ function getFirestoreState() {
   return {
     ...getTodayMeta(),
     dashboardActiveGame,
+    clubTermine,
     dashboardAnnouncement: window.kcDashboardAnnouncement || null,
     currentEveningStartedAt,
     persons: getFirestorePersonsWithFineTotals(),
@@ -180,6 +182,7 @@ function applyLoadedState(state) {
   }
 
   dashboardActiveGame = state.dashboardActiveGame || null;
+  clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
   currentEveningStartedAt = state.currentEveningStartedAt || null;
   persons = Array.isArray(state.persons)
     ? state.persons
@@ -5628,7 +5631,7 @@ const subTabMap = {
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
   spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
-  verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
+  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen', 'info']
 };
 
 const defaultSubTab = {
@@ -5636,7 +5639,7 @@ const defaultSubTab = {
   getraenke: 'getraenke-uebersicht',
   spiele: 'spiele-hub',
   strafen: 'strafen-uebersicht',
-  verwaltung: 'spiele'
+  verwaltung: 'kataloge'
 };
 
 function toggleOverlayMenu() {
@@ -5695,6 +5698,8 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
+  if (subKey === 'termine') kcRenderTermine();
+  if (subKey === 'info') kcShowInfo();
   if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();
   if (mainKey === 'strafen' && subKey === 'strafen-abrechnung' && typeof refreshCashHistory === 'function') refreshCashHistory();
     
