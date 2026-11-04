@@ -305,6 +305,8 @@
       </button>
       <div class="side-submenu hidden">
         <button onclick="showSideTab('spiele','spiele-hub',this)">🎮 Spielauswahl</button>
+        <button onclick="showSideTab('spiele','haushoch',this)">🔢 Hohe Hausnummer</button>
+        <button onclick="showSideTab('spiele','haustief',this)">🔽 Tiefe Hausnummer</button>
         <button onclick="showSideTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</button>
       </div>
     </div>
@@ -694,6 +696,8 @@
     <div class="game-hub-card" onclick="showSideTab('spiele','tiberius')"><div class="icon">🏛️</div><div class="title">Tiberius</div><div class="desc">Mit Startspieler-Auslosung, Sitzreihenfolge und Zielspalten.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','mensch')"><div class="icon">🎲</div><div class="title">Mensch ärgere dich nicht</div><div class="desc">Neu umgesetzt mit schöner Punktleiste bis genau 36.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','plusminus')"><div class="icon">➕</div><div class="title">+ − × ÷</div><div class="desc">5 Würfe pro Spieler, links-nach-rechts gerechnet, optional mit Gosse-Automatik.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','haushoch')"><div class="icon">🔢</div><div class="title">Hohe Hausnummer</div><div class="desc">Drei Würfe zur höchsten Hausnummer</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','haustief')"><div class="icon">🔽</div><div class="title">Tiefe Hausnummer</div><div class="desc">Drei Würfe zur niedrigsten Hausnummer</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Punkte sammeln, sichern und bei Gosse oder 5 nichts riskieren!</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','tor')"><div class="icon">⚽</div><div class="title">Tor</div><div class="desc">Kegel abräumen, Tore erzielen, zwei Tore Vorsprung.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','fuchsjagd')"><div class="icon">🦊</div><div class="title">Fuchsjagd</div><div class="desc">Fuchs wählen, Jäger verfolgen, Vorsprung live mitrechnen.</div></div>
@@ -1148,6 +1152,8 @@
   <div id="mensch-history-list" class="spiele-list"></div>
 </div>
 
+<div id="tab-haushoch" class="hidden"><div class="section-title">🔢 Hohe Hausnummer</div><div class="game-start-card" id="haushoch-start"><label class="modal-check"><input type="checkbox" id="haushoch-custom-order" onchange="toggleSoloOrderOverride('haushoch')"> Eigene Sitzordnung</label><div id="haushoch-order-editor" class="game-order-editor hidden"></div><button class="primary-btn" onclick="startHausGame('hoch')">🎳 Spiel starten</button></div><div id="haushoch-board"></div><button class="secondary-btn" onclick="resetHausGame('hoch')">↻ Zurücksetzen</button></div>
+<div id="tab-haustief" class="hidden"><div class="section-title">🔽 Tiefe Hausnummer</div><div class="game-start-card" id="haustief-start"><label class="modal-check"><input type="checkbox" id="haustief-custom-order" onchange="toggleSoloOrderOverride('haustief')"> Eigene Sitzordnung</label><div id="haustief-order-editor" class="game-order-editor hidden"></div><button class="primary-btn" onclick="startHausGame('tief')">🎳 Spiel starten</button></div><div id="haustief-board"></div><button class="secondary-btn" onclick="resetHausGame('tief')">↻ Zurücksetzen</button></div>
 <div id="tab-plusminus" class="hidden">
   <div class="section-title">+ − × ÷</div>
   <div class="game-start-card" id="plusminus-start-card">
@@ -1186,7 +1192,8 @@
   <div id="fuchs-board"></div>
 </div>
 
-<div id="tab-spiele-einstellungen" class="hidden">
+<div id="tab-spiele-einstellungen" class="hidden"><div class="section-title">🔢 Hausnummer-Wertung</div><div class="settings-card"><p>Sonderwürfe je Spiel einstellen (0 bis 12).</p><h4>Hohe Hausnummer</h4><div class="modal-input-row"><label>9er <input type="number" min="0" max="12" step="1" id="haus-hoch-neun" class="modal-euro-input"></label><label>Kranz <input type="number" min="0" max="12" step="1" id="haus-hoch-kranz" class="modal-euro-input"></label><label>Gosse <input type="number" min="0" max="12" step="1" id="haus-hoch-gosse" class="modal-euro-input"></label></div><h4>Tiefe Hausnummer</h4><div class="modal-input-row"><label>9er <input type="number" min="0" max="12" step="1" id="haus-tief-neun" class="modal-euro-input"></label><label>Kranz <input type="number" min="0" max="12" step="1" id="haus-tief-kranz" class="modal-euro-input"></label><label>Gosse <input type="number" min="0" max="12" step="1" id="haus-tief-gosse" class="modal-euro-input"></label></div><button class="save-prices-btn" onclick="saveHausSettings()">💾 Hausnummer-Wertung speichern</button></div>
+
           <div class="section-title">Spiel-Einstellungen</div>
             
             <div class="section-title">Tannenbaum</div>
@@ -2025,36 +2032,39 @@
   style="display:none"
 >
 
-<script src="js/helpers.js?v=20261104-v163"></script>
-<script src="js/state.js?v=20261104-v163"></script>
-<script src="js/persons.js?v=20261104-v163"></script>
-<script src="js/clubs.js?v=20261104-v163"></script>
+<script src="js/helpers.js?v=20261104-v165"></script>
+<script src="js/state.js?v=20261104-v165"></script>
+<script src="js/persons.js?v=20261104-v165"></script>
+<script src="js/clubs.js?v=20261104-v165"></script>
 
-<script src="js/games/avatar-select.js?v=20261104-v163"></script>
-<script src="js/games/tannenbaum.js?v=20261104-v163"></script>
-<script src="js/games/darts.js?v=20261104-v163"></script>
-<script src="js/games/tiberius.js?v=20261104-v163"></script>
-<script src="js/games/lotterie.js?v=20261104-v163"></script>
-<script src="js/games/solo-start-draw.js?v=20261104-v163"></script>
-<script src="js/games/seating.js?v=20261104-v163"></script>
-<script src="js/games/mensch.js?v=20261104-v163"></script>
-<script src="js/games/plusminus.js?v=20261104-v163"></script>
-<script src="js/games/fuchsjagd.js?v=20261104-v163"></script>
-<script src="js/games/sichern.js?v=20261104-v163"></script>
-<script src="js/games/tor.js?v=20261104-v163"></script>
-<script src="js/games/coinflip.js?v=20261104-v163"></script>
+<script src="js/games/avatar-select.js?v=20261104-v165"></script>
+<script src="js/games/tannenbaum.js?v=20261104-v165"></script>
+<script src="js/games/darts.js?v=20261104-v165"></script>
+<script src="js/games/tiberius.js?v=20261104-v165"></script>
+<script src="js/games/lotterie.js?v=20261104-v165"></script>
+<script src="js/games/solo-start-draw.js?v=20261104-v165"></script>
+<script src="js/games/seating.js?v=20261104-v165"></script>
+<script src="js/games/mensch.js?v=20261104-v165"></script>
+<script src="js/games/plusminus.js?v=20261104-v165"></script>
+<script src="js/games/hausnummer-core.js?v=20261104-v165"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261104-v165"></script>
+<script src="js/games/hausnummer-tief.js?v=20261104-v165"></script>
+<script src="js/games/fuchsjagd.js?v=20261104-v165"></script>
+<script src="js/games/sichern.js?v=20261104-v165"></script>
+<script src="js/games/tor.js?v=20261104-v165"></script>
+<script src="js/games/coinflip.js?v=20261104-v165"></script>
 
-<script src="js/groups.js?v=20261104-v163"></script>
+<script src="js/groups.js?v=20261104-v165"></script>
 
-<script src="js/app.js?v=20261104-v163"></script>
+<script src="js/app.js?v=20261104-v165"></script>
     
-<script src="js/live-games.js?v=20261104-v163"></script>
-<script src="js/strafe-pdf.js?v=20261104-v163"></script>
-<script src="js/cash-history.js?v=20261104-v163"></script>
+<script src="js/live-games.js?v=20261104-v165"></script>
+<script src="js/strafe-pdf.js?v=20261104-v165"></script>
+<script src="js/cash-history.js?v=20261104-v165"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261104-v163"
+  src="js/firebase.js?v=20261104-v165"
 ></script>
 
 </body>
