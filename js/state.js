@@ -1,6 +1,6 @@
-const APP_VERSION = '20261103-14';
-const APPVersionSelf = 'V163 © SK';
-const APP_LAST_UPDATE = '04.11.2026, 15:00 Uhr';
+const APP_VERSION = '20261104-165';
+const APPVersionSelf = 'V165 © SK';
+const APP_LAST_UPDATE = '04.11.2026, 11:54 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -135,6 +135,9 @@ let lotterieState = null;
 let tiberiusState = null;
 let menschState = null;
 let plusminusState = null;
+let haushochState = null;
+let haustiefState = null;
+let hausnummerSettings = {hoch:{neun:9,kranz:12,gosse:0},tief:{neun:0,kranz:0,gosse:0}};
 let sichernState = null;
 let torState = null;
 let fuchsjagdState = null;
