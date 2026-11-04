@@ -76,6 +76,9 @@ function normalizePersonForLive(person) {
   person.isGuest =
     !!person.isGuest;
 
+  person.inactive = !!person.inactive;
+  person.isDrinksOnly = !!person.isDrinksOnly;
+
   person.left =
     !!person.left;
 
@@ -147,6 +150,8 @@ function getLivePersonStatusPayload(
 
     isGuest:
   !!person.isGuest,
+    inactive: !!person.inactive,
+    isDrinksOnly: !!person.isDrinksOnly,
 
     boughtThrows:
       Math.max(
@@ -172,14 +177,14 @@ function getMembers() {
 }
 
 function getGuests() {
-  return persons.filter(person => person.isGuest);
+  return persons.filter(person => person.isGuest && !person.isDrinksOnly);
 }
 
 function getPresentMembers() {
   return persons.filter(
     person =>
       person.present &&
-      !person.isGuest
+      !person.isGuest && !person.inactive
   );
 }
 
@@ -187,7 +192,7 @@ function getPresentGuests() {
   return persons.filter(
     person =>
       person.present &&
-      person.isGuest
+      person.isGuest && !person.isDrinksOnly && !person.inactive
   );
 }
 
@@ -195,7 +200,7 @@ function getPresentNotLeftPeople() {
   return persons.filter(
     person =>
       person.present &&
-      !person.left
+      !person.left && !person.inactive && !person.isDrinksOnly
   );
 }
 
@@ -741,6 +746,9 @@ livePersonCounters.set(
       data.leftEarlyAt || '';
   }
 
+  if (data.inactive !== undefined) person.inactive = !!data.inactive;
+  if (data.isDrinksOnly !== undefined) person.isDrinksOnly = !!data.isDrinksOnly;
+
   if (
     data.isGuest !== undefined
   ) {
@@ -1239,10 +1247,7 @@ function renderPersonCards(
       .slice()
       .sort(
         (first, second) =>
-          first.name.localeCompare(
-            second.name,
-            'de'
-          )
+          Number(!!first.inactive) - Number(!!second.inactive) || first.name.localeCompare(second.name, 'de')
       );
 
   if (!sorted.length) {
@@ -1274,6 +1279,7 @@ function renderPersonCards(
 
     card.className = [
       'person-card',
+      person.inactive ? 'member-inactive' : '',
       cardStatusClass,
       person.isGuest
         ? 'guest'
@@ -1347,9 +1353,7 @@ function renderPersonCards(
 
       <div class="person-role">
         ${
-          person.isGuest
-            ? 'Gastkegler'
-            : 'Mitglied'
+          person.inactive ? 'Inaktiv' : person.isGuest ? 'Gastkegler' : 'Mitglied'
         }
       </div>
 
@@ -1378,6 +1382,7 @@ function renderPersonCards(
     `;
 
     card.onclick = () => {
+      if (person.inactive) return;
       openAttendanceStatusModal(
         person
       );
@@ -1397,16 +1402,15 @@ function renderAnwesenheit() {
     'persons-grid-guests',
     getGuests()
   );
+  renderMemberManagement();
 }
 
 async function addPerson(
-  isGuest
+  isGuest, isDrinksOnly = false
 ) {
   const input =
     document.getElementById(
-      isGuest
-        ? 'new-guest-input'
-        : 'new-person-input'
+      isDrinksOnly ? 'new-drinks-only-input' : isGuest ? 'new-guest-input' : 'new-person-input'
     );
 
   if (!input) {
@@ -1456,12 +1460,14 @@ async function addPerson(
 
     isGuest:
       !!isGuest,
+    isDrinksOnly: !!isDrinksOnly,
+    inactive: false,
 
     present:
-      false,
+      !!isDrinksOnly,
 
     attendanceStatus:
-      ATTENDANCE_STATUS.UNKNOWN,
+      isDrinksOnly ? ATTENDANCE_STATUS.PRESENT : ATTENDANCE_STATUS.UNKNOWN,
 
     tisch:
       '',
@@ -2478,4 +2484,38 @@ async function saveLivePersonTeam(
   saveClubSystem();
 
   return true;
+}
+
+
+// Mitgliederverwaltung: dauerhaftes Aktiv/Inaktiv, unabhaengig von Abend-Anwesenheit.
+function renderMemberManagement() {
+ const box=document.getElementById('member-management-list');
+ if(!box)return;
+ box.replaceChildren();
+ const ordered=[...persons].sort((a,b)=>Number(!!a.inactive)-Number(!!b.inactive)||a.name.localeCompare(b.name,'de'));
+ ordered.forEach(person=>{
+  const row=document.createElement('div');row.className='member-manage-row';
+  const name=document.createElement('span');name.textContent=person.name;
+  const kind=document.createElement('small');kind.textContent=person.isDrinksOnly?'🍺 Sauftourist':person.isGuest?'🎳 Gastkegler':'👤 Mitglied';
+  const btn=document.createElement('button');btn.type='button';btn.className='add-btn';
+  btn.textContent=person.inactive?'▶ Aktivieren':'⏸ Inaktiv setzen';
+  btn.disabled=!!person.isDrinksOnly || !!person.isGuest;
+  btn.onclick=()=>setMemberInactive(person.name,!person.inactive);
+  row.classList.toggle('member-manage-inactive',!!person.inactive);
+  row.append(name,kind,btn);box.appendChild(row);
+ });
+}
+async function setMemberInactive(name,inactive) {
+ const person=persons.find(p=>p.name===name&&!p.isGuest);
+ if(!person)return;
+ const old=!!person.inactive;
+ person.inactive=!!inactive;
+ if(inactive){person.present=false;person.attendanceStatus=ATTENDANCE_STATUS.UNKNOWN;person.tisch='';}
+ try {
+  if(!ACTIVE_CLUB || !window.firestoreApi?.saveLivePerson)throw new Error('Firebase nicht bereit');
+  await window.firestoreApi.saveLivePerson(getClubFirestoreId(ACTIVE_CLUB),person.name,getLivePersonStatusPayload(person));
+  await saveToFirestore(false);
+  renderAll();renderMemberManagement();
+  showToast(inactive?'Mitglied inaktiv':'Mitglied aktiv','success');
+ }catch(e){person.inactive=old;renderAll();renderMemberManagement();showToast('Status konnte nicht gespeichert werden','error');console.error(e);}
 }

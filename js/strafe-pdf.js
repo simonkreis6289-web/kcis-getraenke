@@ -51,7 +51,7 @@ function getPresentMemberPenaltyMaximum() {
   const totals =
     persons
       .filter(person =>
-        !person.isGuest &&
+        !person.isGuest && !person.inactive &&
         getPdfAttendanceStatus(
           person
         ) === 'present'
@@ -108,7 +108,7 @@ function getMemberPdfPenaltyTotal(
 function getMissingMemberStatuses() {
   return persons
     .filter(person =>
-      !person.isGuest &&
+      !person.isGuest && !person.inactive &&
       getPdfAttendanceStatus(
         person
       ) === 'unknown'
@@ -129,7 +129,7 @@ function getStrafenSnapshot() {
   const memberPersons =
     persons
       .filter(person =>
-        !person.isGuest
+        !person.isGuest && !person.inactive
       )
       .sort((a, b) =>
         a.name.localeCompare(
@@ -141,7 +141,7 @@ function getStrafenSnapshot() {
   const guestPersons =
     persons
       .filter(person =>
-        person.isGuest &&
+        person.isGuest && !person.isDrinksOnly && !person.inactive &&
         (
           person.present ||
           person.left ||

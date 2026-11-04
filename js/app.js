@@ -1487,7 +1487,7 @@ function renderStrafen() {
   const visibleStrafen = getVisibleStrafen();
 
   const present = persons
-    .filter(p => p.present)
+    .filter(p => p.present && !p.inactive && !p.isDrinksOnly)
     .sort((a, b) => {
       if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
       return a.name.localeCompare(b.name, 'de');
@@ -1839,13 +1839,14 @@ function calcOnTopStrafenTotal(p) {
 }
 
 function calcPersonStrafenTotalCapped(p) {
+  if (!p || p.inactive || p.isDrinksOnly) return 0;
   const normal = Math.min(calcNormalStrafenRaw(p), STRAFEN_LIMIT);
   const onTop = calcOnTopStrafenTotal(p);
   return normal + onTop + getGosseKingBonus(p);
 }
 
 function calcHighestPresentStrafenTotal() {
-  const present = persons.filter(p => p.present);
+  const present = persons.filter(p => p.present && !p.inactive && !p.isDrinksOnly);
   if (!present.length) return 0;
 
   return Math.max(...present.map(p => calcPersonStrafenTotalCapped(p)));
@@ -1856,13 +1857,13 @@ function calcAbsentStrafenTotal() {
   if (highest <= 0) return 0;
 
   return persons
-    .filter(p => !p.present && !p.isGuest)
+    .filter(p => !p.present && !p.isGuest && !p.inactive)
     .reduce((sum) => sum + highest + ABSENT_STRAFE_EXTRA, 0);
 }
 
 function calcAllStrafenTotal() {
   const presentTotal = persons
-    .filter(p => p.present)
+    .filter(p => p.present && !p.inactive && !p.isDrinksOnly)
     .reduce((sum, p) => sum + calcPersonStrafenTotalCapped(p), 0);
 
   return presentTotal + calcAbsentStrafenTotal();
@@ -4111,7 +4112,7 @@ function renderGetraenke() {
     return a.name.localeCompare(b.name, 'de');
   });
 
-  const guests = getPresentGuests().sort((a, b) => {
+  const guests = persons.filter(p => p.present && p.isGuest && !p.inactive).sort((a, b) => {
     if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
   });
@@ -5078,7 +5079,7 @@ function renderAbrechnung() {
     return a.name.localeCompare(b.name, 'de');
   });
 
-  const guests = getPresentGuests().sort((a, b) => {
+  const guests = persons.filter(p => p.present && p.isGuest && !p.inactive).sort((a, b) => {
     if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
   });
