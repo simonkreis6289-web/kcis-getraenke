@@ -85,10 +85,10 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
   s.busy=true;
   try {
     const throwData={value:n,isGosse:!!isGosse};
-    if(!(await changeSoloThrowPenalty(name,null,throwData)))return;
+    if(!(await changeSoloThrowPenalty(name,null,throwData)))return false;
     row[place]=throwData;
     s.undoStack.push({name,place,index:s.currentPlayerIndex});
-    hausNextPlayer(mode);renderHausGame(mode);persistState();
+    hausNextPlayer(mode);renderHausGame(mode);persistState();return true;
   }finally{s.busy=false;}
 }
 async function undoHausThrow(mode) {
@@ -140,7 +140,7 @@ function hausOpenThrowModal(mode,playerIndex,place){
     const button=document.createElement('button');button.type='button';
     button.textContent=opt.label;button.className='haus-modal-option';
     button.onclick=async()=>{if(button.disabled)return;grid.querySelectorAll('button').forEach(b=>b.disabled=true);
-      try{await hausThrow(mode,opt.pins,opt.gosse,place);hausCloseThrowModal();}
+      try{const booked=await hausThrow(mode,opt.pins,opt.gosse,place);if(booked)hausCloseThrowModal();else grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
       catch(err){console.error(err);grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
     };
     grid.append(button);
