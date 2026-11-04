@@ -1667,16 +1667,17 @@ async function generateStrafenPDF(snapshot) {
     currentY + 6
   );
 
-  doc.addPage();
-
-  drawPageTitle(
-    `${getPdfClubName()} - Kegelabend`,
-    `Anwesenheit und Spielübersicht vom ${formatDate(
-      snapshot.date
-    )}`
-  );
-
-  currentY = 33;
+  // Anwesenheit direkt nach der Gesamtsumme fortsetzen.
+  // Nur bei tatsächlichem Platzmangel eine neue Seite beginnen.
+  currentY += 6 + Math.max(1, infoLines.length) * 4 + 10;
+  if (currentY + 22 > pageHeight - margin) {
+    doc.addPage();
+    drawPageTitle(
+      `${getPdfClubName()} - Kegelabend`,
+      `Anwesenheit und Spielübersicht vom ${formatDate(snapshot.date)}`
+    );
+    currentY = 33;
+  }
 
   doc.setFont(
     'helvetica',
