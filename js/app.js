@@ -989,7 +989,7 @@ async function confirmKranzThrow(winnerName) {
   const punishedNames = persons
     .filter(p =>
       p.present &&
-      !p.left &&
+      !p.left && !p.inactive && !p.isDrinksOnly &&
       p.name !== winnerName
     )
     .map(p => p.name);
@@ -6134,7 +6134,7 @@ function openPenaltyQuick(type) {
     persons
       .filter(person =>
         person.present &&
-        !person.left
+        !person.left && !person.inactive && !person.isDrinksOnly
       )
       .sort((a, b) =>
         a.name.localeCompare(
@@ -6298,7 +6298,7 @@ async function confirmQuickPenalty() {
   const activePersons =
     persons.filter(person =>
       person.present &&
-      !person.left
+      !person.left && !person.inactive && !person.isDrinksOnly
     );
 
   const selectedCount =
