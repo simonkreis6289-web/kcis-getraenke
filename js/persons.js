@@ -196,6 +196,10 @@ function getPresentGuests() {
   );
 }
 
+function getPresentDrinkPeople() {
+  return persons.filter(person => person.present && !person.inactive);
+}
+
 function getPresentNotLeftPeople() {
   return persons.filter(
     person =>

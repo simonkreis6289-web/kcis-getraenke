@@ -952,7 +952,7 @@ function openKranzModal() {
   list.innerHTML = '';
 
   const presentPeople = persons
-    .filter(p => p.present && !p.left)
+    .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
   if (!presentPeople.length) {
@@ -1028,7 +1028,7 @@ function openFreeStrafeModal() {
   if (!select) return;
 
   const presentPeople = persons
-    .filter(p => p.present && !p.left)
+    .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
   select.innerHTML = '<option value="">Bitte Person wählen</option>';
@@ -1487,7 +1487,7 @@ function renderStrafen() {
   const visibleStrafen = getVisibleStrafen();
 
   const present = persons
-    .filter(p => p.present)
+    .filter(p => p.present && !p.inactive && !p.isDrinksOnly)
     .sort((a, b) => {
       if (a.isGuest !== b.isGuest) return a.isGuest ? 1 : -1;
       return a.name.localeCompare(b.name, 'de');
@@ -1845,7 +1845,7 @@ function calcPersonStrafenTotalCapped(p) {
 }
 
 function calcHighestPresentStrafenTotal() {
-  const present = persons.filter(p => p.present);
+  const present = persons.filter(p => p.present && !p.inactive && !p.isDrinksOnly);
   if (!present.length) return 0;
 
   return Math.max(...present.map(p => calcPersonStrafenTotalCapped(p)));
@@ -1856,13 +1856,13 @@ function calcAbsentStrafenTotal() {
   if (highest <= 0) return 0;
 
   return persons
-    .filter(p => !p.present && !p.isGuest)
+    .filter(p => !p.present && !p.isGuest && !p.inactive && !p.isDrinksOnly)
     .reduce((sum) => sum + highest + ABSENT_STRAFE_EXTRA, 0);
 }
 
 function calcAllStrafenTotal() {
   const presentTotal = persons
-    .filter(p => p.present)
+    .filter(p => p.present && !p.inactive && !p.isDrinksOnly)
     .reduce((sum, p) => sum + calcPersonStrafenTotalCapped(p), 0);
 
   return presentTotal + calcAbsentStrafenTotal();
@@ -2138,7 +2138,7 @@ function getGosseKings() {
   if (!gosseKey) return [];
 
   const candidates = persons
-    .filter(p => p.present)
+    .filter(p => p.present && !p.inactive && !p.isDrinksOnly)
     .map(p => ({
       name: p.name,
       count: (p.strafen && p.strafen[gosseKey]) || 0
@@ -2926,7 +2926,7 @@ function openBuyThrowModal() {
     persons
       .filter(person =>
         person.present &&
-        !person.left
+        !person.left && !person.inactive && !person.isDrinksOnly
       )
       .sort((a, b) =>
         a.name.localeCompare(
@@ -4065,7 +4065,7 @@ function renderDrinkRows(list, body, startIndex = 0) {
       ${avatarHtml}
       <div style="min-width:0;">
         <span class="pname">${leftEmoji}${p.name}</span>
-        ${p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
+        ${p.isDrinksOnly ? '<span class="prole">🍺 Sauftourist</span>' : p.isGuest ? '<span class="prole">Gastkegler</span>' : ''}
         ${tl}
         ${extrasHtml}
       </div>
@@ -4111,6 +4111,8 @@ function renderGetraenke() {
     return a.name.localeCompare(b.name, 'de');
   });
 
+  const drinksOnly = getPresentDrinkPeople().filter(p => p.isDrinksOnly).sort((a,b) => Number(!!a.left)-Number(!!b.left) || a.name.localeCompare(b.name,'de'));
+
   const guests = getPresentGuests().sort((a, b) => {
     if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
@@ -4139,8 +4141,15 @@ rowIndex = renderDrinkRows(members, body, rowIndex);
   }
 
 rowIndex = renderDrinkRows(guests, body, rowIndex);
+  if (drinksOnly.length) {
+    const sep = document.createElement('tr');
+    sep.className = 'guest-separator-row';
+    sep.innerHTML = `<td colspan="${totalCols}">🍺 Sauftouristen</td>`;
+    body.appendChild(sep);
+    rowIndex = renderDrinkRows(drinksOnly, body, rowIndex);
+  }
 
-  if (!members.length && !guests.length) {
+  if (!members.length && !guests.length && !drinksOnly.length) {
     body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--muted)">Niemand anwesend</td></tr>`;
   }
 }
@@ -4207,7 +4216,7 @@ function closeDrinkEditModal() {
 // ── RUNDE GEBEN ──
 function openRoundModal() {
   const select = document.getElementById('round-person-select');
-  const list = getPresentNotLeftPeople().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const list = getPresentDrinkPeople().filter(p => !p.left).sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
 	renderRoundReasonSelect();
 
@@ -5078,6 +5087,8 @@ function renderAbrechnung() {
     return a.name.localeCompare(b.name, 'de');
   });
 
+  const drinksOnly = getPresentDrinkPeople().filter(p => p.isDrinksOnly).sort((a,b) => Number(!!a.left)-Number(!!b.left) || a.name.localeCompare(b.name,'de'));
+
   const guests = getPresentGuests().sort((a, b) => {
     if (!!a.left !== !!b.left) return a.left ? 1 : -1;
     return a.name.localeCompare(b.name, 'de');
@@ -5096,7 +5107,15 @@ function renderAbrechnung() {
     wrap.appendChild(createAbrechGrid(guests));
   }
 
-  if (!members.length && !guests.length) {
+  if (drinksOnly.length) {
+    const sep = document.createElement('div');
+    sep.className = 'abrech-guest-separator';
+    sep.textContent = '🍺 Sauftouristen';
+    wrap.appendChild(sep);
+    wrap.appendChild(createAbrechGrid(drinksOnly));
+  }
+
+  if (!members.length && !guests.length && !drinksOnly.length) {
     wrap.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">Niemand anwesend</div>';
   }
 }
