@@ -516,6 +516,20 @@
       border-radius: 12px;
     }
 
+    /* Kept outside the horizontal scroller so page scrolling can pin the heading. */
+    .kc-fixed-table-header {
+      position: fixed;
+      overflow: hidden;
+      z-index: 90;
+      background: var(--surface2);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+    }
+    .kc-fixed-table-header[hidden] { display: none; }
+    .kc-fixed-table-header table { margin: 0; }
+    @media print {
+      .kc-fixed-table-header { display: none; }
+    }
+
     .drinks-table-wrap::-webkit-scrollbar { height: 8px; }
     .drinks-table-wrap::-webkit-scrollbar-thumb {
       background: var(--accent);
@@ -4576,3 +4590,4 @@ body.view-only #clubBackBtn {
 .kc-avatar-option.selected{border-color:#13a538;background:#e6ffe9;box-shadow:inset 0 0 0 2px #13a538;}
 .kc-avatar-image{display:flex;align-items:center;justify-content:center;width:49px;height:57px;border-radius:50%;overflow:hidden;font-size:28px;}
 .kc-avatar-image img{width:100%;height:100%;object-fit:cover;}
+
