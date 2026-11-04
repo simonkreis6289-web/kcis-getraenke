@@ -65,6 +65,9 @@ function getSerializableState() {
     tiberiusState,
     menschState,
     plusminusState,
+    haushochState,
+    haustiefState,
+    hausnummerSettings,
     sichernState,
     torState,
     fuchsjagdState,
@@ -150,6 +153,9 @@ function getFirestoreState() {
         tiberiusState,
         menschState,
         plusminusState,
+    haushochState,
+    haustiefState,
+    hausnummerSettings,
         sichernState,
         torState,
     torState,
@@ -302,6 +308,9 @@ function applyLoadedState(state) {
     state.plusminusState ||
     createPlusminusState();
 
+  haushochState = state.haushochState || createHausState();
+  haustiefState = state.haustiefState || createHausState();
+  hausnummerSettings = {hoch:{...HAUS_DEFAULTS.hoch,...(state.hausnummerSettings?.hoch||{})},tief:{...HAUS_DEFAULTS.tief,...(state.hausnummerSettings?.tief||{})}};
   sichernState = state.sichernState || createSichernState();
   torState = state.torState || createTorState();
   ensureTorState();
@@ -3845,6 +3854,9 @@ applyGroupTheme();
     renderTiberius();
     renderMenschGame();
     renderPlusminusGame();
+    renderHausGame('hoch');
+    renderHausGame('tief');
+    renderHausSettings();
     renderFuchsjagdGame();
     renderSichernGame();
     renderTorGame();
@@ -5614,7 +5626,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'sichern', 'fuchsjagd', 'tor', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['spiele', 'getraenkepreise', 'strafpreise', 'termine', 'einstellungen']
 };
