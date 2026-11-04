@@ -750,7 +750,7 @@ async function generateStrafenPDF(snapshot) {
           )
         : 0;
 
-    const headerHeight = 29;
+    const headerHeight = 20;
 
     const rowHeight = 18;
 
@@ -1521,6 +1521,16 @@ async function generateStrafenPDF(snapshot) {
 
   currentY += 7;
 
+  // Zusammenfassung nicht am unteren Seitenrand abschneiden.
+  if (currentY + 25 > pageHeight - margin) {
+    doc.addPage();
+    drawPageTitle(
+      `${getPdfClubName()} - Strafenabrechnung`,
+      `Zusammenfassung vom ${formatDate(snapshot.date)}`
+    );
+    currentY = 33;
+  }
+
   doc.setFont(
     'helvetica',
     'bold'
@@ -1606,6 +1616,15 @@ async function generateStrafenPDF(snapshot) {
   }
 
   currentY += 10;
+
+  if (currentY + 22 > pageHeight - margin) {
+    doc.addPage();
+    drawPageTitle(
+      `${getPdfClubName()} - Strafenabrechnung`,
+      `Zusammenfassung vom ${formatDate(snapshot.date)}`
+    );
+    currentY = 33;
+  }
 
   doc.setFont(
     'helvetica',
