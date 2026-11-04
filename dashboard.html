@@ -120,7 +120,7 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style></head>
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style></head>
 <body>
 <main class="dashboard">
 <header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V165 · Update 04.11.2026</div><div class="kc-next-events"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span></div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div><div id="tv-countdown" aria-live="off"><div class="timer-label">⏳ Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></header>
@@ -132,8 +132,8 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V167";
-const DASH_RELEASE="04.11.2026, 12:35 Uhr";
+const DASH_VERSION="V168";
+const DASH_RELEASE="04.11.2026, 13:44 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -439,7 +439,25 @@ function renderDartsBoard(d){
  const mapping=Object.entries(values).map(([key,val])=>`<span>${safe(key)}: <strong>${safe(val)}</strong></span>`).join('');
  return `<div class="tv-board darts-board"><h2 class="tv-headline">🎯 DARTS</h2><div class="dart-v137-layout">${card('T1')}<div class="dart-v137-center"><div class="dart-center-heading">🎯 Aktuelle Runde</div><strong class="dart-center-total">${total} Punkte</strong>${rounds}<div class="dart-center-buffer">Puffer: <strong>${safe(d.buffer||0)}</strong></div></div>${card('T2')}</div><div class="dart-values"><strong>Punktevergabe</strong><div>${mapping||'Keine Werte hinterlegt'}</div></div></div>`;
 }
-function renderHausBoard(d,mode){const names=activeNames(d.playerOrder),rows=d.rows||{},settings=state?.hausnummerSettings?.[mode]||{neun:mode==='hoch'?9:0,kranz:mode==='hoch'?12:0,gosse:0};const val=t=>t?(t.isGosse?settings.gosse:Number(t.value)===12?settings.kranz:Number(t.value)===9?settings.neun:t.value):null;const num=r=>r.length===3&&r.every(Boolean)?Number(r.map(x=>String(val(x))).join('')):null;const current=names[d.currentPlayerIndex]||'–';return '<div class="tv-board"><h2 class="tv-headline">'+(mode==='hoch'?'🔢 Hohe':'🔽 Tiefe')+' Hausnummer</h2><div class="tv-stats"><div class="tv-stat">Am Wurf<strong>'+safe(d.finished?'🏁':current)+'</strong></div></div>'+makeTable(['Spieler','Hunderter','Zehner','Einer','Hausnummer'],names.map(n=>{const r=rows[n]||[];return [n,...[0,1,2].map(i=>r[i]?String(val(r[i])):'–'),num(r)??'–']}),v=>safe(v))+'</div>';}
+function renderHausBoard(d,mode){
+ const names=activeNames(d.playerOrder),rows=d.rows||{};
+ const settings=state?.hausnummerSettings?.[mode]||{neun:mode==='hoch'?9:0,kranz:mode==='hoch'?12:0,gosse:0};
+ const val=t=>t?(t.isGosse?settings.gosse:Number(t.value)===12?settings.kranz:Number(t.value)===9?settings.neun:t.value):null;
+ const num=r=>r.length===3&&r.every(Boolean)?Number(r.map(x=>String(val(x))).join('')):null;
+ const schnaps=r=>r.length===3&&r.every(Boolean)&&r.every(t=>Number(t.value)===Number(r[0].value)&&!!t.isGosse===!!r[0].isGosse);
+ const current=names[d.currentPlayerIndex]||'–';
+ const rowsHtml=names.map(n=>{
+   const r=rows[n]||[],isSchnaps=schnaps(r),number=num(r);
+   const badge=isSchnaps?'<span class="haus-tv-schnaps">🥃 Schnapszahl</span>':'';
+   return '<tr class="'+(isSchnaps?'haus-tv-schnaps-row':'')+'"><td>'+safe(n)+' '+badge+'</td>'+
+     [0,1,2].map(i=>'<td>'+safe(r[i]?String(val(r[i])):'–')+'</td>').join('')+
+     '<td><strong>'+safe(number??'–')+'</strong></td></tr>';
+ }).join('');
+ const winner=d.finished&&d.history?.[0]?.winner?'<div class="haus-tv-winner">🏆 '+safe(d.history[0].winner)+'</div>':'';
+ return '<div class="tv-board"><h2 class="tv-headline">'+(mode==='hoch'?'🔢 Hohe':'🔽 Tiefe')+' Hausnummer</h2>'+
+   '<div class="tv-stats"><div class="tv-stat">Am Wurf<strong>'+safe(d.finished?'🏁':current)+'</strong></div></div>'+
+   '<table class="tv-table"><thead><tr><th>Spieler</th><th>Hunderter</th><th>Zehner</th><th>Einer</th><th>Hausnummer</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'+winner+'</div>';
+}
 function renderGeneric(d,k){if(k==='darts')return renderDartsBoard(d);const names=activeNames(d.playerOrder);if(d.scores){return `<div class="tv-board"><h2 class="tv-headline">${safe(gameNames[k])}</h2>${makeTable(['Spieler','Punkte'],Object.entries(d.scores))}</div>`}if(d.teams){return `<div class="tv-board"><h2 class="tv-headline">${safe(gameNames[k])}</h2>${makeTable(['Team','Stand'],Object.entries(d.teams).map(([k,v])=>[state?.groupSettings?.[k]?.name||k,typeof v==='object'?JSON.stringify(v.scores||v.remaining||v):v]))}</div>`}return null}
 // Passt die gesamte Spieltafel (auch bei 14+ Spielern) automatisch in den TV-Bereich ein.
 // Zoom skaliert Text, Tabellen, Überschriften und Zellen gemeinsam. Keine Scrollbars.
