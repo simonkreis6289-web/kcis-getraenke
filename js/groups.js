@@ -167,7 +167,7 @@ const present = persons
   .filter(
     person =>
       person.present &&
-      !person.left
+      !person.left && !person.inactive && !person.isDrinksOnly
   )
   .map(person => {
     person.tisch =
@@ -243,7 +243,7 @@ const present = persons
     
 function openAssignModal(personName) {
   const p = persons.find(x => x.name === personName);
-  if (!p) return;
+  if (!p || p.isDrinksOnly || p.inactive) return;
 
   assignPerson = p;
 
@@ -261,7 +261,7 @@ function closeAssignModal() {
 }
 
 async function setAssignTarget(target) {
-  if (!assignPerson) return;
+  if (!assignPerson || assignPerson.isDrinksOnly || assignPerson.inactive) return;
 
   const person = assignPerson;
   const previousTeam = normalizeTisch(person.tisch);
@@ -305,7 +305,7 @@ async function setAssignTarget(target) {
 async function randomAssignUnassignedPeople() {
   const candidates = persons.filter(person =>
     person.present &&
-    !person.left &&
+    !person.left && !person.inactive && !person.isDrinksOnly &&
     !normalizeTisch(person.tisch)
   );
 
@@ -333,13 +333,13 @@ async function randomAssignUnassignedPeople() {
 
   let t1Count = persons.filter(person =>
     person.present &&
-    !person.left &&
+    !person.left && !person.inactive && !person.isDrinksOnly &&
     normalizeTisch(person.tisch) === 'T1'
   ).length;
 
   let t2Count = persons.filter(person =>
     person.present &&
-    !person.left &&
+    !person.left && !person.inactive && !person.isDrinksOnly &&
     normalizeTisch(person.tisch) === 'T2'
   ).length;
 
@@ -408,13 +408,13 @@ async function randomAssignUnassignedPeople() {
 async function balanceTeamsRandomly() {
   const team1 = persons.filter(person =>
     person.present &&
-    !person.left &&
+    !person.left && !person.inactive && !person.isDrinksOnly &&
     normalizeTisch(person.tisch) === 'T1'
   );
 
   const team2 = persons.filter(person =>
     person.present &&
-    !person.left &&
+    !person.left && !person.inactive && !person.isDrinksOnly &&
     normalizeTisch(person.tisch) === 'T2'
   );
 
