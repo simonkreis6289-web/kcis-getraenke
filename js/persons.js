@@ -1394,6 +1394,33 @@ function renderPersonCards(
   });
 }
 
+function renderDrinksOnlyCards() {
+  const grid = document.getElementById('persons-grid-drinks-only');
+  if (!grid) return;
+  grid.replaceChildren();
+  const guests = persons.filter(person => person.isDrinksOnly)
+    .sort((a,b) => a.name.localeCompare(b.name,'de'));
+  for (const person of guests) {
+    const card = document.createElement('div');
+    card.className = 'person-card drinks-only-card';
+    // The existing avatar helper uses uploaded photos when available,
+    // and initials for guests without a photo.
+    const avatar = document.createElement('div');
+    avatar.innerHTML = getAvatarHtml(person.name, '');
+    const name = document.createElement('div');
+    name.className = 'person-name';
+    name.textContent = person.name;
+    const role = document.createElement('div');
+    role.className = 'person-role';
+    role.textContent = '🍺 Sauftourist';
+    const hint = document.createElement('div');
+    hint.className = 'person-times';
+    hint.textContent = 'Nur Getränke · keine Kegelstrafen';
+    card.append(avatar, name, role, hint);
+    grid.appendChild(card);
+  }
+}
+
 function renderAnwesenheit() {
   renderPersonCards(
     'persons-grid-members',
@@ -1404,6 +1431,7 @@ function renderAnwesenheit() {
     'persons-grid-guests',
     getGuests()
   );
+  renderDrinksOnlyCards();
   renderMemberManagement();
 }
 
