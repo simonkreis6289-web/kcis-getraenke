@@ -164,7 +164,7 @@ function renderHausGame(mode) {
     const active=s.active&&current===name;
     const cells=[0,1,2].map(i=>{
       const filled=!!r[i],value=filled?String(hausThrowValue(mode,r[i])):'–';
-      return '<td class="haus-cell"><button type="button" class="haus-slot '+(filled?'haus-slot-filled':active?'haus-slot-active':'')+'" '+(!filled&&active?'onclick="hausOpenThrowModal(\\''+mode+'\\','+playerIndex+','+i+')"':'disabled')+'>'+esc(value)+'</button></td>';
+      return `<td class="haus-cell"><button type="button" class="haus-slot ${filled?'haus-slot-filled':active?'haus-slot-active':''}" ${!filled&&active?`onclick="hausOpenThrowModal('${mode}',${playerIndex},${i})"`:'disabled'}>${esc(value)}</button></td>`;
     }).join('');
     return '<tr class="'+(active?'haus-current-row':'')+'"><td class="haus-player">'+esc(name)+(active?' <span class="haus-turn-tag">🎳 Am Wurf</span>':'')+'</td>'+cells+'<td class="haus-score">'+(num===null?'–':num)+'</td></tr>';
   }).join('');
