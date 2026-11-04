@@ -151,7 +151,7 @@ function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
       '<option value="">Bitte Person auswählen</option>';
 
     persons
-      .filter(p => p.present && !p.left)
+      .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
       .sort((a, b) => a.name.localeCompare(b.name, 'de'))
       .forEach(p => {
         const option = document.createElement('option');
@@ -185,7 +185,7 @@ async function bookTannenbaumPenalty(
   }
 
   const activePlayers = persons.filter(
-    p => p.present && !p.left
+    p => p.present && !p.left && !p.inactive && !p.isDrinksOnly
   );
 
   let punishedNames = [];
@@ -747,8 +747,8 @@ function finishTannenbaumGame() {
   teamTotals.T1 += openT1.total;
   teamTotals.T2 += openT2.total;
 
-  const membersT1 = persons.filter(p => p.present && !p.left && p.tisch === 'T1');
-  const membersT2 = persons.filter(p => p.present && !p.left && p.tisch === 'T2');
+  const membersT1 = persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && p.tisch === 'T1');
+  const membersT2 = persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && p.tisch === 'T2');
 
   const historyEntry = {
     id: 'tannenbaum_' + Date.now(),
@@ -970,7 +970,7 @@ function bookTannenbaumTeamCharge(team, total) {
 
   const members = persons.filter(p =>
     p.present &&
-    !p.left &&
+    !p.left && !p.inactive && !p.isDrinksOnly &&
     p.tisch === team
   );
 
