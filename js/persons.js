@@ -1080,6 +1080,7 @@ function openAttendanceStatusModal(person) {
       `Status für ${person.name} auswählen`;
   }
 
+  modal.classList.toggle('drinks-only-attendance', !!person.isDrinksOnly);
   modal.classList.remove('hidden');
 }
 
@@ -1121,6 +1122,9 @@ async function confirmAttendanceStatus(
 
     return;
   }
+
+  // Trinkgaeste haben nur Da/Keine Rueckmeldung, keine Fehlstrafen.
+  if (person.isDrinksOnly && status !== ATTENDANCE_STATUS.PRESENT && status !== ATTENDANCE_STATUS.UNKNOWN) return;
 
   // Bei "Da" erst die Ankunftszeit bestaetigen. Noch nichts speichern.
   // So kann ein Live-Update das zweite Dialogfenster nicht unterbrechen.
@@ -1406,21 +1410,23 @@ function renderDrinksOnlyCards() {
     .sort((a,b) => a.name.localeCompare(b.name,'de'));
   for (const person of guests) {
     const card = document.createElement('div');
-    card.className = 'person-card drinks-only-card';
-    // The existing avatar helper uses uploaded photos when available,
-    // and initials for guests without a photo.
+    card.className = 'person-card drinks-only-card ' + getPersonCardStatusClass(person);
     const avatar = document.createElement('div');
-    avatar.innerHTML = getAvatarHtml(person.name, '');
+    avatar.innerHTML = getAvatarHtml(person.name, getAttendanceAvatarClass(person));
     const name = document.createElement('div');
     name.className = 'person-name';
     name.textContent = person.name;
     const role = document.createElement('div');
     role.className = 'person-role';
     role.textContent = '🍺 Sauftourist';
+    const status = document.createElement('div');
+    status.className = 'person-times';
+    status.textContent = person.present ? (person.left ? '🚪 Gegangen' : '🟢 Da' + (person.arrivalTime ? ' · ' + person.arrivalTime : '')) : '⚪ Keine Rückmeldung';
     const hint = document.createElement('div');
     hint.className = 'person-times';
     hint.textContent = 'Nur Getränke · keine Kegelstrafen';
-    card.append(avatar, name, role, hint);
+    card.append(avatar, name, role, status, hint);
+    card.onclick = () => openAttendanceStatusModal(person);
     grid.appendChild(card);
   }
 }
@@ -1497,11 +1503,9 @@ async function addPerson(
     isDrinksOnly: !!isDrinksOnly,
     inactive: false,
 
-    present:
-      !!isDrinksOnly,
+    present: false,
 
-    attendanceStatus:
-      isDrinksOnly ? ATTENDANCE_STATUS.PRESENT : ATTENDANCE_STATUS.UNKNOWN,
+    attendanceStatus: ATTENDANCE_STATUS.UNKNOWN,
 
     tisch:
       '',
