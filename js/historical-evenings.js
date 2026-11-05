@@ -27,7 +27,7 @@
   }
   function create(mode,people,catalog,prices,settings={}){
     return {schema:1,mode,date:'',startTime:settings.startTime||'20:00',endTime:settings.endTime||'23:00',
-      monthlyFee:String(settings.monthlyFee||0),limit:String(settings.limit??30),autoGosseKing:true,note:'',
+      monthlyFee:String(settings.monthlyFee||0),limit:String(settings.limit??30),autoGosseKing:true,note:'',laneFee:'',laneExpenseExcluded:false,
       catalog:catalog.map(s=>({key:s.key,label:s.label,price:String(prices[s.key]||0)})),
       rows:people.filter(p=>!p.isDrinksOnly&&(mode!=='cancelled'||!p.isGuest)).map(p=>({
         name:p.name,isGuest:!!p.isGuest,included:!p.inactive&&!p.isGuest,status:'unknown',
@@ -85,7 +85,8 @@
     };
     const mapped=rows.map(map),members=mapped.filter(p=>!p.isGuest),guests=mapped.filter(p=>p.isGuest);
     const sum=(list,key)=>list.reduce((n,p)=>n+Math.round(p[key]*100),0)/100;
-    return {date:draft.date+'T12:00:00',club,kind:cancelled?'cancelled':'backfill',manualEntry:true,note:String(draft.note||''),
+    const lane=(!cancelled&&draft.laneFee!=null&&draft.laneFee!=='')?{laneCostCents:amount(draft.laneFee,'Bahngebühr',strict),laneExpenseExcluded:!!draft.laneExpenseExcluded}:{};
+    return {date:draft.date+'T12:00:00',club,kind:cancelled?'cancelled':'backfill',manualEntry:true,note:String(draft.note||''),...lane,
       monthlyFee:monthly/100,highestPresent:highest/100,strafen:catalog,autoTimeKeys:[late,early].filter(Boolean),members,guests,history:[],
       totals:{memberPenaltyTotal:sum(members,'penaltyTotal'),memberFeeTotal:sum(members,'monthlyFee'),memberTotal:sum(members,'total'),guestTotal:sum(guests,'total'),grandTotal:sum(mapped,'total')},
       manualDraft:clone(draft)};
@@ -121,7 +122,9 @@ function renderHistoricalEvening(){
   document.getElementById('historical-title').textContent=cancelled?'🚫 Kegelabend ausgefallen':'📝 Kegelabend nachtragen';
   const value=(id,val)=>document.getElementById(id).value=val;
   value('historical-date',d.date);document.getElementById('historical-date').max=KCBirthdays.today();
-  for(const [id,key] of [['historical-start','startTime'],['historical-end','endTime'],['historical-fee','monthlyFee'],['historical-limit','limit'],['historical-note','note']])value(id,d[key]);
+  for(const [id,key] of [['historical-start','startTime'],['historical-end','endTime'],['historical-fee','monthlyFee'],['historical-limit','limit'],['historical-note','note'],['historical-lane-fee','laneFee']])value(id,d[key]??'');
+  document.getElementById('historical-lane-excluded').checked=!!d.laneExpenseExcluded;
+  document.getElementById('historical-lane-excluded-label').hidden=!d.laneExpenseExcluded||cancelled;
   document.getElementById('historical-gosse').checked=d.autoGosseKing;
   document.getElementById('historical-submit').textContent=cancelled?'Erstellen (je 50 €)':'Strafen-PDF erstellen und archivieren';
   document.querySelectorAll('.historical-played-only').forEach(el=>el.hidden=cancelled);
@@ -227,7 +230,7 @@ async function submitHistoricalEvening(event){
     }
     snapshot.manualDraft=JSON.parse(JSON.stringify(historicalDraft));
     const pdf=snapshot.kind==='cancelled'?generateCancelledStrafenPDF(snapshot):await generateStrafenPDF(snapshot);
-    const revision=await window.firestoreApi.saveHistoricalStrafenEvent(clubId,id,{...snapshot,category:'strafen',status:'closed',
+    const revision=await window.firestoreApi.saveHistoricalStrafenEvent(clubId,id,{...snapshot,laneCostCents:snapshot.laneCostCents??null,category:'strafen',status:'closed',
       eveningStartedAt:historicalDraft.date+'T'+(snapshot.kind==='cancelled'?'00:00:00':historicalDraft.startTime+':00'),closedAt:new Date().toISOString(),source:'manual'},historicalRevision,historicalOriginalId||id);
     historicalRevision=revision;historicalOriginalId=id;archived=true;
     pdf.save((snapshot.club||'Kegelclub').replace(/[^a-zA-Z0-9_-]+/g,'_')+'_'+(snapshot.kind==='cancelled'?'Ausfalltermin_':'Strafen_Nachtrag_')+historicalDraft.date+'.pdf');

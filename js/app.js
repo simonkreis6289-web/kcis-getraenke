@@ -3439,12 +3439,11 @@ function formatDuration(seconds) {
   return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
 }
 
-function calcBahnPreis() {
-  const seconds = getBahnElapsedSeconds();
+function calcBahnPreis(seconds = getBahnElapsedSeconds()) {
   if (seconds <= 0) return 0;
 
-  const startedHalfHours = Math.ceil(seconds / 1800);
-  return startedHalfHours * ((bahnPreisProStunde || 0) / 2);
+  const startedHours = Math.ceil(seconds / 3600);
+  return Math.round(startedHours * Math.max(0, Number(bahnPreisProStunde) || 0) * 100) / 100;
 }
 
 function updateBahnDisplay() {
@@ -6669,4 +6668,5 @@ function closeTeamLossQuickModalAfterSuccess() {
   document.getElementById('team-loss-quick-modal')?.classList.add('hidden');
   teamLossQuickSelection = null;
 }
+
 

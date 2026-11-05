@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261105-v174">
+  <link rel="stylesheet" href="css/styles.css?v=20261105-v175">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -713,6 +713,7 @@
         <div class="billing-tabs" role="tablist" aria-label="Abrechnung" onkeydown="billingTabKeydown(event)">
           <button type="button" role="tab" id="billing-tab-balance" data-billing-tab="balance" aria-controls="billing-panel-balance" aria-selected="true" onclick="showBillingTab('balance')">💰 Kassenstand</button>
           <button type="button" role="tab" id="billing-tab-year" data-billing-tab="year" aria-controls="billing-panel-year" aria-selected="false" tabindex="-1" onclick="showBillingTab('year')">📊 Jahresübersicht</button>
+          <button type="button" role="tab" id="billing-tab-expenses" data-billing-tab="expenses" aria-controls="billing-panel-expenses" aria-selected="false" tabindex="-1" onclick="showBillingTab('expenses')">💸 Ausgaben</button>
           <button type="button" role="tab" id="billing-tab-record" data-billing-tab="record" aria-controls="billing-panel-record" aria-selected="false" tabindex="-1" onclick="showBillingTab('record')">📝 Abend erfassen</button>
           <button type="button" role="tab" id="billing-tab-archive" data-billing-tab="archive" aria-controls="billing-panel-archive" aria-selected="false" tabindex="-1" onclick="showBillingTab('archive')">📒 Archiv</button>
         </div>
@@ -729,7 +730,7 @@
           <h3 id="cash-book-title">💰 Kassenstand (Soll)</h3>
           <div id="cash-book-summary" class="cash-book-summary"></div>
           <p id="cash-book-period" class="cash-help"></p>
-          <p class="cash-help">Startbetrag + archivierte Strafenabschlüsse und Beiträge seit dem Neustart. Der Zeitraumfilter im Archiv verändert diesen Sollstand nicht. Tatsächliche Einzahlungen, Ausgaben und Getränke sind nicht enthalten.</p>
+          <p class="cash-help">Startbetrag + archivierte Strafenabschlüsse und Beiträge − Ausgaben seit dem Neustart. Der Zeitraumfilter im Archiv verändert diesen Sollstand nicht. Tatsächliche Einzahlungen und Getränke sind nicht enthalten.</p>
           <div class="cash-book-actions"><button type="button" class="primary-btn" onclick="openCashBookSettings()">⚙️ Kegeljahr / Startbetrag</button><button type="button" class="secondary-btn" onclick="zeroCashBook()">↻ Sollstand auf 0 setzen</button></div>
         </section>
         </div>
@@ -737,8 +738,17 @@
           <section class="cash-book-panel" aria-labelledby="cash-year-title">
             <div class="cash-year-heading"><h3 id="cash-year-title">📊 Jahresübersicht</h3><button type="button" class="secondary-btn" onclick="refreshCashHistory()">🔄 Aktualisieren</button></div>
             <p id="cash-year-period" class="cash-help"></p>
-            <p class="cash-help">Beträge inklusive Monatsbeitrag. „—“ bedeutet: In diesem Abschluss wurde kein Betrag für diese Person erfasst. Der Startbetrag steht separat unter Kassenstand. Beim Neustart des Kegeljahres beginnt diese Übersicht neu; frühere Abschlüsse bleiben im Archiv.</p>
+            <p class="cash-help">Beträge inklusive Monatsbeitrag. „—“ bedeutet: In diesem Abschluss wurde kein Betrag für diese Person erfasst. Startbetrag und Ausgaben werden separat beim Kassenstand berücksichtigt. Beim Neustart des Kegeljahres beginnt diese Übersicht neu; frühere Abschlüsse bleiben im Archiv.</p>
             <div id="cash-year-table" class="cash-year-scroller" role="region" aria-label="Beträge pro Mitglied und Termin" tabindex="0"></div>
+          </section>
+        </div>
+        <div id="billing-panel-expenses" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-expenses" tabindex="0" hidden>
+          <section class="cash-book-panel" aria-labelledby="cash-expenses-title">
+            <div class="cash-year-heading"><h3 id="cash-expenses-title">💸 Ausgaben</h3><button type="button" class="primary-btn" onclick="openCashExpense()">+ Ausgabe erfassen</button></div>
+            <p id="cash-expense-period" class="cash-help"></p>
+            <p class="cash-help">Bahngebühren werden beim Abschluss automatisch einmal gebucht. Weitere Ausgaben kannst du hier erfassen, bearbeiten oder löschen. Beim Neustart bleiben ältere Ausgaben gespeichert und zählen nicht mehr zum neuen Kassenstand.</p>
+            <div class="cash-history-filters"><label>Anzeige <select id="cash-expense-filter" onchange="renderCashExpenses()"><option value="period">Aktuelles Kegeljahr</option><option value="all">Alle Ausgaben</option></select></label><button type="button" class="secondary-btn" onclick="refreshCashHistory()">🔄 Aktualisieren</button></div>
+            <div id="cash-expense-list"></div>
           </section>
         </div>
         <div id="billing-panel-archive" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-archive" tabindex="0" hidden>
@@ -1426,6 +1436,7 @@
     </div>
 
     <button class="save-prices-btn" onclick="saveBahnPreis()">💾 Bahnpreis speichern</button>
+    <p class="cash-help">Jede angefangene Stunde wird voll berechnet. Beim Strafenabschluss kannst du den tatsächlichen Bahnpreis ändern.</p>
   </div>
     
       <div class="section-title">Monatsbeitrag</div>
@@ -2099,6 +2110,27 @@
 
 
 
+<div class="modal-overlay hidden" id="str-closure-modal" onclick="if(event.target===this)closeStrafenCloseDialog()">
+ <form class="modal cash-expense-form" role="dialog" aria-modal="true" aria-labelledby="str-closure-title" onsubmit="submitStrafenClose(event)" novalidate>
+  <h3 id="str-closure-title">Kegelabend abschließen</h3>
+  <p id="close-lane-calculation" class="cash-help"></p>
+  <label for="close-lane-fee">Endgültige Bahngebühr (€)<input id="close-lane-fee" type="number" min="0" step="0.01" required inputmode="decimal"></label>
+  <p class="cash-help">Die Bahngebühr erscheint unten im Strafen-PDF und wird einmal als Ausgabe von der Clubkasse abgezogen.</p>
+  <p id="close-lane-existing" class="cash-help"></p>
+  <label id="close-lane-excluded-label" class="cash-check" hidden><input type="checkbox" id="close-lane-excluded">Die zuvor gelöschte Bahn-Ausgabe weiter ausschließen. Zum erneuten Buchen Haken entfernen.</label>
+  <div class="profile-actions"><button type="button" class="secondary-btn" onclick="closeStrafenCloseDialog()">Abbrechen</button><button type="submit" class="primary-btn">Abschließen und PDF erstellen</button></div>
+ </form>
+</div>
+<div class="modal-overlay hidden" id="cash-expense-modal" onclick="if(event.target===this)closeCashExpense()">
+ <form class="modal cash-expense-form" role="dialog" aria-modal="true" aria-labelledby="cash-expense-title" onsubmit="saveCashExpenseFromForm(event)" novalidate>
+  <h3 id="cash-expense-title">Ausgabe erfassen</h3>
+  <label for="cash-expense-date">Datum<input id="cash-expense-date" type="date" required></label>
+  <label for="cash-expense-description">Bezeichnung<input id="cash-expense-description" type="text" maxlength="120" required placeholder="z. B. Kegeltour oder Geschenk"></label>
+  <label for="cash-expense-amount">Betrag (€)<input id="cash-expense-amount" type="number" min="0" step="0.01" inputmode="decimal" required></label>
+  <p id="cash-expense-help" class="cash-help"></p>
+  <div class="profile-actions"><button type="button" class="secondary-btn" onclick="closeCashExpense()">Abbrechen</button><button type="submit" class="primary-btn">💾 Ausgabe speichern</button></div>
+ </form>
+</div>
 <div class="modal-overlay hidden" id="historical-evening-modal" onclick="if(event.target===this)closeHistoricalEvening()">
  <form class="modal historical-modal" role="dialog" aria-modal="true" aria-labelledby="historical-title" onsubmit="submitHistoricalEvening(event)" novalidate>
   <h3 id="historical-title">Kegelabend erfassen</h3>
@@ -2108,9 +2140,11 @@
    <label class="historical-played-only">Ende<input type="time" id="historical-end" data-setting="endTime"></label>
    <label class="historical-played-only">Monatsbeitrag (€)<input type="number" id="historical-fee" data-setting="monthlyFee" min="0" step="0.01"></label>
    <label class="historical-played-only">Strafobergrenze (€)<input type="number" id="historical-limit" data-setting="limit" min="0" step="0.01"></label>
+   <label class="historical-played-only">Bahngebühr (€, optional)<input type="number" id="historical-lane-fee" data-setting="laneFee" min="0" step="0.01" placeholder="Nicht erfasst"></label>
    <label class="historical-played-only historical-check"><input type="checkbox" id="historical-gosse" data-setting="autoGosseKing">Gossenkönig automatisch (+3 €)</label>
   </div>
   <label class="historical-note">Bemerkung<input type="text" id="historical-note" data-setting="note" maxlength="500" placeholder="Optional, z. B. Nachtrag vom Papierzettel"></label>
+  <label id="historical-lane-excluded-label" class="cash-check" hidden><input type="checkbox" id="historical-lane-excluded" data-setting="laneExpenseExcluded">Die zuvor gelöschte Bahn-Ausgabe weiter ausschließen. Zum erneuten Buchen Haken entfernen.</label>
   <p class="profile-help historical-played-only">Alle Strafenzähler und Preise können eingetragen werden. Bei eingegebener Ankunfts- oder Gehzeit werden die betreffenden Viertelstunden automatisch berechnet. Abgemeldet: höchste Strafe eines anwesenden Mitglieds + 2 €; nicht abgemeldet: + 22 €. Weitere Beträge zählen zur Obergrenze, Zuschläge danach.</p>
   <div class="historical-table-wrap"><table class="historical-table"><thead><tr id="historical-head"></tr></thead><tbody id="historical-body"></tbody></table></div>
   <div class="historical-add-row"><input id="historical-person-name" placeholder="Weitere Person nur für diesen Nachtrag" aria-label="Weitere Person"><select id="historical-person-kind" class="historical-played-only" aria-label="Personenart"><option value="member">Clubmitglied</option><option value="guest">Gastkegler</option></select><button type="button" class="secondary-btn" onclick="addHistoricalPerson()">+ Person</button></div>
@@ -2143,44 +2177,45 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261105-v174"></script>
-<script src="js/helpers.js?v=20261105-v174"></script>
-<script src="js/state.js?v=20261105-v174"></script>
-<script src="js/persons.js?v=20261105-v174"></script>
-<script src="js/member-profiles.js?v=20261105-v174"></script>
-<script src="js/clubs.js?v=20261105-v174"></script>
+<script src="js/birthdays.js?v=20261105-v175"></script>
+<script src="js/helpers.js?v=20261105-v175"></script>
+<script src="js/state.js?v=20261105-v175"></script>
+<script src="js/persons.js?v=20261105-v175"></script>
+<script src="js/member-profiles.js?v=20261105-v175"></script>
+<script src="js/clubs.js?v=20261105-v175"></script>
 
-<script src="js/games/avatar-select.js?v=20261105-v174"></script>
-<script src="js/games/tannenbaum.js?v=20261105-v174"></script>
-<script src="js/games/darts.js?v=20261105-v174"></script>
-<script src="js/games/tiberius.js?v=20261105-v174"></script>
-<script src="js/games/lotterie.js?v=20261105-v174"></script>
-<script src="js/games/solo-start-draw.js?v=20261105-v174"></script>
-<script src="js/games/seating.js?v=20261105-v174"></script>
-<script src="js/games/mensch.js?v=20261105-v174"></script>
-<script src="js/games/plusminus.js?v=20261105-v174"></script>
-<script src="js/games/hausnummer-core.js?v=20261105-v174"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261105-v174"></script>
-<script src="js/games/hausnummer-tief.js?v=20261105-v174"></script>
-<script src="js/games/fuchsjagd.js?v=20261105-v174"></script>
-<script src="js/games/sichern.js?v=20261105-v174"></script>
-<script src="js/games/tor.js?v=20261105-v174"></script>
-<script src="js/games/coinflip.js?v=20261105-v174"></script>
+<script src="js/games/avatar-select.js?v=20261105-v175"></script>
+<script src="js/games/tannenbaum.js?v=20261105-v175"></script>
+<script src="js/games/darts.js?v=20261105-v175"></script>
+<script src="js/games/tiberius.js?v=20261105-v175"></script>
+<script src="js/games/lotterie.js?v=20261105-v175"></script>
+<script src="js/games/solo-start-draw.js?v=20261105-v175"></script>
+<script src="js/games/seating.js?v=20261105-v175"></script>
+<script src="js/games/mensch.js?v=20261105-v175"></script>
+<script src="js/games/plusminus.js?v=20261105-v175"></script>
+<script src="js/games/hausnummer-core.js?v=20261105-v175"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261105-v175"></script>
+<script src="js/games/hausnummer-tief.js?v=20261105-v175"></script>
+<script src="js/games/fuchsjagd.js?v=20261105-v175"></script>
+<script src="js/games/sichern.js?v=20261105-v175"></script>
+<script src="js/games/tor.js?v=20261105-v175"></script>
+<script src="js/games/coinflip.js?v=20261105-v175"></script>
 
-<script src="js/groups.js?v=20261105-v174"></script>
+<script src="js/groups.js?v=20261105-v175"></script>
 
-<script src="js/app.js?v=20261105-v174"></script><script src="js/club-termine.js?v=20261105-v174"></script>
+<script src="js/app.js?v=20261105-v175"></script><script src="js/club-termine.js?v=20261105-v175"></script>
     
-<script src="js/live-games.js?v=20261105-v174"></script>
-<script src="js/strafe-pdf.js?v=20261105-v174"></script>
-<script src="js/cash-history.js?v=20261105-v174"></script>
-<script src="js/cash-book.js?v=20261105-v174"></script>
-<script src="js/historical-evenings.js?v=20261105-v174"></script>
-<script src="js/table-headers.js?v=20261105-v174"></script>
+<script src="js/live-games.js?v=20261105-v175"></script>
+<script src="js/strafe-pdf.js?v=20261105-v175"></script>
+<script src="js/cash-history.js?v=20261105-v175"></script>
+<script src="js/cash-book.js?v=20261105-v175"></script>
+<script src="js/cash-expenses.js?v=20261105-v175"></script>
+<script src="js/historical-evenings.js?v=20261105-v175"></script>
+<script src="js/table-headers.js?v=20261105-v175"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261105-v174"
+  src="js/firebase.js?v=20261105-v175"
 ></script>
 
 </body>

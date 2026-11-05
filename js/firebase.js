@@ -881,6 +881,74 @@ subscribeToLiveLotterie(
 
 
   // Geschlossene Kegelabende für die Kassenhistorie laden und löschen.
+  async listCashBookEntries(clubId) {
+    const snapshot=await getDocs(collection(db,'clubs',clubId,'archive'));
+    return snapshot.docs.map(item=>({...item.data(),id:item.id})).filter(item=>['strafen','expense'].includes(item.category))
+      .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')));
+  },
+
+  subscribeCashBookEntries(clubId,onChange,onError) {
+    return onSnapshot(collection(db,'clubs',clubId,'archive'),snapshot=>onChange(snapshot.docs
+      .map(item=>({...item.data(),id:item.id})).filter(item=>['strafen','expense'].includes(item.category))
+      .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')))),onError);
+  },
+
+  async saveStrafenClosure(clubId,archiveId,payload,expectedRevision=null) {
+    if(!clubId||typeof archiveId!=='string'||!/^strafen_abend_[a-zA-Z0-9_-]+$/.test(archiveId))throw new Error('Ungültiger Kegelabend');
+    if(payload.category!=='strafen'||!Number.isSafeInteger(payload.laneCostCents)||payload.laneCostCents<0)throw new Error('Ungültige Bahngebühr');
+    const ref=doc(db,'clubs',clubId,'archive',archiveId);
+    return runTransaction(db,async transaction=>{
+      const current=await transaction.get(ref),previous=current.exists()?current.data():{};
+      if(current.exists()&&(previous.category!=='strafen'||expectedRevision===null||(previous.ledgerRevision||0)!==expectedRevision))throw new Error('Abschluss wurde inzwischen geändert. Bitte erneut öffnen.');
+      if(!current.exists()&&expectedRevision!==null)throw new Error('Abschluss wurde inzwischen gelöscht. Bitte erneut öffnen.');
+      const revision=(previous.ledgerRevision||0)+1;
+      transaction.set(ref,{...previous,...payload,ledgerRevision:revision,updatedAt:serverTimestamp()});
+      return revision;
+    });
+  },
+
+  async saveCashExpense(clubId,expenseId,payload,expectedRevision=null) {
+    if(!clubId||typeof expenseId!=='string'||!/^expense_manual_[a-zA-Z0-9_-]+$/.test(expenseId))throw new Error('Ungültige Ausgabe');
+    if(!Number.isSafeInteger(payload.amountCents)||payload.amountCents<=0||!String(payload.description||'').trim()||String(payload.description).length>120||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)||!Number.isFinite(Date.parse(payload.date+'T12:00:00Z'))||new Date(payload.date+'T12:00:00Z').toISOString().slice(0,10)!==payload.date||!Number.isFinite(Date.parse(payload.incurredAt)))throw new Error('Ungültige Ausgabedaten');
+    const ref=doc(db,'clubs',clubId,'archive',expenseId);
+    return runTransaction(db,async transaction=>{
+      const current=await transaction.get(ref),previous=current.exists()?current.data():{};
+      if(current.exists()&&(previous.category!=='expense'||expectedRevision===null||(previous.ledgerRevision||0)!==expectedRevision))throw new Error('Ausgabe wurde inzwischen geändert. Bitte erneut öffnen.');
+      if(!current.exists()&&expectedRevision!==null)throw new Error('Ausgabe wurde inzwischen gelöscht. Bitte erneut öffnen.');
+      const revision=(previous.ledgerRevision||0)+1;
+      transaction.set(ref,{category:'expense',type:'manual',description:String(payload.description).trim(),date:payload.date,incurredAt:payload.incurredAt,amountCents:payload.amountCents,ledgerRevision:revision,updatedAt:serverTimestamp()});
+      return revision;
+    });
+  },
+
+  async updateLaneExpense(clubId,archiveId,payload,expectedRevision) {
+    if(!clubId||typeof archiveId!=='string'||!archiveId||archiveId.includes('/'))throw new Error('Ungültiger Kegelabend');
+    if(!payload.remove&&(!Number.isSafeInteger(payload.amountCents)||payload.amountCents<0||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)||!Number.isFinite(Date.parse(payload.date+'T12:00:00Z'))||new Date(payload.date+'T12:00:00Z').toISOString().slice(0,10)!==payload.date||!Number.isFinite(Date.parse(payload.incurredAt))))throw new Error('Ungültige Bahngebühr');
+    const ref=doc(db,'clubs',clubId,'archive',archiveId);
+    return runTransaction(db,async transaction=>{
+      const current=await transaction.get(ref);
+      if(!current.exists())throw new Error('Kegelabend wurde inzwischen gelöscht');
+      const previous=current.data();
+      if(previous.category!=='strafen'||!Number.isSafeInteger(previous.laneCostCents))throw new Error('Eintrag enthält keine Bahngebühr');
+      if((previous.ledgerRevision||0)!==expectedRevision)throw new Error('Ausgabe wurde inzwischen geändert. Bitte erneut öffnen.');
+      const changes=payload.remove?{laneExpenseExcluded:true}:{laneCostCents:payload.amountCents,laneExpenseDate:payload.date,laneExpenseIncurredAt:payload.incurredAt,laneExpenseExcluded:false};
+      if(previous.manualDraft){changes.manualDraft={...previous.manualDraft,laneFee:((payload.remove?previous.laneCostCents:payload.amountCents)/100).toFixed(2),laneExpenseExcluded:!!payload.remove};changes.manualRevision=(previous.manualRevision||0)+1;}
+      transaction.set(ref,{...previous,...changes,ledgerRevision:(previous.ledgerRevision||0)+1,updatedAt:serverTimestamp()});
+    });
+  },
+
+  async deleteCashExpense(clubId,expenseId,expectedRevision) {
+    if(!clubId||typeof expenseId!=='string'||!/^expense_manual_[a-zA-Z0-9_-]+$/.test(expenseId))throw new Error('Ungültige Ausgabe');
+    const ref=doc(db,'clubs',clubId,'archive',expenseId);
+    return runTransaction(db,async transaction=>{
+      const current=await transaction.get(ref);
+      if(!current.exists())throw new Error('Ausgabe wurde inzwischen gelöscht');
+      const data=current.data();
+      if(data.category!=='expense'||(data.ledgerRevision||0)!==expectedRevision)throw new Error('Ausgabe wurde inzwischen geändert. Bitte aktualisieren.');
+      transaction.delete(ref);
+    });
+  },
+
   async listArchivedStrafenEvents(clubId) {
     const ref = collection(db, 'clubs', clubId, 'archive');
     const snapshot = await getDocs(ref);
@@ -919,6 +987,7 @@ subscribeToLiveLotterie(
   async saveHistoricalStrafenEvent(clubId, archiveId, payload, expectedRevision=null, previousArchiveId=archiveId) {
     if(!clubId||typeof archiveId!=='string'||!/^cancelled_\d{4}-\d{2}-\d{2}$|^strafen_nachtrag_[a-zA-Z0-9_-]+$/.test(archiveId))throw new Error('Ungültiger Nachtrag');
     if(payload.category!=='strafen'||!['cancelled','backfill'].includes(payload.kind))throw new Error('Ungültige Abrechnung');
+    if(payload.laneCostCents!=null&&(!Number.isSafeInteger(payload.laneCostCents)||payload.laneCostCents<0||payload.kind==='cancelled'))throw new Error('Ungültige Bahngebühr');
     if(previousArchiveId!==archiveId&&(payload.kind!=='cancelled'||!/^cancelled_\d{4}-\d{2}-\d{2}$/.test(previousArchiveId)))throw new Error('Ungültiger ursprünglicher Ausfalltermin');
     const ref=doc(db,'clubs',clubId,'archive',archiveId);
     const previousRef=previousArchiveId===archiveId?ref:doc(db,'clubs',clubId,'archive',previousArchiveId);
@@ -931,7 +1000,7 @@ subscribeToLiveLotterie(
       }else if(expectedRevision!==null)throw new Error('Eintrag wurde inzwischen gelöscht. Bitte als neuen Nachtrag anlegen.');
       if(previousArchiveId!==archiveId&&(await transaction.get(ref)).exists())throw new Error('Für dieses Datum ist bereits ein Ausfalltermin gespeichert.');
       const revision=(expectedRevision||0)+1;
-      transaction.set(ref,{...payload,manualRevision:revision,updatedAt:serverTimestamp()});
+      transaction.set(ref,{...(current.exists()?current.data():{}),...payload,manualRevision:revision,ledgerRevision:((current.exists()?current.data().ledgerRevision:0)||0)+1,updatedAt:serverTimestamp()});
       if(previousArchiveId!==archiveId)transaction.delete(previousRef);
       return revision;
     });

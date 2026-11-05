@@ -5,6 +5,7 @@
     return Number.isFinite(number)?Math.round(number*100):0;
   }
   function date(entry){
+    if(entry.category==='expense')return String(entry.date||'').slice(0,10);
     if(entry.eveningStartedAt&&Number.isFinite(Date.parse(entry.eveningStartedAt))){
       const parts=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(entry.eveningStartedAt));
       const get=type=>parts.find(p=>p.type===type).value;return get('year')+'-'+get('month')+'-'+get('day');
@@ -27,7 +28,7 @@
       if(entry.id&&seen.has(entry.id))return false;
       if(entry.id)seen.add(entry.id);
       if(config.mode==='now'&&config.startAt){
-        const stamp=Date.parse(entry.eveningStartedAt||entry.closedAt||entry.date||'');
+        const stamp=Date.parse(entry.incurredAt||entry.eveningStartedAt||entry.closedAt||entry.date||'');
         return Number.isFinite(stamp)&&stamp>=Date.parse(config.startAt);
       }
       return !config.startDate||date(entry)>=config.startDate;
@@ -65,22 +66,36 @@
     if(remainder.some(value=>value!==null))rows.push({name:'Nicht zugeordnet',unassigned:true,isGuest:false,values:remainder,total:remainder.reduce((sum,value)=>sum+(value||0),0)});
     return {columns:columns.map(({entry,...column})=>column),rows,income:columns.reduce((sum,column)=>sum+column.total,0)};
   }
-  window.KCCashBook=Object.freeze({money,date,total,personTotal,periodEntries,summary,matrix});
+  function expenses(archives,manual=[]){
+    const automatic=periodEntries(archives,null).filter(entry=>entry.id&&!entry.laneExpenseExcluded&&Number.isSafeInteger(entry.laneCostCents)&&entry.laneCostCents>=0).map(entry=>({
+      id:'lane:'+entry.id,sourceId:entry.id,automatic:true,category:'expense',description:'Bahngebühr',
+      date:entry.laneExpenseDate||date(entry),incurredAt:entry.laneExpenseIncurredAt||entry.eveningStartedAt||entry.closedAt||entry.date,
+      amountCents:entry.laneCostCents,ledgerRevision:entry.ledgerRevision||0
+    }));
+    return [...automatic,...periodEntries(manual,null).filter(entry=>entry.category==='expense'&&Number.isSafeInteger(entry.amountCents)&&entry.amountCents>0).map(entry=>({...entry,automatic:false,sourceId:entry.id}))];
+  }
+  function statement(archives,settings,manual=[]){
+    const income=summary(archives,settings),selected=periodEntries(expenses(archives,manual),settings);
+    const spending=selected.reduce((sum,entry)=>sum+entry.amountCents,0);
+    return {...income,spending,expenseCount:selected.length,balance:income.balance-spending};
+  }
+  window.KCCashBook=Object.freeze({money,date,total,personTotal,periodEntries,summary,matrix,expenses,statement});
 })();
 let cashBookBusy=false,cashBookDialogClub='',cashBookDialogVersion='';
 function cashBookCurrency(cents){return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);}
 function renderCashBook(){
   const box=document.getElementById('cash-book-summary');if(!box)return;
   const ready=cashHistoryClub===getClubFirestoreId(ACTIVE_CLUB);
-  const totals=KCCashBook.summary(ready?cashHistoryEntries:[],cashBookSettings),config=cashBookSettings;
+  const totals=KCCashBook.statement(ready?cashHistoryEntries:[],cashBookSettings,ready?cashExpenseEntries:[]),config=cashBookSettings;
   const start=!config?'Alle gespeicherten Abschlüsse':config.mode==='now'?'Seit '+new Date(config.startAt).toLocaleString('de-DE'):'Seit '+String(config.startDate).split('-').reverse().join('.');
   box.replaceChildren();
-  for(const [label,value] of [['Kassenstand (Soll)',ready?cashBookCurrency(totals.balance):'Archiv wird benötigt'],['Startbetrag',cashBookCurrency(totals.opening)],['Abschlüsse seit Neustart',ready?cashBookCurrency(totals.income):'–']]){
+  for(const [label,value] of [['Kassenstand (Soll)',ready?cashBookCurrency(totals.balance):'Archiv wird benötigt'],['Startbetrag',cashBookCurrency(totals.opening)],['Abschlüsse seit Neustart',ready?cashBookCurrency(totals.income):'–'],['Ausgaben seit Neustart',ready?cashBookCurrency(totals.spending):'–']]){
     const item=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');
     small.textContent=label;strong.textContent=value;item.append(small,strong);box.append(item);
   }
-  document.getElementById('cash-book-period').textContent=start+(ready?' · '+totals.count+' Abschlüsse':'');
+  document.getElementById('cash-book-period').textContent=start+(ready?' · '+totals.count+' Abschlüsse · '+totals.expenseCount+' Ausgaben':'');
   renderCashYearOverview(ready,start);
+  if(typeof renderCashExpenses==='function')renderCashExpenses(ready,start);
 }
 
 function renderCashYearOverview(ready,start){
@@ -111,7 +126,7 @@ function showBillingTab(key,focus=false){
   document.querySelectorAll('[data-billing-panel]').forEach(panel=>panel.hidden=panel!==target);
 }
 function billingTabKeydown(event){
-  const keys=['balance','year','record','archive'],index=keys.indexOf(event.target.dataset.billingTab);
+  const keys=[...document.querySelectorAll('[data-billing-tab]')].map(button=>button.dataset.billingTab),index=keys.indexOf(event.target.dataset.billingTab);
   if(index<0)return;
   const next=event.key==='ArrowRight'?(index+1)%keys.length:event.key==='ArrowLeft'?(index+keys.length-1)%keys.length:event.key==='Home'?0:event.key==='End'?keys.length-1:null;
   if(next===null)return;event.preventDefault();showBillingTab(keys[next],true);
@@ -163,7 +178,7 @@ async function saveCashBookSettings(event){
 }
 async function zeroCashBook(){
   if(cashBookBusy||!ACTIVE_CLUB)return;
-  if(!confirm('Soll-Kassenstand jetzt auf 0,00 € setzen?\n\nStartbetrag und bisherige Abschlüsse zählen ab jetzt nicht mehr zum Sollstand. Alle archivierten Kegelabende bleiben erhalten.'))return;
+  if(!confirm('Soll-Kassenstand jetzt auf 0,00 € setzen?\n\nStartbetrag, bisherige Abschlüsse und bisherige Ausgaben zählen ab jetzt nicht mehr zum Sollstand. Alle Abschlüsse und Ausgaben bleiben gespeichert.'))return;
   const now=new Date();await storeCashBookSettings({mode:'now',startDate:KCBirthdays.today(now),startAt:now.toISOString(),openingCents:0,updatedAt:now.toISOString()});
 }
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeCashBookSettings();});
