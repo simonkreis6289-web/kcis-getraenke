@@ -163,6 +163,9 @@ function getClubFirestoreId(clubName) {
 function createEmptyClubData() {
   return {
     avatar: '',
+    clubTermine: [],
+    clubKegelSerie: null,
+    calendarRevision: 0,
     persons: [],
     prices: {
       kl_bier: 0,
@@ -240,6 +243,10 @@ function syncCurrentClubToStore() {
   const existingClub = CLUBS[ACTIVE_CLUB] || createEmptyClubData();
 
   CLUBS[ACTIVE_CLUB] = {
+    clubTermine: JSON.parse(JSON.stringify(clubTermine)),
+    clubKegelSerie: clubKegelSerie?JSON.parse(JSON.stringify(clubKegelSerie)):null,
+    calendarRevision: kcCalendarRevision,
+    clubTerminGruende: JSON.parse(JSON.stringify(clubTerminGruende)),
     cashBookSettings: cashBookSettings ? JSON.parse(JSON.stringify(cashBookSettings)) : null,
     avatar: existingClub.avatar || '',
     // Verbindlicher Strafbetrag aus der Strafentabelle der Haupt-App.
@@ -435,6 +442,10 @@ async function selectClub(clubName) {
   lastRemoteChangeAt = Number(localClub.lastRemoteChangeAt || 0);
 
   persons = JSON.parse(JSON.stringify(localClub.persons || []));
+  clubTermine=JSON.parse(JSON.stringify(localClub.clubTermine||[]));
+  clubKegelSerie=localClub.clubKegelSerie?JSON.parse(JSON.stringify(localClub.clubKegelSerie)):null;
+  kcCalendarRevision=Number(localClub.calendarRevision)||0;
+  clubTerminGruende=JSON.parse(JSON.stringify(localClub.clubTerminGruende||[{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}]));
   cashBookSettings = localClub.cashBookSettings ? JSON.parse(JSON.stringify(localClub.cashBookSettings)) : null;
   prices = JSON.parse(JSON.stringify(localClub.prices || {}));
 
@@ -511,6 +522,7 @@ async function selectClub(clubName) {
     if (typeof publishSeatingLive === 'function') publishSeatingLive();
   }
     
+if(ACTIVE_CLUB===clubName&&typeof kcEnsureKegelSeries==='function')await kcEnsureKegelSeries(true);
 await startLivePersonSync(clubId);
 
 if (
@@ -524,6 +536,8 @@ if (
       clubId,
       (state) => {
         if (!state) return;
+        // Calendar revisions are independent of the game state's client clock.
+        if(ACTIVE_CLUB===clubName&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(state);
 
         const incomingClientAt = Number(state.updatedClientAt || 0);
         const incomingClientId = state.updatedClientId || '';
@@ -669,4 +683,3 @@ function getClubAvatarHtml(name) {
     </div>
   `;
 }
-

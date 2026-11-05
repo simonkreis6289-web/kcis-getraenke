@@ -1,6 +1,6 @@
-const APP_VERSION = '20261105-176';
-const APPVersionSelf = 'V176 © SK';
-const APP_LAST_UPDATE = '05.11.2026, 18:19 Uhr';
+const APP_VERSION = '20261105-177';
+const APPVersionSelf = 'V177 © SK';
+const APP_LAST_UPDATE = '05.11.2026, 20:18 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -180,6 +180,8 @@ let leftEarlyEditPerson = null;
 let seatingOrder = Array(16).fill('');
 
 let clubTermine = [];
+let clubKegelSerie = null;
+let kcCalendarRevision = 0;
 let cashBookSettings = null;
 
 let clubTerminGruende = [{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}];
