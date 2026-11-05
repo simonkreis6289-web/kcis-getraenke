@@ -1695,6 +1695,28 @@ tbody td:first-child {
     .cash-book-options {display:grid;gap:12px;border:0;padding:12px 0;}
     .cash-book-options label {display:flex;gap:8px;align-items:center;}
     .cash-book-options input[type=radio] {width:auto;min-height:0;}
+    #historical-evening-modal [hidden] {display:none!important;}
+    .historical-modal {max-width:1450px;width:98vw;max-height:94vh;padding:18px;}
+    .historical-fields,.historical-add-row {display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:12px 0;}
+    .historical-fields label,.historical-note {display:grid;gap:5px;font-weight:700;font-size:.85rem;}
+    .historical-modal input,.historical-modal select {min-height:38px;padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;}
+    .historical-fields input[type=number] {width:120px;}
+    .historical-fields .historical-check {display:flex;gap:7px;align-items:center;min-height:38px;}
+    .historical-note input {width:100%;}
+    .historical-table-wrap {max-height:48vh;overflow:auto;border:1px solid var(--border);border-radius:10px;}
+    .historical-table {width:100%;min-width:620px;font-size:12px;}
+    .historical-table th {position:sticky;top:0;z-index:3;min-width:100px;padding:8px;background:var(--surface2);}
+    .historical-table td {padding:6px;border-bottom:1px solid var(--border);text-align:center;}
+    .historical-table input[type=number] {width:85px;}
+    .historical-table input[type=text] {width:160px;}
+    .historical-table input[readonly] {background:var(--surface2);color:var(--muted);}
+    .historical-table input[type=checkbox] {min-height:24px;width:24px;}
+    .historical-table .historical-name {position:sticky;left:0;background:var(--surface);z-index:2;text-align:left;min-width:175px;}
+    .historical-table thead .historical-name {z-index:4;background:var(--surface2);}
+    .historical-name small {display:block;color:var(--muted);}
+    .historical-footer {padding-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+    .historical-footer .profile-actions {margin:0;}
+    .cash-entry-actions {display:flex;gap:8px;flex-wrap:wrap;}
     @media(max-width:650px){.cash-book-summary{grid-template-columns:1fr}.profile-actions button,.cash-book-actions button{flex:1;min-width:140px;}}
 
     .modal {
@@ -4606,5 +4628,6 @@ body.view-only #clubBackBtn {
 .kc-avatar-option.selected{border-color:#13a538;background:#e6ffe9;box-shadow:inset 0 0 0 2px #13a538;}
 .kc-avatar-image{display:flex;align-items:center;justify-content:center;width:49px;height:57px;border-radius:50%;overflow:hidden;font-size:28px;}
 .kc-avatar-image img{width:100%;height:100%;object-fit:cover;}
+
 
 

@@ -1,6 +1,6 @@
-const APP_VERSION = '20261105-171';
-const APPVersionSelf = 'V171 © SK';
-const APP_LAST_UPDATE = '05.11.2026, 10:16 Uhr';
+const APP_VERSION = '20261105-172';
+const APPVersionSelf = 'V172 © SK';
+const APP_LAST_UPDATE = '05.11.2026, 13:37 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -183,5 +183,6 @@ let clubTermine = [];
 let cashBookSettings = null;
 
 let clubTerminGruende = [{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}];
+
 
 

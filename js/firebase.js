@@ -908,6 +908,35 @@ subscribeToLiveLotterie(
       .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')))), onError);
   },
 
+  async loadArchivedStrafenEvent(clubId, archiveId) {
+    if(!clubId||typeof archiveId!=='string'||!archiveId||archiveId.includes('/'))throw new Error('Ungültiger Archiv-Eintrag');
+    const snap=await getDoc(doc(db,'clubs',clubId,'archive',archiveId));
+    if(!snap.exists())return null;
+    const entry=snap.data();if(entry.category!=='strafen')throw new Error('Eintrag ist kein Strafenabschluss');
+    return {...entry,id:snap.id};
+  },
+
+  async saveHistoricalStrafenEvent(clubId, archiveId, payload, expectedRevision=null, previousArchiveId=archiveId) {
+    if(!clubId||typeof archiveId!=='string'||!/^cancelled_\d{4}-\d{2}-\d{2}$|^strafen_nachtrag_[a-zA-Z0-9_-]+$/.test(archiveId))throw new Error('Ungültiger Nachtrag');
+    if(payload.category!=='strafen'||!['cancelled','backfill'].includes(payload.kind))throw new Error('Ungültige Abrechnung');
+    if(previousArchiveId!==archiveId&&(payload.kind!=='cancelled'||!/^cancelled_\d{4}-\d{2}-\d{2}$/.test(previousArchiveId)))throw new Error('Ungültiger ursprünglicher Ausfalltermin');
+    const ref=doc(db,'clubs',clubId,'archive',archiveId);
+    const previousRef=previousArchiveId===archiveId?ref:doc(db,'clubs',clubId,'archive',previousArchiveId);
+    return runTransaction(db,async transaction=>{
+      const current=await transaction.get(previousRef);
+      if(current.exists()){
+        const data=current.data();
+        if(data.category!=='strafen')throw new Error('Eintrag ist kein Strafenabschluss');
+        if(expectedRevision===null||(data.manualRevision||0)!==expectedRevision)throw new Error('Eintrag wurde inzwischen geändert. Bitte aktualisieren und erneut öffnen.');
+      }else if(expectedRevision!==null)throw new Error('Eintrag wurde inzwischen gelöscht. Bitte als neuen Nachtrag anlegen.');
+      if(previousArchiveId!==archiveId&&(await transaction.get(ref)).exists())throw new Error('Für dieses Datum ist bereits ein Ausfalltermin gespeichert.');
+      const revision=(expectedRevision||0)+1;
+      transaction.set(ref,{...payload,manualRevision:revision,updatedAt:serverTimestamp()});
+      if(previousArchiveId!==archiveId)transaction.delete(previousRef);
+      return revision;
+    });
+  },
+
   // ─────────────────────────────────────────────
   // CLUB-METADATEN
   // ─────────────────────────────────────────────
@@ -2162,4 +2191,5 @@ console.log("Firestore API bereit");
 if (typeof startApp === "function") {
   startApp();
 }
+
 
