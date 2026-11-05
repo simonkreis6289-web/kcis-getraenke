@@ -1688,6 +1688,23 @@ tbody td:first-child {
     .profile-help {font-size:.85rem;line-height:1.5;color:var(--muted);margin:10px 0;}
     .profile-actions,.cash-book-actions {display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;}
     .cash-book-panel {border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:18px;margin:12px 0 22px;}
+    #tab-strafen-abrechnung [data-billing-panel][hidden] {display:none!important;}
+    .billing-tabs {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+    .billing-tabs button {border:1px solid var(--border);border-radius:9px;padding:10px 14px;min-height:44px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;}
+    .billing-tabs button[aria-selected=true] {background:var(--accent);font-weight:700;}
+    .billing-tabs button:focus-visible,.cash-year-scroller:focus-visible {outline:3px solid var(--accent);outline-offset:3px;}
+    .cash-year-heading {display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center;}
+    .cash-year-scroller {overflow:auto;max-height:65vh;isolation:isolate;border:1px solid var(--border);border-radius:10px;}
+    .cash-year-table {border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem;}
+    .cash-year-table caption {text-align:left;padding:10px;}
+    .cash-year-table th,.cash-year-table td {padding:11px 14px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;background:var(--surface);}
+    .cash-year-table thead th {position:sticky;top:0;z-index:3;background:var(--table-sticky-alt-bg);text-align:center;min-width:130px;}
+    .cash-year-table tr>:first-child {position:sticky;left:0;z-index:2;min-width:170px;max-width:250px;white-space:normal;overflow-wrap:anywhere;text-align:left;}
+    .cash-year-table thead tr>:first-child {z-index:4;}
+    .cash-year-table tbody tr:nth-child(even) th,.cash-year-table tbody tr:nth-child(even) td {background:var(--table-row-alt-bg);}
+    .cash-year-table small {display:block;color:var(--muted);font-size:.75rem;margin-top:4px;}
+    .cash-year-table tfoot th,.cash-year-table tfoot td,.cash-year-table .cash-year-sum {font-weight:700;background:var(--table-sticky-alt-bg);}
+    .cash-year-unassigned th,.cash-year-unassigned td {font-style:italic;}
     .cash-book-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0;}
     .cash-book-summary>div {padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);}
     .cash-book-summary span {display:block;color:var(--muted);font-size:.8rem;}
