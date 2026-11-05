@@ -2271,8 +2271,10 @@ async function archiveStrafenEvent(snapshot) {
   await window.firestoreApi.archiveClubEvent(clubId, archiveId, {
     ...snapshot,
     status: 'closed',
+    eveningStartedAt: currentEveningStartedAt || snapshot.date || null,
     closedAt: new Date().toISOString(),
     club: ACTIVE_CLUB,
     category: 'strafen'
   });
+  if(typeof refreshCashHistory==='function')await refreshCashHistory();
 }

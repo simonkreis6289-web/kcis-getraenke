@@ -1681,6 +1681,22 @@ tbody td:first-child {
 
     .modal-overlay.hidden { display: none; }
 
+    .member-manage-profile {display:flex;align-items:center;gap:10px;flex:1;min-width:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer;padding:4px;border-radius:8px;font:inherit;}
+    .member-manage-profile:focus-visible {outline:3px solid var(--accent);outline-offset:2px;}
+    .member-profile-form label {display:grid;gap:8px;font-weight:700;margin:18px 0 8px;}
+    .member-profile-form input {width:100%;min-height:46px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;}
+    .profile-help {font-size:.85rem;line-height:1.5;color:var(--muted);margin:10px 0;}
+    .profile-actions,.cash-book-actions {display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;}
+    .cash-book-panel {border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:18px;margin:12px 0 22px;}
+    .cash-book-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0;}
+    .cash-book-summary>div {padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);}
+    .cash-book-summary span {display:block;color:var(--muted);font-size:.8rem;}
+    .cash-book-summary strong {display:block;font-size:clamp(1.1rem,2.4vw,1.8rem);margin-top:8px;overflow-wrap:anywhere;}
+    .cash-book-options {display:grid;gap:12px;border:0;padding:12px 0;}
+    .cash-book-options label {display:flex;gap:8px;align-items:center;}
+    .cash-book-options input[type=radio] {width:auto;min-height:0;}
+    @media(max-width:650px){.cash-book-summary{grid-template-columns:1fr}.profile-actions button,.cash-book-actions button{flex:1;min-width:140px;}}
+
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -4590,4 +4606,5 @@ body.view-only #clubBackBtn {
 .kc-avatar-option.selected{border-color:#13a538;background:#e6ffe9;box-shadow:inset 0 0 0 2px #13a538;}
 .kc-avatar-image{display:flex;align-items:center;justify-content:center;width:49px;height:57px;border-radius:50%;overflow:hidden;font-size:28px;}
 .kc-avatar-image img{width:100%;height:100%;object-fit:cover;}
+
 

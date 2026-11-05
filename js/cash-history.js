@@ -2,13 +2,20 @@
 let cashHistoryEntries = [];
 let cashHistoryBusy = false;
 let cashHistoryClub = '';
+let cashHistoryUnsubscribe = null, cashHistorySubscriptionClub = '', cashHistoryGeneration = 0;
+function stopCashHistorySync() {
+  cashHistoryGeneration++;
+  cashHistoryUnsubscribe?.();cashHistoryUnsubscribe=null;cashHistorySubscriptionClub='';
+  cashHistoryEntries=[];cashHistoryClub='';
+  cashHistoryBusy=false;
+}
 
 function escapeCashText(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function cashHistoryDate(entry) {
-  return String(entry.date || entry.closedAt || '').slice(0, 10);
+  return KCCashBook.date(entry);
 }
 
 async function refreshCashHistory() {
@@ -18,25 +25,36 @@ async function refreshCashHistory() {
   if (!ACTIVE_CLUB) { status.textContent = 'Bitte erst einen Club auswählen.'; container.innerHTML = ''; return; }
   if (!window.firestoreApi?.listArchivedStrafenEvents) { status.textContent = 'Archivzugriff noch nicht verfügbar.'; return; }
   if (cashHistoryBusy) return;
+  if(cashHistoryClub && cashHistoryClub!==getClubFirestoreId(ACTIVE_CLUB))stopCashHistorySync();
+  const generation=++cashHistoryGeneration;
   cashHistoryBusy = true;
   status.textContent = 'Archiv wird geladen …';
   try {
     const clubId = getClubFirestoreId(ACTIVE_CLUB);
     const entries = await window.firestoreApi.listArchivedStrafenEvents(clubId);
-    if (getClubFirestoreId(ACTIVE_CLUB) !== clubId) return;
+    if (getClubFirestoreId(ACTIVE_CLUB) !== clubId || generation!==cashHistoryGeneration) return;
     cashHistoryEntries = entries;
     cashHistoryClub = clubId;
     status.textContent = '';
     renderCashHistory();
+    if(cashHistorySubscriptionClub!==clubId && window.firestoreApi.subscribeArchivedStrafenEvents){
+      cashHistoryUnsubscribe?.();cashHistorySubscriptionClub=clubId;
+      cashHistoryUnsubscribe=window.firestoreApi.subscribeArchivedStrafenEvents(clubId,entries=>{
+        if(cashHistorySubscriptionClub!==clubId||getClubFirestoreId(ACTIVE_CLUB)!==clubId)return;
+        cashHistoryEntries=entries;cashHistoryClub=clubId;renderCashHistory();
+      },error=>{console.error('Kassenarchiv-Live-Sync',error);if(cashHistorySubscriptionClub===clubId){cashHistorySubscriptionClub='';cashHistoryUnsubscribe=null;status.textContent='Archiv-Live-Verbindung unterbrochen. Bitte aktualisieren.';}});
+    }
   } catch (error) {
+    if(generation!==cashHistoryGeneration)return;
     console.error('Kassenhistorie konnte nicht geladen werden:', error);
     status.textContent = '❌ Kassenhistorie konnte nicht geladen werden. Verbindung oder Firestore-Berechtigungen prüfen.';
   } finally {
-    cashHistoryBusy = false;
+    if(generation===cashHistoryGeneration)cashHistoryBusy = false;
   }
 }
 
 function renderCashHistory() {
+  if(typeof renderCashBook==='function')renderCashBook();
   const container = document.getElementById('cash-history-list');
   if (!container) return;
   const from = document.getElementById('cash-history-from')?.value || '';
@@ -53,9 +71,9 @@ function renderCashHistory() {
     const date = cashHistoryDate(entry) || 'Unbekanntes Datum';
     const members = Array.isArray(entry.members) ? entry.members : [];
     const dateLabel = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split('-').reverse().join('.') : date;
-    const total = Number(entry.totals?.grandTotal || 0);
-    const archivedId = encodeURIComponent(entry.id || '');
-    const memberRows = members.map(member => `<tr><td>${escapeCashText(member.name)}</td><td>${Number(member.penaltyTotal || 0).toFixed(2).replace('.', ',')} €</td><td>${Number(member.monthlyFee || 0).toFixed(2).replace('.', ',')} €</td><td>${Number(member.total || 0).toFixed(2).replace('.', ',')} €</td></tr>`).join('');
+    const total = KCCashBook.total(entry)/100;
+    const archivedId = encodeURIComponent(entry.id || '').replace(/'/g,'%27');
+    const memberRows = members.map(member => `<tr><td>${escapeCashText(member.name)}</td><td>${Number(member.penaltyTotal ?? (member.penaltyCents||0)/100).toFixed(2).replace('.', ',')} €</td><td>${Number(member.monthlyFee ?? (member.feeCents||0)/100).toFixed(2).replace('.', ',')} €</td><td>${Number(member.total ?? (member.chargedCents||0)/100).toFixed(2).replace('.', ',')} €</td></tr>`).join('');
     return `<div class="cash-entry">
       <div class="cash-entry-top">
         <div><strong>📅 ${escapeCashText(dateLabel)}</strong><div class="cash-help">${members.length} Mitglieder · Gesamt ${total.toFixed(2).replace('.', ',')} €</div></div>
@@ -77,13 +95,13 @@ async function deleteCashHistoryEntry(archiveId) {
   cashHistoryBusy = true;
   try {
     await window.firestoreApi.deleteArchivedStrafenEvent(clubId, archiveId);
-    cashHistoryEntries = cashHistoryEntries.filter(item => item.id !== archiveId);
-    renderCashHistory();
+    if(getClubFirestoreId(ACTIVE_CLUB)===clubId){cashHistoryEntries = cashHistoryEntries.filter(item => item.id !== archiveId);renderCashHistory();}
     showToast('🗑️ Archivierter Kegelabend gelöscht', 'success');
   } catch (error) {
     console.error('Fehler beim Löschen des Kegelabends:', error);
-    showToast('❌ Kegelabend konnte nicht gelöscht werden', 'error');
+    showToast('❌ Kegelabend konnte nicht gelöscht werden: '+(error.code==='permission-denied'?'Keine Firestore-Löschberechtigung.':error.message||'Bitte erneut versuchen.'), 'error');
   } finally {
     cashHistoryBusy = false;
   }
 }
+

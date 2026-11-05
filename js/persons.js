@@ -2568,7 +2568,15 @@ function renderMemberManagement() {
         toggle.onclick=()=>setMemberInactive(person.name,!person.inactive);
         actions.appendChild(toggle);
       }
-      card.append(avatar,info,actions);grid.appendChild(card);
+      if(section.canToggle){
+        const profile=document.createElement('button');profile.type='button';profile.className='member-manage-profile';
+        profile.setAttribute('aria-label','Persönliche Daten von '+person.name+' bearbeiten');
+        profile.onclick=()=>openMemberProfile(person.name);
+        const birthday=document.createElement('small');
+        birthday.textContent=window.KCBirthdays?.parse(person.birthDate)?'🎂 '+person.birthDate.split('-').reverse().join('.'):'Persönliche Daten bearbeiten';
+        info.appendChild(birthday);profile.append(avatar,info);card.append(profile,actions);
+      }else card.append(avatar,info,actions);
+      grid.appendChild(card);
     }
   }
 }
@@ -2627,3 +2635,4 @@ async function setMemberInactive(name,inactive) {
   showToast(inactive?'Mitglied inaktiv':'Mitglied aktiv','success');
  }catch(e){person.inactive=old;renderAll();renderMemberManagement();showToast('Status konnte nicht gespeichert werden','error');console.error(e);}
 }
+

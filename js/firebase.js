@@ -891,7 +891,8 @@ subscribeToLiveLotterie(
   },
 
   async deleteArchivedStrafenEvent(clubId, archiveId) {
-    if (!clubId || !archiveId || !/^strafen_[0-9TZ:.-]+$/.test(archiveId)) {
+    // Accept legacy, per-evening and cancelled IDs. Verify the category before deleting.
+    if (!clubId || typeof archiveId !== 'string' || !archiveId || archiveId.includes('/') || archiveId === '.' || archiveId === '..' || archiveId.length > 1500) {
       throw new Error('Ungültiger Archiv-Eintrag');
     }
     const ref = doc(db, 'clubs', clubId, 'archive', archiveId);
@@ -899,6 +900,12 @@ subscribeToLiveLotterie(
     if (!snapshot.exists()) throw new Error('Abschluss ist nicht mehr vorhanden');
     if (snapshot.data().category !== 'strafen') throw new Error('Eintrag ist kein Strafenabschluss');
     await deleteDoc(ref);
+  },
+
+  subscribeArchivedStrafenEvents(clubId, onChange, onError) {
+    return onSnapshot(collection(db,'clubs',clubId,'archive'), snapshot => onChange(snapshot.docs
+      .map(item => ({...item.data(),id:item.id})).filter(item => item.category === 'strafen')
+      .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')))), onError);
   },
 
   // ─────────────────────────────────────────────
@@ -2155,3 +2162,4 @@ console.log("Firestore API bereit");
 if (typeof startApp === "function") {
   startApp();
 }
+

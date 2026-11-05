@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kcis-cache-v170';
+const CACHE_NAME = 'kcis-cache-v171';
 
 const ASSETS = [
   './',
@@ -129,4 +129,5 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
 

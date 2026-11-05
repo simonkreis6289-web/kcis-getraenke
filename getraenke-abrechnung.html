@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261104-v170">
+  <link rel="stylesheet" href="css/styles.css?v=20261105-v171">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -453,7 +453,7 @@
 
       <div id="tab-mitglieder" class="hidden">
         <div class="section-title">👥 Mitgliederverwaltung</div>
-        <p>Aktive Mitglieder unterliegen den normalen Strafregeln. Inaktive Mitglieder bleiben gespeichert, erhalten aber keine Strafen und erscheinen nicht im Strafen-PDF.</p>
+        <p>Clubmitglied anklicken, um persönliche Daten wie den Geburtstag zu bearbeiten. Inaktive Mitglieder bleiben gespeichert, erhalten aber keine Strafen und erscheinen nicht im Strafen-PDF.</p>
         <div id="member-management-list"></div>
       </div>
       <div id="tab-sitzordnung" class="hidden">
@@ -710,6 +710,13 @@
         
       <div id="tab-strafen-abrechnung" class="hidden">
         <div class="section-title">Strafen Abrechnung</div>
+        <section class="cash-book-panel" aria-labelledby="cash-book-title">
+          <h3 id="cash-book-title">💰 Kassenstand (Soll)</h3>
+          <div id="cash-book-summary" class="cash-book-summary"></div>
+          <p id="cash-book-period" class="cash-help"></p>
+          <p class="cash-help">Startbetrag + archivierte Strafenabschlüsse und Beiträge seit dem Neustart. Der Historienfilter unten verändert diesen Sollstand nicht. Tatsächliche Einzahlungen, Ausgaben und Getränke sind nicht enthalten.</p>
+          <div class="cash-book-actions"><button type="button" class="primary-btn" onclick="openCashBookSettings()">⚙️ Kegeljahr / Startbetrag</button><button type="button" class="secondary-btn" onclick="zeroCashBook()">↻ Sollstand auf 0 setzen</button></div>
+        </section>
         <div class="cash-history-panel">
           <h3>📒 Kassenhistorie abgeschlossener Abende</h3>
           <p class="cash-help">Hier stehen die archivierten Strafenabschlüsse des aktuellen Clubs. Ein gelöschter Abschluss wird aus dem Firestore-Archiv entfernt. Die bereits heruntergeladene PDF bleibt unverändert.</p>
@@ -1338,7 +1345,7 @@
             <button class="save-prices-btn" onclick="saveStrafPrices()">💾 Strafpreise speichern</button>
       </div>
 
-      <div id="tab-termingruende" class="hidden"><div class="section-title">📅 Termingründe verwalten</div><div class="kc-settings-tile"><p>Standardmäßig sind Kegelabend und Kegeltour vorhanden. Weitere Arten, etwa Geburtstag, können hier ergänzt werden.</p><div class="kc-inline-add"><input id="kc-new-terminart" placeholder="Neue Terminart, z. B. Jubiläum" onkeydown="if(event.key==='Enter')kcAddTerminGrund()"><button class="add-btn" onclick="kcAddTerminGrund()">+ Hinzufügen</button></div><div id="kc-terminarten-list"></div></div></div><div id="tab-termine" class="hidden"><div class="section-title">📅 Termine</div><div class="kc-event-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="19:00"></label><label>Bemerkung<input id="kc-event-note" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-info" class="hidden"><div class="section-title">ℹ️ Info & Dashboard</div><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="tab-einstellungen" class="hidden">
+      <div id="tab-termingruende" class="hidden"><div class="section-title">📅 Termingründe verwalten</div><div class="kc-settings-tile"><p>Standardmäßig sind Kegelabend und Kegeltour vorhanden. Weitere Arten, etwa Geburtstag, können hier ergänzt werden.</p><div class="kc-inline-add"><input id="kc-new-terminart" placeholder="Neue Terminart, z. B. Jubiläum" onkeydown="if(event.key==='Enter')kcAddTerminGrund()"><button class="add-btn" onclick="kcAddTerminGrund()">+ Hinzufügen</button></div><div id="kc-terminarten-list"></div></div></div><div id="tab-termine" class="hidden"><div class="section-title">📅 Termine</div><p class="profile-help">🎂 Geburtstage werden einmalig in der Mitgliederverwaltung gepflegt und hier jedes Jahr automatisch angezeigt. <button type="button" class="secondary-btn" onclick="showSideTab('organisation','mitglieder')">👥 Mitgliederverwaltung</button></p><div class="kc-event-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="19:00"></label><label>Bemerkung<input id="kc-event-note" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-info" class="hidden"><div class="section-title">ℹ️ Info & Dashboard</div><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="tab-einstellungen" class="hidden">
   <div class="section-title">Countdown</div>
 
   <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -2065,42 +2072,71 @@
   style="display:none"
 >
 
-<script src="js/helpers.js?v=20261104-v170"></script>
-<script src="js/state.js?v=20261104-v170"></script>
-<script src="js/persons.js?v=20261104-v170"></script>
-<script src="js/clubs.js?v=20261104-v170"></script>
 
-<script src="js/games/avatar-select.js?v=20261104-v170"></script>
-<script src="js/games/tannenbaum.js?v=20261104-v170"></script>
-<script src="js/games/darts.js?v=20261104-v170"></script>
-<script src="js/games/tiberius.js?v=20261104-v170"></script>
-<script src="js/games/lotterie.js?v=20261104-v170"></script>
-<script src="js/games/solo-start-draw.js?v=20261104-v170"></script>
-<script src="js/games/seating.js?v=20261104-v170"></script>
-<script src="js/games/mensch.js?v=20261104-v170"></script>
-<script src="js/games/plusminus.js?v=20261104-v170"></script>
-<script src="js/games/hausnummer-core.js?v=20261104-v170"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261104-v170"></script>
-<script src="js/games/hausnummer-tief.js?v=20261104-v170"></script>
-<script src="js/games/fuchsjagd.js?v=20261104-v170"></script>
-<script src="js/games/sichern.js?v=20261104-v170"></script>
-<script src="js/games/tor.js?v=20261104-v170"></script>
-<script src="js/games/coinflip.js?v=20261104-v170"></script>
+<div class="modal-overlay hidden" id="member-profile-modal" onclick="if(event.target===this)closeMemberProfile()">
+  <form class="modal member-profile-form" role="dialog" aria-modal="true" aria-labelledby="member-profile-title" onsubmit="saveMemberProfile(event)">
+    <h3 id="member-profile-title">👤 Persönliche Daten</h3>
+    <label for="member-profile-birthdate">Geburtsdatum <input id="member-profile-birthdate" type="date" autocomplete="bday"></label>
+    <p class="profile-help">Der Geburtstag erscheint jedes Jahr automatisch in den Terminen und im Dashboard – unabhängig von der Anwesenheit. Einmal eintragen genügt. Ein Geburtstag am 29. Februar wird in Jahren ohne Schalttag am 28. Februar angezeigt.</p>
+    <button type="button" class="secondary-btn" onclick="document.getElementById('member-profile-birthdate').value=''">Geburtsdatum leeren</button>
+    <div class="profile-actions"><button type="button" class="secondary-btn" onclick="closeMemberProfile()">Abbrechen</button><button type="submit" class="primary-btn">💾 Speichern</button></div>
+  </form>
+</div>
+<div class="modal-overlay hidden" id="cash-book-modal" onclick="if(event.target===this)closeCashBookSettings()">
+  <form class="modal member-profile-form" role="dialog" aria-modal="true" aria-labelledby="cash-book-modal-title" onsubmit="saveCashBookSettings(event)">
+    <h3 id="cash-book-modal-title">💰 Kegeljahr / Startbetrag</h3>
+    <label for="cash-book-opening">Startbetrag / Übertrag aus dem Vorjahr (€)<input id="cash-book-opening" type="number" min="0" step="0.01" required inputmode="decimal"></label>
+    <fieldset class="cash-book-options"><legend>Ab wann zählen die Kegelabende?</legend>
+      <label><input id="cash-book-keep" type="radio" name="cash-book-mode" value="keep" onchange="updateCashBookMode()"> Bisherigen Beginn beibehalten</label>
+      <label><input type="radio" name="cash-book-mode" value="now" onchange="updateCashBookMode()"> Jetzt neu starten</label>
+      <label><input type="radio" name="cash-book-mode" value="date" onchange="updateCashBookMode()"> Datum auswählen (einschließlich dieses Tages)</label>
+    </fieldset>
+    <label for="cash-book-start-date">Beginn des Kegeljahres<input id="cash-book-start-date" type="date"></label>
+    <p class="profile-help">Startbetrag und Beginn können später korrigiert werden. Frühere Abschlüsse bleiben erhalten. „Jetzt“ zählt nach dem Neustart begonnene Abende; bei älteren Abschlüssen ohne Startzeit gilt deren Abschlusszeit.</p>
+    <div class="profile-actions"><button type="button" class="secondary-btn" onclick="closeCashBookSettings()">Abbrechen</button><button type="submit" class="primary-btn">💾 Kegeljahr speichern</button></div>
+  </form>
+</div>
 
-<script src="js/groups.js?v=20261104-v170"></script>
+<script src="js/birthdays.js?v=20261105-v171"></script>
+<script src="js/helpers.js?v=20261105-v171"></script>
+<script src="js/state.js?v=20261105-v171"></script>
+<script src="js/persons.js?v=20261105-v171"></script>
+<script src="js/member-profiles.js?v=20261105-v171"></script>
+<script src="js/clubs.js?v=20261105-v171"></script>
 
-<script src="js/app.js?v=20261104-v170"></script><script src="js/club-termine.js?v=20261104-v170"></script>
+<script src="js/games/avatar-select.js?v=20261105-v171"></script>
+<script src="js/games/tannenbaum.js?v=20261105-v171"></script>
+<script src="js/games/darts.js?v=20261105-v171"></script>
+<script src="js/games/tiberius.js?v=20261105-v171"></script>
+<script src="js/games/lotterie.js?v=20261105-v171"></script>
+<script src="js/games/solo-start-draw.js?v=20261105-v171"></script>
+<script src="js/games/seating.js?v=20261105-v171"></script>
+<script src="js/games/mensch.js?v=20261105-v171"></script>
+<script src="js/games/plusminus.js?v=20261105-v171"></script>
+<script src="js/games/hausnummer-core.js?v=20261105-v171"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261105-v171"></script>
+<script src="js/games/hausnummer-tief.js?v=20261105-v171"></script>
+<script src="js/games/fuchsjagd.js?v=20261105-v171"></script>
+<script src="js/games/sichern.js?v=20261105-v171"></script>
+<script src="js/games/tor.js?v=20261105-v171"></script>
+<script src="js/games/coinflip.js?v=20261105-v171"></script>
+
+<script src="js/groups.js?v=20261105-v171"></script>
+
+<script src="js/app.js?v=20261105-v171"></script><script src="js/club-termine.js?v=20261105-v171"></script>
     
-<script src="js/live-games.js?v=20261104-v170"></script>
-<script src="js/strafe-pdf.js?v=20261104-v170"></script>
-<script src="js/cash-history.js?v=20261104-v170"></script>
-<script src="js/table-headers.js?v=20261104-v170"></script>
+<script src="js/live-games.js?v=20261105-v171"></script>
+<script src="js/strafe-pdf.js?v=20261105-v171"></script>
+<script src="js/cash-history.js?v=20261105-v171"></script>
+<script src="js/cash-book.js?v=20261105-v171"></script>
+<script src="js/table-headers.js?v=20261105-v171"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261104-v170"
+  src="js/firebase.js?v=20261105-v171"
 ></script>
 
 </body>
 </html>
+
 
