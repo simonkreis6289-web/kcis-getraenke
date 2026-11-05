@@ -44,6 +44,7 @@ async function startApp() {
 // ── LOCAL STORAGE ──
 function getSerializableState() {
   return {
+    cashBookSettings,
     persons,
     seatingOrder,
       groupSettings,
@@ -121,6 +122,7 @@ function getFirestoreState() {
   recalcTeamExtras();
 
   return {
+    cashBookSettings,
     ...getTodayMeta(),
     dashboardActiveGame,
     clubTermine,
@@ -183,6 +185,7 @@ function applyLoadedState(state) {
     return false;
   }
 
+  cashBookSettings = state.cashBookSettings || null;
   dashboardActiveGame = state.dashboardActiveGame || null;
   clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
   clubTerminGruende = Array.isArray(state.clubTerminGruende) && state.clubTerminGruende.length ? state.clubTerminGruende : clubTerminGruende;
@@ -3879,6 +3882,8 @@ applyGroupTheme();
     updateMonatsbeitragInput();
                                     
   updateStrafenLimitInput();
+  if(typeof renderCashBook==='function')renderCashBook();
+  if(typeof kcRenderTermine==='function'&&!document.getElementById('tab-termine')?.classList.contains('hidden'))kcRenderTermine();
 }
 
 function updateStats() {
@@ -6664,3 +6669,4 @@ function closeTeamLossQuickModalAfterSuccess() {
   document.getElementById('team-loss-quick-modal')?.classList.add('hidden');
   teamLossQuickSelection = null;
 }
+

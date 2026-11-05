@@ -240,6 +240,7 @@ function syncCurrentClubToStore() {
   const existingClub = CLUBS[ACTIVE_CLUB] || createEmptyClubData();
 
   CLUBS[ACTIVE_CLUB] = {
+    cashBookSettings: cashBookSettings ? JSON.parse(JSON.stringify(cashBookSettings)) : null,
     avatar: existingClub.avatar || '',
     // Verbindlicher Strafbetrag aus der Strafentabelle der Haupt-App.
     // Dashboard darf diese Summe nicht selbst aus Preisen/Zählern nachbilden.
@@ -424,6 +425,7 @@ async function selectClub(clubName) {
     stopLiveLotterieSync();
   }
 
+  if(typeof stopCashHistorySync==='function')stopCashHistorySync();
   ACTIVE_CLUB = clubName;
   const clubId = getClubFirestoreId(clubName);
 
@@ -433,6 +435,7 @@ async function selectClub(clubName) {
   lastRemoteChangeAt = Number(localClub.lastRemoteChangeAt || 0);
 
   persons = JSON.parse(JSON.stringify(localClub.persons || []));
+  cashBookSettings = localClub.cashBookSettings ? JSON.parse(JSON.stringify(localClub.cashBookSettings)) : null;
   prices = JSON.parse(JSON.stringify(localClub.prices || {}));
 
   STRAFEN = JSON.parse(JSON.stringify(localClub.STRAFEN || [
@@ -666,3 +669,4 @@ function getClubAvatarHtml(name) {
     </div>
   `;
 }
+
