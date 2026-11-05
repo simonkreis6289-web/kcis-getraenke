@@ -77,7 +77,7 @@ function renderCashHistory() {
     return `<div class="cash-entry">
       <div class="cash-entry-top">
         <div><strong>📅 ${escapeCashText(dateLabel)}</strong><div class="cash-help">${members.length} Mitglieder · Gesamt ${total.toFixed(2).replace('.', ',')} €</div></div>
-        <button class="cash-delete-btn" type="button" onclick="deleteCashHistoryEntry(decodeURIComponent('${archivedId}'))">🗑️ Löschen</button>
+        <div class="cash-entry-actions">${entry.manualDraft?`<button class="secondary-btn" type="button" onclick="openHistoricalEvening('backfill',decodeURIComponent('${archivedId}'))">✏️ Bearbeiten / PDF</button>`:''}<button class="cash-delete-btn" type="button" onclick="deleteCashHistoryEntry(decodeURIComponent('${archivedId}'))">🗑️ Löschen</button></div>
       </div>
       <details><summary>Einzelbeträge ansehen</summary><div class="cash-table-scroller"><table class="cash-table"><thead><tr><th>Mitglied</th><th>Strafen</th><th>Beitrag</th><th>Summe</th></tr></thead><tbody>${memberRows || '<tr><td colspan="4">Keine Mitglieder gespeichert</td></tr>'}</tbody></table></div><p class="cash-help">Die Beträge entsprechen dem damaligen Abschluss. Nicht enthalten sind spätere Einzahlungen und Getränkekassenbewegungen.</p></details>
     </div>`;
@@ -104,4 +104,5 @@ async function deleteCashHistoryEntry(archiveId) {
     cashHistoryBusy = false;
   }
 }
+
 

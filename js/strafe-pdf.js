@@ -380,6 +380,7 @@ function getStrafenSnapshot() {
 
 async function generateStrafenPDF(snapshot) {
   const { jsPDF } = window.jspdf;
+  const pdfClubName=snapshot.club||getPdfClubName();
 
   const doc = new jsPDF({
     orientation: 'landscape',
@@ -465,7 +466,7 @@ async function generateStrafenPDF(snapshot) {
         : 'Team 2';
 
     const configuredName =
-      groupSettings?.[
+      (snapshot.groupSettings||groupSettings)?.[
         teamKey
       ]?.name || fallback;
 
@@ -557,9 +558,7 @@ async function generateStrafenPDF(snapshot) {
       []
     ).filter(
       strafe =>
-        !isAutoTimeStrafeKey(
-          strafe.key
-        )
+        !(snapshot.manualEntry?(snapshot.autoTimeKeys||[]).includes(strafe.key):isAutoTimeStrafeKey(strafe.key))
     );
 
   function getFreeAndGameTotal(
@@ -605,6 +604,7 @@ async function generateStrafenPDF(snapshot) {
   function getLatePdfData(
     person
   ) {
+    if(snapshot.manualEntry)return person.latePdfData||null;
     if (
       person.status &&
       person.status !== 'present'
@@ -644,6 +644,7 @@ async function generateStrafenPDF(snapshot) {
   function getEarlyPdfData(
     person
   ) {
+    if(snapshot.manualEntry)return person.earlyPdfData||null;
     if (
       person.status &&
       person.status !== 'present'
@@ -1287,7 +1288,7 @@ async function generateStrafenPDF(snapshot) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(25, 25, 25);
-      doc.text(getPlainText(person.name), x + nameOffset, y + rowHeight / 2 + 2.5);
+      drawLeftText(person.name, x + nameOffset - 2, y, nameWidth - nameOffset + 2, rowHeight, {bold: true, fontSize: 8});
 
       x +=
         nameWidth;
@@ -1362,8 +1363,8 @@ async function generateStrafenPDF(snapshot) {
       const earlyPenalty = getEarlyPdfData(person);
       drawCell(x, y, lateWidth, rowHeight);
       const timeLines = [];
-      if (latePenalty) timeLines.push(`Spaeter ${latePenalty.count}x ${formatEuro(latePenalty.amount)}`);
-      if (earlyPenalty) timeLines.push(`Frueher ${earlyPenalty.count}x ${formatEuro(earlyPenalty.amount)}`);
+      if (latePenalty) timeLines.push(`Spaeter ${latePenalty.count}x = ${formatEuro(latePenalty.amount)}`);
+      if (earlyPenalty) timeLines.push(`Frueher ${earlyPenalty.count}x = ${formatEuro(earlyPenalty.amount)}`);
       drawCenteredText(timeLines.length ? timeLines.join('\n') : '-', x, y, lateWidth, rowHeight, {fontSize: 6.2});
 
       x +=
@@ -1495,10 +1496,10 @@ async function generateStrafenPDF(snapshot) {
   }
 
   drawPageTitle(
-    `${getPdfClubName()} - Strafenabrechnung`,
+    `${pdfClubName} - Strafenabrechnung`,
     `Abrechnung vom ${formatDate(
       snapshot.date
-    )}`
+    )}${snapshot.manualEntry ? " - Nachtrag" : ""}`
   );
 
   let currentY =
@@ -1525,7 +1526,7 @@ async function generateStrafenPDF(snapshot) {
   if (currentY + 25 > pageHeight - margin) {
     doc.addPage();
     drawPageTitle(
-      `${getPdfClubName()} - Strafenabrechnung`,
+      `${pdfClubName} - Strafenabrechnung`,
       `Zusammenfassung vom ${formatDate(snapshot.date)}`
     );
     currentY = 33;
@@ -1569,7 +1570,7 @@ async function generateStrafenPDF(snapshot) {
       doc.addPage();
 
       drawPageTitle(
-        `${getPdfClubName()} - Strafenabrechnung`,
+        `${pdfClubName} - Strafenabrechnung`,
         `Gastkegler vom ${formatDate(
           snapshot.date
         )}`
@@ -1620,7 +1621,7 @@ async function generateStrafenPDF(snapshot) {
   if (currentY + 22 > pageHeight - margin) {
     doc.addPage();
     drawPageTitle(
-      `${getPdfClubName()} - Strafenabrechnung`,
+      `${pdfClubName} - Strafenabrechnung`,
       `Zusammenfassung vom ${formatDate(snapshot.date)}`
     );
     currentY = 33;
@@ -1673,7 +1674,7 @@ async function generateStrafenPDF(snapshot) {
   if (currentY + 22 > pageHeight - margin) {
     doc.addPage();
     drawPageTitle(
-      `${getPdfClubName()} - Kegelabend`,
+      `${pdfClubName} - Kegelabend`,
       `Anwesenheit und Spielübersicht vom ${formatDate(snapshot.date)}`
     );
     currentY = 33;
@@ -2196,6 +2197,11 @@ async function generateStrafenPDF(snapshot) {
     );
   }
 
+  if(snapshot.manualEntry && snapshot.note){
+    const lines=doc.splitTextToSize(getPlainText(snapshot.note),pageWidth-margin*2);
+    ensurePageSpace(lines.length*4+14);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(lines,margin,currentY+8);
+  }
   return doc;
 }
 
@@ -2278,3 +2284,4 @@ async function archiveStrafenEvent(snapshot) {
   });
   if(typeof refreshCashHistory==='function')await refreshCashHistory();
 }
+
