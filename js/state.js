@@ -1,6 +1,6 @@
-const APP_VERSION = '20261104-169';
-const APPVersionSelf = 'V169 © SK';
-const APP_LAST_UPDATE = '04.11.2026, 14:10 Uhr';
+const APP_VERSION = '20261104-170';
+const APPVersionSelf = 'V170 © SK';
+const APP_LAST_UPDATE = '04.11.2026, 23:05 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -182,3 +182,4 @@ let seatingOrder = Array(16).fill('');
 let clubTermine = [];
 
 let clubTerminGruende = [{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}];
+
