@@ -1,4 +1,46 @@
-// V169: zentrale, in Firebase gespeicherte Terminarten und Termine.
+// Clubkalender: feste Serienslots, einzelne Terminänderungen und sichere Synchronisation.
+const kcSeriesPending=new Map(),kcSeriesChecked=new Map();
+let kcCalendarBusy=false,kcCalendarEdit=null,kcNewEventId='';
+function kcCalendarStatus(message){const box=document.getElementById('kc-calendar-status');if(box)box.textContent=message;}
+function kcApplyCalendarState(state,cache=true){
+  if(state?.clubCalendarData?.calendarRevision)state=state.clubCalendarData;
+  if(!Array.isArray(state?.clubTermine))return false;
+  const revision=Number(state.calendarRevision)||0;if(revision<kcCalendarRevision)return false;
+  clubTermine=JSON.parse(JSON.stringify(state.clubTermine));
+  clubKegelSerie=state.clubKegelSerie?JSON.parse(JSON.stringify(state.clubKegelSerie)):null;
+  kcCalendarRevision=revision;
+  if(cache){if(typeof syncCurrentClubToStore==='function'&&ACTIVE_CLUB){syncCurrentClubToStore();saveClubSystem();}kcRenderTermine();}
+  return true;
+}
+async function kcEnsureKegelSeries(force=false){
+  if(!ACTIVE_CLUB)return false;
+  const club=ACTIVE_CLUB,today=KCBirthdays.today();
+  if(kcSeriesPending.has(club))return kcSeriesPending.get(club);
+  if(!force&&kcSeriesChecked.get(club)===today)return true;
+  if(!navigator.onLine||!window.firestoreApi?.updateClubCalendar){kcCalendarStatus('Gespeicherte Termine bleiben sichtbar. Zum Ergänzen der Serie bitte verbinden.');return false;}
+  const work=(async()=>{
+    try{
+      const calendar=await window.firestoreApi.updateClubCalendar(getClubFirestoreId(club),{action:'ensure',today,bootstrapEvents:clubTermine});
+      kcSeriesChecked.set(club,today);
+      if(ACTIVE_CLUB===club){kcApplyCalendarState(calendar);kcCalendarStatus('');}
+      return true;
+    }catch(error){console.error('Kegelterminserie',error);if(ACTIVE_CLUB===club)kcCalendarStatus('Termine konnten nicht ergänzt werden: '+error.message);return false;}
+    finally{kcSeriesPending.delete(club);}
+  })();
+  kcSeriesPending.set(club,work);return work;
+}
+async function kcChangeCalendar(request){
+  if(kcCalendarBusy||!ACTIVE_CLUB)return false;
+  if(!navigator.onLine||!window.firestoreApi?.updateClubCalendar){showToast('Zum Ändern der Termine bitte eine Verbindung herstellen.','error');return false;}
+  const club=ACTIVE_CLUB;kcCalendarBusy=true;
+  const controls=[...document.querySelectorAll('#kc-event-create-form input, #kc-event-create-form select, #kc-event-create-form button, #kc-event-edit-modal input, #kc-event-edit-modal select, #kc-event-edit-modal button, #kc-termine-list button')];controls.forEach(el=>el.disabled=true);
+  try{
+    const calendar=await window.firestoreApi.updateClubCalendar(getClubFirestoreId(club),{...request,today:KCBirthdays.today(),bootstrapEvents:clubTermine});
+    if(ACTIVE_CLUB===club){kcApplyCalendarState(calendar);kcCalendarStatus('');}
+    return ACTIVE_CLUB===club;
+  }catch(error){console.error('Kalenderänderung',error);if(ACTIVE_CLUB===club){kcCalendarStatus(error.message);showToast(error.message,'error');}return false;}
+  finally{kcCalendarBusy=false;controls.forEach(el=>el.disabled=false);}
+}
 function kcTerminArten(){return Array.isArray(clubTerminGruende)?clubTerminGruende:[]}
 function kcSafeDate(event){const d=new Date(event.date+'T'+(event.time||'00:00'));return Number.isNaN(d.getTime())?null:d}
 function kcRenderTerminGruende(){
@@ -21,39 +63,64 @@ function kcAddTerminGrund(){
  clubTerminGruende.push({id:'custom_'+Date.now(),name,emoji:'📅'});
  input.value='';kcRenderTerminGruende();kcRenderTermine();persistState();showToast('Terminart gespeichert','success');
 }
-function kcRenderTermine(){
- const box=document.getElementById('kc-termine-list'),select=document.getElementById('kc-event-type');if(!box||!select)return;
- const selected=select.value;select.replaceChildren();
- for(const type of kcTerminArten().filter(type=>type.id!=='geburtstag')){const opt=document.createElement('option');opt.value=type.id;opt.textContent=(type.emoji||'📅')+' '+type.name;select.append(opt)}
- if([...select.options].some(x=>x.value===selected))select.value=selected;
- box.replaceChildren();
- const events=[...(clubTermine||[]).filter(e=>e.type!=='geburtstag'),...KCBirthdays.events(persons,clubTermine)]
-  .sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')));
- for(const event of events){
-  const type=kcTerminArten().find(x=>x.id===event.type);
-  const row=document.createElement('div');row.className='kc-event-row';
-  const label=document.createElement('span');
-  const date=kcSafeDate(event);
-  const when=date?(event.recurring?date.toLocaleDateString('de-DE'):date.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):event.date;
-  label.textContent=(event.type==='geburtstag'?'🎂':type?.emoji||'📅')+' '+(event.type==='geburtstag'?'Geburtstag':type?.name||event.type)+' · '+when+(event.note?' · '+event.note:'')+(event.recurring?' · jährlich':'');
-  if(event.memberBirthday){
-    const edit=document.createElement('button');edit.type='button';edit.className='secondary-btn';edit.textContent='👤 Mitglied bearbeiten';
-    edit.onclick=()=>openMemberProfile(event.personName);row.append(label,edit);box.append(row);continue;
-  }
-  const del=document.createElement('button');del.type='button';del.className='kc-icon-delete';del.textContent='🗑️';del.title='Termin löschen';del.setAttribute('aria-label','Termin löschen');
-  del.onclick=()=>{if(!confirm('Diesen Termin löschen?'))return;clubTermine=clubTermine.filter(x=>x.id!==event.id);kcRenderTermine();persistState()};
-  row.append(label,del);box.append(row);
- }
- if(!events.length)box.textContent='Noch keine Termine angelegt.';
+function kcPopulateEventTypes(select,selected){
+  select.replaceChildren();
+  const types=kcTerminArten().filter(type=>type.id!=='geburtstag');
+  if(selected&&!types.some(type=>type.id===selected)&&selected!=='geburtstag')types.push({id:selected,name:selected,emoji:'📅'});
+  const wanted=types.some(type=>type.id===selected)?selected:types[0]?.id;
+  for(const type of types){const option=document.createElement('option');option.value=type.id;option.textContent=(type.emoji||'📅')+' '+type.name;option.selected=type.id===wanted;select.append(option);}
 }
-function kcAddTermin(){
- const type=document.getElementById('kc-event-type').value,date=document.getElementById('kc-event-date').value,time=document.getElementById('kc-event-time').value,note=document.getElementById('kc-event-note').value.trim();
- if(!date||!time){showToast('Datum und Uhrzeit eingeben','error');return}
- if(type==='geburtstag'){showToast('Geburtstage bitte in der Mitgliederverwaltung eintragen.','error');return}
- clubTermine.push({id:'kc'+Date.now(),type,date,time,note});kcRenderTermine();persistState();showToast('Termin gespeichert','success');
+function kcRenderTermine(){
+  const box=document.getElementById('kc-termine-list'),select=document.getElementById('kc-event-type');if(!box||!select)return;
+  kcPopulateEventTypes(select,select.value);
+  const info=document.getElementById('kc-series-info');
+  if(info)info.textContent=clubKegelSerie?'Automatisch alle 4 Wochen freitags um 20:00 Uhr · Rhythmus ab '+clubKegelSerie.anchorDate.split('-').reverse().join('.')+' · Vorschau bis '+KCKegelCalendar.through(KCBirthdays.today()).split('-').reverse().join('.')+'. Einzelne Änderungen verschieben die übrige Serie nicht.':'Die Vier-Wochen-Serie wird beim Verbinden bis ein Jahr im Voraus ergänzt.';
+  box.replaceChildren();
+  const events=[...(clubTermine||[]).filter(event=>event.type!=='geburtstag'),...KCBirthdays.events(persons,clubTermine)]
+    .sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')));
+  for(const event of events){
+    const type=kcTerminArten().find(type=>type.id===event.type),row=document.createElement('div');row.className='kc-event-row';
+    const label=document.createElement('span'),date=kcSafeDate(event);
+    const when=date?(event.recurring?date.toLocaleDateString('de-DE'):date.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):event.date;
+    label.textContent=(event.type==='geburtstag'?'🎂':type?.emoji||'📅')+' '+(event.type==='geburtstag'?'Geburtstag':type?.name||event.type)+' · '+when+(event.note?' · '+event.note:'')+(event.recurring?' · jährlich':'');
+    if(event.seriesDate){const hint=document.createElement('small');hint.className='kc-series-label';hint.textContent=event.date!==event.seriesDate||event.time!=='20:00'||event.type!=='kegeln'?'Serientermin · individuell geändert':'Serientermin';label.append(hint);}
+    const actions=document.createElement('div');actions.className='kc-event-actions';
+    if(event.memberBirthday){
+      const edit=document.createElement('button');edit.type='button';edit.className='secondary-btn';edit.textContent='👤 Mitglied bearbeiten';edit.onclick=()=>openMemberProfile(event.personName);actions.append(edit);
+    }else{
+      if(event.type!=='geburtstag'){const edit=document.createElement('button');edit.type='button';edit.className='secondary-btn';edit.textContent='✏️ Bearbeiten';edit.onclick=()=>kcOpenEventEdit(event.id);actions.append(edit);}
+      const remove=document.createElement('button');remove.type='button';remove.className='kc-icon-delete';remove.textContent='🗑️';remove.title='Termin löschen';remove.setAttribute('aria-label','Termin löschen');
+      remove.onclick=async()=>{if(!confirm('Diesen Termin löschen?'+(event.seriesDate?' Er wird beim Ergänzen der Serie nicht erneut angelegt.':'')))return;if(await kcChangeCalendar({action:'delete',id:event.id,expectedRevision:Number(event.eventRevision)||0}))showToast('Termin gelöscht','success');};actions.append(remove);
+    }
+    row.append(label,actions);box.append(row);
+  }
+  if(!events.length)box.textContent='Noch keine Termine angelegt.';
+}
+async function kcAddTermin(){
+  const event={type:document.getElementById('kc-event-type').value,date:document.getElementById('kc-event-date').value,time:document.getElementById('kc-event-time').value,note:document.getElementById('kc-event-note').value.trim()};
+  if(!KCBirthdays.parse(event.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(event.time||'')){showToast('Gültiges Datum und Uhrzeit eingeben','error');return;}
+  if(!kcNewEventId)kcNewEventId='kc_manual_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2));
+  if(await kcChangeCalendar({action:'add',id:kcNewEventId,event})){kcNewEventId='';document.getElementById('kc-event-note').value='';showToast('Termin gespeichert','success');}
+}
+function kcOpenEventEdit(id){
+  if(kcCalendarBusy)return;const event=clubTermine.find(event=>event.id===id);if(!event)return;
+  kcCalendarEdit={id,club:ACTIVE_CLUB,revision:Number(event.eventRevision)||0};
+  kcPopulateEventTypes(document.getElementById('kc-edit-event-type'),event.type);
+  document.getElementById('kc-edit-event-date').value=event.date;document.getElementById('kc-edit-event-time').value=event.time||'20:00';document.getElementById('kc-edit-event-note').value=event.note||'';
+  document.getElementById('kc-edit-event-series').textContent=event.seriesDate?'Ursprünglicher Serientermin: '+event.seriesDate.split('-').reverse().join('.')+'. Verschieben ist auch auf einen anderen Wochentag möglich. Der ursprüngliche Termin wird nicht erneut erstellt.':'Dieser einzelne Termin kann frei geändert werden.';
+  document.getElementById('kc-event-edit-modal').classList.remove('hidden');document.getElementById('kc-edit-event-date').focus();
+}
+function kcCloseEventEdit(){if(!kcCalendarBusy){kcCalendarEdit=null;document.getElementById('kc-event-edit-modal')?.classList.add('hidden');}}
+async function kcSaveEventEdit(event){
+  event?.preventDefault();const draft=kcCalendarEdit;if(!draft||kcCalendarBusy)return;
+  if(draft.club!==ACTIVE_CLUB){showToast('Club gewechselt. Bitte Termin erneut öffnen.','error');return;}
+  const fields={type:document.getElementById('kc-edit-event-type').value,date:document.getElementById('kc-edit-event-date').value,time:document.getElementById('kc-edit-event-time').value,note:document.getElementById('kc-edit-event-note').value.trim()};
+  if(await kcChangeCalendar({action:'edit',id:draft.id,expectedRevision:draft.revision,event:fields})){kcCloseEventEdit();showToast('Termin geändert','success');}
 }
 function kcShowInfo(){const input=document.getElementById('kc-dashboard-url');if(!input)return;const url=new URL('dashboard.html',location.href);const club=new URLSearchParams(location.search).get('club');if(club)url.searchParams.set('club',club);input.value=url.href;document.getElementById('kc-dashboard-link').href=url.href}
 function kcCopyDashboard(){const input=document.getElementById('kc-dashboard-url');input.select();navigator.clipboard?.writeText(input.value).then(()=>showToast('Link kopiert','success')).catch(()=>document.execCommand('copy'))}
 
-setInterval(()=>{if(!document.getElementById('tab-termine')?.classList.contains('hidden'))kcRenderTermine();},60000);
-
+setInterval(()=>{if(!document.getElementById('tab-termine')?.classList.contains('hidden'))kcRenderTermine();if(document.visibilityState!=='hidden')kcEnsureKegelSeries();},60000);
+window.addEventListener('online',()=>kcEnsureKegelSeries(true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')kcEnsureKegelSeries();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')kcCloseEventEdit();});

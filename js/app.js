@@ -70,6 +70,8 @@ function getSerializableState() {
     haustiefState,
     hausnummerSettings,
     clubTermine,
+    clubKegelSerie,
+    calendarRevision: kcCalendarRevision,
     clubTerminGruende,
     sichernState: {...sichernState,busy:false,closing:false},
     torState,
@@ -126,6 +128,8 @@ function getFirestoreState() {
     ...getTodayMeta(),
     dashboardActiveGame,
     clubTermine,
+    clubKegelSerie,
+    calendarRevision: kcCalendarRevision,
     clubTerminGruende,
     dashboardAnnouncement: window.kcDashboardAnnouncement || null,
     currentEveningStartedAt,
@@ -187,7 +191,8 @@ function applyLoadedState(state) {
 
   cashBookSettings = state.cashBookSettings || null;
   dashboardActiveGame = state.dashboardActiveGame || null;
-  clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
+  if(typeof kcApplyCalendarState==='function')kcApplyCalendarState(state,false);
+  else clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
   clubTerminGruende = Array.isArray(state.clubTerminGruende) && state.clubTerminGruende.length ? state.clubTerminGruende : clubTerminGruende;
   currentEveningStartedAt = state.currentEveningStartedAt || null;
   persons = Array.isArray(state.persons)
@@ -546,10 +551,11 @@ async function saveToFirestore(
     const cleanState =
       cleanForFirestore(rawState);
 
-    await window.firestoreApi.saveClubState(
+    const savedCalendar = await window.firestoreApi.saveClubState(
       clubId,
       cleanState
     );
+    if(savedCalendar&&getClubFirestoreId(ACTIVE_CLUB)===clubId&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(savedCalendar);
 
     if (showSuccessToast) {
       showToast(
@@ -5706,7 +5712,7 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
-  if (subKey === 'termine') kcRenderTermine();
+  if (subKey === 'termine') {kcRenderTermine();kcEnsureKegelSeries();}
   if (subKey === 'termingruende') kcRenderTerminGruende();
   if (subKey === 'info') kcShowInfo();
   if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();

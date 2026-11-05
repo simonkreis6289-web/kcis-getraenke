@@ -218,16 +218,41 @@ window.firestoreApi = {
       "current"
     );
 
-    await setDoc(
-      ref,
-      {
-        ...payload,
-        updatedAt: serverTimestamp()
-      },
-      {
-        merge: true
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
+      const managed=current.clubCalendarData?.calendarRevision?current.clubCalendarData:current;
+      let calendar=null;
+      if(Number(managed.calendarRevision)>0){
+        // General state uploads must never restore stale/moved/deleted calendar entries.
+        const proposed=Array.isArray(payload.clubTermine)?payload.clubTermine:[];
+        const events=(managed.clubTermine||[]).map(event=>{
+          const claim=event.type==='geburtstag'&&!event.memberBirthdayName?proposed.find(p=>p.id===event.id&&p.type==='geburtstag'&&p.memberBirthdayName):null;
+          return claim?{...event,memberBirthdayName:claim.memberBirthdayName}:event;
+        });
+        const revision=Number(managed.calendarRevision)+(JSON.stringify(events)!==JSON.stringify(managed.clubTermine||[])?1:0);
+        calendar={clubTermine:events,clubKegelSerie:managed.clubKegelSerie||null,calendarRevision:revision};
+        Object.assign(next,calendar,{clubCalendarData:calendar});
       }
-    );
+      transaction.set(ref,{...next,updatedAt:serverTimestamp()},{merge:true});
+      return calendar;
+    });
+  },
+
+  async updateClubCalendar(clubId,request={}) {
+    if(!clubId||!window.KCKegelCalendar)throw new Error('Kalenderzugriff nicht verfügbar');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
+      const managed=current.clubCalendarData?.calendarRevision?{...current,...current.clubCalendarData}:current;
+      const base=!Array.isArray(managed.clubTermine)&&!managed.calendarRevision&&Array.isArray(request.bootstrapEvents)?{...managed,clubTermine:request.bootstrapEvents}:managed;
+      const next=window.KCKegelCalendar.perform(base,request);
+      const changed=!managed.calendarRevision||JSON.stringify(next.clubTermine)!==JSON.stringify(managed.clubTermine||[])||JSON.stringify(next.clubKegelSerie)!==JSON.stringify(managed.clubKegelSerie||null);
+      const revision=(Number(managed.calendarRevision)||0)+(changed?1:0);
+      const calendar={...next,calendarRevision:revision};
+      const repair=!current.clubCalendarData||JSON.stringify(current.clubTermine)!==JSON.stringify(next.clubTermine)||JSON.stringify(current.clubKegelSerie)!==JSON.stringify(next.clubKegelSerie)||current.calendarRevision!==revision;
+      if(changed||repair)transaction.set(ref,{...calendar,clubCalendarData:calendar,updatedAt:serverTimestamp()},{merge:true});
+      return calendar;
+    });
   },
 
   getLiveGameRef(

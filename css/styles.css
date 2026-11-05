@@ -1707,6 +1707,11 @@ tbody td:first-child {
     .cash-year-unassigned th,.cash-year-unassigned td {font-style:italic;}
     .cash-book-summary {display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:14px 0;}
     .cash-expense-source {display:block;color:var(--muted);font-size:.78rem;margin-top:4px;}
+    .kc-series-panel {max-width:1100px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin:12px 0;}
+    .kc-series-panel p {margin-top:0;}
+    .kc-series-label {display:block;color:var(--muted);font-size:.78rem;margin-top:4px;}
+    .kc-event-actions {display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .kc-event-row>span {min-width:0;overflow-wrap:anywhere;flex:1;}
     .cash-expense-form label {display:grid;gap:7px;font-weight:700;margin-top:14px;}
     .cash-expense-form input:not([type=checkbox]) {width:100%;min-height:44px;padding:9px;border:1px solid var(--border);border-radius:8px;font:inherit;}
     .cash-check {display:flex!important;gap:9px;align-items:center;font-size:.85rem;line-height:1.4;}
