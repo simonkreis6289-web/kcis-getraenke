@@ -1713,7 +1713,12 @@ tbody td:first-child {
     .cash-book-options label {display:flex;gap:8px;align-items:center;}
     .cash-book-options input[type=radio] {width:auto;min-height:0;}
     #historical-evening-modal [hidden] {display:none!important;}
-    .historical-modal {max-width:1450px;width:98vw;max-height:94vh;padding:18px;}
+    #historical-evening-modal {padding:12px;}
+    #historical-evening-modal .historical-modal {
+      width:100%;max-width:1800px;min-width:0;padding:18px;
+      max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
+      overflow-y:auto;
+    }
     .historical-fields,.historical-add-row {display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:12px 0;}
     .historical-fields label,.historical-note {display:grid;gap:5px;font-weight:700;font-size:.85rem;}
     .historical-modal input,.historical-modal select {min-height:38px;padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;}
