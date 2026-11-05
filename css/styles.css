@@ -1705,7 +1705,14 @@ tbody td:first-child {
     .cash-year-table small {display:block;color:var(--muted);font-size:.75rem;margin-top:4px;}
     .cash-year-table tfoot th,.cash-year-table tfoot td,.cash-year-table .cash-year-sum {font-weight:700;background:var(--table-sticky-alt-bg);}
     .cash-year-unassigned th,.cash-year-unassigned td {font-style:italic;}
-    .cash-book-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0;}
+    .cash-book-summary {display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:14px 0;}
+    .cash-expense-source {display:block;color:var(--muted);font-size:.78rem;margin-top:4px;}
+    .cash-expense-form label {display:grid;gap:7px;font-weight:700;margin-top:14px;}
+    .cash-expense-form input:not([type=checkbox]) {width:100%;min-height:44px;padding:9px;border:1px solid var(--border);border-radius:8px;font:inherit;}
+    .cash-check {display:flex!important;gap:9px;align-items:center;font-size:.85rem;line-height:1.4;}
+    .cash-check input[type=checkbox] {width:22px;min-width:22px;height:22px;}
+    #str-closure-modal [hidden],#historical-evening-modal [hidden] {display:none!important;}
+    .cash-history-filters select {min-height:42px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;}
     .cash-book-summary>div {padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);}
     .cash-book-summary span {display:block;color:var(--muted);font-size:.8rem;}
     .cash-book-summary strong {display:block;font-size:clamp(1.1rem,2.4vw,1.8rem);margin-top:8px;overflow-wrap:anywhere;}

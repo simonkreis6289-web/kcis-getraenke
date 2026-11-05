@@ -1,12 +1,13 @@
 /* Kassenhistorie V103 – zeigt archivierte Strafenabschlüsse an und erlaubt gezieltes Löschen. */
 let cashHistoryEntries = [];
+let cashExpenseEntries = [];
 let cashHistoryBusy = false;
 let cashHistoryClub = '';
 let cashHistoryUnsubscribe = null, cashHistorySubscriptionClub = '', cashHistoryGeneration = 0;
 function stopCashHistorySync() {
   cashHistoryGeneration++;
   cashHistoryUnsubscribe?.();cashHistoryUnsubscribe=null;cashHistorySubscriptionClub='';
-  cashHistoryEntries=[];cashHistoryClub='';
+  cashHistoryEntries=[];cashExpenseEntries=[];cashHistoryClub='';
   cashHistoryBusy=false;
 }
 
@@ -23,7 +24,7 @@ async function refreshCashHistory() {
   const container = document.getElementById('cash-history-list');
   if (!status || !container) return;
   if (!ACTIVE_CLUB) { status.textContent = 'Bitte erst einen Club auswählen.'; container.innerHTML = ''; return; }
-  if (!window.firestoreApi?.listArchivedStrafenEvents) { status.textContent = 'Archivzugriff noch nicht verfügbar.'; return; }
+  if (!window.firestoreApi?.listCashBookEntries) { status.textContent = 'Kassenzugriff noch nicht verfügbar. Bitte die App aktualisieren.'; return; }
   if (cashHistoryBusy) return;
   if(cashHistoryClub && cashHistoryClub!==getClubFirestoreId(ACTIVE_CLUB))stopCashHistorySync();
   const generation=++cashHistoryGeneration;
@@ -31,17 +32,18 @@ async function refreshCashHistory() {
   status.textContent = 'Archiv wird geladen …';
   try {
     const clubId = getClubFirestoreId(ACTIVE_CLUB);
-    const entries = await window.firestoreApi.listArchivedStrafenEvents(clubId);
+    const entries = await window.firestoreApi.listCashBookEntries(clubId);
     if (getClubFirestoreId(ACTIVE_CLUB) !== clubId || generation!==cashHistoryGeneration) return;
-    cashHistoryEntries = entries;
+    cashHistoryEntries = entries.filter(entry=>entry.category==='strafen');
+    cashExpenseEntries = entries.filter(entry=>entry.category==='expense');
     cashHistoryClub = clubId;
     status.textContent = '';
     renderCashHistory();
-    if(cashHistorySubscriptionClub!==clubId && window.firestoreApi.subscribeArchivedStrafenEvents){
+    if(cashHistorySubscriptionClub!==clubId && window.firestoreApi.subscribeCashBookEntries){
       cashHistoryUnsubscribe?.();cashHistorySubscriptionClub=clubId;
-      cashHistoryUnsubscribe=window.firestoreApi.subscribeArchivedStrafenEvents(clubId,entries=>{
+      cashHistoryUnsubscribe=window.firestoreApi.subscribeCashBookEntries(clubId,entries=>{
         if(cashHistorySubscriptionClub!==clubId||getClubFirestoreId(ACTIVE_CLUB)!==clubId)return;
-        cashHistoryEntries=entries;cashHistoryClub=clubId;renderCashHistory();
+        cashHistoryEntries=entries.filter(entry=>entry.category==='strafen');cashExpenseEntries=entries.filter(entry=>entry.category==='expense');cashHistoryClub=clubId;renderCashHistory();
       },error=>{console.error('Kassenarchiv-Live-Sync',error);if(cashHistorySubscriptionClub===clubId){cashHistorySubscriptionClub='';cashHistoryUnsubscribe=null;status.textContent='Archiv-Live-Verbindung unterbrochen. Bitte aktualisieren.';}});
     }
   } catch (error) {

@@ -2201,87 +2201,26 @@ async function generateStrafenPDF(snapshot) {
     const lines=doc.splitTextToSize(getPlainText(snapshot.note),pageWidth-margin*2);
     ensurePageSpace(lines.length*4+14);doc.setFont('helvetica','normal');doc.setFontSize(9);
     doc.text(lines,margin,currentY+8);
+    currentY+=lines.length*4+14;
+  }
+  if(Number.isSafeInteger(snapshot.laneCostCents)){
+    ensurePageSpace(29);doc.setFont('helvetica','bold');doc.setFontSize(12);
+    doc.text('Bahngebühr: '+formatEuro(snapshot.laneCostCents/100),margin,currentY+10);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(snapshot.laneExpenseExcluded?'Die Bahngebühr ist aus den Kassenausgaben ausgeschlossen.':'Ausgabe der Clubkasse; nicht in den Einzelbeträgen der Mitglieder enthalten.',margin,currentY+17);
   }
   return doc;
 }
 
 async function closeStrafenAndExportPDF() {
-  const missingStatuses =
-    getMissingMemberStatuses();
-
-  if (
-    missingStatuses.length
-  ) {
-    showToast(
-      `❌ Status fehlt: ${missingStatuses.join(', ')}`,
-      'error'
-    );
-
-    return;
-  }
-
-  try {
-    const snapshot =
-      getStrafenSnapshot();
-
-    const doc =
-      await generateStrafenPDF(
-        snapshot
-      );
-
-    const dateStr =
-      new Date()
-        .toISOString()
-        .slice(0, 10);
-
-    const clubName =
-      getSafePdfClubName();
-
-    const filename =
-      `${clubName}_Strafenabrechnung_${dateStr}.pdf`;
-
-    doc.save(
-      filename
-    );
-
-    await archiveStrafenEvent(
-      snapshot
-    );
-
-    showToast(
-      '✅ Straf-PDF erstellt und archiviert',
-      'success'
-    );
-  } catch (error) {
-    console.error(
-      'Fehler beim Strafabschluss:',
-      error
-    );
-
-    showToast(
-      '❌ Fehler beim Strafabschluss',
-      'error'
-    );
-  }
+  return openStrafenCloseDialog();
 }
 
-async function archiveStrafenEvent(snapshot) {
-  if (!window.firestoreApi || !ACTIVE_CLUB) return;
-
-  const clubId = getClubFirestoreId(ACTIVE_CLUB);
-  // Ein Abschluss pro Kegelabend: wiederholtes PDF-Erstellen erzeugt
-  // keinen weiteren Firestore-Archiveintrag desselben Abends.
-  const eveningKey = String(currentEveningStartedAt || snapshot.date || new Date().toISOString().slice(0,10));
-  const archiveId = 'strafen_abend_' + eveningKey.replace(/[^a-zA-Z0-9_-]/g, '_');
-
-  await window.firestoreApi.archiveClubEvent(clubId, archiveId, {
-    ...snapshot,
-    status: 'closed',
-    eveningStartedAt: currentEveningStartedAt || snapshot.date || null,
-    closedAt: new Date().toISOString(),
-    club: ACTIVE_CLUB,
-    category: 'strafen'
-  });
-  if(typeof refreshCashHistory==='function')await refreshCashHistory();
+async function archiveStrafenEvent(snapshot,context) {
+  if(!context||!window.firestoreApi?.saveStrafenClosure)throw new Error('Abschlusszugriff nicht verfügbar');
+  return window.firestoreApi.saveStrafenClosure(getClubFirestoreId(context.club),context.archiveId,{
+    ...snapshot,status:'closed',category:'strafen',club:context.club,
+    eveningStartedAt:context.archiveStartedAt||context.startedAt||snapshot.date,
+    closedAt:new Date().toISOString()
+  },context.revision);
 }
-
