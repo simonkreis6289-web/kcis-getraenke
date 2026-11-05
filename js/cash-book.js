@@ -1,4 +1,4 @@
-/* V171: target cash balance from archived fine/fee statements, in cents. */
+/* Kassenstand und Jahresübersicht aus denselben archivierten Abschlüssen, in Cent. */
 (() => {
   function money(value) {
     const number=typeof value==='number'?value:Number(String(value??'').replace(',','.'));
@@ -13,11 +13,17 @@
   }
   function total(entry){
     if(entry.totals?.grandTotal!=null&&Number.isFinite(Number(entry.totals.grandTotal)))return money(entry.totals.grandTotal);
-    return [...(entry.members||[]),...(entry.guests||[])].reduce((sum,p)=>sum+(Number.isSafeInteger(p.chargedCents)?p.chargedCents:money(p.total)),0);
+    return [...(entry.members||[]),...(entry.guests||[])].reduce((sum,p)=>sum+personTotal(p),0);
   }
-  function summary(entries,settings){
+  function personTotal(person){
+    if(Number.isSafeInteger(person.chargedCents))return person.chargedCents;
+    if(person.total!=null&&Number.isFinite(Number(person.total)))return money(person.total);
+    return (Number.isSafeInteger(person.penaltyCents)?person.penaltyCents:money(person.penaltyTotal))+
+      (Number.isSafeInteger(person.feeCents)?person.feeCents:money(person.monthlyFee));
+  }
+  function periodEntries(entries,settings){
     const config=settings||{},seen=new Set();
-    const selected=entries.filter(entry=>{
+    return entries.filter(entry=>{
       if(entry.id&&seen.has(entry.id))return false;
       if(entry.id)seen.add(entry.id);
       if(config.mode==='now'&&config.startAt){
@@ -26,11 +32,40 @@
       }
       return !config.startDate||date(entry)>=config.startDate;
     });
+  }
+  function summary(entries,settings){
+    const config=settings||{},selected=periodEntries(entries,config);
     const opening=Number.isSafeInteger(config.openingCents)?config.openingCents:0;
     const income=selected.reduce((sum,entry)=>sum+total(entry),0);
     return {opening,income,balance:opening+income,count:selected.length};
   }
-  window.KCCashBook=Object.freeze({money,date,total,summary});
+  function matrix(entries,settings,roster=[]){
+    const columns=periodEntries(entries,settings).map(entry=>({id:entry.id||'',date:date(entry),kind:entry.kind||'',total:total(entry),entry}))
+      .sort((a,b)=>a.date.localeCompare(b.date)||String(a.entry.eveningStartedAt||a.entry.closedAt||'').localeCompare(String(b.entry.eveningStartedAt||b.entry.closedAt||''))||a.id.localeCompare(b.id));
+    const byName=new Map();
+    function rowFor(person,isGuest){
+      const name=String(person.name||'').trim().replace(/\s+/g,' ');
+      const key=(isGuest?'guest:':'member:')+name.normalize('NFKC').toLocaleLowerCase('de');
+      if(!byName.has(key))byName.set(key,{name:name||'Ohne Namen',isGuest,values:columns.map(()=>null),total:0});
+      return byName.get(key);
+    }
+    roster.filter(p=>!p.isGuest&&!p.isDrinksOnly&&!p.inactive).forEach(p=>rowFor(p,false));
+    const remainder=columns.map(()=>null);
+    columns.forEach((column,index)=>{
+      let assigned=0;
+      for(const [people,isGuest] of [[column.entry.members||[],false],[column.entry.guests||[],true]]){
+        for(const person of people){
+          const value=personTotal(person),row=rowFor(person,isGuest);
+          row.values[index]=(row.values[index]??0)+value;row.total+=value;assigned+=value;
+        }
+      }
+      if(column.total!==assigned)remainder[index]=column.total-assigned;
+    });
+    const rows=[...byName.values()].sort((a,b)=>Number(a.isGuest)-Number(b.isGuest)||a.name.localeCompare(b.name,'de',{sensitivity:'base'}));
+    if(remainder.some(value=>value!==null))rows.push({name:'Nicht zugeordnet',unassigned:true,isGuest:false,values:remainder,total:remainder.reduce((sum,value)=>sum+(value||0),0)});
+    return {columns:columns.map(({entry,...column})=>column),rows,income:columns.reduce((sum,column)=>sum+column.total,0)};
+  }
+  window.KCCashBook=Object.freeze({money,date,total,personTotal,periodEntries,summary,matrix});
 })();
 let cashBookBusy=false,cashBookDialogClub='',cashBookDialogVersion='';
 function cashBookCurrency(cents){return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);}
@@ -45,6 +80,41 @@ function renderCashBook(){
     small.textContent=label;strong.textContent=value;item.append(small,strong);box.append(item);
   }
   document.getElementById('cash-book-period').textContent=start+(ready?' · '+totals.count+' Abschlüsse':'');
+  renderCashYearOverview(ready,start);
+}
+
+function renderCashYearOverview(ready,start){
+  const box=document.getElementById('cash-year-table'),period=document.getElementById('cash-year-period');
+  if(!box)return;
+  period.textContent=start;
+  if(!ready){box.innerHTML='<p class="cash-help">Die Jahresübersicht wird mit dem Archiv geladen.</p>';return;}
+  const matrix=KCCashBook.matrix(cashHistoryEntries,cashBookSettings,persons),esc=escapeCashText;
+  if(!matrix.columns.length){box.innerHTML='<p class="cash-help">Seit dem Neustart sind noch keine abgeschlossenen Kegelabende vorhanden.</p>';return;}
+  const dates=new Map();matrix.columns.forEach(column=>dates.set(column.date,(dates.get(column.date)||0)+1));
+  const counters=new Map();
+  const headings=matrix.columns.map(column=>{
+    const number=(counters.get(column.date)||0)+1;counters.set(column.date,number);
+    const day=/^\d{4}-\d{2}-\d{2}$/.test(column.date)?column.date.split('-').reverse().join('.'):'Datum unbekannt';
+    return '<th scope="col">'+esc(day)+(dates.get(column.date)>1?'<small>Abschluss '+number+'</small>':'')+(column.kind==='cancelled'?'<small>Ausgefallen</small>':'')+'</th>';
+  }).join('');
+  const rows=matrix.rows.map(row=>'<tr'+(row.unassigned?' class="cash-year-unassigned"':'')+'><th scope="row">'+esc(row.name)+(row.isGuest?'<small>Gastkegler</small>':'')+'</th>'+row.values.map(value=>'<td>'+(value===null?'—':cashBookCurrency(value))+'</td>').join('')+'<td class="cash-year-sum">'+cashBookCurrency(row.total)+'</td></tr>').join('');
+  box.innerHTML='<table class="cash-year-table"><caption class="cash-help">Abgerechnete Strafen und Monatsbeiträge je Person und Termin</caption><thead><tr><th scope="col">Name</th>'+headings+'<th scope="col">Gesamt</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th scope="row">Gesamt je Termin</th>'+matrix.columns.map(column=>'<td>'+cashBookCurrency(column.total)+'</td>').join('')+'<td>'+cashBookCurrency(matrix.income)+'</td></tr></tfoot></table>'+(matrix.rows.some(row=>row.unassigned)?'<p class="cash-help">„Nicht zugeordnet“ zeigt Beträge älterer Abschlüsse, für die keine passenden Einzelbeträge gespeichert sind.</p>':'');
+}
+
+function showBillingTab(key,focus=false){
+  const target=document.getElementById('billing-panel-'+key);if(!target)return;
+  document.querySelectorAll('[data-billing-tab]').forEach(button=>{
+    const selected=button.dataset.billingTab===key;
+    button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;
+    if(selected&&focus)button.focus();
+  });
+  document.querySelectorAll('[data-billing-panel]').forEach(panel=>panel.hidden=panel!==target);
+}
+function billingTabKeydown(event){
+  const keys=['balance','year','record','archive'],index=keys.indexOf(event.target.dataset.billingTab);
+  if(index<0)return;
+  const next=event.key==='ArrowRight'?(index+1)%keys.length:event.key==='ArrowLeft'?(index+keys.length-1)%keys.length:event.key==='Home'?0:event.key==='End'?keys.length-1:null;
+  if(next===null)return;event.preventDefault();showBillingTab(keys[next],true);
 }
 function openCashBookSettings(){
   if(!ACTIVE_CLUB||cashBookBusy)return;
@@ -97,3 +167,4 @@ async function zeroCashBook(){
   const now=new Date();await storeCashBookSettings({mode:'now',startDate:KCBirthdays.today(now),startAt:now.toISOString(),openingCents:0,updatedAt:now.toISOString()});
 }
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeCashBookSettings();});
+
