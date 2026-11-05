@@ -1,0 +1,49 @@
+.six-page-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+.six-page-title .section-title{margin:0}
+.six-info-button{width:42px;height:42px;flex:0 0 42px;border:1px solid var(--border,#4e5c74);border-radius:50%;background:var(--surface,#fff);color:var(--text,#18233a);font-size:24px;cursor:pointer}
+.six-info-button:focus-visible{outline:3px solid var(--accent,#f5a623);outline-offset:3px}
+.six-race-board{color:var(--text,#18233a);background:var(--surface,#fff);padding:12px;border-radius:12px;display:grid;gap:12px}
+.six-race-headline{font-weight:800;font-size:clamp(18px,2vw,27px);text-align:center;padding:9px;background:#fff0c6;color:#322513;border-radius:10px}
+.six-turnline{text-align:center;font-size:20px;padding:10px;background:#eef6ff;color:#14283c;border-radius:9px}
+.six-turnline small{display:block;font-size:14px;margin-top:5px}
+.six-tracks{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.six-track{padding:11px 13px;border:2px solid var(--six-color);border-radius:11px;min-width:0}
+.six-current{box-shadow:0 0 0 3px #f4af3944}
+.six-track-label{display:flex;justify-content:space-between;gap:8px}
+.six-track small{display:block;margin:5px 0;color:var(--muted,#536070);overflow-wrap:anywhere}
+.six-track-road{height:26px;position:relative;background:#edf0f5;border-radius:20px;margin:10px 0 0;overflow:hidden}
+.six-track-road i{display:block;background:var(--six-color);height:100%;opacity:.45;transition:width .35s}
+.six-track-road span{position:absolute;top:1px;font-size:23px;transition:left .35s}
+.six-chart-note{font-size:12px;margin:0;color:var(--muted,#526070)}
+.six-score-scroller{overflow:auto;max-height:55vh;border:1px solid var(--border,#cbd2df);border-radius:9px}
+.six-tv-board .six-score-scroller{max-height:none;overflow:visible}
+.six-score-table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+.six-score-table th,.six-score-table td{padding:10px;min-width:77px;text-align:center;border-bottom:1px solid #d8dfeb;background:var(--surface,#fff);white-space:nowrap}
+.six-score-table small{display:block;font-size:11px;color:var(--muted,#536070);margin-top:4px}
+.six-score-table thead th{position:sticky;top:0;z-index:2;background:#eaf0f8;color:#18233a}
+.six-score-table tr>:first-child{position:sticky;left:0;text-align:left;font-weight:700;z-index:1}
+.six-score-table thead tr>:first-child{z-index:3}
+.six-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0}
+.six-actions button{min-height:44px}
+.six-player-grid{grid-template-columns:repeat(auto-fit,minmax(95px,1fr))}
+.six-pairs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:15px 0}
+.six-pair{padding:12px;border:1px solid var(--border,#cbd2df);border-radius:11px}
+.six-pair>div{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.six-check{display:flex;align-items:center;gap:9px;margin:16px 0;font-weight:600;line-height:1.4}
+.six-check input{width:22px;height:22px;flex:0 0 22px}
+.six-player-turn{display:flex;gap:12px;margin-top:15px;flex-wrap:wrap}
+.six-player-turn button{min-width:130px}
+.six-player-turn .kc-avatar-image{height:52px}
+.six-pinpad .pinpad-btn{min-width:48px;min-height:48px;font-size:24px}
+.six-error{padding:12px;border:1px solid #b34141;border-radius:10px;background:#fff0ef;color:#662323;margin:12px 0}
+.six-history{padding:12px;border:1px solid var(--border,#cbd2df);border-radius:10px;margin:15px 0}
+.six-history div{padding:5px 0;border-bottom:1px solid #e1e5ed}
+#sechs-rules-modal .modal{max-width:760px;width:100%;max-height:calc(100dvh - 40px);line-height:1.6}
+#sechs-rules-modal li{margin:9px 0}
+#sechs-rules-modal ol{padding-left:23px}
+.six-rule-days{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:15px 0;text-align:center}
+.six-rule-days span{border:1px solid #ccd3df;padding:8px;border-radius:8px;background:#edf3fc;color:#18233a}
+.six-rule-days strong{display:block;font-size:20px}
+#sechs-rules-modal .six-rule-source{font-size:12px;margin:14px 0}
+@media(max-width:600px){.six-tracks{grid-template-columns:1fr}.six-rule-days{grid-template-columns:repeat(3,1fr)}.six-pairs{grid-template-columns:1fr}.six-race-board{padding:6px}}
+@media(prefers-reduced-motion:reduce){.six-track-road i,.six-track-road span{transition:none}}

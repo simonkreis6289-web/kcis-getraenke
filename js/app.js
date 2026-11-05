@@ -45,6 +45,7 @@ async function startApp() {
 function getSerializableState() {
   return {
     cashBookSettings,
+    currentEveningStartedAt,
     persons,
     seatingOrder,
       groupSettings,
@@ -74,6 +75,7 @@ function getSerializableState() {
     calendarRevision: kcCalendarRevision,
     clubTerminGruende,
     sichernState: {...sichernState,busy:false,closing:false},
+    sechstageState,
     torState,
     fuchsjagdState,
     lotterieSettings,
@@ -167,6 +169,7 @@ function getFirestoreState() {
     haustiefState,
     hausnummerSettings,
         sichernState: {...sichernState,busy:false,closing:false},
+        sechstageState,
         torState,
     torState,
         fuchsjagdState,
@@ -326,6 +329,12 @@ function applyLoadedState(state) {
   haustiefState = state.haustiefState || createHausState();
   hausnummerSettings = {hoch:{...HAUS_DEFAULTS.hoch,...(state.hausnummerSettings?.hoch||{})},tief:{...HAUS_DEFAULTS.tief,...(state.hausnummerSettings?.tief||{})}};
   sichernState = state.sichernState || createSichernState();
+  if(typeof applySechsServerState==='function'){
+    const savedSix=state.sechstageState;
+    if(!currentEveningStartedAt&&savedSix?.eveningStartedAt)currentEveningStartedAt=savedSix.eveningStartedAt;
+    if(!savedSix||savedSix.eveningStartedAt!==currentEveningStartedAt)sechstageState=createSechstageState();
+    else applySechsServerState(savedSix);
+  }
   torState = state.torState || createTorState();
   ensureTorState();
   ensureSichernState();
@@ -648,6 +657,7 @@ function findUndefinedPaths(
 }
     
 function hydrateState() {
+  ensureSechstageState();
   DRINKS.forEach(drink => {
     if (
       prices[drink.key] ===
@@ -2713,6 +2723,7 @@ async function startNewKegelabend() {
   dashboardActiveGame = null;
   fuchsjagdState = createFuchsjagdState();
   sichernState = createSichernState();
+  sechstageState = createSechstageState();
   torState = createTorState();
   archiveCurrentKegelabendForStats();
   // Erst nach dem Archivieren beginnt der neue Kegelabend.
@@ -3843,6 +3854,7 @@ function updateStrafenLimitInput() {
                                     
 // ── RENDER ──
 function renderAll() {
+  ensureSechstageState();
   recalcTeamExtras();
 applyGroupTheme();
   updateHeaderDateTime();
@@ -3873,6 +3885,7 @@ applyGroupTheme();
     renderHausSettings();
     renderFuchsjagdGame();
     renderSichernGame();
+    renderSechsGame();
     renderTorGame();
     renderLotterieSettings();
     renderTiberiusSettings();
@@ -5642,7 +5655,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info']
 };
