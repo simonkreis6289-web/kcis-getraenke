@@ -1,0 +1,35 @@
+#tab-spiele-einstellungen{max-width:1120px}
+#tab-spiele-einstellungen>.section-title{margin:10px 0 8px}
+.game-settings-intro{color:var(--muted,#59657b);margin:0 0 16px;line-height:1.5}
+.game-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.game-settings-card{display:flex;flex-direction:column;gap:12px;min-width:0;padding:18px;border:1px solid var(--border,#b9c4d7);border-radius:14px;background:var(--surface,#fff);box-shadow:0 2px 8px #172a4510}
+.game-settings-card>header{display:flex;align-items:center;gap:10px}
+.game-settings-card>header>span{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:#edf2fb;font-size:24px}
+.game-settings-card h3{font-family:inherit;font-size:19px;font-weight:800;letter-spacing:normal;margin:0}
+.game-settings-card header p{font-size:13px;color:var(--muted,#59657b);margin:4px 0 0}
+.game-settings-card>p{margin:0;font-size:14px;line-height:1.5}
+.game-settings-card small{font-size:12px;color:var(--muted,#59657b);line-height:1.5}
+.game-settings-card fieldset{margin:0;padding:10px 12px 12px;border:1px solid #d7deea;border-radius:10px;min-width:0}
+.game-settings-card legend{font-size:14px;font-weight:700;padding:0 6px}
+.game-settings-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.game-settings-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.game-settings-card .game-settings-field,.game-settings-values label{display:grid;gap:6px;font-weight:700;font-size:14px}
+#tab-spiele-einstellungen .game-settings-card input[type=number]{width:100%;min-width:0;max-width:none;min-height:44px;padding:9px 11px;box-sizing:border-box;border:1px solid var(--border,#a6b1c6);border-radius:8px;background:var(--surface,#fff);color:inherit;font:inherit;font-weight:700}
+#spiral-settings-target{max-width:180px!important}
+.game-settings-card input:focus-visible,.game-settings-card button:focus-visible{outline:3px solid var(--accent,#f5a623);outline-offset:2px}
+.game-settings-card input[aria-invalid=true]{border-color:#b62b27!important}
+.game-settings-card footer{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:3px}
+.game-settings-card footer button{min-height:44px;padding:10px 14px;width:auto}
+.game-settings-status{flex:1 1 200px;font-size:13px;line-height:1.5}
+.game-settings-wide{grid-column:1/-1}
+.game-settings-checks{display:flex;flex-wrap:wrap;gap:12px 22px}
+.game-settings-checks .modal-check{margin:0!important;display:flex;align-items:center;gap:8px}
+.game-settings-checks input[type=checkbox]{width:21px;height:21px;flex:0 0 21px}
+#tab-spiele-einstellungen .game-settings-card #tannenbaum-settings-grid{max-width:none;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px}
+#tab-spiele-einstellungen .game-settings-card .tannenbaum-setting-card{padding:8px;border:1px solid #d7deea;border-radius:9px;background:#f5f7fb}
+#tab-spiele-einstellungen .game-settings-card .tannenbaum-setting-card label{font-size:12px}
+#tab-spiele-einstellungen .game-settings-card .tannenbaum-setting-card input{margin-top:6px;text-align:center}
+.tg-target-note{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;font-size:15px}
+.tg-target-note button{min-height:44px}
+@media(max-width:760px){.game-settings-grid{grid-template-columns:1fr}.game-settings-wide{grid-column:auto}.game-settings-card{padding:14px}.game-settings-card footer button{max-width:100%;white-space:normal}}
+@media(max-width:380px){.game-settings-fields{grid-template-columns:1fr}.game-settings-values{gap:6px}}

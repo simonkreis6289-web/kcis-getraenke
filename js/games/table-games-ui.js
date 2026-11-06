@@ -1,11 +1,50 @@
 /* Oberfläche für die beiden Spiele; die Spielzustände kommen aus Firestore-Transaktionen. */
 const TABLE_GAME_KEYS=['blackjack','gluecksspirale'];
 let tableDrafts={},tablePending={},tableBusy={},tableAssignment=null,tableRulesFocus=null;
+let spiralSettingsBusy=false;
+function getSpiralTarget(){
+  const target=Number(gluecksspiraleSettings?.target);
+  return Number.isInteger(target)&&target>=10&&target<=1000?target:50;
+}
+function renderSpiralSettings(){
+  const input=document.getElementById('spiral-settings-target');if(!input)return;
+  const target=getSpiralTarget(),key=ACTIVE_CLUB+'|'+target;
+  const hub=document.getElementById('spiral-hub-target');if(hub)hub.textContent=String(target);
+  if(input.dataset.settingClub!==String(ACTIVE_CLUB)){
+    input.removeAttribute('aria-invalid');const status=document.getElementById('spiral-settings-status');if(status)status.textContent='';
+  }
+  if(input.dataset.settingKey!==key){
+    if(input.dataset.settingClub!==String(ACTIVE_CLUB)||document.activeElement!==input){input.value=String(target);input.dataset.settingKey=key;input.dataset.settingClub=String(ACTIVE_CLUB);}
+  }
+  const button=document.getElementById('spiral-settings-save');if(button)button.disabled=spiralSettingsBusy;
+}
+async function saveSpiralSettings(){
+  const input=document.getElementById('spiral-settings-target');if(!input||spiralSettingsBusy||!ACTIVE_CLUB)return false;
+  const target=Number(input.value),status=document.getElementById('spiral-settings-status');
+  if(!Number.isInteger(target)||target<10||target>1000){
+    if(status)status.textContent='Bitte eine ganze Zahl von 10 bis 1000 Holz eingeben.';
+    input.setAttribute('aria-invalid','true');showToast('Zielwert: Bitte 10 bis 1000 ganze Holz eingeben','error');return false;
+  }
+  const club=ACTIVE_CLUB;spiralSettingsBusy=true;input.removeAttribute('aria-invalid');
+  gluecksspiraleSettings={target};persistState();renderTableGames();
+  if(status)status.textContent='Zielwert wird gespeichert …';
+  try{
+    const saved=navigator.onLine&&typeof saveToFirestore==='function'?await saveToFirestore(false):false;
+    if(ACTIVE_CLUB!==club)return saved;
+    const message=saved?'Gespeichert: '+target+' Holz für neue Spiele.':'Lokal gespeichert: '+target+' Holz. Cloud-Speicherung noch ausstehend.';
+    if(status)status.textContent=message;
+    showToast(message,saved?'success':'error');return saved;
+  }catch(error){
+    if(ACTIVE_CLUB===club){if(status)status.textContent='Lokal gespeichert. Cloud-Speicherung fehlgeschlagen.';showToast('Zielwert lokal gespeichert; Cloud-Speicherung fehlgeschlagen','error');}
+    return false;
+  }finally{spiralSettingsBusy=false;renderSpiralSettings();}
+}
 function tableGameGet(key){return key==='blackjack'?blackjackState:gluecksspiraleState;}
 function tableGameSet(key,state){if(key==='blackjack')blackjackState=state;else gluecksspiraleState=state;}
 function createBlackjackState(){return KCTableGames.empty('blackjack');}
 function createGluecksspiraleState(){return KCTableGames.empty('gluecksspirale');}
 function ensureTableGames(){
+  gluecksspiraleSettings={target:getSpiralTarget()};
   for(const key of TABLE_GAME_KEYS){const s=tableGameGet(key);if(!s||!Array.isArray(s.history)||(s.eveningStartedAt&&currentEveningStartedAt&&s.eveningStartedAt!==currentEveningStartedAt))tableGameSet(key,KCTableGames.empty(key));}
   for(const name of ['17 + 4 / Blackjack','Glücksspirale'])if(!SPIELE_KATALOG.includes(name))SPIELE_KATALOG.push(name);
 }
@@ -27,7 +66,7 @@ function tablePlayers(){
 }
 function tableDraft(key){
   const stamp=ACTIVE_CLUB+'|'+(currentEveningStartedAt||'');
-  if(tableDrafts[key]?.stamp!==stamp)tableDrafts[key]={stamp,selected:tablePlayers().map(p=>p.name),teams:[],cards:key==='blackjack',target:50};
+  if(tableDrafts[key]?.stamp!==stamp)tableDrafts[key]={stamp,selected:tablePlayers().map(p=>p.name),teams:[],cards:key==='blackjack'};
   return tableDrafts[key];
 }
 function tableToggle(key,index){
@@ -91,7 +130,7 @@ async function tableRun(key,action,fields={}){
 }
 async function startTableGame(key){
   const d=tableDraft(key);
-  return tableRun(key,'start',{gameId:'game_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),players:d.selected,teams:d.teams,cards:d.cards,target:Number(d.target)});
+  return tableRun(key,'start',{gameId:'game_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),players:d.selected,teams:d.teams,cards:d.cards,target:getSpiralTarget()});
 }
 function tableAction(key,action,fields={}){if(!tablePending[key])return tableRun(key,action,fields);}
 function tableCard(value){return tableAction('blackjack','card',{value:value==='A'?'A':Number(value)});}
@@ -114,7 +153,7 @@ async function tableReload(key){
   }catch(error){showToast('Spielstand konnte nicht geladen werden: '+error.message,'error');}
   finally{tableBusy[key]=false;renderTableGame(key);}
 }
-function renderTableGames(){for(const key of TABLE_GAME_KEYS)renderTableGame(key);}
+function renderTableGames(){for(const key of TABLE_GAME_KEYS)renderTableGame(key);renderSpiralSettings();}
 function renderTableGame(key){
   const setup=document.getElementById(key+'-start-card'),box=document.getElementById(key+'-board');if(!setup||!box)return;
   ensureTableGames();const s=tableGameGet(key),spiral=key==='gluecksspirale',draft=tableDraft(key),active=tablePlayers();
@@ -128,7 +167,7 @@ function renderTableGame(key){
     let html='<h3>'+ (spiral?'Zweierteams bilden':'Kegler und Reihenfolge wählen')+'</h3><p>'+count+' ausgewählt'+(valid?'':' · Bitte '+(spiral?'3 bis 16 Kegler':'2 bis 16 Kegler')+' wählen')+'</p><div class="kc-avatar-picker tg-player-grid">'+active.map((p,i)=>'<button type="button" class="kc-avatar-option '+(draft.selected.includes(p.name)?'selected':'')+'" aria-pressed="'+draft.selected.includes(p.name)+'" onclick="tableToggle(\''+key+'\','+i+')">'+sixAvatar(p.name)+'</button>').join('')+'</div>';
     if(spiral){
       html+='<p>Bei ungerader Anzahl spielt einer als Einzelteam mit beiden Teamwürfen. Niemand muss aussetzen.</p>';
-      html+='<div class="tg-actions"><button type="button" class="secondary-btn" onclick="tableBuildPairs()" '+(!valid?'disabled':'')+'>Teams bilden</button><button type="button" class="secondary-btn" onclick="tableBuildPairs(true)" '+(!valid?'disabled':'')+'>🎲 Teams auslosen</button></div><div class="tg-pairs">'+draft.teams.map((t,i)=>'<div class="tg-pair"><strong>Team '+(i+1)+(t.players.length===1?' · Einzelteam':'')+'</strong>'+t.players.map((n,j)=>'<button type="button" class="kc-avatar-option" onclick="tableOpenAssignment('+i+','+j+')">'+sixAvatar(n)+'</button>').join('')+'</div>').join('')+'</div><label class="tg-setting">Ziel (Holz)<input type="number" id="gluecksspirale-target" min="10" max="1000" value="'+draft.target+'" onchange="tableDraft(\'gluecksspirale\').target=this.value"></label>';
+      html+='<div class="tg-actions"><button type="button" class="secondary-btn" onclick="tableBuildPairs()" '+(!valid?'disabled':'')+'>Teams bilden</button><button type="button" class="secondary-btn" onclick="tableBuildPairs(true)" '+(!valid?'disabled':'')+'>🎲 Teams auslosen</button></div><div class="tg-pairs">'+draft.teams.map((t,i)=>'<div class="tg-pair"><strong>Team '+(i+1)+(t.players.length===1?' · Einzelteam':'')+'</strong>'+t.players.map((n,j)=>'<button type="button" class="kc-avatar-option" onclick="tableOpenAssignment('+i+','+j+')">'+sixAvatar(n)+'</button>').join('')+'</div>').join('')+'</div><p class="tg-target-note">Startziel: <strong>'+getSpiralTarget()+' Holz</strong> <button type="button" class="secondary-btn" onclick="showSideTab(\'spiele\',\'spiele-einstellungen\')">⚙️ Zielwert ändern</button></p>';
     }else{
       html+='<div class="tg-order">'+draft.selected.map((n,i)=>'<div><span>'+(i+1)+'. '+tableEscape(n)+'</span><button type="button" class="secondary-btn" aria-label="Spieler nach oben" onclick="tableMove('+i+',-1)" '+(i===0?'disabled':'')+'>↑</button><button type="button" class="secondary-btn" aria-label="Spieler nach unten" onclick="tableMove('+i+',1)" '+(i===count-1?'disabled':'')+'>↓</button></div>').join('')+'</div><div class="tg-actions"><button type="button" class="secondary-btn" onclick="tableDrawStarter()" '+(!valid?'disabled':'')+'>🎲 Startspieler auslosen</button></div><p>Erst werfen alle bis Stopp. Danach Karten aufdecken und eintragen. Über 21: 1. Verlierer +1; die drei schlechtesten Platzierungen kommen beim Abschluss zusätzlich dazu.</p>';
     }

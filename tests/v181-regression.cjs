@@ -133,7 +133,7 @@ function ui(size){
   nodes[id]={textContent:'',classList:{add:v=>classes.add(v),remove:v=>classes.delete(v),contains:v=>classes.has(v),toggle:(v,on)=>on?classes.add(v):classes.delete(v)},querySelectorAll:()=>[],focus(){}};
   Object.defineProperty(nodes[id],'innerHTML',{get:()=>markup,set:value=>{for(const m of value.matchAll(/\bon(?:click|change|error)="([^"]*)"/g))new Function('event',m[1]);markup=value;}});
  }
- const roster=plain(people.slice(0,size)),c={window:{},document,persons:roster,ACTIVE_CLUB:'Club',currentEveningStartedAt:context.eveningStartedAt,SPIELE_KATALOG:[],sechstageState:null,blackjackState:null,gluecksspiraleState:null,showToast(){},getActivePlayersForSoloGame:()=>roster,getGlobalSeatOrder:()=>roster.map(p=>p.name)};
+ const roster=plain(people.slice(0,size)),c={window:{},document,persons:roster,ACTIVE_CLUB:'Club',currentEveningStartedAt:context.eveningStartedAt,SPIELE_KATALOG:[],gluecksspiraleSettings:{target:50},sechstageState:null,blackjackState:null,gluecksspiraleState:null,showToast(){},getActivePlayersForSoloGame:()=>roster,getGlobalSeatOrder:()=>roster.map(p=>p.name)};
  vm.createContext(c);
  for(const p of ['js/games/sechstage-core.js','js/games/table-games-core.js','js/games/sechstage.js','js/games/table-games-ui.js']){vm.runInContext(read(p),c);Object.assign(c,c.window);}
  c.renderSechsGame();c.renderTableGames();return {c,nodes};
