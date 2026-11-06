@@ -222,14 +222,19 @@ window.firestoreApi = {
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
-      const gameFields=['sechstageState','blackjackState','gluecksspiraleState'];
+      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
       const requestedEvening=Date.parse(payload.currentEveningStartedAt||''),savedEvening=Date.parse(savedEveningId);
       if(gameFields.some(key=>current[key]?.revision)&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
         next.currentEveningStartedAt=savedEveningId;
+        next.individualGameLedger=current.individualGameLedger||[];next.individualGameRevision=Number(current.individualGameRevision)||0;
+        if(Array.isArray(next.persons))next.persons=next.persons.map(person=>{
+          const cents=next.individualGameLedger.filter(x=>x.eveningStartedAt===savedEveningId&&String(x.personName).trim().toLocaleLowerCase('de')===String(person.name).trim().toLocaleLowerCase('de')).reduce((sum,x)=>sum+x.amountCents,0);
+          return {...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
+        });
         for(const key of gameFields)if(current[key]?.revision)next[key]=current[key];
         const incoming=Array.isArray(payload.penaltyStatsLog)?payload.penaltyStatsLog:(current.penaltyStatsLog||[]);
-        const owned=entry=>entry.sixDaysRaceId||entry.tableGameId;
+        const owned=entry=>entry.sixDaysRaceId||entry.tableGameId||entry.individualGameId;
         next.penaltyStatsLog=[...incoming.filter(entry=>!owned(entry)),...(current.penaltyStatsLog||[]).filter(owned)];
       }
       const managed=current.clubCalendarData?.calendarRevision?current.clubCalendarData:current;
@@ -268,14 +273,15 @@ window.firestoreApi = {
   },
 
   async setDashboardRules(clubId,request={}) {
-    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
+    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
+    if(request.rulesConfig!==undefined&&(request.gameKey!=='hindernis'||!window.KCIndividual?.validSettings(request.rulesConfig)))throw new Error('Ungültige Hindernisregeln');
     const ref=doc(db,'clubs',clubId,'state','current');
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardRules||{};
       if((before.commands||[]).includes(request.opId))return before;
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
-      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(request.gameKey==='hindernis'&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       transaction.set(ref,{dashboardRules:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
@@ -399,6 +405,62 @@ window.firestoreApi = {
         transaction.set(ref,{[stateKey]:next,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
       }
       return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.tableGameId),repeat:result.repeat};
+    });
+  },
+  async transactIndividualGame(clubId,request={}) {
+    const gameKey=request.gameKey;if(!['siebener','hindernis'].includes(gameKey))throw new Error('Unbekanntes Spiel');
+    const stateKey=gameKey+'State';
+    if(!clubId||!window.KCIndividual)throw new Error('Spiel ist noch nicht verfügbar');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
+      const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
+      const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current[stateKey]?.eveningStartedAt===existingEvening&&current[stateKey]?.commands?.includes(request.opId);
+      if(String(request.eveningStartedAt||'')!==existingEvening&&!repeatedInitialStart)throw new Error('Der Kegelabend wurde inzwischen gewechselt');
+      const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
+      const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCIndividual.empty(gameKey);
+      const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
+      let result,effect;
+      try{result=window.KCIndividual.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCIndividual.effects(before,result.state,request,context);}catch(error){error.code='individual-game-rejected';throw error;}
+      const next=result.state;
+      const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
+      const affected=result.repeat?(receipt?.changes||[]):effect.changes;
+      const groups=new Map();
+      for(const change of affected){
+        const id=this.getLivePersonId(change.personName);
+        if(!groups.has(id))groups.set(id,{name:change.personName,changes:[]});groups.get(id).changes.push(change);
+      }
+      const loaded=[];
+      for(const [id,group] of groups){
+        const personRef=doc(db,'clubs',clubId,'livePersons',id),personSnap=await transaction.get(personRef);
+        const fallback=context.people.find(person=>person.name===group.name)||{};
+        loaded.push({...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()});
+      }
+      const counters=[];
+      let finalStats=current.penaltyStatsLog||[];
+      for(const group of loaded){
+        const values={...(group.current.strafen||{})};
+        for(const change of group.changes){
+          const value=Number(values[change.key]||0)+(result.repeat?0:change.delta);
+          if(!Number.isSafeInteger(value)||value<0)throw new Error('Strafzähler wurde inzwischen geändert. Rückgängig nicht möglich.');
+          values[change.key]=value;counters.push({personName:group.name,category:'strafen',key:change.key,value});
+        }
+        if(!result.repeat)transaction.set(group.ref,{
+          ...(!group.exists?{present:!!group.current.present,isGuest:!!group.current.isGuest,left:!!group.current.left,drinks:{...(group.current.drinks||{})}}:{}),
+          name:group.name,strafen:values,updatedAt:serverTimestamp()
+        },{merge:true});
+      }
+      if(!result.repeat){
+        next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
+        const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
+        const removedMoney=new Set(effect.moneyRemoved),ledger=[...(current.individualGameLedger||[]).filter(x=>!removedMoney.has(x.id)),...effect.moneyAdded];
+        const people=(current.persons||[]).map(person=>{
+          const cents=ledger.filter(x=>x.eveningStartedAt===evening&&String(x.personName).trim().toLocaleLowerCase('de')===String(person.name).trim().toLocaleLowerCase('de')).reduce((sum,x)=>sum+x.amountCents,0);
+          return {...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
+        });
+        transaction.set(ref,{[stateKey]:next,persons:people,individualGameLedger:ledger,individualGameRevision:(Number(current.individualGameRevision)||0)+1,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
+      }
+      return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,ledger:result.repeat?(current.individualGameLedger||[]):[...(current.individualGameLedger||[]).filter(x=>!new Set(effect.moneyRemoved).has(x.id)),...effect.moneyAdded],individualGameRevision:(Number(current.individualGameRevision)||0)+(result.repeat?0:1),gameStats:finalStats.filter(entry=>entry.individualGameId),repeat:result.repeat};
     });
   },
 

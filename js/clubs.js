@@ -171,6 +171,7 @@ function createEmptyClubData() {
     gluecksspiraleState: createGluecksspiraleState(),
     gluecksspiraleSettings: {target:50},
     blackjackSettings: {jack:2,queen:3,king:4,ace:[1,11]},
+    siebenerState:null,hindernisState:null,hindernisSettings:null,individualGameLedger:[],individualGameRevision:0,
     currentEveningStartedAt: null,
     penaltyStatsLog: [],
     penaltyStatsSettings: null,
@@ -260,6 +261,7 @@ function syncCurrentClubToStore() {
     gluecksspiraleState: JSON.parse(JSON.stringify(gluecksspiraleState)),
     gluecksspiraleSettings: JSON.parse(JSON.stringify(gluecksspiraleSettings)),
     blackjackSettings: JSON.parse(JSON.stringify(blackjackSettings)),
+    siebenerState:JSON.parse(JSON.stringify(siebenerState)),hindernisState:JSON.parse(JSON.stringify(hindernisState)),hindernisSettings:hindernisSettings?JSON.parse(JSON.stringify(hindernisSettings)):null,individualGameLedger:JSON.parse(JSON.stringify(individualGameLedger)),individualGameRevision,
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     penaltyStatsSettings: penaltyStatsSettings?JSON.parse(JSON.stringify(penaltyStatsSettings)):null,
@@ -469,6 +471,7 @@ async function selectClub(clubName) {
   blackjackState=localClub.blackjackState?JSON.parse(JSON.stringify(localClub.blackjackState)):createBlackjackState();
   gluecksspiraleSettings=JSON.parse(JSON.stringify(localClub.gluecksspiraleSettings||{target:50}));
   blackjackSettings=KCTableGames.cardSettings(localClub.blackjackSettings);
+  siebenerState=localClub.siebenerState||null;hindernisState=localClub.hindernisState||null;hindernisSettings=localClub.hindernisSettings||null;individualGameLedger=localClub.individualGameLedger||[];individualGameRevision=Number(localClub.individualGameRevision)||0;
   gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
   currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
   penaltyStatsLog=JSON.parse(JSON.stringify(localClub.penaltyStatsLog||[]));
@@ -569,6 +572,7 @@ if (
         if(ACTIVE_CLUB===clubName&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(state);
         if(ACTIVE_CLUB===clubName&&typeof applyPenaltyStatsSettings==='function')applyPenaltyStatsSettings(state.penaltyStatsSettings,true);
         if(ACTIVE_CLUB===clubName&&typeof applySechsServerState==='function')applySechsServerState(state.sechstageState);
+        if(ACTIVE_CLUB===clubName&&typeof applyIndividualServerStates==='function')applyIndividualServerStates(state);
         if(ACTIVE_CLUB===clubName&&typeof applyTableServerStates==='function')applyTableServerStates(state);
 
         const incomingClientAt = Number(state.updatedClientAt || 0);

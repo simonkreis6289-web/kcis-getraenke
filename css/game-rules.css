@@ -16,3 +16,5 @@
 #dashboard-rules-content .six-rule-days strong{display:block;font-size:1.3em}
 .kc-rules-visible{overflow:hidden}
 @media(max-width:1000px){#dashboard-rules-content{column-count:1}.dashboard-rules-heading{flex-wrap:wrap;padding:16px 20px}#dashboard-rules-scroll{padding:16px 20px}}
+
+.rules-obstacle-table{width:100%;border-collapse:collapse;font:inherit}.rules-obstacle-table th,.rules-obstacle-table td{padding:7px 9px;border:1px solid #cbd5e5;text-align:left}.rules-obstacle-table th{background:#edf3fc}.rules-obstacle-table tr{break-inside:avoid}
