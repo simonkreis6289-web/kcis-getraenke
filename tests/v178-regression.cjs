@@ -150,7 +150,7 @@ test('club cache and real club selection preserve the race, evening identity and
  const builtins=new Set(['JSON','Number','String','Math','Object','Array','Date','undefined','parseFloat','parseInt','isNaN','isFinite']);
  const c=Object.fromEntries([...((body+selection).matchAll(/\b[a-zA-Z_]\w*\b/g))].filter(m=>!builtins.has(m[0])).map(m=>[m[0],null]));
  Object.assign(c,{ACTIVE_CLUB:'Club',CLUBS:{Club:{avatar:''}},persons:[{name:'A',strafen:{}}],cashBookSettings:null,currentEveningStartedAt:evening,penaltyStatsLog:[{id:'stat',sixDaysRaceId:'race_test'}],sechstageState:plain(started()),calcPersonStrafenTotalCapped:()=>0,console,window:{firestoreApi:{}},document:{getElementById:()=>({style:{},classList:{add(){},remove(){}}})}});
- for(const name of ['createEmptyClubData','createTannenbaumState','createLotterieState','createTiberiusState','createDartsState'])c[name]=()=>({});
+ for(const name of ['createEmptyClubData','createTannenbaumState','createLotterieState','createTiberiusState','createDartsState','createBlackjackState','createGluecksspiraleState'])c[name]=()=>({});
  for(const name of ['ensureTannenbaumState','ensureLotterieState','ensureTiberiusState','ensureDartsState','hydrateState','renderAll','updateAppHeader'])c[name]=()=>{};
  c.getClubFirestoreId=()=> 'club';c.loadFromFirestore=async()=>false;c.saveToFirestore=async()=>true;c.startLivePersonSync=async()=>{};
  vm.createContext(c);vm.runInContext(body+'\n'+selection,c);c.syncCurrentClubToStore();

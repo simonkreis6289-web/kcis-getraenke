@@ -123,22 +123,22 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style></head>
 <body>
 <main class="dashboard">
-<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V179 · Update 06.11.2026, 06:14 Uhr</div><div class="kc-next-events"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span><span id="kc-next-birthdays"></span></div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div><div id="tv-countdown" aria-live="off"><div class="timer-label">⏳ Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></header>
+<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V180 · Update 06.11.2026, 06:43 Uhr</div><div class="kc-next-events"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span><span id="kc-next-birthdays"></span></div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div><div id="tv-countdown" aria-live="off"><div class="timer-label">⏳ Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></header>
 <div id="tv-announcement" role="status" aria-live="polite"></div>
 <section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div><div class="drinks-paid-total"><span>✓ Bereits bezahlt</span><strong id="drinks-paid-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261106-v179">
-<link rel="stylesheet" href="css/table-games.css?v=20261106-v179">
-<script src="js/birthdays.js?v=20261106-v179"></script>
-<script src="js/games/sechstage-core.js?v=20261106-v179"></script>
-<script src="js/games/table-games-core.js?v=20261106-v179"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261106-v180">
+<link rel="stylesheet" href="css/table-games.css?v=20261106-v180">
+<script src="js/birthdays.js?v=20261106-v180"></script>
+<script src="js/games/sechstage-core.js?v=20261106-v180"></script>
+<script src="js/games/table-games-core.js?v=20261106-v180"></script>
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V179";
-const DASH_RELEASE="06.11.2026, 06:14 Uhr";
+const DASH_VERSION="V180";
+const DASH_RELEASE="06.11.2026, 06:43 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});

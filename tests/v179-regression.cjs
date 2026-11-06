@@ -22,6 +22,13 @@ async function runV179Tests(sources){
  const stand=s=>step(s,'stand').state;
  const spiral=()=>start('gluecksspirale');
  const twentyOne=(s,pins)=>{for(const n of pins)s=roll(s,n);return s;};
+ const reveal=(s,cards=s.players.map(()=>2))=>{for(const value of cards)s=step(s,'card',{value}).state;return s;};
+ const soloTotals=values=>{
+   let s=start('blackjack',{players:values.map((_,i)=>String.fromCharCode(65+i))});
+   for(const value of values){let wood=value-2;while(wood>0){const pins=Math.min(9,wood);s=roll(s,pins);wood-=pins;}s=stand(s);}
+   return reveal(s);
+ };
+
  function api(initial={}){
    const data=new Map([['clubs/club/state/current',{currentEveningStartedAt:evening,persons:JSON.parse(JSON.stringify(people)),STRAFEN:catalog,penaltyStatsLog:[],...JSON.parse(JSON.stringify(initial))}]]);
    let version=0,writeCount=0,fail=false;
@@ -43,21 +50,21 @@ async function runV179Tests(sources){
    }
    return {api:object,data,root:()=>data.get('clubs/club/state/current'),person:name=>data.get('clubs/club/livePersons/'+object.getLivePersonId(name)),writes:()=>writeCount,fail:value=>fail=value};
  }
- test('17+4 starts in selected order and permits two players',()=>{const s=start('blackjack');eq(s.players,['A','B']);eq(game.currentName(s),'A');eq(s.cards,false);});
- test('selected physical start cards are optional and an ace adapts from 11 to 1',()=>{eq(game.cardTotal(9,'A'),20);eq(game.cardTotal(11,'A'),12);eq(game.cardTotal(20,'A'),21);});
- test('cannot throw or stand before entering a required card',()=>{const s=start('blackjack',{cards:true});throws(()=>roll(s,3),/Startkarte/);throws(()=>stand(s),/Startkarte/);});
- test('all allowed Skat values can be recorded; incorrect values are rejected',()=>{for(const value of ['A',2,3,4,7,8,9,10])eq(step(start('blackjack',{cards:true}),'card',{value}).state.cardValues.A,value);for(const value of [0,1,5,6,11,12,'K'])throws(()=>step(start('blackjack',{cards:true}),'card',{value}),/Startkarte/);});
- test('a start card can only be entered once and undo permits correcting it',()=>{let s=step(start('blackjack',{cards:true}),'card',{value:7}).state;throws(()=>step(s,'card',{value:8}),/Startkarte/);s=step(s,'undo').state;ok(!Object.hasOwn(s.cardValues,'A'));s=step(s,'card',{value:8}).state;eq(s.cardValues.A,8);});
+ test('17+4 starts with hidden cards and the selected order',()=>{const s=start('blackjack');eq(s.players,['A','B']);eq(game.currentName(s),'A');eq(s.cards,true);eq(game.blackjackPhase(s),'throwing');});
+ test('an ace adapts from 11 to 1 when revealed after the throws',()=>{eq(game.cardTotal(9,'A'),20);eq(game.cardTotal(11,'A'),12);eq(game.cardTotal(20,'A'),21);});
+ test('throwing and stopping precede every card reveal',()=>{let s=start('blackjack');throws(()=>step(s,'card',{value:7}),/Zuerst/);s=roll(s,3);s=stand(s);throws(()=>step(s,'card',{value:7}),/Zuerst/);eq(game.currentName(s),'B');});
+ test('all allowed Skat values are recorded after everyone stops',()=>{for(const value of ['A',2,3,4,7,8,9,10])eq(step(stand(stand(start('blackjack'))),'card',{value}).state.cardValues.A,value);for(const value of [0,1,5,6,11,12,'K'])throws(()=>step(stand(stand(start('blackjack'))),'card',{value}),/Kartenwert/);});
+ test('undo of a revealed card permits correcting the same person',()=>{let s=step(stand(stand(start('blackjack'))),'card',{value:7}).state;eq(game.currentName(s),'B');s=step(s,'undo').state;ok(!Object.hasOwn(s.cardValues,'A'));eq(game.currentName(s),'A');s=step(s,'card',{value:8}).state;eq(s.cardValues.A,8);});
  test('17+4 permits any number of throws until stand',()=>{let s=start('blackjack');for(let i=0;i<10;i++)s=roll(s,1);eq(game.currentName(s),'A');eq(s.scores.A,10);s=stand(s);eq(game.currentName(s),'B');});
- test('exactly 21 automatically stops and advances',()=>{const s=twentyOne(start('blackjack'),[9,9,3]);eq(s.scores.A,21);eq(game.currentName(s),'B');eq(s.stopped,['A']);});
- test('busting automatically stops and advances',()=>{const s=twentyOne(start('blackjack'),[9,9,4]);eq(s.scores.A,22);eq(game.currentName(s),'B');});
- test('ace total switches safely before auto stop',()=>{let s=step(start('blackjack',{cards:true}),'card',{value:'A'}).state;s=roll(s,9);eq(s.scores.A,20);s=roll(s,2);eq(s.scores.A,12);eq(game.currentName(s),'A');});
- test('all players must finish before confirming',()=>{let s=start('blackjack');throws(()=>step(s,'finish'),/Zuerst/);s=stand(s);ok(!s.readyToFinish);s=stand(s);ok(s.readyToFinish);throws(()=>roll(s,1),/beendet/);});
- test('highest score under 22 wins, shared winners are supported',()=>{let s=start('blackjack',{players:['A','B','C']});s=twentyOne(s,[9,9,2]);s=stand(s);s=twentyOne(s,[9,9,2]);s=stand(s);s=roll(s,9);s=stand(s);const out=step(s,'finish');eq(out.state.winners,['A','B']);eq(out.effect.changes,[{personName:'C',key:'loser1',delta:1}]);});
- test('all busts have no winner and share the first loser penalty',()=>{let s=start('blackjack');s=twentyOne(s,[9,9,4]);s=twentyOne(s,[9,9,9]);const out=step(s,'finish');eq(out.state.winners,[]);eq(out.effect.changes.map(x=>x.key),['loser1','loser1']);});
- test('blackjack loser ranks match existing dense worst-first ranking',()=>{let s=start('blackjack',{players:['A','B','C','D','E']});s=twentyOne(s,[9,9,3]);s=twentyOne(s,[9,9,4]);s=roll(s,5);s=stand(s);s=roll(s,5);s=stand(s);s=roll(s,8);s=stand(s);const out=step(s,'finish');eq(out.effect.changes.map(x=>[x.personName,x.key]),[['B','loser1'],['C','loser2'],['D','loser2'],['E','loser3']]);});
- test('missing loser catalog entries reject the entire finish',()=>{let s=start('blackjack');s=roll(s,3);s=stand(s);s=roll(s,5);s=stand(s);throws(()=>step(s,'finish',{}, {...ctx,catalog:[]}),/Verlierer/);});
- test('undo after an automatic 21 restores the actual thrower and score',()=>{let s=twentyOne(start('blackjack'),[9,9,3]);s=step(s,'undo').state;eq(game.currentName(s),'A');eq(s.scores.A,18);eq(s.stopped,[]);});
+ test('21 wood does not stop a player automatically',()=>{const s=twentyOne(start('blackjack'),[9,9,3]);eq(s.scores.A,21);eq(game.currentName(s),'A');eq(s.stopped,[]);});
+ test('more than 21 wood still waits for explicit Stopp',()=>{let s=twentyOne(start('blackjack'),[9,9,4]);eq(s.scores.A,22);eq(game.currentName(s),'A');s=roll(s,1);eq(s.wood.A,23);});
+ test('cards are added after the completed throwing phase',()=>{let s=roll(start('blackjack'),9);s=stand(s);s=roll(s,1);s=stand(s);s=step(s,'card',{value:'A'}).state;eq(s.scores.A,20);eq(game.currentName(s),'B');});
+ test('everyone must stop and every card must be revealed before finish',()=>{let s=start('blackjack');throws(()=>step(s,'finish'),/Zuerst/);s=stand(stand(s));ok(!s.readyToFinish);eq(game.blackjackPhase(s),'cards');throws(()=>roll(s,1),/gestoppt/);s=reveal(s);ok(s.readyToFinish);throws(()=>roll(s,1),/beendet/);});
+ test('highest final score under 22 wins and supports shared winners',()=>{const out=step(soloTotals([20,20,11]),'finish');eq(out.state.winners,['A','B']);eq(out.effect.changes,[{personName:'C',key:'loser1',delta:1}]);});
+ test('all busts get extra fines; final overthrows rank worst score first',()=>{const s=soloTotals([24,29]),out=step(s,'finish');eq(out.state.winners,[]);eq(s.history.filter(e=>e.bustPenalty).map(e=>e.name),['A','B']);eq(out.effect.changes.map(x=>[x.personName,x.key]),[['B','loser1'],['A','loser2']]);});
+ test('blackjack placement ranks remain dense and worst-first',()=>{const out=step(soloTotals([21,24,7,7,10]),'finish');eq(out.effect.changes.map(x=>[x.personName,x.key]),[['B','loser1'],['C','loser2'],['D','loser2'],['E','loser3']]);});
+ test('missing placement catalog entries reject the entire finish',()=>{const s=soloTotals([5,7]);throws(()=>step(s,'finish',{}, {...ctx,catalog:[]}),/Verlierer/);});
+ test('undo of a 21-wood throw keeps the same player and restores 18',()=>{let s=twentyOne(start('blackjack'),[9,9,3]);s=step(s,'undo').state;eq(game.currentName(s),'A');eq(s.scores.A,18);eq(s.stopped,[]);});
  test('undo stand returns to the previous player',()=>{let s=roll(start('blackjack'),7);s=stand(s);s=step(s,'undo').state;eq(game.currentName(s),'A');eq(s.scores.A,7);});
  test('spiral defaults to 50 and has two partners per team',()=>{const s=spiral();eq(s.target,50);eq(game.currentName(s),'A');eq(s.teams.length,2);});
  test('spiral alternates partners within every pair of throws',()=>{let s=spiral();s=roll(s,6);eq(game.currentName(s),'B');s=roll(s,7);eq(game.currentName(s),'A');eq(s.currentIndex,0);eq(s.scores.G1,13);});
@@ -81,10 +88,10 @@ async function runV179Tests(sources){
  test('wrong game identifiers and invalid operations are rejected',()=>{const s=spiral();throws(()=>step(s,'throw',{gameId:'game_other',kind:'pins',pins:1}),/gewechselt/);throws(()=>step(s,'throw',{opId:'invalid',kind:'pins',pins:1}),/Spielaktion/);throws(()=>step(s,'stand'),/Ungültig/);});
  test('ineligible participants, duplicates, malformed and oversized groups are rejected',()=>{for(const name of ['Trinker','Weg','Inaktiv'])throws(()=>start('blackjack',{players:['A',name]}),/aktiv/);throws(()=>start('blackjack',{players:['A',' a ']}));throws(()=>start('blackjack',{players:['A']}));throws(()=>start('blackjack',{players:Array.from({length:17},(_,i)=>'P'+i)}));});
  test('a guest is a valid participant and a player who left cannot throw',()=>{ok(start('blackjack',{players:['A','Gast']}).active);throws(()=>step(start('blackjack'),'throw',{kind:'pins',pins:1},{...ctx,people:people.map(p=>p.name==='A'?{...p,left:true}:p)}),/nicht mehr aktiv/);});
- test('finished games cannot be charged again with a different operation',()=>{let s=stand(stand(start('blackjack')));s=step(s,'finish').state;throws(()=>step(s,'finish'),/beendet/);throws(()=>step(s,'undo'),/beendet/);});
+ test('finished games cannot be charged again with a different operation',()=>{let s=reveal(stand(stand(start('blackjack'))));s=step(s,'finish').state;throws(()=>step(s,'finish'),/beendet/);throws(()=>step(s,'undo'),/beendet/);});
  test('reset preserves monotonic revisions and starts a fresh game',()=>{let s=roll(spiral(),1);const previous=s.revision;s=step(s,'reset').state;eq(s.id,'');eq(s.revision,previous+1);eq(s.history,[]);s=step(s,'start',{gameId:'game_next',teams:[{players:['A','B']},{players:['C','D']}],target:50}).state;eq(s.id,'game_next');eq(s.revision,previous+2);});
- test('dashboard hides cards and combined totals until everyone has finished',()=>{const s=step(start('blackjack',{cards:true}),'card',{value:7}).state;const html=exported.renderTableGameBoard(s);ok(html.includes('🂠'));ok(html.includes('🔒'));ok(!html.includes('<td>7</td>'));});
- test('dashboard reveals cards and results for the completed round',()=>{let s=start('blackjack',{cards:true});s=step(s,'card',{value:7}).state;s=stand(s);s=step(s,'card',{value:8}).state;s=stand(s);const html=exported.renderTableGameBoard(s);ok(!html.includes('🔒'));ok(html.includes('<td>7</td>'));ok(html.includes('<td>8</td>'));});
+ test('dashboard hides unrevealed cards and totals during throwing',()=>{const s=roll(start('blackjack'),7),html=exported.renderTableGameBoard(s);ok(html.includes('🂠'));ok(html.includes('🔒'));ok(!html.includes('<td>7</td><td>7'));});
+ test('dashboard displays each card and total as it is revealed',()=>{let s=stand(stand(start('blackjack')));s=step(s,'card',{value:7}).state;let html=exported.renderTableGameBoard(s);ok(html.includes('<td>7</td>'));ok(html.includes('🔒'));s=step(s,'card',{value:8}).state;html=exported.renderTableGameBoard(s);ok(!html.includes('🔒'));ok(html.includes('<td>8</td>'));});
  test('names in game and team display are HTML escaped',()=>{const s=spiral();s.teams[0].players[0]='<img src=x onerror=evil()>';const html=exported.renderTableGameBoard(s);ok(!html.includes('<img'));ok(html.includes('&lt;img'));eq(exported.tableEscape('"&<>'), '&quot;&amp;&lt;&gt;');});
  test('transaction writes the game, special fine and statistics atomically',async()=>{const store=api(),s=spiral();store.data.set('clubs/club/state/current',{...store.root(),gluecksspiraleState:s});const out=await store.api.transactTableGame('club',req(s,'throw',{kind:'gosse'}));eq(store.person('A').strafen.gosse,1);eq(store.root().gluecksspiraleState.history.length,1);eq(out.gameStats.length,1);eq(store.root().dashboardActiveGame,'gluecksspirale');});
  test('retry after lost response returns canonical counters without double charging',async()=>{const store=api(),s=spiral();store.data.set('clubs/club/state/current',{...store.root(),gluecksspiraleState:s});const request=req(s,'throw',{kind:'gosse'});await store.api.transactTableGame('club',request);const count=store.writes(),out=await store.api.transactTableGame('club',request);ok(out.repeat);eq(store.writes(),count);eq(store.person('A').strafen.gosse,1);eq(out.counters[0].value,1);});
@@ -137,14 +144,14 @@ async function runV179Tests(sources){
    for(let i=0;i<16;i++)s=step(s,'throw',{kind:'pins',pins:i<2?5:1},{...ctx,people:all}).state;
    ok(s.readyToFinish);eq(s.teams.length,8);ok(JSON.stringify(s).length<30000);
    let solo=step(game.empty('blackjack'),'start',{players:all.map(p=>p.name)},{...ctx,people:all}).state;
-   for(let i=0;i<16;i++)solo=step(solo,'stand',{}, {...ctx,people:all}).state;ok(solo.readyToFinish);
+   for(let i=0;i<16;i++)solo=step(solo,'stand',{}, {...ctx,people:all}).state;ok(!solo.readyToFinish);for(let i=0;i<16;i++)solo=step(solo,'card',{value:2},{...ctx,people:all}).state;ok(solo.readyToFinish);
  });
- test('special property names are safe as player names, with or without cards',()=>{
+ test('special property names are safe when cards are revealed at the end',()=>{
    const names=['__proto__','constructor'],people=names.map(name=>({name,present:true})),context={...ctx,people};
-   let s=step(game.empty('blackjack'),'start',{players:names,cards:true},context).state;
-   s=step(s,'card',{value:'A'},context).state;eq(s.cardValues.__proto__,'A');
+   let s=step(game.empty('blackjack'),'start',{players:names},context).state;
    for(const pins of [9,9,2])s=step(s,'throw',{kind:'pins',pins},context).state;
-   eq(s.scores.__proto__,21);eq(game.currentName(s),'constructor');
+   s=step(s,'stand',{},context).state;s=step(s,'stand',{},context).state;s=step(s,'card',{value:'A'},context).state;
+   eq(s.cardValues.__proto__,'A');eq(s.scores.__proto__,21);eq(game.currentName(s),'constructor');
  });
  test('malformed throws cannot change either game',()=>{
    for(const key of ['blackjack','gluecksspirale'])for(const pins of [-1,0,10,12,NaN,Infinity,1.5])throws(()=>step(start(key),'throw',{kind:'pins',pins}));
@@ -222,8 +229,12 @@ async function runV179UiTest(sources){
  for(const pins of [6,4,1,1])await ui.tableAction('gluecksspirale','throw',{kind:'pins',pins});
  ok(env.gluecksspiraleState.readyToFinish);ok(nodes['gluecksspirale-board'].innerHTML.includes('Abschließen und Verlierer buchen'));await ui.tableAction('gluecksspirale','finish');eq(env.gluecksspiraleState.winners,['G1']);eq(counters.get('B/loser1'),1);eq(counters.get('D/loser1'),1);
  await ui.tableReset('gluecksspirale');eq(env.gluecksspiraleState.id,'');eq(counters.get('B/loser1'),1);
- ui.tableToggle('blackjack',4);ui.tableToggle('blackjack',3);ui.tableToggle('blackjack',2);ui.tableMove(0,1);eq(ui.tableDraft('blackjack').selected,['B','A']);ui.tableMove(1,-1);ui.tableDraft('blackjack').cards=true;await ui.startTableGame('blackjack');ok(nodes['blackjack-board'].innerHTML.includes('Startkarte für A'));await ui.tableCard('A');ok(nodes['blackjack-board'].innerHTML.includes('11 / 21'));
- await ui.tableAction('blackjack','throw',{kind:'pins',pins:9});ok(nodes['blackjack-board'].innerHTML.includes('20 / 21'));await ui.tableAction('blackjack','stand');ok(nodes['blackjack-board'].innerHTML.includes('Startkarte für B'));await ui.tableCard('7');await ui.tableAction('blackjack','throw',{kind:'pins',pins:9});await ui.tableAction('blackjack','stand');ok(env.blackjackState.readyToFinish);ok(!shared.renderTableGameBoard(env.blackjackState).includes('🔒'));await ui.tableAction('blackjack','finish');eq(env.blackjackState.winners,['A']);eq(counters.get('B/loser1'),2);eq(env.dashboardActiveGame,'blackjack');
+ ui.tableToggle('blackjack',4);ui.tableToggle('blackjack',3);ui.tableToggle('blackjack',2);ui.tableMove(0,1);eq(ui.tableDraft('blackjack').selected,['B','A']);ui.tableMove(1,-1);await ui.startTableGame('blackjack');
+ ok(!nodes['blackjack-board'].innerHTML.includes('Karte für A aufdecken'));ok(nodes['blackjack-board'].innerHTML.includes('Stopp – nächster Spieler'));
+ await ui.tableAction('blackjack','throw',{kind:'pins',pins:9});await ui.tableAction('blackjack','stand');await ui.tableAction('blackjack','throw',{kind:'pins',pins:6});await ui.tableAction('blackjack','stand');
+ ok(nodes['blackjack-board'].innerHTML.includes('Karte für A aufdecken'));await ui.tableCard('A');ok(nodes['blackjack-board'].innerHTML.includes('Karte für B aufdecken'));await ui.tableCard('7');
+ ok(env.blackjackState.readyToFinish);ok(!shared.renderTableGameBoard(env.blackjackState).includes('🔒'));await ui.tableAction('blackjack','finish');eq(env.blackjackState.winners,['A']);eq(counters.get('B/loser1'),2);eq(env.dashboardActiveGame,'blackjack');
+
  const revision=env.blackjackState.revision;ui.applyTableServerStates({blackjackState:{...env.blackjackState,revision:revision-1,finished:false}});eq(env.blackjackState.revision,revision);ok(env.blackjackState.finished);
  env.currentEveningStartedAt='2026-11-07T18:00:00Z';ui.ensureTableGames();eq(env.blackjackState.id,'');eq(env.gluecksspiraleState.id,'');
  return {assertions:'complete UI flow',spiralThrows:4,blackjackCards:true,retryBeforeCommit:true,retryAfterCommit:true,undoCounters:true,finishCounters:true};
