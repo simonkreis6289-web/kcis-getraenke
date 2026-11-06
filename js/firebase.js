@@ -220,6 +220,7 @@ window.firestoreApi = {
 
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
+      if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
       const gameFields=['sechstageState','blackjackState','gluecksspiraleState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
@@ -263,6 +264,19 @@ window.firestoreApi = {
       const repair=!current.clubCalendarData||JSON.stringify(current.clubTermine)!==JSON.stringify(next.clubTermine)||JSON.stringify(current.clubKegelSerie)!==JSON.stringify(next.clubKegelSerie)||current.calendarRevision!==revision;
       if(changed||repair)transaction.set(ref,{...calendar,clubCalendarData:calendar,updatedAt:serverTimestamp()},{merge:true});
       return calendar;
+    });
+  },
+
+  async setDashboardRules(clubId,request={}) {
+    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardRules||{};
+      if((before.commands||[]).includes(request.opId))return before;
+      // A close from an older popup must not dismiss a newer controller's rules.
+      if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
+      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      transaction.set(ref,{dashboardRules:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
 

@@ -379,6 +379,7 @@ function renderClubList() {
 }
 
 function goToClubSelection() {
+  if(typeof kcClosePublishedRules==='function')kcClosePublishedRules();
   if (currentClubUnsubscribe) {
     currentClubUnsubscribe();
     currentClubUnsubscribe = null;
@@ -435,6 +436,7 @@ async function createClub() {
 }
 
 async function selectClub(clubName) {
+  if(ACTIVE_CLUB!==clubName&&typeof kcClosePublishedRules==='function')kcClosePublishedRules();
   if (!clubName) return;
 
   if (currentClubUnsubscribe) {

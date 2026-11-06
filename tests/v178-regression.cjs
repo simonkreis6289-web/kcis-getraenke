@@ -138,7 +138,7 @@ test('an unconfirmed initial start can be retried even after the server establis
 test('rules are directly available through an accessible top-right button and include every implemented core rule',()=>{
  const html=read('getraenke-abrechnung.html');assert.match(html,/class="six-info-button"[^>]*onclick="openSechsRules\(\)"[^>]*aria-label=/);
  for(const id of ['sechs-rules-modal','sechs-rules-title','sechs-rules-close','tab-sechstage'])assert(html.includes('id="'+id+'"'));
- for(const phrase of ['Jeder Partner wirft zweimal','×6','Tagessiegerbonus','acht Holz','1. Verlierer +1','Bei Gleichstand'])assert(html.includes(phrase),phrase);
+ for(const phrase of ['Jeder Partner wirft zweimal','×6','Tagessiegerbonus','acht Holz','1. Verlierer +1','Bei Gleichstand'])assert(read('js/game-rules.js').includes(phrase),phrase);
 });
 test('shared app/dashboard board renders race totals and escapes member names',()=>{
  const s=started(false,[{players:['A','Gast']},{players:['C','D']}]);s.teams[0].players[0]='<script>bad</script>';const html=scope.renderSixDaysBoard(s);
