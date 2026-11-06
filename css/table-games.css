@@ -47,3 +47,34 @@
 .tg-tv-board .tg-table-scroll,.tg-tv-board .tg-rounds{max-height:none;overflow:visible}
 @media(max-width:650px){.tg-board{padding:10px}.tg-board h3{font-size:21px}.tg-turn{font-size:20px}.tg-pinpad .pinpad-btn{min-width:48px;min-height:52px}.tg-pairs{grid-template-columns:1fr}.tg-order{grid-template-columns:1fr}.tg-board th,.tg-board td{padding:10px}}
 @media(prefers-reduced-motion:reduce){.tg-progress span{transition:none}}
+.tg-spiral-board{padding:10px;margin:10px 0}
+.tg-spiral-board h3{font-size:20px;margin:0 0 8px}
+.tg-spiral-turn{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px 14px;padding:8px 10px;border-radius:8px;background:#fff2c7;color:#17233d;font-size:18px;margin-bottom:8px}
+.tg-spiral-turn small{font-size:13px;font-weight:400;margin-left:8px}
+.tg-spiral-turn>b{font-size:14px}
+.tg-spiral-booking{margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #d5dbe7}
+.tg-spiral-booking .tg-actions{margin:6px 0}
+.tg-spiral-booking .tg-pinpad{gap:6px}
+.tg-spiral-booking .tg-pinpad .pinpad-btn{min-height:46px;min-width:46px;font-size:23px}
+.tg-spiral-booking .tg-actions button{min-height:44px}
+.tg-spiral-teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.tg-spiral-team{border:1px solid var(--spiral-color);border-left:5px solid var(--spiral-color);border-radius:9px;padding:8px 10px;background:#fff;color:#17233d;min-width:0}
+.tg-spiral-current{background:#fff5d8;box-shadow:0 0 0 2px #edb34e55}
+.tg-spiral-team-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tg-spiral-team-top>strong{font-size:16px}
+.tg-spiral-team-top>b{font-size:23px;white-space:nowrap;line-height:1.1}
+.tg-spiral-team-top small{font-size:12px;font-weight:400}
+.tg-spiral-names{font-size:13px;margin:3px 0 6px;overflow-wrap:anywhere}
+.tg-spiral-team .tg-progress{height:7px;min-width:0}
+.tg-spiral-team .tg-progress span{background:var(--spiral-color)}
+.tg-team-result{display:inline-block;margin-top:6px;font-size:12px;font-weight:700}
+.tg-spiral-rounds{margin-top:8px}
+.tg-spiral-rounds>summary{min-height:36px;display:list-item;align-content:center;cursor:pointer;font-size:14px;font-weight:700}
+.tg-spiral-rounds .tg-rounds{margin:4px 0 0;max-height:230px}
+.tg-spiral-rounds td,.tg-spiral-rounds th{font-size:14px;padding:7px 10px}
+.tg-tv-board .tg-spiral-board h3{font-size:22px}
+.tg-tv-board .tg-spiral-team-top>strong{font-size:20px}
+.tg-tv-board .tg-spiral-team-top>b{font-size:28px}
+.tg-tv-board .tg-spiral-names{font-size:16px}
+.tg-tv-board .tg-spiral-rounds td,.tg-tv-board .tg-spiral-rounds th{font-size:17px}
+@media(max-width:500px){.tg-spiral-teams{grid-template-columns:1fr}.tg-spiral-turn small{display:block;margin:3px 0 0}}
