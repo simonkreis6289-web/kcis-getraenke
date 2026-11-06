@@ -166,6 +166,9 @@ function createEmptyClubData() {
     clubTermine: [],
     clubKegelSerie: null,
     calendarRevision: 0,
+    sechstageState: createSechstageState(),
+    currentEveningStartedAt: null,
+    penaltyStatsLog: [],
     persons: [],
     prices: {
       kl_bier: 0,
@@ -197,7 +200,7 @@ function createEmptyClubData() {
       pudel: 0,
       klingel: 0
     },
-    SPIELE_KATALOG: ['Tannenbaum', 'Darts'],
+    SPIELE_KATALOG: ['Tannenbaum', 'Darts', 'Sechs-Tage-Rennen'],
     RUNDEN_GRUENDE: ['1000er-Runde', '2000er-Runde', 'Geburtstag'],
     spiele: [],
     selectedLoser: null,
@@ -246,6 +249,9 @@ function syncCurrentClubToStore() {
     clubTermine: JSON.parse(JSON.stringify(clubTermine)),
     clubKegelSerie: clubKegelSerie?JSON.parse(JSON.stringify(clubKegelSerie)):null,
     calendarRevision: kcCalendarRevision,
+    sechstageState: JSON.parse(JSON.stringify(sechstageState)),
+    currentEveningStartedAt,
+    penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     clubTerminGruende: JSON.parse(JSON.stringify(clubTerminGruende)),
     cashBookSettings: cashBookSettings ? JSON.parse(JSON.stringify(cashBookSettings)) : null,
     avatar: existingClub.avatar || '',
@@ -445,6 +451,9 @@ async function selectClub(clubName) {
   clubTermine=JSON.parse(JSON.stringify(localClub.clubTermine||[]));
   clubKegelSerie=localClub.clubKegelSerie?JSON.parse(JSON.stringify(localClub.clubKegelSerie)):null;
   kcCalendarRevision=Number(localClub.calendarRevision)||0;
+  sechstageState=localClub.sechstageState?JSON.parse(JSON.stringify(localClub.sechstageState)):createSechstageState();
+  currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||null;
+  penaltyStatsLog=JSON.parse(JSON.stringify(localClub.penaltyStatsLog||[]));
   clubTerminGruende=JSON.parse(JSON.stringify(localClub.clubTerminGruende||[{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}]));
   cashBookSettings = localClub.cashBookSettings ? JSON.parse(JSON.stringify(localClub.cashBookSettings)) : null;
   prices = JSON.parse(JSON.stringify(localClub.prices || {}));
@@ -538,6 +547,7 @@ if (
         if (!state) return;
         // Calendar revisions are independent of the game state's client clock.
         if(ACTIVE_CLUB===clubName&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(state);
+        if(ACTIVE_CLUB===clubName&&typeof applySechsServerState==='function')applySechsServerState(state.sechstageState);
 
         const incomingClientAt = Number(state.updatedClientAt || 0);
         const incomingClientId = state.updatedClientId || '';
