@@ -1,6 +1,6 @@
-const APP_VERSION = '20261106-183';
-const APPVersionSelf = 'V183 © SK';
-const APP_LAST_UPDATE = '06.11.2026, 11:53 Uhr';
+const APP_VERSION = '20261106-184';
+const APPVersionSelf = 'V184 © SK';
+const APP_LAST_UPDATE = '06.11.2026, 13:55 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -144,6 +144,7 @@ let sechstageState = null;
 let blackjackState = null;
 let gluecksspiraleState = null;
 let gluecksspiraleSettings = {target:50};
+let blackjackSettings = {jack:2,queen:3,king:4,ace:[1,11]};
 let torState = null;
 let fuchsjagdState = null;
 

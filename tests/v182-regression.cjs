@@ -77,7 +77,7 @@ function persistence(){
  const builtins=new Set(['JSON','Number','String','Math','Object','Array','Date','undefined','parseFloat','parseInt','isNaN','isFinite']);
  const env=Object.fromEntries([...source.matchAll(/\b[a-zA-Z_]\w*\b/g)].filter(m=>!builtins.has(m[0])).map(m=>[m[0],null]));
  for(const m of source.matchAll(/(?<![.\w])([a-zA-Z_]\w*)\(/g))if(!builtins.has(m[1]))env[m[1]]=()=>({});
- Object.assign(env,{window:{firestoreApi:{}},document:{getElementById:()=>({style:{},classList:{add(){},remove(){}}})},console:{log(){},error(){}},ACTIVE_CLUB:'Club A',CLUBS:{'Club A':{avatar:''}},persons:[],getFirestorePersonsWithFineTotals:()=>[],getTodayMeta:()=>({}),HAUS_DEFAULTS:{hoch:{},tief:{}},TANNENBAUM_DEFAULT_BASE:{},KCTableGames:{empty:()=>({})},gluecksspiraleSettings:{target:75},sechstageState:{},blackjackState:{},gluecksspiraleState:{},penaltyStatsLog:[],SPIELE_KATALOG:[],DRINKS:[],normalizeGroupColorKey:x=>x,loadFromFirestore:async()=>false,saveToFirestore:async()=>true,startLivePersonSync:async()=>{},getClubFirestoreId:()=> 'club'});
+ Object.assign(env,{window:{firestoreApi:{}},document:{getElementById:()=>({style:{},classList:{add(){},remove(){}}})},console:{log(){},error(){}},ACTIVE_CLUB:'Club A',CLUBS:{'Club A':{avatar:''}},persons:[],getFirestorePersonsWithFineTotals:()=>[],getTodayMeta:()=>({}),HAUS_DEFAULTS:{hoch:{},tief:{}},TANNENBAUM_DEFAULT_BASE:{},KCTableGames:new Function('window',read('js/games/table-games-core.js')+';return window.KCTableGames;')({}),gluecksspiraleSettings:{target:75},sechstageState:{},blackjackState:{},gluecksspiraleState:{},penaltyStatsLog:[],SPIELE_KATALOG:[],DRINKS:[],normalizeGroupColorKey:x=>x,loadFromFirestore:async()=>false,saveToFirestore:async()=>true,startLivePersonSync:async()=>{},getClubFirestoreId:()=> 'club'});
  const functions=new Function('env','with(env){'+source+';return {getSerializableState,getFirestoreState,applyLoadedState,syncCurrentClubToStore,selectClub};}')(env);
  return {env,...functions};
 }
@@ -96,6 +96,6 @@ test('actual club cache and club selection restore their own target after switch
 test('the reorganized settings retain every existing control and use accessible card headings',()=>{
  const html=read('getraenke-abrechnung.html'),part=html.slice(html.indexOf('id="tab-spiele-einstellungen"'),html.indexOf('<!-- VERWALTUNG -->'));
  for(const id of ['haus-hoch-neun','haus-hoch-kranz','haus-hoch-gosse','haus-tief-neun','haus-tief-kranz','haus-tief-gosse','tannenbaum-settings-grid','tannenbaum-ontop-check','tannenbaum-hard-rule-check','lotterie-min-amount','lotterie-max-amount','tiberius-min-pins','tiberius-max-pins','spiral-settings-target'])assert(part.includes('id="'+id+'"'),id);
- assert.equal((part.match(/class="game-settings-card/g)||[]).length,5);assert.equal((part.match(/aria-labelledby=/g)||[]).length,5);assert(!part.includes('style='));
+ assert.equal((part.match(/class="game-settings-card/g)||[]).length,6);assert.equal((part.match(/aria-labelledby=/g)||[]).length,6);assert(!part.includes('style='));
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
 });

@@ -349,8 +349,9 @@ window.firestoreApi = {
       const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCTableGames.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
-      const result=window.KCTableGames.command(before,request,context),next=result.state;
-      const effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCTableGames.effects(before,next,request,context);
+      let result,effect;
+      try{result=window.KCTableGames.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCTableGames.effects(before,result.state,request,context);}catch(error){error.code='table-game-rejected';throw error;}
+      const next=result.state;
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
       const affected=result.repeat?(receipt?.changes||[]):effect.changes;
       const groups=new Map();

@@ -36,3 +36,6 @@
 .tg-target-note button{min-height:44px}
 @media(max-width:760px){.game-settings-grid{grid-template-columns:1fr}.game-settings-wide{grid-column:auto}.game-settings-card{padding:14px}.game-settings-card footer button{max-width:100%;white-space:normal}}
 @media(max-width:380px){.game-settings-fields{grid-template-columns:1fr}.game-settings-values{gap:6px}}
+
+.game-settings-check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}.game-settings-check input[type=checkbox]{width:21px;height:21px;flex:0 0 21px}
+#blackjack-value-ace-second:disabled{opacity:.45}
