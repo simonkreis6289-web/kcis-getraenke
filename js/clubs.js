@@ -167,6 +167,8 @@ function createEmptyClubData() {
     clubKegelSerie: null,
     calendarRevision: 0,
     sechstageState: createSechstageState(),
+    blackjackState: createBlackjackState(),
+    gluecksspiraleState: createGluecksspiraleState(),
     currentEveningStartedAt: null,
     penaltyStatsLog: [],
     persons: [],
@@ -200,7 +202,7 @@ function createEmptyClubData() {
       pudel: 0,
       klingel: 0
     },
-    SPIELE_KATALOG: ['Tannenbaum', 'Darts', 'Sechs-Tage-Rennen'],
+    SPIELE_KATALOG: ['Tannenbaum', 'Darts', 'Sechs-Tage-Rennen', '17 + 4 / Blackjack', 'Glücksspirale'],
     RUNDEN_GRUENDE: ['1000er-Runde', '2000er-Runde', 'Geburtstag'],
     spiele: [],
     selectedLoser: null,
@@ -250,6 +252,8 @@ function syncCurrentClubToStore() {
     clubKegelSerie: clubKegelSerie?JSON.parse(JSON.stringify(clubKegelSerie)):null,
     calendarRevision: kcCalendarRevision,
     sechstageState: JSON.parse(JSON.stringify(sechstageState)),
+    blackjackState: JSON.parse(JSON.stringify(blackjackState)),
+    gluecksspiraleState: JSON.parse(JSON.stringify(gluecksspiraleState)),
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     clubTerminGruende: JSON.parse(JSON.stringify(clubTerminGruende)),
@@ -452,7 +456,9 @@ async function selectClub(clubName) {
   clubKegelSerie=localClub.clubKegelSerie?JSON.parse(JSON.stringify(localClub.clubKegelSerie)):null;
   kcCalendarRevision=Number(localClub.calendarRevision)||0;
   sechstageState=localClub.sechstageState?JSON.parse(JSON.stringify(localClub.sechstageState)):createSechstageState();
-  currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||null;
+  blackjackState=localClub.blackjackState?JSON.parse(JSON.stringify(localClub.blackjackState)):createBlackjackState();
+  gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
+  currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
   penaltyStatsLog=JSON.parse(JSON.stringify(localClub.penaltyStatsLog||[]));
   clubTerminGruende=JSON.parse(JSON.stringify(localClub.clubTerminGruende||[{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}]));
   cashBookSettings = localClub.cashBookSettings ? JSON.parse(JSON.stringify(localClub.cashBookSettings)) : null;
@@ -548,6 +554,7 @@ if (
         // Calendar revisions are independent of the game state's client clock.
         if(ACTIVE_CLUB===clubName&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(state);
         if(ACTIVE_CLUB===clubName&&typeof applySechsServerState==='function')applySechsServerState(state.sechstageState);
+        if(ACTIVE_CLUB===clubName&&typeof applyTableServerStates==='function')applyTableServerStates(state);
 
         const incomingClientAt = Number(state.updatedClientAt || 0);
         const incomingClientId = state.updatedClientId || '';

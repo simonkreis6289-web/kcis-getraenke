@@ -76,6 +76,8 @@ function getSerializableState() {
     clubTerminGruende,
     sichernState: {...sichernState,busy:false,closing:false},
     sechstageState,
+    blackjackState,
+    gluecksspiraleState,
     torState,
     fuchsjagdState,
     lotterieSettings,
@@ -170,6 +172,8 @@ function getFirestoreState() {
     hausnummerSettings,
         sichernState: {...sichernState,busy:false,closing:false},
         sechstageState,
+    blackjackState,
+    gluecksspiraleState,
         torState,
     torState,
         fuchsjagdState,
@@ -335,6 +339,11 @@ function applyLoadedState(state) {
     if(!savedSix||savedSix.eveningStartedAt!==currentEveningStartedAt)sechstageState=createSechstageState();
     else applySechsServerState(savedSix);
   }
+  for(const key of ['blackjack','gluecksspirale']){
+    const saved=state[key+'State'];
+    if(!saved||(saved.eveningStartedAt&&currentEveningStartedAt&&saved.eveningStartedAt!==currentEveningStartedAt))tableGameSet(key,KCTableGames.empty(key));
+  }
+  applyTableServerStates(state);
   torState = state.torState || createTorState();
   ensureTorState();
   ensureSichernState();
@@ -658,6 +667,7 @@ function findUndefinedPaths(
     
 function hydrateState() {
   ensureSechstageState();
+  ensureTableGames();
   DRINKS.forEach(drink => {
     if (
       prices[drink.key] ===
@@ -2724,6 +2734,8 @@ async function startNewKegelabend() {
   fuchsjagdState = createFuchsjagdState();
   sichernState = createSichernState();
   sechstageState = createSechstageState();
+  blackjackState = createBlackjackState();
+  gluecksspiraleState = createGluecksspiraleState();
   torState = createTorState();
   archiveCurrentKegelabendForStats();
   // Erst nach dem Archivieren beginnt der neue Kegelabend.
@@ -3855,6 +3867,7 @@ function updateStrafenLimitInput() {
 // ── RENDER ──
 function renderAll() {
   ensureSechstageState();
+  ensureTableGames();
   recalcTeamExtras();
 applyGroupTheme();
   updateHeaderDateTime();
@@ -3886,6 +3899,7 @@ applyGroupTheme();
     renderFuchsjagdGame();
     renderSichernGame();
     renderSechsGame();
+    renderTableGames();
     renderTorGame();
     renderLotterieSettings();
     renderTiberiusSettings();
@@ -5655,7 +5669,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info']
 };

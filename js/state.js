@@ -1,6 +1,6 @@
-const APP_VERSION = '20261105-178';
-const APPVersionSelf = 'V178 © SK';
-const APP_LAST_UPDATE = '05.11.2026, 21:01 Uhr';
+const APP_VERSION = '20261106-179';
+const APPVersionSelf = 'V179 © SK';
+const APP_LAST_UPDATE = '06.11.2026, 06:14 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -24,7 +24,7 @@ let STRAFEN = [
 
 let strafPrices = {};
 
-let SPIELE_KATALOG = ['Tannenbaum', 'Darts', 'Sechs-Tage-Rennen'];
+let SPIELE_KATALOG = ['Tannenbaum', 'Darts', 'Sechs-Tage-Rennen', '17 + 4 / Blackjack', 'Glücksspirale'];
 let RUNDEN_GRUENDE = ['1000er-Runde', '2000er-Runde', 'Geburtstag'];
 
 let drinkEditPerson = null;
@@ -140,6 +140,8 @@ let haustiefState = null;
 let hausnummerSettings = {hoch:{neun:9,kranz:12,gosse:0},tief:{neun:0,kranz:0,gosse:0}};
 let sichernState = null;
 let sechstageState = null;
+let blackjackState = null;
+let gluecksspiraleState = null;
 let torState = null;
 let fuchsjagdState = null;
 

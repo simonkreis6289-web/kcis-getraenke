@@ -220,13 +220,15 @@ window.firestoreApi = {
 
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
-      const savedEveningId=current.currentEveningStartedAt||current.sechstageState?.eveningStartedAt||'';
+      const gameFields=['sechstageState','blackjackState','gluecksspiraleState'];
+      const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
       const requestedEvening=Date.parse(payload.currentEveningStartedAt||''),savedEvening=Date.parse(savedEveningId);
-      if(current.sechstageState?.revision&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
+      if(gameFields.some(key=>current[key]?.revision)&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
         next.currentEveningStartedAt=savedEveningId;
-        next.sechstageState=current.sechstageState;
+        for(const key of gameFields)if(current[key]?.revision)next[key]=current[key];
         const incoming=Array.isArray(payload.penaltyStatsLog)?payload.penaltyStatsLog:(current.penaltyStatsLog||[]);
-        next.penaltyStatsLog=[...incoming.filter(entry=>!entry.sixDaysRaceId),...(current.penaltyStatsLog||[]).filter(entry=>entry.sixDaysRaceId)];
+        const owned=entry=>entry.sixDaysRaceId||entry.tableGameId;
+        next.penaltyStatsLog=[...incoming.filter(entry=>!owned(entry)),...(current.penaltyStatsLog||[]).filter(owned)];
       }
       const managed=current.clubCalendarData?.calendarRevision?current.clubCalendarData:current;
       let calendar=null;
@@ -309,6 +311,57 @@ window.firestoreApi = {
         transaction.set(ref,{sechstageState:next,currentEveningStartedAt:evening,dashboardActiveGame:'sechstage',penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
       }
       return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.sixDaysRaceId),repeat:result.repeat};
+    });
+  },
+
+  async transactTableGame(clubId,request={}) {
+    const gameKey=request.gameKey;if(!['blackjack','gluecksspirale'].includes(gameKey))throw new Error('Unbekanntes Spiel');
+    const stateKey=gameKey+'State';
+    if(!clubId||!window.KCTableGames)throw new Error('Spiel ist noch nicht verfügbar');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
+      const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
+      const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current[stateKey]?.eveningStartedAt===existingEvening&&current[stateKey]?.commands?.includes(request.opId);
+      if(String(request.eveningStartedAt||'')!==existingEvening&&!repeatedInitialStart)throw new Error('Der Kegelabend wurde inzwischen gewechselt');
+      const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
+      const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCTableGames.empty(gameKey);
+      const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
+      const result=window.KCTableGames.command(before,request,context),next=result.state;
+      const effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCTableGames.effects(before,next,request,context);
+      const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
+      const affected=result.repeat?(receipt?.changes||[]):effect.changes;
+      const groups=new Map();
+      for(const change of affected){
+        const id=this.getLivePersonId(change.personName);
+        if(!groups.has(id))groups.set(id,{name:change.personName,changes:[]});groups.get(id).changes.push(change);
+      }
+      const loaded=[];
+      for(const [id,group] of groups){
+        const personRef=doc(db,'clubs',clubId,'livePersons',id),personSnap=await transaction.get(personRef);
+        const fallback=context.people.find(person=>person.name===group.name)||{};
+        loaded.push({...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()});
+      }
+      const counters=[];
+      let finalStats=current.penaltyStatsLog||[];
+      for(const group of loaded){
+        const values={...(group.current.strafen||{})};
+        for(const change of group.changes){
+          const value=Number(values[change.key]||0)+(result.repeat?0:change.delta);
+          if(!Number.isSafeInteger(value)||value<0)throw new Error('Strafzähler wurde inzwischen geändert. Rückgängig nicht möglich.');
+          values[change.key]=value;counters.push({personName:group.name,category:'strafen',key:change.key,value});
+        }
+        if(!result.repeat)transaction.set(group.ref,{
+          ...(!group.exists?{present:!!group.current.present,isGuest:!!group.current.isGuest,left:!!group.current.left,drinks:{...(group.current.drinks||{})}}:{}),
+          name:group.name,strafen:values,updatedAt:serverTimestamp()
+        },{merge:true});
+      }
+      if(!result.repeat){
+        next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
+        const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
+        transaction.set(ref,{[stateKey]:next,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
+      }
+      return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.tableGameId),repeat:result.repeat};
     });
   },
 
