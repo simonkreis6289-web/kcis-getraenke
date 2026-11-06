@@ -18,6 +18,11 @@
     for(const name of losers){const score=values[name];if(groups[groups.length-1]?.score===score)groups[groups.length-1].names.push(name);else groups.push({score,names:[name]});}
     return groups;
   }
+  function teamLoserGroups(s){
+    const groups=[],losers=s.teams.filter(t=>!s.winners.includes(t.id)).slice().sort((a,b)=>(s.scores[a.id]||0)-(s.scores[b.id]||0));
+    for(const t of losers){const score=s.scores[t.id]||0,last=groups[groups.length-1];if(last?.score===score)last.teamIds.push(t.id);else groups.push({score,teamIds:[t.id]});}
+    return groups;
+  }
   function participants(s){return s.gameKey==='blackjack'?s.players:s.teams.flatMap(t=>t.players);}
   function totals(s){if(s.gameKey==='gluecksspirale')return {...s.scores};return Object.fromEntries(s.players.map(name=>[name,cardTotal(s.wood[name]||0,(Object.hasOwn(s.cardValues,name)?s.cardValues[name]:0))]));}
   function initialize(request,context){
@@ -26,7 +31,7 @@
     const active=new Set(context.people.filter(validPerson).map(p=>p.name));
     if(names.some(n=>!active.has(n)))throw Error('Teilnehmer sind nicht mehr aktiv. Auswahl aktualisieren.');
     if(k==='gluecksspirale'){
-      if(!Array.isArray(request.teams)||request.teams.length<2||request.teams.length>8||request.teams.some(t=>t.players?.length!==2))throw Error('Bitte zwei bis acht Zweierteams bilden');
+      if(!Array.isArray(request.teams)||request.teams.length<2||request.teams.length>8||names.length<3||request.teams.some(t=>!Array.isArray(t.players)||![1,2].includes(t.players.length))||request.teams.filter(t=>t.players.length===1).length!==names.length%2)throw Error('Zwei bis acht Teams bilden; bei ungerader Anzahl genau ein Einzelteam');
       if(!Number.isInteger(request.target)||request.target<10||request.target>1000)throw Error('Ziel muss zwischen 10 und 1000 Holz liegen');
       s.teams=request.teams.map((t,i)=>({id:'G'+(i+1),name:'Team '+(i+1),players:t.players.slice()}));s.target=request.target;s.scores=Object.fromEntries(s.teams.map(t=>[t.id,0]));
       s.rounds=[{round:1,wood:{}}];
@@ -53,7 +58,7 @@
       const team=s.teams[s.currentIndex],round=s.rounds[s.rounds.length-1];
       s.scores[team.id]+=entry.pins;round.wood[team.id]=(round.wood[team.id]||0)+entry.pins;s.turn.pins.push(entry.pins);
       if(s.scores[team.id]>=s.target&&!s.finalRound)s.finalRound=s.round;
-      if(s.turn.pins.length===1)s.turn.playerIndex=1;
+      if(s.turn.pins.length===1)s.turn.playerIndex=team.players.length===1?0:1;
       else{
         const again=s.turn.pins[0]+s.turn.pins[1]>=13;s.turn={pins:[],playerIndex:0};
         if(!again){
@@ -143,8 +148,13 @@
       const e=before.history[before.history.length-1];for(const change of e.penalties||[])changes.push({...change,delta:-change.delta});if(e.statId)removed.push(e.statId);
     }else if(request.action==='finish'){
       if(s.gameKey==='gluecksspirale'){
-        const names=s.teams.filter(t=>!s.winners.includes(t.id)).flatMap(t=>t.players);
-        if(names.length){const key=context.catalog.find(item=>/^(1\.?\s*verlierer)$|erster verlierer/i.test(String(item.label||'').trim()))?.key;if(!key)throw Error('Strafe „1. Verlierer“ fehlt');for(const personName of names)changes.push({personName,key,delta:1});}
+        const groups=teamLoserGroups(s);
+        for(let i=0;i<Math.min(3,groups.length);i++){
+          const rank=i+1,key=context.catalog.find(item=>new RegExp('^'+rank+'\\.?\\s*verlierer(?:\\b|\\s|$)','i').test(String(item.label||'').trim())||(rank===1&&/erster verlierer/i.test(item.label)))?.key;
+          if(!key)throw Error('Strafe „'+rank+'. Verlierer“ fehlt');
+          for(const id of groups[i].teamIds)for(const personName of s.teams.find(t=>t.id===id).players)changes.push({personName,key,delta:1});
+        }
+        s.teamLoserGroups=groups;
       }else{
         const groups=loserGroups(s);
         for(let i=0;i<Math.min(3,groups.length);i++){
@@ -158,11 +168,12 @@
     }
     return {changes,added,removed};
   }
-  window.KCTableGames=Object.freeze({empty,command,effects,totals,currentName,participants,cardTotal,blackjackPhase,loserGroups});
+  window.KCTableGames=Object.freeze({empty,command,effects,totals,currentName,participants,cardTotal,blackjackPhase,loserGroups,teamLoserGroups});
 })();
 function tableEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function renderTableGameBoard(s){
+function renderTableGameBoard(s,options={}){
   if(!s?.id)return '';
+  if(s.gameKey==='gluecksspirale')return renderSpiralBoard(s,options);
   const spiral=s.gameKey==='gluecksspirale',values=KCTableGames.totals(s),phase=spiral?'throwing':KCTableGames.blackjackPhase(s);
   const winners=spiral?s.teams.filter(t=>s.winners.includes(t.id)).map(t=>t.name+' ('+t.players.join(' / ')+')'):s.winners;
   const head=s.finished?(winners.length?'🏆 '+winners.join(' · '):'Alle überworfen – kein Sieger'):s.readyToFinish?'🏁 Runde beendet – Spiel abschließen':spiral?'Runde '+s.round+(s.finalRound?' · Letzte Runde':''):phase==='cards'?'🃏 Alle haben gestoppt – Karten aufdecken':'Spieler '+(s.currentIndex+1)+' von '+s.players.length;
@@ -178,4 +189,20 @@ function renderTableGameBoard(s){
     }).join('');
   const roundTable=spiral?'<div class="tg-rounds"><table><thead><tr><th>Team</th>'+s.rounds.map(r=>'<th>R'+r.round+'</th>').join('')+'</tr></thead><tbody>'+s.teams.map(t=>'<tr><th scope="row">'+tableEscape(t.name)+'</th>'+s.rounds.map(r=>'<td>'+(r.wood[t.id]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'';
   return '<div class="tg-board"><h3>'+tableEscape(head)+'</h3>'+turn+'<div class="tg-table-scroll"><table><thead><tr>'+(spiral?'<th>Team</th><th>Holz</th><th>Fortschritt</th>':'<th>Name</th><th>Karte</th><th>Holz</th><th>Gesamt</th><th>Status</th><th>Gebuchte Strafen</th>')+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+roundTable+'</div>';
+}
+
+function renderSpiralBoard(s,options={}){
+  const teams=s.teams||[];if(!teams.length)return '';
+  const current=teams[s.currentIndex],player=KCTableGames.currentName(s),colors=['#1976b8','#cc3b3b','#25834c','#9058bd','#a66b10','#168b93','#c04380','#526675'];
+  const winners=teams.filter(t=>(s.winners||[]).includes(t.id));
+  const head=s.finished?'🏆 '+winners.map(t=>t.name+' ('+t.players.join(' / ')+')').join(' · '):s.readyToFinish?'🏁 Runde beendet – Spiel abschließen':'Runde '+s.round+(s.finalRound?' · Letzte Runde':'')+' · Ziel '+s.target+' Holz';
+  const active=s.active&&!s.readyToFinish;
+  const turn=active?'<div class="tg-spiral-turn" role="status"><span>🎳 <strong>'+tableEscape(player)+'</strong> am Wurf <small>'+tableEscape(current.name)+(current.players.length===1?' · Einzelteam':'')+'</small></span><b>Wurfpaar: '+(s.turn.pins.length?s.turn.pins[0]+' + …':'noch offen')+'</b></div>':'';
+  const cards=teams.map((t,i)=>{
+    const points=Number(s.scores[t.id])||0,rank=(s.teamLoserGroups||[]).findIndex(g=>g.teamIds.includes(t.id)),won=s.finished&&(s.winners||[]).includes(t.id);
+    const tag=won?'🏆 Sieger':s.finished&&rank>=0&&rank<3?(rank+1)+'. Verlierer +1':'';
+    return '<article class="tg-spiral-team '+(active&&current.id===t.id?'tg-spiral-current':'')+'" style="--spiral-color:'+colors[i%colors.length]+'"><div class="tg-spiral-team-top"><strong>'+tableEscape(t.name)+(t.players.length===1?' · Einzelteam':'')+'</strong><b>'+points+'<small> / '+s.target+'</small></b></div><div class="tg-spiral-names">'+t.players.map(tableEscape).join(' / ')+'</div><div class="tg-progress" role="progressbar" aria-label="'+tableEscape(t.name)+'" aria-valuemin="0" aria-valuemax="'+s.target+'" aria-valuenow="'+Math.min(s.target,points)+'"><span style="width:'+Math.min(100,points/s.target*100)+'%"></span></div>'+(tag?'<span class="tg-team-result">'+tag+'</span>':'')+'</article>';
+  }).join('');
+  const table='<table><thead><tr><th>Team</th>'+s.rounds.map(r=>'<th>R'+r.round+'</th>').join('')+'<th>Gesamt</th></tr></thead><tbody>'+teams.map(t=>'<tr><th scope="row">'+tableEscape(t.name)+'</th>'+s.rounds.map(r=>'<td>'+(r.wood[t.id]??'—')+'</td>').join('')+'<td><strong>'+(s.scores[t.id]||0)+'</strong></td></tr>').join('')+'</tbody></table>';
+  return '<section class="tg-board tg-spiral-board"><h3>'+tableEscape(head)+'</h3>'+turn+(options.controls?'<div class="tg-spiral-booking">'+options.controls+'</div>':'')+'<div class="tg-spiral-teams">'+cards+'</div><details class="tg-spiral-rounds" '+(options.detailsOpen?'open':'')+'><summary>Rundendetails · '+s.rounds.length+' Runde'+(s.rounds.length===1?'':'n')+'</summary><div class="tg-rounds">'+table+'</div></details></section>';
 }

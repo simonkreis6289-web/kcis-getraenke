@@ -5,6 +5,12 @@
   function nextTurn(){return {wood:0,standing:9,used:[0,0],playerIndex:0};}
   function team(state){return state.teams[state.teamIndex]||null;}
   function thrower(state){return team(state)?.players[state.turn.playerIndex]||'';}
+  function quota(team){return team.players.length===1?4:2;}
+  function loserGroups(state){
+    const groups=[],losers=state.teams.filter(t=>!state.winners.includes(t.id)).slice().sort((a,b)=>(state.scores[a.id]||0)-(state.scores[b.id]||0));
+    for(const t of losers){const score=state.scores[t.id]||0,last=groups[groups.length-1];if(last?.score===score)last.teamIds.push(t.id);else groups.push({score,teamIds:[t.id]});}
+    return groups;
+  }
   function scores(state){
     const values=Object.fromEntries(state.teams.map(t=>[t.id,0]));
     for(const round of state.rounds)for(const t of state.teams)values[t.id]+=round.complete?(round.points[t.id]||0):(round.wood[t.id]||0)*round.day;
@@ -13,7 +19,7 @@
   }
   function takeThrow(state,entry){
     const current=team(state),turn=state.turn,index=current.players.indexOf(entry.name);
-    if(index<0||turn.used[index]>=2)throw new Error('Jeder Partner hat genau zwei Würfe pro Tag');
+    if(index<0||turn.used[index]>=quota(current))throw new Error('Jeder Partner hat genau zwei Würfe pro Tag; ein Einzelteam hat vier');
     let pins=entry.pins;
     if(entry.kind==='kranz'){if(turn.standing!==9)throw new Error('Kranz ist nur ins volle Bild möglich');pins=8;}
     else if(entry.kind==='gosse'||entry.kind==='miss')pins=0;
@@ -32,14 +38,14 @@
       state.turn=nextTurn();
     }else{
       if(turn.standing===0)turn.standing=9;
-      const other=1-index;turn.playerIndex=turn.used[other]<2?other:index;
+      const other=1-index;turn.playerIndex=current.players.length===1?0:turn.used[other]<2?other:index;
     }
     state.scores=scores(state);return recorded;
   }
   function start(teams,bonus,id,now,evening){
-    if(!Array.isArray(teams)||teams.length<2||teams.length>8)throw new Error('Bitte zwei bis acht Zweierteams bilden');
+    if(!Array.isArray(teams)||teams.length<2||teams.length>8)throw new Error('Bitte zwei bis acht Teams bilden');
     const names=teams.flatMap(t=>t.players||[]);
-    if(teams.some(t=>t.players?.length!==2)||names.some(name=>typeof name!=='string'||!name.trim())||new Set(names.map(name=>name.trim().toLocaleLowerCase('de-DE'))).size!==names.length)throw new Error('Jedes Team braucht zwei unterschiedliche Spieler; niemand darf doppelt spielen');
+    if(names.length<3||teams.some(t=>!Array.isArray(t.players)||![1,2].includes(t.players.length))||teams.filter(t=>t.players.length===1).length!==names.length%2||names.some(name=>typeof name!=='string'||!name.trim())||new Set(names.map(name=>name.trim().toLocaleLowerCase('de-DE'))).size!==names.length)throw new Error('Zweierteams bilden; bei ungerader Anzahl genau ein Einzelteam. Niemand darf doppelt spielen.');
     return {...empty(),id,active:true,teams:teams.map((t,i)=>({id:'R'+(i+1),name:'Team '+(i+1),players:t.players.slice()})),bonus:!!bonus,startedAt:now,eveningStartedAt:evening,rounds:[{day:1,wood:{},points:{},complete:false,bonusWinners:[]}]};
   }
   function command(previous,request,context){
@@ -60,7 +66,7 @@
       else{
         if(!state.active||state.finished)throw new Error('Dieses Rennen ist bereits beendet');
         if(request.action==='select'){
-          if(state.readyToFinish||![0,1].includes(request.playerIndex)||state.turn.used[request.playerIndex]>=2)throw new Error('Dieser Spieler hat bereits zweimal geworfen');
+          if(state.readyToFinish||!Number.isInteger(request.playerIndex)||request.playerIndex<0||request.playerIndex>=team(state).players.length||state.turn.used[request.playerIndex]>=quota(team(state)))throw new Error(team(state).players.length===1?'Ein Einzelteam darf höchstens viermal werfen':'Jeder Partner darf höchstens zweimal werfen');
           state.turn.playerIndex=request.playerIndex;
         }else if(request.action==='throw'){
           if(state.readyToFinish)throw new Error('Alle sechs Tage sind gespielt');
@@ -99,17 +105,18 @@
     }else if(request.action==='undo'){
       const last=before.history[before.history.length-1];for(const change of last.penalties||[])changes.push({...change,delta:-change.delta});if(last.statId)removed.push(last.statId);
     }else if(request.action==='finish'){
-      const losers=state.teams.filter(t=>!state.winners.includes(t.id)).flatMap(t=>t.players);
-      if(losers.length){
-        const key=context.catalog.find(s=>/^(1\.?\s*verlierer)$|erster verlierer/i.test(String(s.label||'').trim()))?.key;
-        if(!key)throw new Error('Strafe „1. Verlierer“ fehlt');
-        for(const personName of losers)changes.push({personName,key,delta:1});
+      const groups=loserGroups(state);
+      for(let i=0;i<Math.min(3,groups.length);i++){
+        const rank=i+1,key=context.catalog.find(s=>new RegExp('^'+rank+'\\.?\\s*verlierer(?:\\b|\\s|$)','i').test(String(s.label||'').trim())||(rank===1&&/erster verlierer/i.test(s.label)))?.key;
+        if(!key)throw new Error('Strafe „'+rank+'. Verlierer“ fehlt');
+        for(const id of groups[i].teamIds)for(const personName of state.teams.find(t=>t.id===id).players)changes.push({personName,key,delta:1});
       }
+      state.teamLoserGroups=groups;
       state.finishPenalties=clone(changes);
     }
     return {changes,added,removed};
   }
-  window.KCSixDays=Object.freeze({empty,team,thrower,scores,command,effects});
+  window.KCSixDays=Object.freeze({empty,team,thrower,scores,command,effects,quota,loserGroups});
 })();
 
 function sixEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -121,7 +128,7 @@ function renderSixDaysBoard(state){
   const current=KCSixDays.team(s),player=KCSixDays.thrower(s);
   const winners=teams.filter(t=>(s.winners||[]).includes(t.id));
   const headline=s.finished?'🏆 '+winners.map(t=>t.name+' ('+t.players.join(' / ')+')').join(' · '):s.readyToFinish?'🏁 Sechs Tage gespielt – Rennen abschließen':'Tag '+(s.roundIndex+1)+' von 6 · Multiplikator ×'+(s.roundIndex+1);
-  const tracks=sorted.map(t=>{const index=teams.findIndex(team=>team.id===t.id),points=Number(values[t.id])||0,rank=sorted.findIndex(other=>(values[other.id]||0)===points)+1;return '<div class="six-track '+(s.active&&!s.readyToFinish&&current?.id===t.id?'six-current':'')+'" style="--six-color:'+SIX_COLORS[index%SIX_COLORS.length]+'"><div class="six-track-label"><strong>'+rank+'. '+sixEscape(t.name)+'</strong><b>'+points+' Punkte</b></div><small>'+t.players.map(sixEscape).join(' · ')+'</small><div class="six-track-road" aria-hidden="true"><i style="width:'+Math.max(0,Math.min(100,points/maximum*100))+'%"></i><span style="left:clamp(0px,calc('+Math.max(0,Math.min(100,points/maximum*100))+'% - 28px),calc(100% - 28px))">🚴</span></div></div>';}).join('');
+  const tracks=sorted.map(t=>{const index=teams.findIndex(team=>team.id===t.id),points=Number(values[t.id])||0,rank=sorted.findIndex(other=>(values[other.id]||0)===points)+1,loserRank=(s.teamLoserGroups||[]).findIndex(g=>g.teamIds.includes(t.id));return '<div class="six-track '+(s.active&&!s.readyToFinish&&current?.id===t.id?'six-current':'')+'" style="--six-color:'+SIX_COLORS[index%SIX_COLORS.length]+'"><div class="six-track-label"><strong>'+rank+'. '+sixEscape(t.name)+'</strong><b>'+points+' Punkte</b></div><small>'+t.players.map(sixEscape).join(' · ')+(t.players.length===1?' · Einzelteam':'')+'</small>'+(loserRank>=0&&loserRank<3?'<span class="six-loser-label">'+(loserRank+1)+'. Verlierer +1</span>':'')+'<div class="six-track-road" aria-hidden="true"><i style="width:'+Math.max(0,Math.min(100,points/maximum*100))+'%"></i><span style="left:clamp(0px,calc('+Math.max(0,Math.min(100,points/maximum*100))+'% - 28px),calc(100% - 28px))">🚴</span></div></div>';}).join('');
   const table=teams.map(t=>'<tr><th scope="row">'+sixEscape(t.name)+'</th>'+Array.from({length:6},(_,index)=>{const round=s.rounds[index];let value='—';if(round?.complete)value=round.points[t.id]+'<small>'+round.wood[t.id]+' Holz'+(round.bonusWinners.includes(t.id)?' +2 Bonus':'')+' ×'+(index+1)+'</small>';else if(round&&round.wood[t.id]!=null)value=(round.wood[t.id]*(index+1))+'<small>vorläufig</small>';else if(index===s.roundIndex&&s.active&&!s.readyToFinish&&current?.id===t.id)value=(s.turn.wood*(index+1))+'<small>offen</small>';return '<td>'+value+'</td>';}).join('')+'<td><strong>'+(values[t.id]||0)+'</strong></td></tr>').join('');
   return '<div class="six-race-board"><div class="six-race-headline">'+sixEscape(headline)+'</div>'+(s.active&&!s.readyToFinish?'<div class="six-turnline">🎳 '+sixEscape(current?.name)+' · <strong>'+sixEscape(player)+'</strong> am Wurf<small>'+(s.turn.used[0]+s.turn.used[1])+' von 4 Würfen · '+s.turn.standing+' Kegel stehen</small></div>':'')+'<div class="six-tracks">'+tracks+'</div><p class="six-chart-note">Balken vergleichen die aktuellen Gesamtpunkte. '+(s.bonus?'Tagessiegerbonus eingeschaltet.':'Ohne Tagessiegerbonus.')+'</p><div class="six-score-scroller"><table class="six-score-table"><thead><tr><th>Team</th>'+Array.from({length:6},(_,i)=>'<th>Tag '+(i+1)+'<small>×'+(i+1)+'</small></th>').join('')+'<th>Gesamt</th></tr></thead><tbody>'+table+'</tbody></table></div></div>';
 }

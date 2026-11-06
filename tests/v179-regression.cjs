@@ -78,7 +78,7 @@ async function runV179Tests(sources){
  test('undo crosses a normal round boundary correctly',()=>{let s=spiral();for(let i=0;i<4;i++)s=roll(s,1);s=step(s,'undo').state;eq(s.round,1);eq(s.currentIndex,1);eq(game.currentName(s),'D');eq(s.turn.pins,[1]);eq(s.rounds.length,1);});
  test('undo can remove the final-round trigger',()=>{let s=start('gluecksspirale',{target:10});s=roll(roll(s,6),4);eq(s.finalRound,1);s=step(s,'undo').state;eq(s.finalRound,0);eq(s.scores.G1,6);});
  test('undo after final opponent restores the active turn',()=>{let s=start('gluecksspirale',{target:10});for(const pins of [6,4,6,4])s=roll(s,pins);s=step(s,'undo').state;ok(!s.readyToFinish);eq(game.currentName(s),'D');eq(s.scores.G2,6);});
- test('target values outside 10–1000 and odd teams are rejected',()=>{for(const target of [0,9,1001,50.5,NaN])throws(()=>start('gluecksspirale',{target}));throws(()=>start('gluecksspirale',{teams:[{players:['A','B']},{players:['C']}]}));});
+ test('target values outside 10–1000 and multiple single teams are rejected',()=>{for(const target of [0,9,1001,50.5,NaN])throws(()=>start('gluecksspirale',{target}));ok(start('gluecksspirale',{teams:[{players:['A','B']},{players:['C']}]}).active);throws(()=>start('gluecksspirale',{teams:[{players:['A']},{players:['B']},{players:['C','D']}]}));});
  test('Kranz is eight wood in both games and records the correct statistic',()=>{for(const key of ['blackjack','gluecksspirale']){const out=step(start(key),'throw',{kind:'kranz'});eq(out.effect.added[0].type,'kranz');eq(out.effect.added[0].thrower,'A');eq(out.state.gameKey==='blackjack'?out.state.wood.A:out.state.scores.G1,8);}});
  test('Gosse books the thrower, while Vorbei only uses a throw',()=>{for(const key of ['blackjack','gluecksspirale']){const s=start(key);eq(step(s,'throw',{kind:'miss'}).effect.changes,[]);eq(step(s,'throw',{kind:'gosse'}).effect.changes,[{personName:'A',key:'gosse',delta:1}]);}});
  test('nine and Kranz punish only eligible other people, including guests',()=>{const out=step(spiral(),'throw',{kind:'pins',pins:9});eq(out.effect.changes.map(x=>x.personName),['B','C','D','E','F','Gast']);});
@@ -216,8 +216,8 @@ async function runV179UiTest(sources){
    return {state:JSON.parse(JSON.stringify(server[request.gameKey+'State'])),eveningStartedAt:server.currentEveningStartedAt,counters:[],gameStats:JSON.parse(JSON.stringify(stats)),repeat:out.repeat};
  };
  env.window.firestoreApi.loadClubState=async()=>JSON.parse(JSON.stringify(server));
- ui.renderTableGames();ok(nodes['blackjack-start-card'].innerHTML.includes('17 + 4'));ok(nodes['gluecksspirale-start-card'].innerHTML.includes('gerader Anzahl'));
- ui.tableBuildPairs();eq(ui.tableDraft('gluecksspirale').teams.length,0);
+ ui.renderTableGames();ok(nodes['blackjack-start-card'].innerHTML.includes('17 + 4'));ok(nodes['gluecksspirale-start-card'].innerHTML.includes('5 ausgewählt'));
+ ui.tableBuildPairs();eq(ui.tableDraft('gluecksspirale').teams.length,3);eq(ui.tableDraft('gluecksspirale').teams[2].players,['Gast']);
  ui.tableToggle('gluecksspirale',4);ui.tableBuildPairs();eq(ui.tableDraft('gluecksspirale').teams.map(t=>t.players),[['A','B'],['C','D']]);
  ui.tableOpenAssignment(0,1);ok(!nodes['table-assignment-modal'].classList.contains('hidden'));ui.tableChooseAssignment(2);ui.tableConfirmAssignment();eq(ui.tableDraft('gluecksspirale').teams.map(t=>t.players),[['A','C'],['B','D']]);ok(nodes['table-assignment-modal'].classList.contains('hidden'));
  const initialFocus=node('info');document.activeElement=initialFocus;ui.openSpiralRules();ok(!nodes['spiral-rules-modal'].classList.contains('hidden'));eq(document.activeElement.id,'spiral-rules-close');listeners.keydown({key:'Escape',preventDefault(){}});ok(nodes['spiral-rules-modal'].classList.contains('hidden'));eq(document.activeElement.id,'info');
