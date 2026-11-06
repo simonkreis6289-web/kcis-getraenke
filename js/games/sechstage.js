@@ -13,6 +13,7 @@ function applySechsServerState(value){
   sechstageState=JSON.parse(JSON.stringify(value));renderSechsGame();return true;
 }
 function sechsPlayers(){
+  if(typeof gameSetupNames==='function')return gameSetupNames('sechstage').map(n=>getActivePlayersForSoloGame().find(p=>p.name===n)).filter(Boolean);
   const active=getActivePlayersForSoloGame(),ordered=typeof getGlobalSeatOrder==='function'?getGlobalSeatOrder():active.map(p=>p.name);
   return [...new Set([...ordered,...active.map(p=>p.name)])].map(name=>active.find(p=>p.name===name)).filter(Boolean);
 }
@@ -71,7 +72,7 @@ async function sechsRun(action,fields={}){
   finally{sechsBusy=false;if(ACTIVE_CLUB!==club)sechsPending=null;renderSechsGame();}
 }
 async function startSechsGame(){
-  ensureSechstageState();if(sechsSetup.teams.length<2){showToast('Bitte zuerst die Zweierteams bilden','error');return;}
+  ensureSechstageState();if(typeof gameSetupNames==='function'){sechsSetup.selected=gameSetupNames('sechstage');sechsSetup.teams=gameSetupTeams('sechstage').map(players=>({players}));}if(sechsSetup.teams.length<2){showToast('Bitte zuerst die Zweierteams bilden','error');return;}
   sechsSetup.bonus=!!document.getElementById('sechs-bonus')?.checked;
   await sechsRun('start',{teams:sechsSetup.teams,bonus:sechsSetup.bonus,raceId:'race_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2))});
 }
@@ -100,9 +101,11 @@ function renderSechsGame(){
   if(!sechstageState.id){
     const names=new Set(active.map(p=>p.name));sechsSetup.selected=sechsSetup.selected.filter(name=>names.has(name));
     if(sechsSetup.teams.some(t=>t.players.some(name=>!names.has(name))))sechsSetup.teams=[];
+    if(typeof gameSetupNames==='function'){sechsSetup.selected=gameSetupNames('sechstage');sechsSetup.teams=gameSetupTeams('sechstage').map(players=>({players}));}
     const count=sechsSetup.selected.length,valid=count>=3&&count<=16;
     setup.innerHTML='<h3>Zweierteams zusammenstellen</h3><p>3 bis 16 anwesende Kegler auswählen. Bei ungerader Anzahl spielt einer als Einzelteam mit allen vier Teamwürfen; niemand muss aussetzen.</p><div class="kc-avatar-picker six-player-grid">'+active.map((p,i)=>'<button type="button" class="kc-avatar-option '+(sechsSetup.selected.includes(p.name)?'selected':'')+'" aria-pressed="'+sechsSetup.selected.includes(p.name)+'" onclick="sechsTogglePlayer('+i+')">'+sixAvatar(p.name)+'</button>').join('')+'</div><p>'+count+' ausgewählt'+(valid?'':' · Bitte 3 bis 16 wählen')+'</p><div class="six-actions"><button type="button" class="secondary-btn" onclick="sechsBuildTeams()" '+(!valid?'disabled':'')+'>Teams bilden</button><button type="button" class="secondary-btn" onclick="sechsBuildTeams(true)" '+(!valid?'disabled':'')+'>🎲 Zweierteams auslosen</button></div><div class="six-pairs">'+sechsSetup.teams.map((t,i)=>'<div class="six-pair"><strong>Team '+(i+1)+(t.players.length===1?' · Einzelteam':'')+'</strong><div>'+t.players.map((name,j)=>'<button type="button" class="kc-avatar-option" onclick="sechsOpenAssignment('+i+','+j+')">'+sixAvatar(name)+'</button>').join('')+'</div></div>').join('')+'</div><label class="six-check"><input type="checkbox" id="sechs-bonus" '+(sechsSetup.bonus?'checked':'')+' onchange="sechsSetup.bonus=this.checked"> Tagessiegerbonus: +2 Holz vor dem Tagesmultiplikator</label><button type="button" class="primary-btn" onclick="startSechsGame()" '+(sechsSetup.teams.length<2?'disabled':'')+'>🏁 Sechs-Tage-Rennen starten</button>';
   }
+  if(!sechstageState.id&&typeof gameSetupMarkup==='function')setup.innerHTML=gameSetupMarkup('sechstage',{busy:sechsBusy||!!sechsPending})+'<p>Alle aktiven Kegler spielen mit. Bei ungerader Anzahl bleibt ein Einzelteam.</p><label class="six-check"><input type="checkbox" id="sechs-bonus" '+(sechsSetup.bonus?'checked':'')+' onchange="sechsSetup.bonus=this.checked"> Tagessiegerbonus: +2 Holz vor dem Tagesmultiplikator</label><button type="button" class="primary-btn" '+(sechsBusy||sechsPending||sechsPlayers().length<3?'disabled':'')+' onclick="startSechsGame()">🏁 Sechs-Tage-Rennen starten</button>';
   const s=sechstageState,blocked=sechsBusy||!!sechsPending,disabled=blocked?'disabled':'';
   let controls='';
   if(s.active&&!s.readyToFinish){

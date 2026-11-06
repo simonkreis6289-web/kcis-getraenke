@@ -10,6 +10,7 @@ function getGlobalSeatOrder() {
 function getSoloState(id) {return ({lotterie:lotterieState,tiberius:tiberiusState,mensch:menschState,plusminus:plusminusState,sichern:sichernState,haushoch:haushochState,haustief:haustiefState})[id];}
 function getSoloNames(id) {
   const active = seatingActiveNames(), state = getSoloState(id);
+  if(typeof gameSetupNames==='function'&&!state?.active)return gameSetupNames(id);
   const custom = state && state.customOrder && Array.isArray(state.playerOrder) ? state.playerOrder : [];
   const preferred = custom.length ? custom : getGlobalSeatOrder();
   return [...new Set([...preferred.filter(name => active.includes(name)),...active])];
@@ -29,6 +30,7 @@ function toggleSoloOrderOverride(id) {
   persistState();renderAll();
 }
 function renderSoloOrderSettings(id) {
+  if(typeof gameSetupMarkup==='function'){const box=document.getElementById(id+'-order-editor');if(box){box.classList.remove('hidden');box.innerHTML=gameSetupMarkup(id);}return;}
   const state=getSoloState(id),check=document.getElementById(id+'-custom-order'),editor=document.getElementById(id+'-order-editor');
   if(!state||!editor)return;
   if(check)check.checked=!!state.customOrder;

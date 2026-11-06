@@ -29,6 +29,7 @@ function sichernOrderedPlayers(){
   return [...ordered,...missing];
 }
 function getSichernTeamPlayers(teamKey){
+  if(typeof gameSetupTeamMap==='function')return (sichernState?.active?sichernState.teams:gameSetupTeamMap('sichern'))[teamKey]||[];
   const active=sichernOrderedPlayers();
   const activeNames=new Set(active.map(p=>p.name));
   const fallback=active.filter(p=>normalizeTisch?.(p.tisch)===teamKey).map(p=>p.name);
@@ -151,8 +152,9 @@ async function undoSichernThrow(){
   }finally{s.busy=false;}
 }
 function renderSichernGame(){
+  if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
   const board=document.getElementById('sichern-board');if(!board)return;ensureSichernState();const s=sichernState;
-  const setup=document.getElementById('sichern-start-card');if(setup)setup.classList.toggle('hidden',s.active||s.finished);
+  const setup=document.getElementById('sichern-start-card');if(setup)setup.classList.toggle('hidden',s.active);
   const mode=document.getElementById('sichern-mode');if(mode){const hint=document.getElementById('sichern-team-hint');if(hint)hint.textContent=mode.value==='team'?'Teams folgen der Sitzordnung. Nach jedem Wurf ist der Nächste im Team dran. Nach dem Sichern spielt das andere Team; die Spielerreihenfolge bleibt vorgemerkt.':'Die Reihenfolge folgt der Sitzordnung bzw. Spielerreihenfolge.';}
   const teamName=k=>s.mode==='team'?sichernTeamLabel(k):k;
   const cards=(s.order||[]).map(k=>{const secured=Number(s.secured[k])||0,open=Number(s.open[k])||0,total=secured+open;return `<div class="sichern-card ${s.active&&k===sichernCurrent()?'sichern-current':''}"><div class="sichern-card-top"><strong>${sichernEscape(teamName(k))}</strong><b>${total} / ${s.target}</b></div><div class="sichern-stat-row"><span>🔒 Gesichert</span><span>${secured}</span></div><div class="sichern-stat-row"><span>📦 Offen</span><span>+${open}</span></div><div class="sichern-progress"><i style="width:${Math.min(100,total/s.target*100)}%"></i></div>${s.mode==='team'?`<small>${(s.teams[k]||[]).map(sichernEscape).join(' · ')}</small>`:''}</div>`;}).join('');

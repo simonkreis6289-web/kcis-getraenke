@@ -1,9 +1,9 @@
 /* KC Invaliden Schwadron – Fuchsjagd. Würfe werden im gemeinsamen Clubzustand gespeichert. */
 function createFuchsjagdState(){return {active:false,finished:false,fox:'',hunters:[],score:0,phase:'start',startThrows:0,hunterIndex:0,round:0,throws:[],result:'',penaltiesBooked:false,startedAt:''};}
 function ensureFuchsjagdState(){if(!fuchsjagdState||typeof fuchsjagdState!=='object')fuchsjagdState=createFuchsjagdState();if(!Array.isArray(fuchsjagdState.hunters))fuchsjagdState.hunters=[];if(!Array.isArray(fuchsjagdState.throws))fuchsjagdState.throws=[];}
-function getFuchsjagdPlayers(){return getActivePlayersForSoloGame();}
+function getFuchsjagdPlayers(){const active=getActivePlayersForSoloGame();return typeof gameSetupNames==='function'?gameSetupNames('fuchsjagd').map(n=>active.find(p=>p.name===n)).filter(Boolean):active;}
 function startFuchsjagdGame(){
-  const fox=document.getElementById('fuchs-select')?.value;
+  const fox=typeof gameSetupDraft==='function'?(gameSetupDraft('fuchsjagd').fox||gameSetupNames('fuchsjagd')[0]):document.getElementById('fuchs-select')?.value;
   const participants=getFuchsjagdPlayers();
   if(!fox||!participants.some(p=>p.name===fox)||participants.length<2){showToast('Fuchs auswählen und mindestens zwei Spieler anwesend melden','error');return;}
   fuchsjagdState={...createFuchsjagdState(),active:true,fox,hunters:participants.filter(p=>p.name!==fox).map(p=>p.name),startedAt:new Date().toISOString()};
@@ -65,6 +65,7 @@ async function undoFuchsjagdThrow(){
  }finally{fuchsjagdState.busy=false;}
 }
 function renderFuchsjagdGame(){
+ if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
  const el=document.getElementById('fuchs-board'),select=document.getElementById('fuchs-select');if(!el)return;
  ensureFuchsjagdState();const s=fuchsjagdState;
  if(select){const names=getFuchsjagdPlayers().map(p=>p.name),keep=select.value||s.fox;select.innerHTML=names.map(n=>`<option value="${escapeFuchs(n)}">${escapeFuchs(n)}</option>`).join('');if(names.includes(keep))select.value=keep;}

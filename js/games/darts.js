@@ -39,6 +39,7 @@ function startDartsGame() {
   const startValue = parseInt(input?.value || '301', 10) || 301;
 
   dartsState = createDartsState();
+  if(typeof gameSetupTeamMap==='function')dartsState.participantTeams=gameSetupTeamMap('darts');
   dartsState.active = true;
   dashboardActiveGame = "darts";
   dartsState.startValue = startValue;
@@ -138,6 +139,7 @@ function openDartsPenaltyPlayerModal(type, team, points) {
 
     persons
       .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
+      .filter(p => typeof gameTeamNames!=='function'||gameTeamNames('darts',team).includes(p.name))
       .sort((a, b) => a.name.localeCompare(b.name, 'de'))
       .forEach(p => {
         const opt = document.createElement('option');
@@ -367,6 +369,7 @@ function finishDartsRound() {
 }
 
 function renderDarts() {
+  if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
   ensureDartsState();
 
   const startInput = document.getElementById('darts-start-input');

@@ -57,6 +57,7 @@ function ensureTannenbaumState() {
 
 function openTannenbaumThrowModal(team) {
   ensureTannenbaumState();
+  if(typeof gameSetupTeamMap==='function'&&!tannenbaumState.active&&!tannenbaumState.history?.length)tannenbaumState.participantTeams=gameSetupTeamMap('tannenbaum');
 
   tannenbaumThrowTeam = team;
 
@@ -152,6 +153,7 @@ function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
 
     persons
       .filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly)
+      .filter(p => typeof gameTeamNames!=='function'||gameTeamNames('tannenbaum',team).includes(p.name))
       .sort((a, b) => a.name.localeCompare(b.name, 'de'))
       .forEach(p => {
         const option = document.createElement('option');
@@ -549,6 +551,7 @@ function getTannenbaumHistoryLabel(entry) {
 }
 
 function renderTannenbaum() {
+  if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
   ensureTannenbaumState();
 
   const board = document.getElementById('tannenbaum-board');
@@ -747,8 +750,8 @@ function finishTannenbaumGame() {
   teamTotals.T1 += openT1.total;
   teamTotals.T2 += openT2.total;
 
-  const membersT1 = persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && p.tisch === 'T1');
-  const membersT2 = persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && p.tisch === 'T2');
+  const membersT1 = persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && (typeof gameTeamNames==='function'?gameTeamNames('tannenbaum','T1').includes(p.name):p.tisch === 'T1'));
+  const membersT2 = persons.filter(p => p.present && !p.left && !p.inactive && !p.isDrinksOnly && (typeof gameTeamNames==='function'?gameTeamNames('tannenbaum','T2').includes(p.name):p.tisch === 'T2'));
 
   const historyEntry = {
     id: 'tannenbaum_' + Date.now(),
@@ -837,6 +840,7 @@ function resetTannenbaumGame() {
 function handleTannenbaumThrow(number) {
   dashboardActiveGame = "tannenbaum";
   ensureTannenbaumState();
+  if(typeof gameSetupTeamMap==='function'&&!tannenbaumState.participantTeams)tannenbaumState.participantTeams=gameSetupTeamMap('tannenbaum');
   tannenbaumState.active = true;
   if (!tannenbaumState.startedAt) tannenbaumState.startedAt = new Date().toISOString();
 
@@ -971,7 +975,7 @@ function bookTannenbaumTeamCharge(team, total) {
   const members = persons.filter(p =>
     p.present &&
     !p.left && !p.inactive && !p.isDrinksOnly &&
-    p.tisch === team
+    (typeof gameTeamNames==='function'?gameTeamNames('tannenbaum',team).includes(p.name):p.tisch === team)
   );
 
   if (!members.length) return;

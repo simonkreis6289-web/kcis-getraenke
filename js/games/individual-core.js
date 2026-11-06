@@ -2,7 +2,7 @@
 (() => {
  const clone=x=>JSON.parse(JSON.stringify(x)),keys=['siebener','hindernis'],columns=[14,21,28,35,42,49],norm=n=>String(n).trim().toLocaleLowerCase('de-DE');
  const specs=[['start',0,0,'start',0],['pause',5,5,'skip',1],['pay11',11,11,'pay',20],['minus',17,17,'subtract',0],['reset19',19,19,'reset',0],['leader',28,28,'leader',0],['pay35',35,35,'pay',20],['back43',43,43,'move',20],['forward47',47,47,'move',66],['double',50,50,'double',0],['pay54',54,54,'pay',20],['pay60',60,65,'pay',20],['back69',69,69,'move',59],['others',70,70,'others',8],['forward77',77,77,'move',84],['back83',83,83,'move',66],['choice',89,89,'choice',100]];
- function ruleLabel(r){return r.kind==='start'?'Fehlstart – weiter bei 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?'20 Cent in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
+ function ruleLabel(r){return r.kind==='start'?'Fehlstart – zurück auf 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?'20 Cent in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
  function defaults(){return {target:90,baseCents:100,rules:specs.map(([id,from,to,kind,value])=>({id,from,to,kind,value,enabled:true}))};}
  function validSettings(v){
   if(!v||!Number.isInteger(v.target)||v.target<20||v.target>500||!Number.isInteger(v.baseCents)||v.baseCents<0||v.baseCents>10000||!Array.isArray(v.rules)||v.rules.length>17)return false;
@@ -18,6 +18,16 @@
   for(let i=points.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[points[i],points[j]]=[points[j],points[i]];}
   const rules=chosen.map((r,i)=>({...r,from:points[i],to:points[i],value:r.kind==='move'?Math.max(1,Math.min(target-1,Math.round(r.value*target/90))):r.value}));
   return [defaults().rules[0],...rules].sort((a,b)=>a.from-b.from);
+ }
+ function shiftRule(config,index,delta){
+  if(!validSettings(config))throw Error('Ungültige Hindernisverteilung');const next=clone(config),target=index+delta;
+  if(!Number.isInteger(index)||!Number.isInteger(delta)||Math.abs(delta)!==1||index<0||index>=next.rules.length||target<0||target>=next.rules.length)return next;
+  for(const key of ['id','kind','value']){const value=next.rules[index][key];next.rules[index][key]=next.rules[target][key];next.rules[target][key]=value;}return next;
+ }
+ function randomizeEvents(config,random=Math.random){
+  if(!validSettings(config))throw Error('Ungültige Hindernisverteilung');const next=clone(config),pool=defaults().rules;
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  next.rules=next.rules.map(slot=>{const index=pool.findIndex(r=>r.id!==slot.id),event=pool.splice(index<0?0:index,1)[0];return {...slot,id:event.id,kind:event.kind,value:event.kind==='move'?Math.max(1,Math.min(next.target-1,Math.round(event.value*next.target/90))):event.value};});return next;
  }
  function empty(gameKey){return {gameKey,id:'',revision:0,active:false,finished:false,readyToFinish:false,players:[],index:0,round:1,turn:[],scores:{},sheet:{},addUsed:{},skip:{},subtract:{},double:{},pendingChoice:null,finalRound:0,winners:[],history:[],events:[],bookings:[],lastRules:[],config:defaults(),commands:[],receipts:[],startedAt:'',eveningStartedAt:''};}
  function current(s){return s.players[s.index]||'';}
@@ -42,7 +52,8 @@
   const r=s.config.rules.find(r=>r.enabled&&s.scores[n]>=r.from&&s.scores[n]<=r.to&&(s.scores[n]!==old||old===0&&e.pins===0));
   if(r){
    s.lastRules=[r.id];const point=s.scores[n];
-   if(r.kind==='skip')s.skip[n]=true;
+   if(r.kind==='start')s.scores[n]=0;
+   else if(r.kind==='skip')s.skip[n]=true;
    else if(r.kind==='pay')booking(s,e,n,20,'Hindernislauf · Hindernis '+point);
    else if(r.kind==='subtract')s.subtract[n]=true;
    else if(r.kind==='reset')s.scores[n]=0;
@@ -108,5 +119,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({empty,defaults,settings,validSettings,makeRules,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({empty,defaults,settings,validSettings,makeRules,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();
