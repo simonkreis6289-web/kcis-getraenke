@@ -61,12 +61,14 @@ function applyTableServerStates(state){
   renderTableGames();
 }
 function tablePlayers(){
+  if(typeof gameSetupNames==='function')return gameSetupNames('blackjack').map(n=>getActivePlayersForSoloGame().find(p=>p.name===n)).filter(Boolean);
   const active=getActivePlayersForSoloGame(),order=typeof getGlobalSeatOrder==='function'?getGlobalSeatOrder():[];
   return [...new Set([...order,...active.map(p=>p.name)])].map(n=>active.find(p=>p.name===n)).filter(Boolean);
 }
 function tableDraft(key){
   const stamp=ACTIVE_CLUB+'|'+(currentEveningStartedAt||'');
   if(tableDrafts[key]?.stamp!==stamp)tableDrafts[key]={stamp,selected:tablePlayers().map(p=>p.name),teams:[],cards:key==='blackjack'};
+  if(typeof gameSetupNames==='function'){tableDrafts[key].selected=gameSetupNames(key);if(key==='gluecksspirale')tableDrafts[key].teams=gameSetupTeams(key).map(players=>({players}));}
   return tableDrafts[key];
 }
 function tableToggle(key,index){
@@ -81,7 +83,7 @@ function tableMove(index,delta){
 function tableDrawStarter(){
   if(tableBusy.blackjack||tablePending.blackjack)return;
   const d=tableDraft('blackjack');if(d.selected.length<2)return;
-  const index=Math.floor(Math.random()*d.selected.length);d.selected=[...d.selected.slice(index),...d.selected.slice(0,index)];renderTableGame('blackjack');showToast('🎲 '+d.selected[0]+' beginnt','success');
+  const index=Math.floor(Math.random()*d.selected.length);d.selected=[...d.selected.slice(index),...d.selected.slice(0,index)];if(typeof gameSetupDraft==='function'){const draft=gameSetupDraft('blackjack');draft.names=d.selected.slice();draft.editing=true;}renderTableGame('blackjack');showToast('🎲 '+d.selected[0]+' beginnt','success');
 }
 function tableBuildPairs(random=false){
   const key='gluecksspirale';if(tableBusy[key]||tablePending[key])return;
@@ -192,6 +194,9 @@ function renderTableGame(key){
       html+='<div class="tg-actions"><button type="button" class="secondary-btn" onclick="tableBuildPairs()" '+(!valid?'disabled':'')+'>Teams bilden</button><button type="button" class="secondary-btn" onclick="tableBuildPairs(true)" '+(!valid?'disabled':'')+'>🎲 Teams auslosen</button></div><div class="tg-pairs">'+draft.teams.map((t,i)=>'<div class="tg-pair"><strong>Team '+(i+1)+(t.players.length===1?' · Einzelteam':'')+'</strong>'+t.players.map((n,j)=>'<button type="button" class="kc-avatar-option" onclick="tableOpenAssignment('+i+','+j+')">'+sixAvatar(n)+'</button>').join('')+'</div>').join('')+'</div><p class="tg-target-note">Startziel: <strong>'+getSpiralTarget()+' Holz</strong> <button type="button" class="secondary-btn" onclick="showSideTab(\'spiele\',\'spiele-einstellungen\')">⚙️ Zielwert ändern</button></p>';
     }else{
       html+='<div class="tg-order">'+draft.selected.map((n,i)=>'<div><span>'+(i+1)+'. '+tableEscape(n)+'</span><button type="button" class="secondary-btn" aria-label="Spieler nach oben" onclick="tableMove('+i+',-1)" '+(i===0?'disabled':'')+'>↑</button><button type="button" class="secondary-btn" aria-label="Spieler nach unten" onclick="tableMove('+i+',1)" '+(i===count-1?'disabled':'')+'>↓</button></div>').join('')+'</div><div class="tg-actions"><button type="button" class="secondary-btn" onclick="tableDrawStarter()" '+(!valid?'disabled':'')+'>🎲 Startspieler auslosen</button></div><p>Erst werfen alle bis Stopp. Danach Karten aufdecken und eintragen. Über 21: 1. Verlierer +1; die drei schlechtesten Platzierungen kommen beim Abschluss zusätzlich dazu.</p>';
+    }
+    if(typeof gameSetupMarkup==='function'){
+      html=gameSetupMarkup(key,{busy:blocked})+(spiral?'<p class="tg-target-note">Ziel: <strong>'+getSpiralTarget()+' Holz</strong> <button type="button" class="secondary-btn" onclick="showSideTab(\'spiele\',\'spiele-einstellungen\')">⚙️ Einstellungen</button></p>':'<div class="tg-actions"><button type="button" class="secondary-btn" '+disabled+' onclick="tableDrawStarter()">🎲 Startspieler auslosen</button></div><p>Erst werfen alle bis Stopp, danach werden die Karten aufgedeckt.</p>');
     }
     setup.innerHTML=html+'<button type="button" class="primary-btn" onclick="startTableGame(\''+key+'\')" '+(!valid||(spiral&&draft.teams.length<2)?'disabled':'')+'>🎳 '+(spiral?'Glücksspirale':'17 + 4')+' starten</button>';
     if(blocked)setup.querySelectorAll('button,input').forEach(e=>e.disabled=true);

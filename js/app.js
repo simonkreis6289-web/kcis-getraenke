@@ -3875,6 +3875,8 @@ applyGroupTheme();
   renderTannenbaum();
   renderAnwesenheit();
   renderSeatingOrder();
+  if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
+  if(typeof renderGamePropertyTabs==='function')renderGamePropertyTabs();
   renderGruppen();
   renderGetraenke();
   renderTeamspiele();

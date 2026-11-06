@@ -21,7 +21,7 @@ function torChoosePenaltyPlayer(team, reason) {
  });
 }
 function startTorGame(){
- const teams={T1:getSichernTeamPlayers('T1'),T2:getSichernTeamPlayers('T2')};
+ const teams=typeof gameSetupTeamMap==='function'?gameSetupTeamMap('tor'):{T1:getSichernTeamPlayers('T1'),T2:getSichernTeamPlayers('T2')};
  if(!teams.T1.length||!teams.T2.length){showToast('Für Tor müssen beide Teams Spieler haben','error');return;}
  torState={...createTorState(),teams,active:true,coinPending:true,startedAt:new Date().toISOString()};
  dashboardActiveGame='tor';renderTorGame();persistState();
@@ -62,7 +62,7 @@ async function torThrow(kind='pins'){
  }catch(e){console.error('Tor',e);showToast('Tor-Wurf konnte nicht gespeichert werden','error');}
  finally{s.busy=false;}
 }
-function renderTorGame(){
+function renderTorGame(){if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
  const el=document.getElementById('tor-board');if(!el)return;ensureTorState();const s=torState;
  const card=k=>`<div class="tor-team ${s.active&&s.current===k?'tor-active':''}" style="--tor-color:${torEscape(getGroupColor(k))}"><small>${torEscape(getGroupLabel(k))}</small><strong>${s.scores[k]||0}</strong><span>${s.active&&s.current===k?'🎳 Am Zug':''}</span></div>`;
  const pins=[7,8,9,4,5,6,1,2,3].map(n=>`<button type="button" data-pin="${n}" class="tor-pin ${s.standing.includes(n)?'standing':'down'} ${s.selected.includes(n)?'selected':''}" ${!s.active||s.coinPending||!s.standing.includes(n)?'disabled':''} onclick="torTogglePin(${n})" aria-pressed="${s.selected.includes(n)}">${s.standing.includes(n)?n:''}</button>`).join('');
