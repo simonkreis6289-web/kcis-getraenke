@@ -169,6 +169,7 @@ function createEmptyClubData() {
     sechstageState: createSechstageState(),
     blackjackState: createBlackjackState(),
     gluecksspiraleState: createGluecksspiraleState(),
+    gluecksspiraleSettings: {target:50},
     currentEveningStartedAt: null,
     penaltyStatsLog: [],
     persons: [],
@@ -254,6 +255,7 @@ function syncCurrentClubToStore() {
     sechstageState: JSON.parse(JSON.stringify(sechstageState)),
     blackjackState: JSON.parse(JSON.stringify(blackjackState)),
     gluecksspiraleState: JSON.parse(JSON.stringify(gluecksspiraleState)),
+    gluecksspiraleSettings: JSON.parse(JSON.stringify(gluecksspiraleSettings)),
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     clubTerminGruende: JSON.parse(JSON.stringify(clubTerminGruende)),
@@ -457,6 +459,7 @@ async function selectClub(clubName) {
   kcCalendarRevision=Number(localClub.calendarRevision)||0;
   sechstageState=localClub.sechstageState?JSON.parse(JSON.stringify(localClub.sechstageState)):createSechstageState();
   blackjackState=localClub.blackjackState?JSON.parse(JSON.stringify(localClub.blackjackState)):createBlackjackState();
+  gluecksspiraleSettings=JSON.parse(JSON.stringify(localClub.gluecksspiraleSettings||{target:50}));
   gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
   currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
   penaltyStatsLog=JSON.parse(JSON.stringify(localClub.penaltyStatsLog||[]));
