@@ -1,6 +1,6 @@
-const APP_VERSION = '20261106-182';
-const APPVersionSelf = 'V182 © SK';
-const APP_LAST_UPDATE = '06.11.2026, 08:10 Uhr';
+const APP_VERSION = '20261106-183';
+const APPVersionSelf = 'V183 © SK';
+const APP_LAST_UPDATE = '06.11.2026, 11:53 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -125,6 +125,7 @@ const DARTS_DEFAULT_VALUES = {
 };
 
 let penaltyStatsLog = [];
+let penaltyStatsSettings = null;
 let kegelAbende = [];
 
 let dartsState = null;

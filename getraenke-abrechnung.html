@@ -14,9 +14,9 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261106-v182">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261106-v182">
-  <link rel="stylesheet" href="css/table-games.css?v=20261106-v182">
+  <link rel="stylesheet" href="css/styles.css?v=20261106-v183">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261106-v183">
+  <link rel="stylesheet" href="css/table-games.css?v=20261106-v183">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -126,7 +126,8 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-settings.css?v=20261106-v182">
+</style>  <link rel="stylesheet" href="css/game-settings.css?v=20261106-v183">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261106-v183">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -675,42 +676,32 @@
         </div>
         
         <div id="tab-strafen-statistik" class="hidden">
-          <div class="section-title">Strafen Statistik</div>
-
-          <div class="stats-filter-card">
-            <div class="modal-input-row">
-              <label>Von</label>
-              <input type="date" id="penalty-stats-from" class="modal-text-input" onchange="renderPenaltyStats()">
+          <div class="section-title">📊 Statistik</div>
+          <section class="stats-cycle-panel" aria-labelledby="stats-cycle-title">
+            <h3 id="stats-cycle-title">Zählbeginn</h3><p id="penalty-stats-period"></p>
+            <div id="penalty-stats-cycle-controls" class="stats-cycle-controls">
+              <label for="penalty-stats-start">Starttermin<input type="date" id="penalty-stats-start"></label>
+              <button type="button" class="primary-btn" onclick="savePenaltyStatsStart()">💾 Starttermin übernehmen</button>
+              <button type="button" class="secondary-btn" onclick="resetPenaltyStatsCounter()">↻ Jetzt auf 0 setzen</button>
             </div>
-
-            <div class="modal-input-row">
-              <label>Bis</label>
-              <input type="date" id="penalty-stats-to" class="modal-text-input" onchange="renderPenaltyStats()">
-            </div>
-
-            <button class="secondary-btn" onclick="setPenaltyStatsRangeToday()">Heute</button>
-            <button class="secondary-btn" onclick="setPenaltyStatsRangeMonth()">Dieser Monat</button>
-            <button class="secondary-btn" onclick="setPenaltyStatsRangeAll()">Alles</button>
-            <button class="secondary-btn" onclick="resetPenaltyStatsCounter()">↻ Zähler neu starten</button>
+            <p class="stats-help">Ein Neustart beginnt einen neuen Zählzeitraum. Die gespeicherte Historie bleibt für freie Zeiträume erhalten.</p>
+          </section>
+          <div class="stats-filter-card stats-range-controls">
+            <button type="button" class="secondary-btn" onclick="setPenaltyStatsRangeCycle()">Seit Zählbeginn</button>
+            <label for="penalty-stats-from">Von<input type="date" id="penalty-stats-from" class="modal-text-input" onchange="usePenaltyStatsRange()"></label>
+            <label for="penalty-stats-to">Bis<input type="date" id="penalty-stats-to" class="modal-text-input" onchange="usePenaltyStatsRange()"></label>
+            <button type="button" class="secondary-btn" onclick="setPenaltyStatsRangeToday()">Heute</button>
+            <button type="button" class="secondary-btn" onclick="setPenaltyStatsRangeMonth()">Dieser Monat</button>
+            <button type="button" class="secondary-btn" onclick="setPenaltyStatsRangeAll()">Gesamte Historie</button>
+            <button type="button" class="secondary-btn" onclick="refreshCashHistory()">🔄 Aktualisieren</button>
           </div>
-
-          <div class="drinks-table-wrap">
-            <table class="drinks-table">
-              <thead>
-                <tr>
-                  <th class="sticky-col name-col">Name</th>
-                  <th class="drink-col">Anwesend</th>
-                  <th class="drink-col">9er</th>
-                  <th class="drink-col">Kranz</th>
-                  <th class="drink-col">Durchgeworfen</th>
-                  <th class="drink-col">Gosse</th>
-                </tr>
-              </thead>
-              <tbody id="penalty-stats-body"></tbody>
-            </table>
-          </div>
+          <p id="penalty-stats-range-label" class="stats-help"></p><p id="penalty-stats-data-status" class="stats-help" role="status"></p>
+          <div class="drinks-table-wrap"><table class="drinks-table"><thead><tr>
+            <th class="sticky-col name-col" scope="col">Name</th><th scope="col">Anwesend</th><th scope="col">Gossen</th><th scope="col">9er</th><th scope="col">Kränze</th>
+          </tr></thead><tbody id="penalty-stats-body"></tbody></table></div>
+          <p class="stats-help">Anwesenheit zählt einmal pro Kegelabend. 9er und Kränze zählen beim Werfer aus dem gespeicherten Wurfprotokoll; „Durchgeworfen“ zählt zu den 9ern. Gossen berücksichtigen auch Einträge der Strafentabelle.</p>
         </div>
-        
+
       <div id="tab-strafen-abrechnung" class="hidden">
         <div class="section-title">Strafen Abrechnung</div>
         <div class="billing-tabs" role="tablist" aria-label="Abrechnung" onkeydown="billingTabKeydown(event)">
@@ -1403,7 +1394,12 @@
             <button class="save-prices-btn" onclick="saveStrafPrices()">💾 Strafpreise speichern</button>
       </div>
 
-      <div id="tab-termingruende" class="hidden"><div class="section-title">📅 Termingründe verwalten</div><div class="kc-settings-tile"><p>Standardmäßig sind Kegelabend und Kegeltour vorhanden. Weitere Arten, etwa Geburtstag, können hier ergänzt werden.</p><div class="kc-inline-add"><input id="kc-new-terminart" placeholder="Neue Terminart, z. B. Jubiläum" onkeydown="if(event.key==='Enter')kcAddTerminGrund()"><button class="add-btn" onclick="kcAddTerminGrund()">+ Hinzufügen</button></div><div id="kc-terminarten-list"></div></div></div><div id="tab-termine" class="hidden"><div class="section-title">📅 Termine</div><p class="profile-help">🎂 Geburtstage werden einmalig in der Mitgliederverwaltung gepflegt und hier jedes Jahr automatisch angezeigt. <button type="button" class="secondary-btn" onclick="showSideTab('organisation','mitglieder')">👥 Mitgliederverwaltung</button></p><section class="kc-series-panel" aria-label="Automatische Kegeltermine"><p id="kc-series-info" class="profile-help"></p><button type="button" class="secondary-btn" onclick="kcEnsureKegelSeries(true)">🔄 Termine ergänzen</button><p id="kc-calendar-status" class="profile-help" role="status"></p></section><div class="kc-event-form" id="kc-event-create-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="20:00"></label><label>Bemerkung<input id="kc-event-note" maxlength="500" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-info" class="hidden"><div class="section-title">ℹ️ Info & Dashboard</div><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="tab-einstellungen" class="hidden">
+      <div id="tab-termingruende" class="hidden"><div class="section-title">📅 Termingründe verwalten</div><div class="kc-settings-tile"><p>Standardmäßig sind Kegelabend und Kegeltour vorhanden. Weitere Arten, etwa Geburtstag, können hier ergänzt werden.</p><div class="kc-inline-add"><input id="kc-new-terminart" placeholder="Neue Terminart, z. B. Jubiläum" onkeydown="if(event.key==='Enter')kcAddTerminGrund()"><button class="add-btn" onclick="kcAddTerminGrund()">+ Hinzufügen</button></div><div id="kc-terminarten-list"></div></div></div><div id="tab-termine" class="hidden"><div class="section-title">📅 Termine</div><p class="profile-help">🎂 Geburtstage werden einmalig in der Mitgliederverwaltung gepflegt und hier jedes Jahr automatisch angezeigt. <button type="button" class="secondary-btn" onclick="showSideTab('organisation','mitglieder')">👥 Mitgliederverwaltung</button></p><section class="kc-series-panel" aria-label="Automatische Kegeltermine"><p id="kc-series-info" class="profile-help"></p><div id="kc-series-settings" class="kc-series-settings">
+<label for="kc-series-weeks">Alle … Wochen<input type="number" id="kc-series-weeks" min="1" max="52" step="1" value="4"></label>
+<label for="kc-series-weekday">Wochentag<select id="kc-series-weekday" onchange="kcSeriesWeekdayChanged()"><option value="1">Montag</option><option value="2">Dienstag</option><option value="3">Mittwoch</option><option value="4">Donnerstag</option><option value="5" selected>Freitag</option><option value="6">Samstag</option><option value="0">Sonntag</option></select></label>
+<label for="kc-series-first">Erster Termin<input type="date" id="kc-series-first" onchange="kcSeriesFirstChanged()"></label>
+<label for="kc-series-time">Uhrzeit<input type="time" id="kc-series-time" value="20:00"></label>
+<button type="button" class="primary-btn" onclick="kcSaveSeriesSettings()">💾 Rhythmus speichern & neu planen</button></div><p class="profile-help">Ersetzt künftige Kegeltermine einschließlich einzelner Verschiebungen. Vergangene Termine, Touren und Geburtstage bleiben erhalten.</p><button type="button" class="secondary-btn" onclick="kcEnsureKegelSeries(true)">🔄 Termine ergänzen</button><p id="kc-calendar-status" class="profile-help" role="status"></p></section><div class="kc-event-form" id="kc-event-create-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="20:00"></label><label>Bemerkung<input id="kc-event-note" maxlength="500" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-info" class="hidden"><div class="section-title">ℹ️ Info & Dashboard</div><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="tab-einstellungen" class="hidden">
   <div class="section-title">Countdown</div>
 
   <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -2257,52 +2253,53 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261106-v182"></script>
-<script src="js/kegel-calendar.js?v=20261106-v182"></script>
-<script src="js/helpers.js?v=20261106-v182"></script>
-<script src="js/state.js?v=20261106-v182"></script>
-<script src="js/persons.js?v=20261106-v182"></script>
-<script src="js/member-profiles.js?v=20261106-v182"></script>
-<script src="js/clubs.js?v=20261106-v182"></script>
+<script src="js/birthdays.js?v=20261106-v183"></script>
+<script src="js/kegel-calendar.js?v=20261106-v183"></script>
+<script src="js/helpers.js?v=20261106-v183"></script>
+<script src="js/state.js?v=20261106-v183"></script>
+<script src="js/persons.js?v=20261106-v183"></script>
+<script src="js/member-profiles.js?v=20261106-v183"></script>
+<script src="js/clubs.js?v=20261106-v183"></script>
 
-<script src="js/games/avatar-select.js?v=20261106-v182"></script>
-<script src="js/games/tannenbaum.js?v=20261106-v182"></script>
-<script src="js/games/darts.js?v=20261106-v182"></script>
-<script src="js/games/tiberius.js?v=20261106-v182"></script>
-<script src="js/games/lotterie.js?v=20261106-v182"></script>
-<script src="js/games/solo-start-draw.js?v=20261106-v182"></script>
-<script src="js/games/seating.js?v=20261106-v182"></script>
-<script src="js/games/mensch.js?v=20261106-v182"></script>
-<script src="js/games/plusminus.js?v=20261106-v182"></script>
-<script src="js/games/hausnummer-core.js?v=20261106-v182"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261106-v182"></script>
-<script src="js/games/hausnummer-tief.js?v=20261106-v182"></script>
-<script src="js/games/fuchsjagd.js?v=20261106-v182"></script>
-<script src="js/games/sichern.js?v=20261106-v182"></script>
-<script src="js/games/sechstage-core.js?v=20261106-v182"></script>
-<script src="js/games/sechstage.js?v=20261106-v182"></script>
-<script src="js/games/table-games-core.js?v=20261106-v182"></script>
-<script src="js/games/table-games-ui.js?v=20261106-v182"></script>
-<script src="js/games/blackjack.js?v=20261106-v182"></script>
-<script src="js/games/gluecksspirale.js?v=20261106-v182"></script>
-<script src="js/games/tor.js?v=20261106-v182"></script>
-<script src="js/games/coinflip.js?v=20261106-v182"></script>
+<script src="js/games/avatar-select.js?v=20261106-v183"></script>
+<script src="js/games/tannenbaum.js?v=20261106-v183"></script>
+<script src="js/games/darts.js?v=20261106-v183"></script>
+<script src="js/games/tiberius.js?v=20261106-v183"></script>
+<script src="js/games/lotterie.js?v=20261106-v183"></script>
+<script src="js/games/solo-start-draw.js?v=20261106-v183"></script>
+<script src="js/games/seating.js?v=20261106-v183"></script>
+<script src="js/games/mensch.js?v=20261106-v183"></script>
+<script src="js/games/plusminus.js?v=20261106-v183"></script>
+<script src="js/games/hausnummer-core.js?v=20261106-v183"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261106-v183"></script>
+<script src="js/games/hausnummer-tief.js?v=20261106-v183"></script>
+<script src="js/games/fuchsjagd.js?v=20261106-v183"></script>
+<script src="js/games/sichern.js?v=20261106-v183"></script>
+<script src="js/games/sechstage-core.js?v=20261106-v183"></script>
+<script src="js/games/sechstage.js?v=20261106-v183"></script>
+<script src="js/games/table-games-core.js?v=20261106-v183"></script>
+<script src="js/games/table-games-ui.js?v=20261106-v183"></script>
+<script src="js/games/blackjack.js?v=20261106-v183"></script>
+<script src="js/games/gluecksspirale.js?v=20261106-v183"></script>
+<script src="js/games/tor.js?v=20261106-v183"></script>
+<script src="js/games/coinflip.js?v=20261106-v183"></script>
 
-<script src="js/groups.js?v=20261106-v182"></script>
+<script src="js/groups.js?v=20261106-v183"></script>
 
-<script src="js/app.js?v=20261106-v182"></script><script src="js/club-termine.js?v=20261106-v182"></script>
+<script src="js/app.js?v=20261106-v183"></script><script src="js/club-termine.js?v=20261106-v183"></script>
     
-<script src="js/live-games.js?v=20261106-v182"></script>
-<script src="js/strafe-pdf.js?v=20261106-v182"></script>
-<script src="js/cash-history.js?v=20261106-v182"></script>
-<script src="js/cash-book.js?v=20261106-v182"></script>
-<script src="js/cash-expenses.js?v=20261106-v182"></script>
-<script src="js/historical-evenings.js?v=20261106-v182"></script>
-<script src="js/table-headers.js?v=20261106-v182"></script>
+<script src="js/live-games.js?v=20261106-v183"></script>
+<script src="js/strafe-pdf.js?v=20261106-v183"></script>
+<script src="js/cash-history.js?v=20261106-v183"></script>
+<script src="js/cash-book.js?v=20261106-v183"></script>
+<script src="js/penalty-statistics.js?v=20261106-v183"></script>
+<script src="js/cash-expenses.js?v=20261106-v183"></script>
+<script src="js/historical-evenings.js?v=20261106-v183"></script>
+<script src="js/table-headers.js?v=20261106-v183"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261106-v182"
+  src="js/firebase.js?v=20261106-v183"
 ></script>
 
 </body>

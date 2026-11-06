@@ -1,6 +1,6 @@
 // Clubkalender: feste Serienslots, einzelne Terminänderungen und sichere Synchronisation.
 const kcSeriesPending=new Map(),kcSeriesChecked=new Map();
-let kcCalendarBusy=false,kcCalendarEdit=null,kcNewEventId='';
+let kcCalendarBusy=false,kcCalendarEdit=null,kcNewEventId='',kcSeriesRequest=null;
 function kcCalendarStatus(message){const box=document.getElementById('kc-calendar-status');if(box)box.textContent=message;}
 function kcApplyCalendarState(state,cache=true){
   if(state?.clubCalendarData?.calendarRevision)state=state.clubCalendarData;
@@ -33,7 +33,7 @@ async function kcChangeCalendar(request){
   if(kcCalendarBusy||!ACTIVE_CLUB)return false;
   if(!navigator.onLine||!window.firestoreApi?.updateClubCalendar){showToast('Zum Ändern der Termine bitte eine Verbindung herstellen.','error');return false;}
   const club=ACTIVE_CLUB;kcCalendarBusy=true;
-  const controls=[...document.querySelectorAll('#kc-event-create-form input, #kc-event-create-form select, #kc-event-create-form button, #kc-event-edit-modal input, #kc-event-edit-modal select, #kc-event-edit-modal button, #kc-termine-list button')];controls.forEach(el=>el.disabled=true);
+  const controls=[...document.querySelectorAll('#kc-series-settings input, #kc-series-settings select, #kc-series-settings button, #kc-event-create-form input, #kc-event-create-form select, #kc-event-create-form button, #kc-event-edit-modal input, #kc-event-edit-modal select, #kc-event-edit-modal button, #kc-termine-list button')];controls.forEach(el=>el.disabled=true);
   try{
     const calendar=await window.firestoreApi.updateClubCalendar(getClubFirestoreId(club),{...request,today:KCBirthdays.today(),bootstrapEvents:clubTermine});
     if(ACTIVE_CLUB===club){kcApplyCalendarState(calendar);kcCalendarStatus('');}
@@ -74,7 +74,9 @@ function kcRenderTermine(){
   const box=document.getElementById('kc-termine-list'),select=document.getElementById('kc-event-type');if(!box||!select)return;
   kcPopulateEventTypes(select,select.value);
   const info=document.getElementById('kc-series-info');
-  if(info)info.textContent=clubKegelSerie?'Automatisch alle 4 Wochen freitags um 20:00 Uhr · Rhythmus ab '+clubKegelSerie.anchorDate.split('-').reverse().join('.')+' · Vorschau bis '+KCKegelCalendar.through(KCBirthdays.today()).split('-').reverse().join('.')+'. Einzelne Änderungen verschieben die übrige Serie nicht.':'Die Vier-Wochen-Serie wird beim Verbinden bis ein Jahr im Voraus ergänzt.';
+  const config=KCKegelCalendar.seriesFor(clubTermine||[],clubKegelSerie,KCBirthdays.today()),days=['sonntags','montags','dienstags','mittwochs','donnerstags','freitags','samstags'];
+  if(info)info.textContent='Automatisch alle '+config.intervalDays/7+' Wochen '+days[new Date(KCKegelCalendar.timestamp(config.anchorDate)).getUTCDay()]+' um '+config.time+' Uhr · Rhythmus ab '+config.anchorDate.split('-').reverse().join('.')+' · Vorschau bis '+KCKegelCalendar.through(KCBirthdays.today()).split('-').reverse().join('.')+'. Einzelne Änderungen verschieben die übrige Serie nicht.';
+  kcRenderSeriesSettings(config);
   box.replaceChildren();
   const events=[...(clubTermine||[]).filter(event=>event.type!=='geburtstag'),...KCBirthdays.events(persons,clubTermine)]
     .sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')));
@@ -83,7 +85,7 @@ function kcRenderTermine(){
     const label=document.createElement('span'),date=kcSafeDate(event);
     const when=date?(event.recurring?date.toLocaleDateString('de-DE'):date.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):event.date;
     label.textContent=(event.type==='geburtstag'?'🎂':type?.emoji||'📅')+' '+(event.type==='geburtstag'?'Geburtstag':type?.name||event.type)+' · '+when+(event.note?' · '+event.note:'')+(event.recurring?' · jährlich':'');
-    if(event.seriesDate){const hint=document.createElement('small');hint.className='kc-series-label';hint.textContent=event.date!==event.seriesDate||event.time!=='20:00'||event.type!=='kegeln'?'Serientermin · individuell geändert':'Serientermin';label.append(hint);}
+    if(event.seriesDate){const hint=document.createElement('small');hint.className='kc-series-label';hint.textContent=event.date!==event.seriesDate||event.time!==config.time||event.type!=='kegeln'?'Serientermin · individuell geändert':'Serientermin';label.append(hint);}
     const actions=document.createElement('div');actions.className='kc-event-actions';
     if(event.memberBirthday){
       const edit=document.createElement('button');edit.type='button';edit.className='secondary-btn';edit.textContent='👤 Mitglied bearbeiten';edit.onclick=()=>openMemberProfile(event.personName);actions.append(edit);
@@ -119,6 +121,36 @@ async function kcSaveEventEdit(event){
 }
 function kcShowInfo(){const input=document.getElementById('kc-dashboard-url');if(!input)return;const url=new URL('dashboard.html',location.href);const club=new URLSearchParams(location.search).get('club');if(club)url.searchParams.set('club',club);input.value=url.href;document.getElementById('kc-dashboard-link').href=url.href}
 function kcCopyDashboard(){const input=document.getElementById('kc-dashboard-url');input.select();navigator.clipboard?.writeText(input.value).then(()=>showToast('Link kopiert','success')).catch(()=>document.execCommand('copy'))}
+function kcRenderSeriesSettings(config){
+  const form=document.getElementById('kc-series-settings');if(!form)return;
+  const key=ACTIVE_CLUB+'|'+kcCalendarRevision;
+  if(form.dataset.loadedKey===key)return;
+  if(form.dataset.club===ACTIVE_CLUB&&form.contains(document.activeElement))return;
+  const today=KCBirthdays.today(),start=KCKegelCalendar.timestamp(config.anchorDate),next=start+Math.max(0,Math.ceil((KCKegelCalendar.timestamp(today)-start)/(config.intervalDays*86400000)))*config.intervalDays*86400000;
+  document.getElementById('kc-series-weeks').value=config.intervalDays/7;
+  document.getElementById('kc-series-weekday').value=new Date(start).getUTCDay();
+  document.getElementById('kc-series-first').value=new Date(next).toISOString().slice(0,10);
+  document.getElementById('kc-series-time').value=config.time;
+  form.dataset.loadedKey=key;form.dataset.club=ACTIVE_CLUB;
+}
+function kcSeriesWeekdayChanged(){
+  const input=document.getElementById('kc-series-first'),value=KCBirthdays.parse(input.value)?input.value:KCBirthdays.today(),day=Number(document.getElementById('kc-series-weekday').value),stamp=KCKegelCalendar.timestamp(value);
+  input.value=new Date(stamp+((day-new Date(stamp).getUTCDay()+7)%7)*86400000).toISOString().slice(0,10);
+}
+function kcSeriesFirstChanged(){const value=document.getElementById('kc-series-first').value;if(KCBirthdays.parse(value))document.getElementById('kc-series-weekday').value=new Date(KCKegelCalendar.timestamp(value)).getUTCDay();}
+async function kcSaveSeriesSettings(){
+  if(kcCalendarBusy||!ACTIVE_CLUB)return;
+  const config={intervalWeeks:Number(document.getElementById('kc-series-weeks').value),weekday:Number(document.getElementById('kc-series-weekday').value),anchorDate:document.getElementById('kc-series-first').value,time:document.getElementById('kc-series-time').value};
+  try{KCKegelCalendar.perform({clubTermine,clubKegelSerie,calendarRevision:kcCalendarRevision},{action:'reconfigure',id:'kc_schedule_validate',config,expectedRevision:kcCalendarRevision,today:KCBirthdays.today()});}catch(error){showToast(error.message,'error');return;}
+  const signature=ACTIVE_CLUB+'|'+JSON.stringify(config);
+  if(kcSeriesRequest&&kcSeriesRequest.request.expectedRevision!==kcCalendarRevision&&clubKegelSerie?.lastRequestId!==kcSeriesRequest.request.id)kcSeriesRequest=null;
+  if(kcSeriesRequest?.signature!==signature){
+    const count=clubTermine.filter(e=>e.type==='kegeln'&&e.date>=KCBirthdays.today()).length;
+    if(!confirm(count+' künftige Kegeltermine durch die neue Serie ersetzen? Auch einzeln verschobene Kegeltermine werden ersetzt. Vergangene Termine, Touren und Geburtstage bleiben erhalten.'))return;
+    kcSeriesRequest={signature,request:{action:'reconfigure',id:'kc_schedule_'+crypto.randomUUID(),expectedRevision:kcCalendarRevision,config}};
+  }
+  if(await kcChangeCalendar(kcSeriesRequest.request)){kcSeriesRequest=null;showToast('Neue Terminserie erstellt','success');}
+}
 
 setInterval(()=>{if(!document.getElementById('tab-termine')?.classList.contains('hidden'))kcRenderTermine();if(document.visibilityState!=='hidden')kcEnsureKegelSeries();},60000);
 window.addEventListener('online',()=>kcEnsureKegelSeries(true));
