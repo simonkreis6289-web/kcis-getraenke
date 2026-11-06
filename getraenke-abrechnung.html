@@ -14,9 +14,9 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261106-v183">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261106-v183">
-  <link rel="stylesheet" href="css/table-games.css?v=20261106-v183">
+  <link rel="stylesheet" href="css/styles.css?v=20261106-v184">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261106-v184">
+  <link rel="stylesheet" href="css/table-games.css?v=20261106-v184">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -126,8 +126,8 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-settings.css?v=20261106-v183">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261106-v183">
+</style>  <link rel="stylesheet" href="css/game-settings.css?v=20261106-v184">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261106-v184">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1285,8 +1285,29 @@
 
 <div id="tab-spiele-einstellungen" class="hidden">
  <h2 class="section-title">⚙️ Spiel-Einstellungen</h2>
- <p class="game-settings-intro">Vorgaben für diesen Club. Neue Zielwerte gelten ab dem nächsten Spielstart.</p>
+ <p class="game-settings-intro">Vorgaben für diesen Club. Neue Ziel- und Kartenwerte gelten ab dem nächsten Spielstart.</p>
  <div class="game-settings-grid">
+  <section class="game-settings-card" aria-labelledby="blackjack-settings-title">
+   <header><span aria-hidden="true">🃏</span><div><h3 id="blackjack-settings-title">17 + 4 / Blackjack</h3><p>Kartenwerte für neue Spiele</p></div></header>
+   <p>Der Kartenwert wird zum geworfenen Holz addiert. Laufende Spiele behalten ihre bisherigen Werte.</p>
+   <div id="blackjack-settings-fields">
+    <div class="game-settings-values bj-settings-values">
+     <label for="blackjack-value-jack">🃏 Bube<input id="blackjack-value-jack" type="number" min="0" max="21" step="1" value="2" inputmode="numeric"></label>
+     <label for="blackjack-value-queen">👸 Dame<input id="blackjack-value-queen" type="number" min="0" max="21" step="1" value="3" inputmode="numeric"></label>
+     <label for="blackjack-value-king">👑 König<input id="blackjack-value-king" type="number" min="0" max="21" step="1" value="4" inputmode="numeric"></label>
+    </div>
+    <fieldset class="bj-ace-settings"><legend>🅰️ Ass</legend>
+     <label class="game-settings-check" for="blackjack-ace-dual"><input id="blackjack-ace-dual" type="checkbox" checked onchange="toggleBlackjackAceMode()"> Zwei Wertigkeiten verwenden</label>
+     <div class="game-settings-values">
+      <label for="blackjack-value-ace">Erster Wert<input id="blackjack-value-ace" type="number" min="0" max="21" step="1" value="1" inputmode="numeric"></label>
+      <label for="blackjack-value-ace-second">Zweiter Wert<input id="blackjack-value-ace-second" type="number" min="0" max="21" step="1" value="11" inputmode="numeric" aria-describedby="blackjack-ace-help"></label>
+     </div>
+     <small id="blackjack-ace-help">Bei zwei Werten gilt automatisch der höchste, mit dem die Summe höchstens 21 ist. Falls beide darüber liegen, gilt der niedrigere Wert.</small>
+    </fieldset>
+   </div>
+   <small>0 bis 21 Punkte · Standard: Bube 2, Dame 3, König 4, Ass 1/11</small>
+   <footer><button type="button" id="blackjack-settings-save" class="primary-btn" onclick="saveBlackjackSettings()">💾 Kartenwerte speichern</button><span id="blackjack-settings-status" class="game-settings-status" role="status" aria-live="polite"></span></footer>
+  </section>
   <section class="game-settings-card" aria-labelledby="spiral-settings-title">
    <header><span aria-hidden="true">🌀</span><div><h3 id="spiral-settings-title">Glücksspirale</h3><p>Zielwert für neue Spiele</p></div></header>
    <p id="spiral-settings-help">Sobald ein Team das Ziel erreicht, wird die laufende Runde zu Ende gespielt. Der höchste Teamstand gewinnt.</p>
@@ -2253,53 +2274,53 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261106-v183"></script>
-<script src="js/kegel-calendar.js?v=20261106-v183"></script>
-<script src="js/helpers.js?v=20261106-v183"></script>
-<script src="js/state.js?v=20261106-v183"></script>
-<script src="js/persons.js?v=20261106-v183"></script>
-<script src="js/member-profiles.js?v=20261106-v183"></script>
-<script src="js/clubs.js?v=20261106-v183"></script>
+<script src="js/birthdays.js?v=20261106-v184"></script>
+<script src="js/kegel-calendar.js?v=20261106-v184"></script>
+<script src="js/helpers.js?v=20261106-v184"></script>
+<script src="js/state.js?v=20261106-v184"></script>
+<script src="js/persons.js?v=20261106-v184"></script>
+<script src="js/member-profiles.js?v=20261106-v184"></script>
+<script src="js/clubs.js?v=20261106-v184"></script>
 
-<script src="js/games/avatar-select.js?v=20261106-v183"></script>
-<script src="js/games/tannenbaum.js?v=20261106-v183"></script>
-<script src="js/games/darts.js?v=20261106-v183"></script>
-<script src="js/games/tiberius.js?v=20261106-v183"></script>
-<script src="js/games/lotterie.js?v=20261106-v183"></script>
-<script src="js/games/solo-start-draw.js?v=20261106-v183"></script>
-<script src="js/games/seating.js?v=20261106-v183"></script>
-<script src="js/games/mensch.js?v=20261106-v183"></script>
-<script src="js/games/plusminus.js?v=20261106-v183"></script>
-<script src="js/games/hausnummer-core.js?v=20261106-v183"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261106-v183"></script>
-<script src="js/games/hausnummer-tief.js?v=20261106-v183"></script>
-<script src="js/games/fuchsjagd.js?v=20261106-v183"></script>
-<script src="js/games/sichern.js?v=20261106-v183"></script>
-<script src="js/games/sechstage-core.js?v=20261106-v183"></script>
-<script src="js/games/sechstage.js?v=20261106-v183"></script>
-<script src="js/games/table-games-core.js?v=20261106-v183"></script>
-<script src="js/games/table-games-ui.js?v=20261106-v183"></script>
-<script src="js/games/blackjack.js?v=20261106-v183"></script>
-<script src="js/games/gluecksspirale.js?v=20261106-v183"></script>
-<script src="js/games/tor.js?v=20261106-v183"></script>
-<script src="js/games/coinflip.js?v=20261106-v183"></script>
+<script src="js/games/avatar-select.js?v=20261106-v184"></script>
+<script src="js/games/tannenbaum.js?v=20261106-v184"></script>
+<script src="js/games/darts.js?v=20261106-v184"></script>
+<script src="js/games/tiberius.js?v=20261106-v184"></script>
+<script src="js/games/lotterie.js?v=20261106-v184"></script>
+<script src="js/games/solo-start-draw.js?v=20261106-v184"></script>
+<script src="js/games/seating.js?v=20261106-v184"></script>
+<script src="js/games/mensch.js?v=20261106-v184"></script>
+<script src="js/games/plusminus.js?v=20261106-v184"></script>
+<script src="js/games/hausnummer-core.js?v=20261106-v184"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261106-v184"></script>
+<script src="js/games/hausnummer-tief.js?v=20261106-v184"></script>
+<script src="js/games/fuchsjagd.js?v=20261106-v184"></script>
+<script src="js/games/sichern.js?v=20261106-v184"></script>
+<script src="js/games/sechstage-core.js?v=20261106-v184"></script>
+<script src="js/games/sechstage.js?v=20261106-v184"></script>
+<script src="js/games/table-games-core.js?v=20261106-v184"></script>
+<script src="js/games/table-games-ui.js?v=20261106-v184"></script>
+<script src="js/games/blackjack.js?v=20261106-v184"></script>
+<script src="js/games/gluecksspirale.js?v=20261106-v184"></script>
+<script src="js/games/tor.js?v=20261106-v184"></script>
+<script src="js/games/coinflip.js?v=20261106-v184"></script>
 
-<script src="js/groups.js?v=20261106-v183"></script>
+<script src="js/groups.js?v=20261106-v184"></script>
 
-<script src="js/app.js?v=20261106-v183"></script><script src="js/club-termine.js?v=20261106-v183"></script>
+<script src="js/app.js?v=20261106-v184"></script><script src="js/club-termine.js?v=20261106-v184"></script>
     
-<script src="js/live-games.js?v=20261106-v183"></script>
-<script src="js/strafe-pdf.js?v=20261106-v183"></script>
-<script src="js/cash-history.js?v=20261106-v183"></script>
-<script src="js/cash-book.js?v=20261106-v183"></script>
-<script src="js/penalty-statistics.js?v=20261106-v183"></script>
-<script src="js/cash-expenses.js?v=20261106-v183"></script>
-<script src="js/historical-evenings.js?v=20261106-v183"></script>
-<script src="js/table-headers.js?v=20261106-v183"></script>
+<script src="js/live-games.js?v=20261106-v184"></script>
+<script src="js/strafe-pdf.js?v=20261106-v184"></script>
+<script src="js/cash-history.js?v=20261106-v184"></script>
+<script src="js/cash-book.js?v=20261106-v184"></script>
+<script src="js/penalty-statistics.js?v=20261106-v184"></script>
+<script src="js/cash-expenses.js?v=20261106-v184"></script>
+<script src="js/historical-evenings.js?v=20261106-v184"></script>
+<script src="js/table-headers.js?v=20261106-v184"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261106-v183"
+  src="js/firebase.js?v=20261106-v184"
 ></script>
 
 </body>

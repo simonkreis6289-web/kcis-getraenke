@@ -72,6 +72,7 @@ function getSerializableState() {
     haustiefState,
     hausnummerSettings,
     gluecksspiraleSettings,
+    blackjackSettings,
     clubTermine,
     clubKegelSerie,
     calendarRevision: kcCalendarRevision,
@@ -174,6 +175,7 @@ function getFirestoreState() {
     haustiefState,
     hausnummerSettings,
     gluecksspiraleSettings,
+    blackjackSettings,
         sichernState: {...sichernState,busy:false,closing:false},
         sechstageState,
     blackjackState,
@@ -203,6 +205,7 @@ function applyLoadedState(state) {
   cashBookSettings = state.cashBookSettings || null;
   if(typeof applyPenaltyStatsSettings==='function')applyPenaltyStatsSettings(state.penaltyStatsSettings);else penaltyStatsSettings=state.penaltyStatsSettings||null;
   gluecksspiraleSettings = state.gluecksspiraleSettings || {target:50};
+  blackjackSettings = KCTableGames.cardSettings(state.blackjackSettings);
   dashboardActiveGame = state.dashboardActiveGame || null;
   if(typeof kcApplyCalendarState==='function')kcApplyCalendarState(state,false);
   else clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];

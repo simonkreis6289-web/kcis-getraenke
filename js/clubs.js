@@ -170,6 +170,7 @@ function createEmptyClubData() {
     blackjackState: createBlackjackState(),
     gluecksspiraleState: createGluecksspiraleState(),
     gluecksspiraleSettings: {target:50},
+    blackjackSettings: {jack:2,queen:3,king:4,ace:[1,11]},
     currentEveningStartedAt: null,
     penaltyStatsLog: [],
     penaltyStatsSettings: null,
@@ -258,6 +259,7 @@ function syncCurrentClubToStore() {
     blackjackState: JSON.parse(JSON.stringify(blackjackState)),
     gluecksspiraleState: JSON.parse(JSON.stringify(gluecksspiraleState)),
     gluecksspiraleSettings: JSON.parse(JSON.stringify(gluecksspiraleSettings)),
+    blackjackSettings: JSON.parse(JSON.stringify(blackjackSettings)),
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     penaltyStatsSettings: penaltyStatsSettings?JSON.parse(JSON.stringify(penaltyStatsSettings)):null,
@@ -464,6 +466,7 @@ async function selectClub(clubName) {
   sechstageState=localClub.sechstageState?JSON.parse(JSON.stringify(localClub.sechstageState)):createSechstageState();
   blackjackState=localClub.blackjackState?JSON.parse(JSON.stringify(localClub.blackjackState)):createBlackjackState();
   gluecksspiraleSettings=JSON.parse(JSON.stringify(localClub.gluecksspiraleSettings||{target:50}));
+  blackjackSettings=KCTableGames.cardSettings(localClub.blackjackSettings);
   gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
   currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
   penaltyStatsLog=JSON.parse(JSON.stringify(localClub.penaltyStatsLog||[]));

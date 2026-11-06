@@ -1,7 +1,7 @@
 /* Oberfläche für die beiden Spiele; die Spielzustände kommen aus Firestore-Transaktionen. */
 const TABLE_GAME_KEYS=['blackjack','gluecksspirale'];
 let tableDrafts={},tablePending={},tableBusy={},tableAssignment=null,tableRulesFocus=null;
-let spiralSettingsBusy=false;
+let spiralSettingsBusy=false,tableCardEditing=null;
 function getSpiralTarget(){
   const target=Number(gluecksspiraleSettings?.target);
   return Number.isInteger(target)&&target>=10&&target<=1000?target:50;
@@ -114,7 +114,7 @@ async function tableRun(key,action,fields={}){
   const club=ACTIVE_CLUB,evening=currentEveningStartedAt||'';
   if(tablePending[key]?.club!==club)tablePending[key]=null;
   if(!tablePending[key])tablePending[key]={club,request:{action,...fields,gameKey:key,gameId:fields.gameId||tableGameGet(key).id,expectedRevision:Number(tableGameGet(key).revision)||0,opId:'table_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),now:new Date().toISOString(),eveningStartedAt:evening,clubName:club}};
-  const pending=tablePending[key];tableBusy[key]=true;renderTableGame(key);
+  const pending=tablePending[key];let reloadRejected=false;tableBusy[key]=true;renderTableGame(key);
   try{
     if(action==='start'&&typeof saveToFirestore==='function'&&!(await saveToFirestore(false)))throw Error('Teilnehmer konnten nicht synchronisiert werden');
     const result=await window.firestoreApi.transactTableGame(getClubFirestoreId(club),pending.request);
@@ -125,15 +125,36 @@ async function tableRun(key,action,fields={}){
     penaltyStatsLog=[...(result.gameStats||[]),...(penaltyStatsLog||[]).filter(e=>!e.tableGameId)];
     tablePending[key]=null;persistState();try{renderAll();}catch(error){console.error(error);renderTableGames();}
     if(action==='finish')showToast(key==='blackjack'?'Spiel abgeschlossen – Platzierungsstrafen zusätzlich gebucht':'Spiel abgeschlossen – Verlierer-Strafen gebucht','success');
-  }catch(error){console.error(key,error);if(ACTIVE_CLUB===club&&tablePending[key]){tablePending[key].error=error.message;showToast(error.message,'error');}}
+  }catch(error){console.error(key,error);if(ACTIVE_CLUB===club&&tablePending[key]){if(error.code==='table-game-rejected'){tablePending[key]=null;reloadRejected=true;}else tablePending[key].error=error.message;showToast(error.message,'error');}}
   finally{tableBusy[key]=false;if(ACTIVE_CLUB!==club||(currentEveningStartedAt&&currentEveningStartedAt!==evening&&evening))tablePending[key]=null;renderTableGame(key);}
+  if(reloadRejected&&ACTIVE_CLUB===club)await tableReload(key);
 }
 async function startTableGame(key){
   const d=tableDraft(key);
-  return tableRun(key,'start',{gameId:'game_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),players:d.selected,teams:d.teams,cards:d.cards,target:getSpiralTarget()});
+  return tableRun(key,'start',{gameId:'game_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),players:d.selected,teams:d.teams,cards:d.cards,target:getSpiralTarget(),...(key==='blackjack'?{cardSettings:getBlackjackCardSettings()}:{})});
 }
 function tableAction(key,action,fields={}){if(!tablePending[key])return tableRun(key,action,fields);}
-function tableCard(value){return tableAction('blackjack','card',{value:value==='A'?'A':Number(value)});}
+function getBlackjackCardSettings(){return KCTableGames.cardSettings(typeof blackjackSettings==='undefined'?null:blackjackSettings);}
+function tableEditCard(index){
+  const s=blackjackState,name=s.players[index];if(tableBusy.blackjack||tablePending.blackjack||!s.active||!Object.hasOwn(s.cardValues,name))return;
+  tableCardEditing={club:ACTIVE_CLUB,gameId:s.id,name};renderTableGame('blackjack');
+  document.querySelector('#blackjack-board .bj-card-choice')?.focus();
+}
+function tableCancelCardEdit(){if(!tableBusy.blackjack){tableCardEditing=null;renderTableGame('blackjack');}}
+async function tableCard(value){
+  const s=blackjackState,editing=tableCardEditing?.club===ACTIVE_CLUB&&tableCardEditing.gameId===s.id?tableCardEditing:null;
+  await tableAction('blackjack','card',{value:['A','J','Q','K'].includes(value)?value:Number(value),...(editing?{playerName:editing.name}:{})});
+  if(!tablePending.blackjack&&!tableBusy.blackjack){tableCardEditing=null;renderTableGame('blackjack');}
+}
+function renderBlackjackCardPicker(s,disabled){
+  const editing=tableCardEditing?.club===ACTIVE_CLUB&&tableCardEditing.gameId===s.id?tableCardEditing:null,name=editing?.name||KCTableGames.currentName(s);
+  if(!name)return '';
+  const cards=[['J','🃏','B','Bube'],['Q','👸','D','Dame'],['K','👑','K','König'],['A','🅰️','A','Ass'],[7,'♦','7','7'],[8,'♣','8','8'],[9,'♥','9','9'],[10,'♠','10','10']];
+  return '<section class="tg-card-input bj-card-picker" aria-label="Karte auswählen"><div class="bj-card-picker-title"><div><small>'+(editing?'Karte korrigieren':'Alle haben Stopp gesagt')+'</small><h3>Karte für '+tableEscape(name)+(editing?' ändern':' aufdecken')+'</h3></div>'+(editing?'<button type="button" class="secondary-btn" '+disabled+' onclick="tableCancelCardEdit()">Abbrechen</button>':'<span aria-hidden="true">🂠</span>')+'</div><p>'+(editing?'Neue Karte auswählen. Holz und Stopp bleiben erhalten; die Über-21-Strafe wird automatisch angepasst.':'Aufgedeckte Karte auswählen. Über 21: automatisch 1. Verlierer +1.')+'</p><div class="bj-card-grid">'+cards.map(([value,icon,mark,label])=>{
+    const settings=KCTableGames.cardSettings(s.cardSettings),points=value==='A'?settings.ace.join(' / '):value==='J'?settings.jack:value==='Q'?settings.queen:value==='K'?settings.king:value,selected=Object.hasOwn(s.cardValues,name)&&s.cardValues[name]===value;
+    return '<button type="button" class="bj-card-choice '+(selected?'bj-card-selected':'')+'" '+disabled+' aria-pressed="'+selected+'" aria-label="'+tableEscape(KCTableGames.cardLabel(value,s.cardSettings))+' auswählen" onclick="tableCard(\''+value+'\')"><span class="bj-card-corner" aria-hidden="true">'+mark+'</span><span class="bj-card-symbol" aria-hidden="true">'+icon+'</span><strong>'+label+'</strong><small>'+points+' Punkte</small></button>';
+  }).join('')+'</div></section>';
+}
 function tableReset(key){
   if(tableBusy[key]||tablePending[key])return;
   if(confirm('Neues Spiel vorbereiten? Bereits gebuchte Wurf- und Verliererstrafen bleiben erhalten.'))return tableRun(key,'reset');
@@ -153,11 +174,12 @@ async function tableReload(key){
   }catch(error){showToast('Spielstand konnte nicht geladen werden: '+error.message,'error');}
   finally{tableBusy[key]=false;renderTableGame(key);}
 }
-function renderTableGames(){for(const key of TABLE_GAME_KEYS)renderTableGame(key);renderSpiralSettings();}
+function renderTableGames(){for(const key of TABLE_GAME_KEYS)renderTableGame(key);renderSpiralSettings();if(typeof renderBlackjackSettings==='function')renderBlackjackSettings();}
 function renderTableGame(key){
   const setup=document.getElementById(key+'-start-card'),box=document.getElementById(key+'-board');if(!setup||!box)return;
   ensureTableGames();const s=tableGameGet(key),spiral=key==='gluecksspirale',draft=tableDraft(key),active=tablePlayers();
   if(tablePending[key]&&(tablePending[key].club!==ACTIVE_CLUB||(tablePending[key].request.eveningStartedAt&&currentEveningStartedAt&&tablePending[key].request.eveningStartedAt!==currentEveningStartedAt)))tablePending[key]=null;
+  if(key==='blackjack'&&tableCardEditing&&(tableCardEditing.club!==ACTIVE_CLUB||tableCardEditing.gameId!==s.id||!s.active))tableCardEditing=null;
   const pending=tablePending[key],blocked=tableBusy[key]||!!pending,disabled=blocked?'disabled':'';
   setup.classList.toggle('hidden',!!s.id);
   if(!s.id){
@@ -176,9 +198,9 @@ function renderTableGame(key){
   }
   const legacy=!spiral&&s.id&&s.active&&s.rulesVersion!==2;
   let controls=legacy?'<p class="tg-error">Die Regeln für 17+4 wurden geändert. Bitte ein neues Spiel vorbereiten. Bisherige Buchungen bleiben erhalten.</p>':'';
-  if(s.active&&!s.readyToFinish&&!legacy){
-    if(!spiral&&KCTableGames.blackjackPhase(s)==='cards'){
-      controls='<div class="tg-card-input"><strong>Karte für '+tableEscape(KCTableGames.currentName(s))+' aufdecken</strong><p>Alle haben Stopp gesagt. Jetzt den aufgedeckten Kartenwert eintragen. Über 21 wird automatisch mit 1. Verlierer +1 gebucht.</p><div class="tg-actions">'+[['A','Ass (1/11)'],[2,'Bube (2)'],[3,'Dame (3)'],[4,'König (4)'],[7,'7'],[8,'8'],[9,'9'],[10,'10']].map(([value,label])=>'<button type="button" class="secondary-btn" '+disabled+' onclick="tableCard(\''+value+'\')">'+label+'</button>').join('')+'</div></div>';
+  if(s.active&&!legacy&&(!s.readyToFinish||(!spiral&&tableCardEditing))){
+    if(!spiral&&['cards','ready'].includes(KCTableGames.blackjackPhase(s))){
+      controls=renderBlackjackCardPicker(s,disabled);
     }else{
       if(!spiral){const name=KCTableGames.currentName(s);controls+='<div class="tg-private-score">Geworfen: <strong>'+(s.wood[name]||0)+' Holz</strong> · Karte bleibt verdeckt bis alle Stopp gesagt haben.</div>';}
       controls+='<div class="tg-actions tg-pinpad">'+Array.from({length:9},(_,i)=>'<button type="button" class="pinpad-btn" '+disabled+' onclick="tableAction(\''+key+'\',\'throw\',{kind:\'pins\',pins:'+(i+1)+'})">'+(i+1)+'</button>').join('')+'<button type="button" class="secondary-btn" '+disabled+' onclick="tableAction(\''+key+'\',\'throw\',{kind:\'miss\'})">Vorbei</button><button type="button" class="secondary-btn" '+disabled+' onclick="tableAction(\''+key+'\',\'throw\',{kind:\'gosse\'})">Gosse</button><button type="button" class="secondary-btn" '+disabled+' onclick="tableAction(\''+key+'\',\'throw\',{kind:\'kranz\'})">Kranz (8 Holz)</button></div>'+(!spiral?'<button type="button" class="primary-btn" '+disabled+' onclick="tableAction(\'blackjack\',\'stand\')">✋ Stopp – '+(s.currentIndex===s.players.length-1?'Karten aufdecken':'nächster Spieler')+'</button>':'');
@@ -188,7 +210,7 @@ function renderTableGame(key){
   const actions=(s.active&&!legacy?'<div class="tg-actions"><button type="button" class="secondary-btn" '+(blocked||!s.history.length?'disabled':'')+' onclick="tableAction(\''+key+'\',\'undo\')">↩ Letzte Aktion zurücknehmen</button>'+(s.readyToFinish?'<button type="button" class="primary-btn" '+disabled+' onclick="tableAction(\''+key+'\',\'finish\')">🏁 '+(spiral?'Abschließen und Verlierer buchen':'Abschließen und Platzierungsstrafen buchen')+'</button>':'')+'</div>':'');
   const alerts=(tableBusy[key]?'<p role="status">⏳ Spielaktion wird gespeichert …</p>':'')+error;
   const detailsOpen=!!box.querySelector?.('.tg-spiral-rounds')?.open;
-  box.innerHTML=(spiral?alerts+renderTableGameBoard(s,{controls:controls+actions,detailsOpen}):renderTableGameBoard(s)+alerts+controls+actions)+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="tableReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'')+(s.history.length?'<details class="tg-history"><summary>Letzte Aktionen</summary>'+s.history.slice(-16).reverse().map(e=>'<div>'+tableEscape(e.name)+' · '+(e.action==='stand'?'Stopp':e.action==='card'?'Karte aufgedeckt':e.kind==='gosse'?'Gosse':e.kind==='miss'?'Vorbei':e.kind==='kranz'?'Kranz (8 Holz)':e.pins+' Holz')+'</div>').join('')+'</details>':'');
+  box.innerHTML=(spiral?alerts+renderTableGameBoard(s,{controls:controls+actions,detailsOpen}):alerts+renderTableGameBoard(s,{controls:controls+actions,editCards:!legacy,blocked}))+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="tableReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'')+(s.history.length?'<details class="tg-history"><summary>Letzte Aktionen</summary>'+s.history.slice(-16).reverse().map(e=>'<div>'+tableEscape(e.name)+' · '+(e.action==='stand'?'Stopp':e.action==='card'?tableEscape((e.corrected?'Karte geändert: ':'Karte aufgedeckt: ')+KCTableGames.cardLabel(e.value,s.cardSettings)):e.kind==='gosse'?'Gosse':e.kind==='miss'?'Vorbei':e.kind==='kranz'?'Kranz (8 Holz)':e.pins+' Holz')+'</div>').join('')+'</details>':'');
 }
 function openSpiralRules(){tableRulesFocus=document.activeElement;document.getElementById('spiral-rules-modal').classList.remove('hidden');document.getElementById('spiral-rules-close').focus();}
 function closeSpiralRules(){document.getElementById('spiral-rules-modal')?.classList.add('hidden');tableRulesFocus?.focus();}

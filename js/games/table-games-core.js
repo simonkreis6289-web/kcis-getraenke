@@ -5,8 +5,18 @@
   const validPerson=p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly;
   const normalize=name=>name.trim().toLocaleLowerCase('de-DE');
   function empty(gameKey){return {gameKey,rulesVersion:gameKey==='blackjack'?2:1,id:'',revision:0,active:false,finished:false,readyToFinish:false,eveningStartedAt:'',startedAt:'',players:[],teams:[],currentIndex:0,round:1,turn:{pins:[],playerIndex:0},target:50,cards:gameKey==='blackjack',cardValues:{},wood:{},stopped:[],scores:{},rounds:[],finalRound:0,winners:[],history:[],commands:[],receipts:[]};}
-  function cardTotal(wood,card){return card==='A'?wood+(wood+11<=21?11:1):wood+Number(card||0);}
-  function blackjackPhase(s){return s.finished?'finished':s.currentIndex<s.players.length?'throwing':s.players.some(name=>!Object.hasOwn(s.cardValues,name))?'cards':'ready';}
+  const DEFAULT_CARD_SETTINGS={jack:2,queen:3,king:4,ace:[1,11]};
+  function validCardSettings(value){return !!value&&['jack','queen','king'].every(k=>Number.isInteger(value[k])&&value[k]>=0&&value[k]<=21)&&Array.isArray(value.ace)&&[1,2].includes(value.ace.length)&&value.ace.every(n=>Number.isInteger(n)&&n>=0&&n<=21)&&new Set(value.ace).size===value.ace.length;}
+  function cardSettings(value){return copy(validCardSettings(value)?value:DEFAULT_CARD_SETTINGS);}
+  function cardPoints(wood,card,settings){
+    const values=cardSettings(settings);
+    if(card==='A'){const sorted=values.ace.slice().sort((a,b)=>b-a);return sorted.find(n=>wood+n<=21)??Math.min(...sorted);}
+    return ({J:values.jack,Q:values.queen,K:values.king})[card]??Number(card||0);
+  }
+  function cardTotal(wood,card,settings){return wood+cardPoints(wood,card,settings);}
+  function cardLabel(card,settings){const values=cardSettings(settings);return card==='A'?'Ass ('+values.ace.join('/')+')':card==='J'?'Bube ('+values.jack+')':card==='Q'?'Dame ('+values.queen+')':card==='K'?'König ('+values.king+')':String(card);}
+
+  function blackjackPhase(s){return s.finished?'finished':s.players.some(name=>!s.stopped.includes(name))?'throwing':s.players.some(name=>!Object.hasOwn(s.cardValues,name))?'cards':'ready';}
   function currentName(s){return s.gameKey==='blackjack'?(blackjackPhase(s)==='cards'?s.players.find(name=>!Object.hasOwn(s.cardValues,name)):s.players[s.currentIndex])||'':s.teams[s.currentIndex]?.players[s.turn.playerIndex]||'';}
   function loserGroups(s){
     const values=totals(s),losers=s.players.filter(name=>!s.winners.includes(name)),groups=[];
@@ -24,7 +34,7 @@
     return groups;
   }
   function participants(s){return s.gameKey==='blackjack'?s.players:s.teams.flatMap(t=>t.players);}
-  function totals(s){if(s.gameKey==='gluecksspirale')return {...s.scores};return Object.fromEntries(s.players.map(name=>[name,cardTotal(s.wood[name]||0,(Object.hasOwn(s.cardValues,name)?s.cardValues[name]:0))]));}
+  function totals(s){if(s.gameKey==='gluecksspirale')return {...s.scores};return Object.fromEntries(s.players.map(name=>[name,cardTotal(s.wood[name]||0,(Object.hasOwn(s.cardValues,name)?s.cardValues[name]:0),s.cardSettings)]));}
   function initialize(request,context){
     const k=request.gameKey,s=empty(k),names=k==='blackjack'?request.players:request.teams?.flatMap(t=>t.players||[]);
     if(!keys.includes(k)||!Array.isArray(names)||names.length<2||names.length>16||names.some(n=>typeof n!=='string'||!n.trim())||new Set(names.map(normalize)).size!==names.length)throw Error('Bitte 2 bis 16 unterschiedliche aktive Kegler auswählen');
@@ -35,7 +45,7 @@
       if(!Number.isInteger(request.target)||request.target<10||request.target>1000)throw Error('Ziel muss zwischen 10 und 1000 Holz liegen');
       s.teams=request.teams.map((t,i)=>({id:'G'+(i+1),name:'Team '+(i+1),players:t.players.slice()}));s.target=request.target;s.scores=Object.fromEntries(s.teams.map(t=>[t.id,0]));
       s.rounds=[{round:1,wood:{}}];
-    }else{s.players=names.slice();s.cards=true;s.wood=Object.fromEntries(names.map(n=>[n,0]));}
+    }else{if(request.cardSettings!==undefined&&!validCardSettings(request.cardSettings))throw Error('Kartenwerte: ganze Zahlen von 0 bis 21 und ein oder zwei unterschiedliche Ass-Werte eingeben');s.cardSettings=cardSettings(request.cardSettings);s.players=names.slice();s.cards=true;s.wood=Object.fromEntries(names.map(n=>[n,0]));}
     return {...s,id:request.gameId,active:true,startedAt:context.now,eveningStartedAt:context.eveningStartedAt};
   }
   function advanceSolo(s){s.currentIndex++;}
@@ -43,9 +53,10 @@
     if(s.gameKey==='blackjack'){
       const phase=blackjackPhase(s),name=currentName(s);
       if(entry.action==='card'){
-        if(phase!=='cards')throw Error('Zuerst müssen alle Spieler Stopp sagen; erst danach Karten aufdecken');
-        if(!name||Object.hasOwn(s.cardValues,name)||!['A',2,3,4,7,8,9,10].includes(entry.value))throw Error('Bitte einen gültigen Kartenwert eingeben');
-        Object.defineProperty(s.cardValues,name,{value:entry.value,writable:true,enumerable:true,configurable:true});
+        if(!['cards','ready'].includes(phase))throw Error('Zuerst müssen alle Spieler Stopp sagen; erst danach Karten aufdecken');
+        const target=entry.name||name;
+        if(!s.players.includes(target)||(!Object.hasOwn(s.cardValues,target)&&target!==name)||!['A','J','Q','K',2,3,4,7,8,9,10].includes(entry.value))throw Error('Bitte einen gültigen Kartenwert eingeben');
+        Object.defineProperty(s.cardValues,target,{value:entry.value,writable:true,enumerable:true,configurable:true});
         s.readyToFinish=s.players.every(player=>Object.hasOwn(s.cardValues,player));
       }else{
         if(phase!=='throwing')throw Error('Alle Spieler haben gestoppt. Jetzt die Karten aufdecken.');
@@ -100,20 +111,20 @@
         }else if(request.action==='undo'){
           if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');
           const history=s.history.slice(0,-1);
-          const rebuilt=initialize({gameKey:s.gameKey,gameId:s.id,players:s.players,teams:s.teams,target:s.target,cards:s.cards},{...context,people:participants(s).map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});
+          const rebuilt=initialize({gameKey:s.gameKey,gameId:s.id,players:s.players,teams:s.teams,target:s.target,cards:s.cards,cardSettings:s.cardSettings},{...context,people:participants(s).map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});
           for(const entry of history)play(rebuilt,entry);
           s=rebuilt;
         }else{
-          if(s.readyToFinish)throw Error('Die Runde ist beendet. Abschließen oder letzte Aktion zurücknehmen.');
+          if(s.readyToFinish&&!(s.gameKey==='blackjack'&&request.action==='card'))throw Error('Die Runde ist beendet. Abschließen oder letzte Aktion zurücknehmen.');
           const name=currentName(s),person=context.people.find(p=>p.name===name);
           if(request.action==='throw'&&(!person||!validPerson(person)))throw Error('Der Werfer ist nicht mehr aktiv');
-          const entry={id:request.opId,action:request.action,name,at:context.now,round:s.round,teamId:s.teams[s.currentIndex]?.id||''};
+          const entry={id:request.opId,action:request.action,name:request.action==='card'?(request.playerName||name):name,at:context.now,round:s.round,teamId:s.teams[s.currentIndex]?.id||''};
           if(request.action==='throw'){
             if(!['pins','kranz','gosse','miss'].includes(request.kind))throw Error('Ungültiger Wurf');
             const pins=request.kind==='kranz'?8:['gosse','miss'].includes(request.kind)?0:Number(request.pins);
             if(!Number.isInteger(pins)||pins<0||pins>9||(request.kind==='pins'&&pins<1))throw Error('Bitte 1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');
             Object.assign(entry,{kind:request.kind,pins});
-          }else if(request.action==='card')entry.value=request.value;
+          }else if(request.action==='card'){entry.value=request.value;entry.corrected=Object.hasOwn(s.cardValues,entry.name);}
           else if(request.action!=='stand'||s.gameKey!=='blackjack')throw Error('Ungültige Spielaktion');
           if(s.history.length>=1000)throw Error('Maximale Spiellänge erreicht. Spiel abbrechen und neu starten.');
           play(s,entry);
@@ -138,10 +149,12 @@
       e.penalties=copy(changes);
     }else if(request.action==='card'&&s.gameKey==='blackjack'){
       const e=s.history[s.history.length-1];
-      if(totals(s)[e.name]>21){
+      const wasBust=Object.hasOwn(before.cardValues,e.name)&&totals(before)[e.name]>21,isBust=totals(s)[e.name]>21;
+      e.bustPenalty=isBust;
+      if(wasBust!==isBust){
         const key=context.catalog.find(item=>/^(1\.?\s*verlierer)$|erster verlierer/i.test(String(item.label||'').trim()))?.key;
         if(!key)throw Error('Strafe „1. Verlierer“ fehlt');
-        changes.push({personName:e.name,key,delta:1});e.bustPenalty=true;
+        changes.push({personName:e.name,key,delta:isBust?1:-1});
       }
       e.penalties=copy(changes);
     }else if(request.action==='undo'){
@@ -168,7 +181,7 @@
     }
     return {changes,added,removed};
   }
-  window.KCTableGames=Object.freeze({empty,command,effects,totals,currentName,participants,cardTotal,blackjackPhase,loserGroups,teamLoserGroups});
+  window.KCTableGames=Object.freeze({empty,command,effects,totals,currentName,participants,cardTotal,blackjackPhase,loserGroups,teamLoserGroups,cardSettings,validCardSettings,cardPoints,cardLabel});
 })();
 function tableEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderTableGameBoard(s,options={}){
@@ -181,14 +194,15 @@ function renderTableGameBoard(s,options={}){
   const rows=spiral?s.teams.map((t,i)=>'<tr class="'+(s.active&&!s.readyToFinish&&s.currentIndex===i?'tg-current':'')+'"><th scope="row">'+tableEscape(t.name)+'<small>'+t.players.map(tableEscape).join(' / ')+'</small></th><td><strong>'+values[t.id]+'</strong> / '+s.target+'</td><td><div class="tg-progress" role="progressbar" aria-label="'+tableEscape(t.name)+'" aria-valuemin="0" aria-valuemax="'+s.target+'" aria-valuenow="'+Math.min(s.target,values[t.id])+'"><span style="width:'+Math.min(100,values[t.id]/s.target*100)+'%"></span></div></td></tr>').join(''):
     s.players.map(name=>{
       const known=Object.hasOwn(s.cardValues,name),legacy=!s.cards&&s.finished;
-      const card=known?(s.cardValues[name]==='A'?'Ass (1/11)':s.cardValues[name]):'🂠';
+      const card=known?tableEscape(KCTableGames.cardLabel(s.cardValues[name],s.cardSettings)):'🂠';
+      const cardCell=known&&s.active&&options.editCards?'<button type="button" class="bj-card-edit" '+(options.blocked?'disabled':'')+' onclick="tableEditCard('+s.players.indexOf(name)+')" aria-label="Karte für '+tableEscape(name)+' ändern">'+card+' <small>✏️ Ändern</small></button>':card;
       const score=known||legacy?values[name]+(values[name]>21?' · Über 21':values[name]===21?' 🎯':''):'🔒';
       const rank=(s.loserGroups||[]).findIndex(g=>g.names.includes(name));
-      const fines=[...(s.history.some(e=>e.action==='card'&&e.name===name&&e.bustPenalty)?['Über 21: 1. Verlierer +1']:[]),...(s.finished&&rank>=0&&rank<3?['Platzierung: '+(rank+1)+'. Verlierer +1']:[])];
-      return '<tr class="'+(s.active&&!s.readyToFinish&&name===KCTableGames.currentName(s)?'tg-current':'')+'"><th scope="row">'+tableEscape(name)+'</th><td>'+card+'</td><td>'+(s.wood[name]||0)+'</td><td>'+score+'</td><td>'+(s.stopped.includes(name)?(known||legacy?'✓ Fertig':'✓ Stopp'):'…')+'</td><td>'+fines.map(tableEscape).join('<br>')+'</td></tr>';
+      const fines=[...(known&&values[name]>21?['Über 21: 1. Verlierer +1']:[]),...(s.finished&&rank>=0&&rank<3?['Platzierung: '+(rank+1)+'. Verlierer +1']:[])];
+      return '<tr class="'+(s.active&&!s.readyToFinish&&name===KCTableGames.currentName(s)?'tg-current':'')+'"><th scope="row">'+tableEscape(name)+'</th><td>'+cardCell+'</td><td>'+(s.wood[name]||0)+'</td><td>'+score+'</td><td>'+(s.stopped.includes(name)?(known||legacy?'✓ Fertig':'✓ Stopp'):'…')+'</td><td>'+fines.map(tableEscape).join('<br>')+'</td></tr>';
     }).join('');
   const roundTable=spiral?'<div class="tg-rounds"><table><thead><tr><th>Team</th>'+s.rounds.map(r=>'<th>R'+r.round+'</th>').join('')+'</tr></thead><tbody>'+s.teams.map(t=>'<tr><th scope="row">'+tableEscape(t.name)+'</th>'+s.rounds.map(r=>'<td>'+(r.wood[t.id]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'';
-  return '<div class="tg-board"><h3>'+tableEscape(head)+'</h3>'+turn+'<div class="tg-table-scroll"><table><thead><tr>'+(spiral?'<th>Team</th><th>Holz</th><th>Fortschritt</th>':'<th>Name</th><th>Karte</th><th>Holz</th><th>Gesamt</th><th>Status</th><th>Gebuchte Strafen</th>')+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+roundTable+'</div>';
+  return '<div class="tg-board"><h3>'+tableEscape(head)+'</h3>'+turn+(options.controls?'<div class="bj-controls">'+options.controls+'</div>':'')+'<div class="tg-table-scroll"><table><thead><tr>'+(spiral?'<th>Team</th><th>Holz</th><th>Fortschritt</th>':'<th>Name</th><th>Karte</th><th>Holz</th><th>Gesamt</th><th>Status</th><th>Gebuchte Strafen</th>')+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+roundTable+'</div>';
 }
 
 function renderSpiralBoard(s,options={}){
