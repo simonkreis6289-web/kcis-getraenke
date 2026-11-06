@@ -14,8 +14,9 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261105-v178">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261105-v178">
+  <link rel="stylesheet" href="css/styles.css?v=20261106-v179">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261106-v179">
+  <link rel="stylesheet" href="css/table-games.css?v=20261106-v179">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -781,6 +782,8 @@
     <div class="game-hub-card" onclick="showSideTab('spiele','plusminus')"><div class="icon">➕</div><div class="title">+ − × ÷</div><div class="desc">5 Würfe pro Spieler, links-nach-rechts gerechnet, optional mit Gosse-Automatik.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','haushoch')"><div class="icon">🔢</div><div class="title">Hohe Hausnummer</div><div class="desc">Drei Würfe zur höchsten Hausnummer</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','haustief')"><div class="icon">🔽</div><div class="title">Tiefe Hausnummer</div><div class="desc">Drei Würfe zur niedrigsten Hausnummer</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','blackjack')"><div class="icon">🃏</div><div class="title">17 + 4 / Blackjack</div><div class="desc">Bis 21 Holz, weiterwerfen oder stehen bleiben – mit oder ohne Startkarte.</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','gluecksspirale')"><div class="icon">🌀</div><div class="title">Glücksspirale</div><div class="desc">Zweierteams: Ab 13 Holz folgen zwei Zusatzwürfe. Ziel: 50 Holz.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','sechstage')"><div class="icon">🏁</div><div class="title">Sechs-Tage-Rennen</div><div class="desc">Zweierteams, sechs Tage und steigende Multiplikatoren.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','sichern')"><div class="icon">🔒</div><div class="title">Sichern</div><div class="desc">Punkte sammeln, sichern und bei Gosse oder 5 nichts riskieren!</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','tor')"><div class="icon">⚽</div><div class="title">Tor</div><div class="desc">Kegel abräumen, Tore erzielen, zwei Tore Vorsprung.</div></div>
@@ -1260,6 +1263,14 @@
   <div id="plusminus-history-list" class="spiele-list"></div>
 </div>
 
+<div id="tab-blackjack" class="hidden">
+ <h2 class="section-title">🃏 17 + 4 / Blackjack</h2>
+ <div id="blackjack-start-card" class="game-start-card"></div><div id="blackjack-board"></div>
+</div>
+<div id="tab-gluecksspirale" class="hidden">
+ <div class="tg-page-title"><h2 class="section-title">🌀 Glücksspirale</h2><button type="button" class="tg-info-button" onclick="openSpiralRules()" aria-label="Spielregeln für Glücksspirale" title="Spielregeln">ℹ️</button></div>
+ <div id="gluecksspirale-start-card" class="game-start-card"></div><div id="gluecksspirale-board"></div>
+</div>
 <div id="tab-sechstage" class="hidden">
  <div class="six-page-title"><h2 class="section-title">🏁 Sechs-Tage-Rennen</h2><button type="button" class="six-info-button" onclick="openSechsRules()" aria-label="Spielregeln für Sechs-Tage-Rennen" title="Spielregeln">ℹ️</button></div>
  <div id="sechs-start-card" class="game-start-card"></div><div id="sechs-board"></div>
@@ -2148,6 +2159,29 @@
   <div class="profile-actions"><button type="button" class="secondary-btn" onclick="kcCloseEventEdit()">Abbrechen</button><button type="submit" class="primary-btn">💾 Änderungen speichern</button></div>
  </form>
 </div>
+<div class="modal-overlay hidden" id="spiral-rules-modal" onclick="if(event.target===this)closeSpiralRules()">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="spiral-rules-title">
+  <h3 id="spiral-rules-title">ℹ️ Glücksspirale – unsere Regeln</h3>
+  <ol>
+   <li><strong>Zweierteams:</strong> Je zwei Kegler bilden eine Mannschaft. Paare aus der Sitzreihenfolge bilden oder auslosen; danach können die Partner getauscht werden.</li>
+   <li><strong>In die Vollen:</strong> Jeder Wurf beginnt mit neun Kegeln. Pro Wurfpaar wirft zunächst der erste Partner, danach der zweite.</li>
+   <li><strong>Zusatzwürfe:</strong> Zusammen mindestens <strong>13 Holz</strong> im Wurfpaar geben diesem Team zwei weitere Würfe, wieder je einen pro Partner. Erreichen auch diese mindestens 13 Holz, geht es weiter. Bei weniger als 13 Holz kommt das nächste Team dran.</li>
+   <li><strong>Punkte:</strong> Alle gefallenen Holz werden zum Teamstand addiert. Gosse und „Vorbei“ zählen null. Ein Kranz zählt acht Holz.</li>
+   <li><strong>Ziel und letzte Runde:</strong> Standard sind <strong>50 Holz</strong>; vor dem Start ist das Ziel änderbar. Erreicht ein Team das Ziel, läuft seine Serie einschließlich möglicher Zusatzwürfe weiter. Anschließend beenden alle übrigen Teams ihre Serie dieser Runde. So waren alle Teams gleich oft dran.</li>
+   <li><strong>Sieger:</strong> Nach dieser Runde gewinnt der höchste Gesamtstand. Bei Gleichstand gibt es gemeinsame Siegerteams.</li>
+  </ol>
+  <p><strong>Unsere Strafregeln:</strong> Gosse, 9er und Kranz werden wie gewohnt gebucht. Beim bestätigten Abschluss erhalten alle Kegler unterlegener Teams einmal <strong>1. Verlierer +1</strong>.</p>
+  <p>Bis zum Abschluss kann die letzte Aktion mitsamt ihren Strafbuchungen zurückgenommen werden. Ein neues Spiel entfernt keine bereits gebuchten Strafen.</p>
+  <p><a href="https://xn--kegelclub-tddern-tzb.de/kegelspiele/gluecksspirale" target="_blank" rel="noopener noreferrer">Regelgrundlage: KC Mehr wie 9 geht nicht</a></p>
+  <button type="button" class="primary-btn" id="spiral-rules-close" onclick="closeSpiralRules()">Schließen</button>
+ </div>
+</div>
+<div class="modal-overlay hidden" id="table-assignment-modal" onclick="if(event.target===this)tableCloseAssignment()">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="table-assignment-title">
+  <h3 id="table-assignment-title">Partner wählen</h3><div class="kc-avatar-picker" id="table-assignment-grid"></div>
+  <div class="tg-actions"><button type="button" class="secondary-btn" onclick="tableCloseAssignment()">Abbrechen</button><button type="button" class="primary-btn" onclick="tableConfirmAssignment()">Übernehmen</button></div>
+ </div>
+</div>
 <div class="modal-overlay hidden" id="sechs-rules-modal" onclick="if(event.target===this)closeSechsRules()">
  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sechs-rules-title">
   <h3 id="sechs-rules-title">ℹ️ Sechs-Tage-Rennen – unsere Regeln</h3>
@@ -2217,48 +2251,52 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261105-v178"></script>
-<script src="js/kegel-calendar.js?v=20261105-v178"></script>
-<script src="js/helpers.js?v=20261105-v178"></script>
-<script src="js/state.js?v=20261105-v178"></script>
-<script src="js/persons.js?v=20261105-v178"></script>
-<script src="js/member-profiles.js?v=20261105-v178"></script>
-<script src="js/clubs.js?v=20261105-v178"></script>
+<script src="js/birthdays.js?v=20261106-v179"></script>
+<script src="js/kegel-calendar.js?v=20261106-v179"></script>
+<script src="js/helpers.js?v=20261106-v179"></script>
+<script src="js/state.js?v=20261106-v179"></script>
+<script src="js/persons.js?v=20261106-v179"></script>
+<script src="js/member-profiles.js?v=20261106-v179"></script>
+<script src="js/clubs.js?v=20261106-v179"></script>
 
-<script src="js/games/avatar-select.js?v=20261105-v178"></script>
-<script src="js/games/tannenbaum.js?v=20261105-v178"></script>
-<script src="js/games/darts.js?v=20261105-v178"></script>
-<script src="js/games/tiberius.js?v=20261105-v178"></script>
-<script src="js/games/lotterie.js?v=20261105-v178"></script>
-<script src="js/games/solo-start-draw.js?v=20261105-v178"></script>
-<script src="js/games/seating.js?v=20261105-v178"></script>
-<script src="js/games/mensch.js?v=20261105-v178"></script>
-<script src="js/games/plusminus.js?v=20261105-v178"></script>
-<script src="js/games/hausnummer-core.js?v=20261105-v178"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261105-v178"></script>
-<script src="js/games/hausnummer-tief.js?v=20261105-v178"></script>
-<script src="js/games/fuchsjagd.js?v=20261105-v178"></script>
-<script src="js/games/sichern.js?v=20261105-v178"></script>
-<script src="js/games/sechstage-core.js?v=20261105-v178"></script>
-<script src="js/games/sechstage.js?v=20261105-v178"></script>
-<script src="js/games/tor.js?v=20261105-v178"></script>
-<script src="js/games/coinflip.js?v=20261105-v178"></script>
+<script src="js/games/avatar-select.js?v=20261106-v179"></script>
+<script src="js/games/tannenbaum.js?v=20261106-v179"></script>
+<script src="js/games/darts.js?v=20261106-v179"></script>
+<script src="js/games/tiberius.js?v=20261106-v179"></script>
+<script src="js/games/lotterie.js?v=20261106-v179"></script>
+<script src="js/games/solo-start-draw.js?v=20261106-v179"></script>
+<script src="js/games/seating.js?v=20261106-v179"></script>
+<script src="js/games/mensch.js?v=20261106-v179"></script>
+<script src="js/games/plusminus.js?v=20261106-v179"></script>
+<script src="js/games/hausnummer-core.js?v=20261106-v179"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261106-v179"></script>
+<script src="js/games/hausnummer-tief.js?v=20261106-v179"></script>
+<script src="js/games/fuchsjagd.js?v=20261106-v179"></script>
+<script src="js/games/sichern.js?v=20261106-v179"></script>
+<script src="js/games/sechstage-core.js?v=20261106-v179"></script>
+<script src="js/games/sechstage.js?v=20261106-v179"></script>
+<script src="js/games/table-games-core.js?v=20261106-v179"></script>
+<script src="js/games/table-games-ui.js?v=20261106-v179"></script>
+<script src="js/games/blackjack.js?v=20261106-v179"></script>
+<script src="js/games/gluecksspirale.js?v=20261106-v179"></script>
+<script src="js/games/tor.js?v=20261106-v179"></script>
+<script src="js/games/coinflip.js?v=20261106-v179"></script>
 
-<script src="js/groups.js?v=20261105-v178"></script>
+<script src="js/groups.js?v=20261106-v179"></script>
 
-<script src="js/app.js?v=20261105-v178"></script><script src="js/club-termine.js?v=20261105-v178"></script>
+<script src="js/app.js?v=20261106-v179"></script><script src="js/club-termine.js?v=20261106-v179"></script>
     
-<script src="js/live-games.js?v=20261105-v178"></script>
-<script src="js/strafe-pdf.js?v=20261105-v178"></script>
-<script src="js/cash-history.js?v=20261105-v178"></script>
-<script src="js/cash-book.js?v=20261105-v178"></script>
-<script src="js/cash-expenses.js?v=20261105-v178"></script>
-<script src="js/historical-evenings.js?v=20261105-v178"></script>
-<script src="js/table-headers.js?v=20261105-v178"></script>
+<script src="js/live-games.js?v=20261106-v179"></script>
+<script src="js/strafe-pdf.js?v=20261106-v179"></script>
+<script src="js/cash-history.js?v=20261106-v179"></script>
+<script src="js/cash-book.js?v=20261106-v179"></script>
+<script src="js/cash-expenses.js?v=20261106-v179"></script>
+<script src="js/historical-evenings.js?v=20261106-v179"></script>
+<script src="js/table-headers.js?v=20261106-v179"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261105-v178"
+  src="js/firebase.js?v=20261106-v179"
 ></script>
 
 </body>
