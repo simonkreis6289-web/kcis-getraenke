@@ -55,8 +55,9 @@ function gameSetupDrawTeams(key){
 function gameSetupAvatar(name){const person=gameSetupPeople().find(p=>p.name===name),initials=name.trim().split(/\s+/).map(s=>s[0]||'').join('').slice(0,2).toUpperCase(),file=name.toLocaleLowerCase('de-DE').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9-]/g,'');return '<span class="gs-avatar" aria-hidden="true"><span>'+gsEscape(initials)+'</span>'+(!person?.isGuest?'<img alt="" src="'+gsEscape(person?.avatarData||'bilder/'+file+'.jpg')+'" onerror="this.remove()">':'')+'</span>';}
 function gameSetupFox(index){if(gameSetupLocked('fuchsjagd'))return;gameSetupDraft('fuchsjagd').fox=gameSetupNames('fuchsjagd')[index]||'';gameSetupRefresh('fuchsjagd');}
 function gameSetupMarkup(key,{busy=false}={}){
+ if(gameSetupLocked(key))return '';
  const d=gameSetupDraft(key),names=d.names,locked=gameSetupLocked(key)||busy,mode=gameSetupMode(key),disabled=locked?'disabled':'';
- const chip=(n,i,controls=false)=>'<div class="gs-chip"><small class="gs-place">'+(i+1)+'</small>'+gameSetupAvatar(n)+'<span class="gs-name">'+gsEscape(n)+'</span>'+(controls?'<span class="gs-moves"><button type="button" '+(locked||i===0?'disabled':'')+' aria-label="'+gsEscape(n)+' nach vorne" onclick="gameSetupMove(\''+key+'\','+i+',-1)">↑</button><button type="button" '+(locked||i===names.length-1?'disabled':'')+' aria-label="'+gsEscape(n)+' nach hinten" onclick="gameSetupMove(\''+key+'\','+i+',1)">↓</button></span>':'')+'</div>';
+ const chip=(n,i,controls=false)=>'<div class="gs-chip"><small class="gs-place">'+(i+1)+'</small>'+gameSetupAvatar(n)+'<span class="gs-name" title="'+gsEscape(n)+'">'+gsEscape(n)+'</span>'+(controls?'<span class="gs-moves"><button type="button" '+(locked||i===0?'disabled':'')+' aria-label="'+gsEscape(n)+' nach vorne" onclick="gameSetupMove(\''+key+'\','+i+',-1)">↑</button><button type="button" '+(locked||i===names.length-1?'disabled':'')+' aria-label="'+gsEscape(n)+' nach hinten" onclick="gameSetupMove(\''+key+'\','+i+',1)">↓</button></span>':'')+'</div>';
  let html='<section class="gs-setup" data-game-setup="'+key+'"><div class="gs-heading"><strong>🪑 Sitzreihenfolge</strong><small>Alle '+names.length+' aktiven Kegler spielen mit</small></div><label class="gs-edit"><input type="checkbox" '+(d.editing?'checked ':'')+disabled+' onchange="gameSetupToggle(\''+key+'\',this.checked)"> Reihenfolge ändern</label><div class="gs-order">'+names.map((n,i)=>chip(n,i,d.editing&&!locked)).join('')+'</div>';
  if(mode!=='solo'){
   const s=gameSetupState(key),frozen=s?.participantTeams,teams=locked&&s?.teams&&['sechstage','gluecksspirale'].includes(key)?s.teams.map(t=>t.players):locked&&s?.teams&&['sichern','tor'].includes(key)?[s.teams.T1||[],s.teams.T2||[]]:locked&&frozen?[frozen.T1,frozen.T2]:gameSetupTeams(key);
@@ -68,7 +69,13 @@ function gameSetupMarkup(key,{busy=false}={}){
  }
  return html+'</section>';
 }
-function renderCommonGameSetups(){for(const key of GAME_SETUP_KEYS){const box=document.getElementById('common-setup-'+key)||document.getElementById(key+'-order-editor');if(box)box.innerHTML=gameSetupMarkup(key);}}
+function renderCommonGameSetups(){
+ for(const key of GAME_SETUP_KEYS){
+  const hidden=gameSetupLocked(key),box=document.getElementById('common-setup-'+key)||document.getElementById(key+'-order-editor');
+  if(box){box.hidden=hidden;box.classList.toggle('hidden',hidden);box.innerHTML=hidden?'':gameSetupMarkup(key);}
+  const panel=document.querySelector('[data-game-start-panel="'+key+'"]');if(panel){panel.hidden=hidden;panel.classList.toggle('hidden',hidden);}
+ }
+}
 function startTannenbaumSetup(){if(tannenbaumState?.history?.length&&!confirm('Neuen Tannenbaum starten? Bisherige Würfe werden zurückgesetzt.'))return;tannenbaumState=createTannenbaumState();tannenbaumState.participantTeams=gameSetupTeamMap('tannenbaum');tannenbaumState.active=true;tannenbaumState.startedAt=new Date().toISOString();dashboardActiveGame='tannenbaum';renderAll();persistState();}
 let gamePropertySelected='hindernis';
 function renderGamePropertyTabs(){

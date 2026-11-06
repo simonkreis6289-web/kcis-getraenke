@@ -27,6 +27,36 @@
     return body;
   }
   function fillApp(){for(const [key,prefix] of [['sechstage','sechs'],['gluecksspirale','spiral'],['siebener','siebener'],['hindernis','hindernis']]){const box=document.getElementById(prefix+'-rules-content');if(box)box.innerHTML=content(key);}}
+  let fitFrame=0,fitObserver=null;
+  function fitDashboard(){
+    const overlay=document.getElementById('dashboard-rules-overlay'),box=document.getElementById('dashboard-rules-scroll'),text=document.getElementById('dashboard-rules-content');
+    if(!overlay||overlay.hidden||!box||!text||!box.clientWidth||!box.clientHeight)return;
+    if(!fitObserver&&typeof window.ResizeObserver==='function'){
+      fitObserver=new window.ResizeObserver(scheduleFit);fitObserver.observe(box);
+    }
+    const max=Math.min(42,Math.max(22,box.clientWidth/50)),choices=[1,...(box.clientWidth>=680?[2]:[]),...(box.clientWidth>=1500?[3]:[])];
+    const apply=(size,columns)=>{text.style.fontSize=size+'px';text.style.columnCount=String(columns);};
+    const fits=()=>text.scrollWidth<=text.clientWidth&&text.scrollHeight<=text.clientHeight;
+    let best={size:1,columns:1};
+    for(const columns of choices){
+      let low=1,high=max;apply(high,columns);
+      if(fits())low=high;
+      else for(let i=0;i<12;i++){const size=(low+high)/2;apply(size,columns);if(fits())low=size;else high=size;}
+      if(low>best.size+.1)best={size:low,columns};
+    }
+    // Etwas Reserve für Rundung und das Zeichnen der letzten Textzeile lassen.
+    apply(Math.max(1,Math.floor((best.size-.2)*100)/100),best.columns);
+    box.scrollTop=0;box.scrollLeft=0;text.scrollTop=0;text.scrollLeft=0;
+  }
+  function scheduleFit(){
+    if(fitFrame||typeof window.requestAnimationFrame!=='function')return;
+    fitFrame=window.requestAnimationFrame(()=>{fitFrame=0;fitDashboard();});
+  }
+  window.addEventListener('resize',scheduleFit);
+  window.visualViewport?.addEventListener('resize',scheduleFit);
+  document.addEventListener('fullscreenchange',scheduleFit);
+  document.fonts?.ready?.then(scheduleFit);
+  document.fonts?.addEventListener('loadingdone',scheduleFit);
   function renderDashboard(value){
     const overlay=document.getElementById('dashboard-rules-overlay');if(!overlay)return;
     const rule=Object.hasOwn(rules,value?.gameKey)?rules[value.gameKey]:null,visible=!!(value?.open&&rule);
@@ -39,6 +69,7 @@
       document.getElementById('dashboard-rules-content').innerHTML=content(value.gameKey,value.rulesConfig);
       const scroll=document.getElementById('dashboard-rules-scroll');if(scroll)scroll.scrollTop=0;
       overlay.dataset.token=identity;
+      fitDashboard();scheduleFit();
     }
   }
   window.KCGameRules=Object.freeze({content,renderDashboard,fillApp});fillApp();
