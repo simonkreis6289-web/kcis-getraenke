@@ -73,6 +73,7 @@ function getSerializableState() {
     hausnummerSettings,
     gluecksspiraleSettings,
     blackjackSettings,
+    siebenerState,hindernisState,hindernisSettings,individualGameLedger,individualGameRevision,
     clubTermine,
     clubKegelSerie,
     calendarRevision: kcCalendarRevision,
@@ -123,6 +124,7 @@ function getFirestorePersonsWithFineTotals() {
   // Niemals die lokalen Personenobjekte nur fuer die Uebertragung veraendern.
   return persons.map(person => ({
     ...person,
+    individualChargeCents:(Array.isArray(individualGameLedger)?individualGameLedger:[]).filter(x=>x.eveningStartedAt===currentEveningStartedAt&&String(x.personName).trim().toLocaleLowerCase('de')===String(person.name).trim().toLocaleLowerCase('de')).reduce((sum,x)=>sum+x.amountCents,0),
     strafTotal: Math.round(calcPersonStrafenTotalCapped(person) * 100) / 100
   }));
 }
@@ -176,6 +178,7 @@ function getFirestoreState() {
     hausnummerSettings,
     gluecksspiraleSettings,
     blackjackSettings,
+    siebenerState,hindernisState,hindernisSettings,individualGameLedger,individualGameRevision,
         sichernState: {...sichernState,busy:false,closing:false},
         sechstageState,
     blackjackState,
@@ -206,6 +209,7 @@ function applyLoadedState(state) {
   if(typeof applyPenaltyStatsSettings==='function')applyPenaltyStatsSettings(state.penaltyStatsSettings);else penaltyStatsSettings=state.penaltyStatsSettings||null;
   gluecksspiraleSettings = state.gluecksspiraleSettings || {target:50};
   blackjackSettings = KCTableGames.cardSettings(state.blackjackSettings);
+  siebenerState=state.siebenerState||null;hindernisState=state.hindernisState||null;hindernisSettings=state.hindernisSettings||null;individualGameLedger=state.individualGameLedger||[];individualGameRevision=Number(state.individualGameRevision)||0;
   dashboardActiveGame = state.dashboardActiveGame || null;
   if(typeof kcApplyCalendarState==='function')kcApplyCalendarState(state,false);
   else clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
@@ -1563,7 +1567,7 @@ function renderStrafen() {
     const tr = document.createElement('tr');
     tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
 
-    const manualFree = p.freeStrafen.filter(item => {
+    const manualFree = [...p.freeStrafen,...getMissingGameCharges(p).filter(x=>x.individualChargeId)].filter(item => {
       const reason = String(item.reason || '');
       return reason !== 'Lotterie' && reason !== 'Tiberius';
     });
@@ -1826,6 +1830,7 @@ function getMissingGameCharges(p) {
       if (!alreadyBooked) result.push({amount, reason: label, onTop: !!charge.onTop});
     }
   }
+  for(const charge of typeof individualGameLedger==='undefined'?[]:individualGameLedger){if(String(charge.personName||'').trim().toLocaleLowerCase('de')===String(p.name||'').trim().toLocaleLowerCase('de')&&charge.eveningStartedAt===currentEveningStartedAt)result.push({amount:charge.amountCents/100,reason:charge.reason,onTop:true,individualChargeId:charge.id});}
   return result;
 }
 
@@ -2725,6 +2730,7 @@ async function startNewKegelabend() {
   fuchsjagdState = createFuchsjagdState();
   sichernState = createSichernState();
   sechstageState = createSechstageState();
+  siebenerState=null;hindernisState=null;individualGameLedger=[];individualGameRevision=0;
   blackjackState = createBlackjackState();
   gluecksspiraleState = createGluecksspiraleState();
   torState = createTorState();
@@ -3891,6 +3897,7 @@ applyGroupTheme();
     renderSichernGame();
     renderSechsGame();
     renderTableGames();
+    if(typeof renderIndividualGames==='function')renderIndividualGames();
     renderTorGame();
     renderLotterieSettings();
     renderTiberiusSettings();
@@ -5660,7 +5667,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info']
 };

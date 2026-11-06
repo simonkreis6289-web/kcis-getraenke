@@ -8,10 +8,25 @@
   "gluecksspirale": {
     "title": "🌀 Glücksspirale",
     "body": "<ol>\n   <li><strong>Zweierteams:</strong> Je zwei Kegler bilden eine Mannschaft. Bei ungerader Teilnehmerzahl bleibt ein Einzelteam übrig; niemand muss aussetzen. Teams aus der Sitzreihenfolge bilden oder auslosen; danach können die Partner getauscht werden.</li>\n   <li><strong>In die Vollen:</strong> Jeder Wurf beginnt mit neun Kegeln. Pro Wurfpaar wirft zunächst der erste Partner, danach der zweite. Im Einzelteam übernimmt derselbe Kegler beide Würfe, auch bei Zusatzwürfen.</li>\n   <li><strong>Zusatzwürfe:</strong> Zusammen mindestens <strong>13 Holz</strong> im Wurfpaar geben diesem Team zwei weitere Würfe, wieder je einen pro Partner. Erreichen auch diese mindestens 13 Holz, geht es weiter. Bei weniger als 13 Holz kommt das nächste Team dran.</li>\n   <li><strong>Punkte:</strong> Alle gefallenen Holz werden zum Teamstand addiert. Gosse und „Vorbei“ zählen null. Ein Kranz zählt acht Holz.</li>\n   <li><strong>Ziel und letzte Runde:</strong> Vorgabe sind <strong>50 Holz</strong>; unter Spiele → Einstellungen ist der Zielwert pro Club für neue Spiele änderbar. Erreicht ein Team das Ziel, läuft seine Serie einschließlich möglicher Zusatzwürfe weiter. Anschließend beenden alle übrigen Teams ihre Serie dieser Runde. So waren alle Teams gleich oft dran.</li>\n   <li><strong>Sieger:</strong> Nach dieser Runde gewinnt der höchste Gesamtstand – auch wenn mehrere Teams über dem Ziel liegen. Beispiel: 64 Holz gewinnen vor 57 Holz. Bei Gleichstand gibt es gemeinsame Siegerteams.</li>\n  </ol>\n  <p><strong>Unsere Strafregeln:</strong> Gosse, 9er und Kranz werden wie gewohnt gebucht. Beim bestätigten Abschluss bekommen die Kegler des schlechtesten Teams <strong>1. Verlierer +1</strong>, des zweitschlechtesten <strong>2. Verlierer +1</strong> und des drittschlechtesten <strong>3. Verlierer +1</strong>. Die Wertung erfolgt nach dem Teamstand, jeder Kegler wird einmal belastet; auch im Einzelteam nur einmal. Siegerteams erhalten keine Verliererstrafe. Punktgleiche Teams teilen sich einen Rang.</p>\n  <p>Bis zum Abschluss kann die letzte Aktion mitsamt ihren Strafbuchungen zurückgenommen werden. Ein neues Spiel entfernt keine bereits gebuchten Strafen.</p>\n  <p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/gluecksspirale\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a></p>"
+  },
+  "siebener": {
+    "title": "🎲 7er-Spiel",
+    "body": "<ol><li>Jeder spielt sechs Züge mit jeweils zwei Würfen in die Vollen.</li><li>Normalerweise werden die beiden Wurfzahlen multipliziert. Pro Person darf genau einmal stattdessen die Summe verwendet werden.</li><li>Danach wird das Ergebnis einer noch freien Spalte zugeordnet: 14, 21, 28, 35, 42 oder 49. Jede Spalte wird einmal belegt.</li><li>Der Abstand zum Spaltenziel kostet je Punkt 10 Cent. Nach allen sechs Spalten gewinnt die niedrigste Gesamtstrafe; gleiche Beträge teilen sich den Sieg.</li></ol><p>Kranz zählt acht Holz, Gosse und Vorbei null. Unsere üblichen Sonderwurfstrafen gelten zusätzlich. Die Spaltenbeträge werden beim Abschluss zusätzlich zur Strafobergrenze gebucht; bis dahin kann die letzte Aktion zurückgenommen werden.</p><p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/7er-spiel\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a></p>"
+  },
+  "hindernis": {
+    "title": "🏃 Hindernislauf",
+    "body": "<ol><li>Reihum wird einmal in die Vollen geworfen. Holz wird zum persönlichen Punktestand addiert. Kranz zählt bei uns zwölf, Gosse und Vorbei null.</li><li>Beim Erreichen eines eingeschalteten Hindernispunkts wird die in der Hindernistabelle angezeigte Aktion ausgeführt. Die Tabelle der laufenden Partie ist maßgeblich.</li><li>Versetzungen lösen keine weiteren Hindernisse aus. Punktabzüge enden bei null. „Nächsten Wurf abziehen“ wertet eine Gosse mit neun Minuspunkten.</li><li>Der Doppelwurf ist ein sofortiger Zusatzwurf mit doppelter Punktzahl. Bei „Neustart oder 1 €“ wählt der Spieler in der App die gewünschte Möglichkeit.</li><li>Erreicht jemand das Ziel, endet das Spiel nach der laufenden Runde. Der höchste Punktestand gewinnt; Gleichstände teilen sich den Sieg.</li><li>Die übrigen Spieler zahlen den vereinbarten Grundbetrag abzüglich eines Cents pro Punkt, mindestens null Euro. Hinzu kommen Hindernisgebühren und die üblichen Sonderwurfstrafen.</li></ol><p>Unter Spiele → Einstellungen sind Ziel (Standard 90), Grundbetrag (Standard 1 €) und aktive Hindernispunkte wählbar. Eine kürzere Strecke erhält zufällig weniger Hindernisse. Die angezeigte Verteilung wird beim Start fest übernommen. Alle Spielbeträge werden zusätzlich zur Strafobergrenze gebucht.</p><p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/hindernislauf\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a>. Auswahl, Kurzstrecken-Verteilung und die Erläuterungen zu Kettenreaktionen sind Anpassungen unserer App.</p>"
   }
 };
-  function content(key){return rules[key]?.body||'';}
-  function fillApp(){for(const [key,prefix] of [['sechstage','sechs'],['gluecksspirale','spiral']]){const box=document.getElementById(prefix+'-rules-content');if(box)box.innerHTML=content(key);}}
+  function content(key,config){
+    let body=rules[key]?.body||'';
+    if(key==='hindernis'&&window.KCIndividual){
+      const value=window.KCIndividual.settings(config);
+      body+='<h3>Hindernisse · Ziel '+value.target+' · Grundbetrag '+(value.baseCents/100).toFixed(2).replace('.',',')+' €</h3><table class="rules-obstacle-table"><thead><tr><th>Punkte</th><th>Aktion</th></tr></thead><tbody>'+value.rules.map(r=>'<tr><th>'+r.from+(r.to!==r.from?'–'+r.to:'')+'</th><td>'+window.KCIndividual.ruleLabel(r)+(!r.enabled?' · deaktiviert':'')+'</td></tr>').join('')+'</tbody></table>';
+    }
+    return body;
+  }
+  function fillApp(){for(const [key,prefix] of [['sechstage','sechs'],['gluecksspirale','spiral'],['siebener','siebener'],['hindernis','hindernis']]){const box=document.getElementById(prefix+'-rules-content');if(box)box.innerHTML=content(key);}}
   function renderDashboard(value){
     const overlay=document.getElementById('dashboard-rules-overlay');if(!overlay)return;
     const rule=Object.hasOwn(rules,value?.gameKey)?rules[value.gameKey]:null,visible=!!(value?.open&&rule);
@@ -21,7 +36,7 @@
     const identity=value.gameKey+'|'+String(value.token||'');
     if(overlay.dataset.token!==identity){
       document.getElementById('dashboard-rules-title').textContent=rule.title+' – Spielregeln';
-      document.getElementById('dashboard-rules-content').innerHTML=rule.body;
+      document.getElementById('dashboard-rules-content').innerHTML=content(value.gameKey,value.rulesConfig);
       const scroll=document.getElementById('dashboard-rules-scroll');if(scroll)scroll.scrollTop=0;
       overlay.dataset.token=identity;
     }
@@ -30,30 +45,32 @@
 })();
 let kcRulesSession=null;
 const kcRulesUpdates=new Map();
+function kcRulesPrefix(key){return ({sechstage:'sechs',gluecksspirale:'spiral',siebener:'siebener',hindernis:'hindernis'})[key];}
 function kcRulesId(){return crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2);}
 function kcRulesStatus(session,message){
   if(!session||session.clubName!==ACTIVE_CLUB)return;
-  const prefix=session.gameKey==='sechstage'?'sechs':'spiral',box=document.getElementById(prefix+'-rules-sync-status');if(box)box.textContent=message;
+  const prefix=kcRulesPrefix(session.gameKey),box=document.getElementById(prefix+'-rules-sync-status');if(box)box.textContent=message;
 }
 function kcPublishGameRules(gameKey,open){
-  if(!['sechstage','gluecksspirale'].includes(gameKey))return;
+  if(!['sechstage','gluecksspirale','siebener','hindernis'].includes(gameKey))return;
   let session=kcRulesSession;
   if(open){
     if(!ACTIVE_CLUB)return;
     if(session?.clubName===ACTIVE_CLUB&&session.gameKey===gameKey)return;
     if(session)kcClosePublishedRules();
     session={clubName:ACTIVE_CLUB,clubId:getClubFirestoreId(ACTIVE_CLUB),gameKey,token:'rules_session_'+kcRulesId()};kcRulesSession=session;
-    const other=document.getElementById((gameKey==='sechstage'?'spiral':'sechs')+'-rules-modal');other?.classList.add('hidden');
+    for(const key of ['sechstage','gluecksspirale','siebener','hindernis'])if(key!==gameKey)document.getElementById(kcRulesPrefix(key)+'-rules-modal')?.classList.add('hidden');
   }else{
     if(!session||session.gameKey!==gameKey)return;kcRulesSession=null;
   }
   let update=kcRulesUpdates.get(session.clubId);if(!update){update={pending:null,running:false,timer:null};kcRulesUpdates.set(session.clubId,update);}
-  update.pending={session,request:{action:open?'open':'close',gameKey,token:session.token,opId:'rules_'+kcRulesId()}};
+  const rulesConfig=gameKey==='hindernis'&&window.KCIndividual?window.KCIndividual.settings(typeof hindernisState!=='undefined'&&hindernisState?.id?hindernisState.config:typeof hindernisSettings!=='undefined'?hindernisSettings:null):null;
+  update.pending={session,request:{action:open?'open':'close',gameKey,...(rulesConfig?{rulesConfig}:{}),token:session.token,opId:'rules_'+kcRulesId()}};
   kcRulesStatus(session,open?'Dashboard wird aktualisiert …':'');void kcFlushGameRules(session.clubId);
 }
 function kcClosePublishedRules(){
   const session=kcRulesSession;if(!session)return;
-  document.getElementById((session.gameKey==='sechstage'?'sechs':'spiral')+'-rules-modal')?.classList.add('hidden');
+  document.getElementById(kcRulesPrefix(session.gameKey)+'-rules-modal')?.classList.add('hidden');
   kcPublishGameRules(session.gameKey,false);
 }
 async function kcFlushGameRules(clubId){
