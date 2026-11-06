@@ -45,6 +45,7 @@ async function startApp() {
 function getSerializableState() {
   return {
     cashBookSettings,
+    penaltyStatsSettings,
     currentEveningStartedAt,
     persons,
     seatingOrder,
@@ -130,6 +131,7 @@ function getFirestoreState() {
 
   return {
     cashBookSettings,
+    penaltyStatsSettings,
     ...getTodayMeta(),
     dashboardActiveGame,
     clubTermine,
@@ -199,6 +201,7 @@ function applyLoadedState(state) {
   }
 
   cashBookSettings = state.cashBookSettings || null;
+  if(typeof applyPenaltyStatsSettings==='function')applyPenaltyStatsSettings(state.penaltyStatsSettings);else penaltyStatsSettings=state.penaltyStatsSettings||null;
   gluecksspiraleSettings = state.gluecksspiraleSettings || {target:50};
   dashboardActiveGame = state.dashboardActiveGame || null;
   if(typeof kcApplyCalendarState==='function')kcApplyCalendarState(state,false);
@@ -472,32 +475,14 @@ function applyLoadedState(state) {
 }
 
 function archiveCurrentKegelabendForStats() {
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (!Array.isArray(kegelAbende)) kegelAbende = [];
-
-  const attendees = persons
-    .filter(p => p.present && !p.isGuest)
-    .map(p => p.name);
-
-  if (!attendees.length) return;
-
-  const existing = kegelAbende.find(x => x.date === today);
-
-  if (existing) {
-    existing.attendees = attendees;
-    existing.updatedAt = new Date().toISOString();
-    return;
-  }
-
-  kegelAbende.unshift({
-    id: 'abend_' + today,
-    date: today,
-    club: ACTIVE_CLUB || '',
-    attendees,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
+  const day=KCPenaltyStats.date(currentEveningStartedAt)||KCBirthdays.today();
+  const attendees=persons.filter(p=>!p.isDrinksOnly&&(p.present||p.left)).map(p=>p.name);
+  if(!attendees.length)return;
+  const key=KCPenaltyStats.key(currentEveningStartedAt,day),data=penaltyStatsSource(),session=data.sessions.find(s=>s.key===key);
+  if(!Array.isArray(kegelAbende))kegelAbende=[];
+  const index=kegelAbende.findIndex(e=>KCPenaltyStats.key(e.eveningStartedAt,e.date)===key);
+  const entry={id:'stats_evening_'+encodeURIComponent(key),date:day,eveningStartedAt:currentEveningStartedAt||null,attendees,statsPeople:session?.people||[],club:ACTIVE_CLUB||'',updatedAt:new Date().toISOString()};
+  if(index>=0)kegelAbende[index]={...kegelAbende[index],...entry};else kegelAbende.unshift(entry);
 }
 
 async function loadFromFirestore() {
@@ -5746,7 +5731,7 @@ function showSideTab(mainKey, subKey, el) {
   if (subKey === 'termingruende') kcRenderTerminGruende();
   if (subKey === 'info') kcShowInfo();
   if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();
-  if (mainKey === 'strafen' && subKey === 'strafen-abrechnung' && typeof refreshCashHistory === 'function') refreshCashHistory();
+  if (mainKey === 'strafen' && ['strafen-abrechnung','strafen-statistik'].includes(subKey) && typeof refreshCashHistory === 'function') refreshCashHistory();
     
 // Nach Auswahl wieder einklappen
 document.querySelectorAll('.side-menu-item').forEach(item => {
@@ -6472,167 +6457,6 @@ async function confirmQuickPenalty() {
 
   closeQuickPenaltyModal();
   persistState();
-}
-
-function normalizePenaltyStatsType(type) {
-  const t = String(type || '').toLowerCase();
-
-  if (t.includes('9')) return '9er';
-  if (t.includes('kranz')) return 'kranz';
-  if (t.includes('durch')) return 'durchgeworfen';
-  if (t.includes('gosse') || t.includes('pudel')) return 'gosse';
-
-  return t;
-}
-
-function getPenaltyStatsRange() {
-  const from = document.getElementById('penalty-stats-from')?.value || '';
-  const to = document.getElementById('penalty-stats-to')?.value || '';
-
-  return { from, to };
-}
-
-function isPenaltyStatsEntryInRange(entry, from, to) {
-  const date = entry.eventDate || String(entry.createdAt || '').slice(0, 10);
-
-  if (from && date < from) return false;
-  if (to && date > to) return false;
-
-  return true;
-}
-
-function renderPenaltyStats() {
-  const body = document.getElementById('penalty-stats-body');
-  if (!body) return;
-
-  const { from, to } = getPenaltyStatsRange();
-  const rows = {};
-
-  persons.forEach(p => {
-    rows[p.name] = {
-      name: p.name,
-      anwesend: 0,
-      '9er': 0,
-      kranz: 0,
-      durchgeworfen: 0,
-      gosse: 0
-    };
-  });
-
-  (kegelAbende || [])
-    .filter(abend => isPenaltyStatsEntryInRange({ eventDate: abend.date }, from, to))
-    .forEach(abend => {
-      (abend.attendees || []).forEach(name => {
-        if (!rows[name]) {
-          rows[name] = {
-            name,
-            anwesend: 0,
-            '9er': 0,
-            kranz: 0,
-            durchgeworfen: 0,
-            gosse: 0
-          };
-        }
-
-        rows[name].anwesend++;
-      });
-    });
-
-  (penaltyStatsLog || [])
-    .filter(entry => isPenaltyStatsEntryInRange(entry, from, to))
-    .forEach(entry => {
-      const type = normalizePenaltyStatsType(entry.type);
-      const thrower = entry.thrower;
-
-      if (!rows[thrower]) {
-        rows[thrower] = {
-          name: thrower,
-          anwesend: 0,
-          '9er': 0,
-          kranz: 0,
-          durchgeworfen: 0,
-          gosse: 0
-        };
-      }
-
-      if (rows[thrower][type] !== undefined) {
-        rows[thrower][type]++;
-      }
-    });
-
-  const sortedRows = Object.values(rows)
-    .sort((a, b) => {
-      if ((b.anwesend || 0) !== (a.anwesend || 0)) {
-        return (b.anwesend || 0) - (a.anwesend || 0);
-      }
-
-      const totalA = a['9er'] + a.kranz + a.durchgeworfen + a.gosse;
-      const totalB = b['9er'] + b.kranz + b.durchgeworfen + b.gosse;
-
-      if (totalA !== totalB) return totalB - totalA;
-      return a.name.localeCompare(b.name, 'de');
-    });
-
-  if (!sortedRows.length) {
-    body.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">
-          Keine Statistikdaten vorhanden
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  body.innerHTML = sortedRows.map(row => `
-    <tr>
-      <td class="sticky-col">${row.name}</td>
-      <td>${row.anwesend || 0}</td>
-      <td>${row['9er']}</td>
-      <td>${row.kranz}</td>
-      <td>${row.durchgeworfen}</td>
-      <td>${row.gosse}</td>
-    </tr>
-  `).join('');
-}
-
-function setPenaltyStatsRangeToday() {
-  const today = new Date().toISOString().slice(0, 10);
-
-  document.getElementById('penalty-stats-from').value = today;
-  document.getElementById('penalty-stats-to').value = today;
-
-  renderPenaltyStats();
-}
-
-function setPenaltyStatsRangeMonth() {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const today = now.toISOString().slice(0, 10);
-
-  document.getElementById('penalty-stats-from').value = first;
-  document.getElementById('penalty-stats-to').value = today;
-
-  renderPenaltyStats();
-}
-
-function setPenaltyStatsRangeAll() {
-  document.getElementById('penalty-stats-from').value = '';
-  document.getElementById('penalty-stats-to').value = '';
-
-  renderPenaltyStats();
-}
-
-function resetPenaltyStatsCounter() {
-  if (!confirm('Statistik-Zähler wirklich neu starten? Anwesenheiten und Straf-Statistik werden zurückgesetzt.')) return;
-
-  penaltyStatsLog = [];
-  kegelAbende = [];
-
-  renderPenaltyStats();
-  persistState();
-
-  showToast('↻ Strafen-Statistik wurde zurückgesetzt', 'success');
 }
 
 // Fast-Button: verlorenes Teamspiel (nur Geldstrafe, keine Getränkebuchung).

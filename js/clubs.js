@@ -172,6 +172,8 @@ function createEmptyClubData() {
     gluecksspiraleSettings: {target:50},
     currentEveningStartedAt: null,
     penaltyStatsLog: [],
+    penaltyStatsSettings: null,
+    kegelAbende: [],
     persons: [],
     prices: {
       kl_bier: 0,
@@ -258,6 +260,8 @@ function syncCurrentClubToStore() {
     gluecksspiraleSettings: JSON.parse(JSON.stringify(gluecksspiraleSettings)),
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
+    penaltyStatsSettings: penaltyStatsSettings?JSON.parse(JSON.stringify(penaltyStatsSettings)):null,
+    kegelAbende: JSON.parse(JSON.stringify(kegelAbende)),
     clubTerminGruende: JSON.parse(JSON.stringify(clubTerminGruende)),
     cashBookSettings: cashBookSettings ? JSON.parse(JSON.stringify(cashBookSettings)) : null,
     avatar: existingClub.avatar || '',
@@ -463,6 +467,8 @@ async function selectClub(clubName) {
   gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
   currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
   penaltyStatsLog=JSON.parse(JSON.stringify(localClub.penaltyStatsLog||[]));
+  penaltyStatsSettings=localClub.penaltyStatsSettings?JSON.parse(JSON.stringify(localClub.penaltyStatsSettings)):null;
+  kegelAbende=JSON.parse(JSON.stringify(localClub.kegelAbende||[]));
   clubTerminGruende=JSON.parse(JSON.stringify(localClub.clubTerminGruende||[{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour',name:'Kegeltour',emoji:'🚌'},{id:'geburtstag',name:'Geburtstag',emoji:'🎂'}]));
   cashBookSettings = localClub.cashBookSettings ? JSON.parse(JSON.stringify(localClub.cashBookSettings)) : null;
   prices = JSON.parse(JSON.stringify(localClub.prices || {}));
@@ -556,6 +562,7 @@ if (
         if (!state) return;
         // Calendar revisions are independent of the game state's client clock.
         if(ACTIVE_CLUB===clubName&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(state);
+        if(ACTIVE_CLUB===clubName&&typeof applyPenaltyStatsSettings==='function')applyPenaltyStatsSettings(state.penaltyStatsSettings,true);
         if(ACTIVE_CLUB===clubName&&typeof applySechsServerState==='function')applySechsServerState(state.sechstageState);
         if(ACTIVE_CLUB===clubName&&typeof applyTableServerStates==='function')applyTableServerStates(state);
 

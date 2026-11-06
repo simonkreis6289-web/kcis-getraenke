@@ -1,0 +1,14 @@
+.kc-series-settings{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:12px 0}
+.kc-series-settings label,.stats-cycle-controls label,.stats-range-controls label{display:grid;gap:6px;font-weight:700;font-size:14px}
+.kc-series-settings input,.kc-series-settings select,.stats-cycle-controls input{min-height:44px;padding:9px 10px;border:1px solid var(--border,#aab5c9);border-radius:8px;background:var(--surface,#fff);color:inherit;box-sizing:border-box}
+#kc-series-weeks{width:110px}
+.kc-series-settings button,.stats-cycle-controls button,.stats-range-controls button{min-height:44px}
+.stats-cycle-panel{padding:16px;border:1px solid var(--border,#aab5c9);border-radius:12px;margin:12px 0;background:var(--surface,#fff)}
+.stats-cycle-panel h3{font-family:inherit;font-size:18px;margin:0 0 8px}
+.stats-cycle-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.stats-range-controls{display:flex!important;flex-wrap:wrap;gap:10px!important;align-items:end!important;padding:14px!important}
+.stats-range-controls input{min-height:44px;min-width:150px;max-width:180px}
+.stats-help{font-size:13px;color:var(--muted,#536178);line-height:1.5;margin:9px 0}
+#tab-strafen-statistik tbody th{text-align:left;background:var(--surface,#fff)}
+#tab-strafen-statistik .drinks-table th,#tab-strafen-statistik .drinks-table td{font-size:14px;padding:10px}
+@media(max-width:650px){.kc-series-settings{display:grid;grid-template-columns:1fr 1fr}.kc-series-settings button{grid-column:1/-1}.stats-cycle-controls{align-items:stretch}.stats-cycle-controls label{width:100%}}

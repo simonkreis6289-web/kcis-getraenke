@@ -220,6 +220,7 @@ window.firestoreApi = {
 
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
+      if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
       const gameFields=['sechstageState','blackjackState','gluecksspiraleState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
       const requestedEvening=Date.parse(payload.currentEveningStartedAt||''),savedEvening=Date.parse(savedEveningId);
@@ -262,6 +263,27 @@ window.firestoreApi = {
       const repair=!current.clubCalendarData||JSON.stringify(current.clubTermine)!==JSON.stringify(next.clubTermine)||JSON.stringify(current.clubKegelSerie)!==JSON.stringify(next.clubKegelSerie)||current.calendarRevision!==revision;
       if(changed||repair)transaction.set(ref,{...calendar,clubCalendarData:calendar,updatedAt:serverTimestamp()},{merge:true});
       return calendar;
+    });
+  },
+
+  async updatePenaltyStatsSettings(clubId,request={}) {
+    if(!clubId||!window.KCPenaltyStats)throw new Error('Statistikzugriff nicht verfügbar');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},previous=current.penaltyStatsSettings;
+      if(typeof request.id!=='string'||!/^stats_[a-zA-Z0-9_-]{1,100}$/.test(request.id))throw new Error('Ungültige Statistikaktion');
+      if(previous?.lastRequestId===request.id)return previous;
+      if((Number(previous?.revision)||0)!==request.expectedRevision)throw new Error('Statistikstart wurde inzwischen geändert. Bitte die aktuellen Daten laden.');
+      if(!['date','now'].includes(request.mode)||request.mode==='date'&&!/^\d{4}-\d{2}-\d{2}$/.test(request.startDate||''))throw new Error('Gültigen Starttermin wählen');
+      const now=new Date().toISOString(),people=[];
+      if(request.mode==='now')for(const person of current.persons||[]){
+        const live=await transaction.get(doc(db,'clubs',clubId,'livePersons',this.getLivePersonId(person.name)));
+        people.push(live.exists()?{...person,...live.data(),name:person.name}:person);
+      }
+      const data=window.KCPenaltyStats.build({people,catalog:current.STRAFEN||[],evenings:current.kegelAbende||[],logs:current.penaltyStatsLog||[],eveningStartedAt:current.currentEveningStartedAt||''});
+      const settings={schema:1,mode:request.mode,startDate:request.mode==='date'?request.startDate:window.KCPenaltyStats.date(now),startAt:request.mode==='now'?now:null,baseline:request.mode==='now'?window.KCPenaltyStats.baseline(data):null,revision:(Number(previous?.revision)||0)+1,lastRequestId:request.id};
+      if(request.mode==='date'&&window.KCPenaltyStats.date(request.startDate)!==request.startDate)throw new Error('Gültigen Starttermin wählen');
+      transaction.set(ref,{penaltyStatsSettings:settings,updatedAt:serverTimestamp()},{merge:true});return settings;
     });
   },
 

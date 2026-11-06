@@ -50,6 +50,7 @@ async function refreshCashHistory() {
     if(generation!==cashHistoryGeneration)return;
     console.error('Kassenhistorie konnte nicht geladen werden:', error);
     status.textContent = '❌ Kassenhistorie konnte nicht geladen werden. Verbindung oder Firestore-Berechtigungen prüfen.';
+    if(typeof renderPenaltyStats==='function')renderPenaltyStats();
   } finally {
     if(generation===cashHistoryGeneration)cashHistoryBusy = false;
   }
@@ -57,6 +58,7 @@ async function refreshCashHistory() {
 
 function renderCashHistory() {
   if(typeof renderCashBook==='function')renderCashBook();
+  if(typeof renderPenaltyStats==='function')renderPenaltyStats();
   const container = document.getElementById('cash-history-list');
   if (!container) return;
   const from = document.getElementById('cash-history-from')?.value || '';
