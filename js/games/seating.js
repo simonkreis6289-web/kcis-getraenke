@@ -30,7 +30,7 @@ function toggleSoloOrderOverride(id) {
   persistState();renderAll();
 }
 function renderSoloOrderSettings(id) {
-  if(typeof gameSetupMarkup==='function'){const box=document.getElementById(id+'-order-editor');if(box){box.classList.remove('hidden');box.innerHTML=gameSetupMarkup(id);}return;}
+  if(typeof gameSetupMarkup==='function'){const box=document.getElementById(id+'-order-editor');if(box){const hidden=gameSetupLocked(id);box.hidden=hidden;box.classList.toggle('hidden',hidden);box.innerHTML=hidden?'':gameSetupMarkup(id);}return;}
   const state=getSoloState(id),check=document.getElementById(id+'-custom-order'),editor=document.getElementById(id+'-order-editor');
   if(!state||!editor)return;
   if(check)check.checked=!!state.customOrder;
