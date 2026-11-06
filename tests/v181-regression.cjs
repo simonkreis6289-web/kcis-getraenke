@@ -168,7 +168,7 @@ test('the active single-player UI shows four six-day throws and spiral controls 
 test('both rule popups describe solo quotas and all three losing ranks',()=>{
  const html=read('getraenke-abrechnung.html');
  for(const id of ['spiral-rules-modal','sechs-rules-modal']){
-  const start=html.indexOf('id="'+id+'"'),next=html.indexOf('<div class="modal-overlay',start+10),part=html.slice(start,next);
+  const start=html.indexOf('id="'+id+'"'),next=html.indexOf('<div class="modal-overlay',start+10),part=html.slice(start,next)+read('js/game-rules.js');
   for(const text of ['Einzelteam','1. Verlierer +1','2. Verlierer +1','3. Verlierer +1'])assert(part.includes(text),id+': '+text);
  }
 });

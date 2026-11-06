@@ -212,8 +212,8 @@ function renderTableGame(key){
   const detailsOpen=!!box.querySelector?.('.tg-spiral-rounds')?.open;
   box.innerHTML=(spiral?alerts+renderTableGameBoard(s,{controls:controls+actions,detailsOpen}):alerts+renderTableGameBoard(s,{controls:controls+actions,editCards:!legacy,blocked}))+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="tableReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'')+(s.history.length?'<details class="tg-history"><summary>Letzte Aktionen</summary>'+s.history.slice(-16).reverse().map(e=>'<div>'+tableEscape(e.name)+' · '+(e.action==='stand'?'Stopp':e.action==='card'?tableEscape((e.corrected?'Karte geändert: ':'Karte aufgedeckt: ')+KCTableGames.cardLabel(e.value,s.cardSettings)):e.kind==='gosse'?'Gosse':e.kind==='miss'?'Vorbei':e.kind==='kranz'?'Kranz (8 Holz)':e.pins+' Holz')+'</div>').join('')+'</details>':'');
 }
-function openSpiralRules(){tableRulesFocus=document.activeElement;document.getElementById('spiral-rules-modal').classList.remove('hidden');document.getElementById('spiral-rules-close').focus();}
-function closeSpiralRules(){document.getElementById('spiral-rules-modal')?.classList.add('hidden');tableRulesFocus?.focus();}
+function openSpiralRules(){tableRulesFocus=document.activeElement;document.getElementById('spiral-rules-modal').classList.remove('hidden');document.getElementById('spiral-rules-close').focus();if(typeof kcPublishGameRules==='function')kcPublishGameRules('gluecksspirale',true);}
+function closeSpiralRules(){if(typeof kcPublishGameRules==='function')kcPublishGameRules('gluecksspirale',false);document.getElementById('spiral-rules-modal')?.classList.add('hidden');tableRulesFocus?.focus();}
 document.addEventListener('keydown',event=>{
   const modal=document.getElementById('spiral-rules-modal');if(modal&&!modal.classList.contains('hidden')){
     if(event.key==='Escape'){event.preventDefault();closeSpiralRules();}
