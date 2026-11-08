@@ -2575,6 +2575,12 @@ function renderMemberManagement() {
         const birthday=document.createElement('small');
         birthday.textContent=window.KCBirthdays?.parse(person.birthDate)?'🎂 '+person.birthDate.split('-').reverse().join('.'):'Persönliche Daten bearbeiten';
         info.appendChild(birthday);profile.append(avatar,info);card.append(profile,actions);
+        if(window.KCBirthdays?.parse(person.memberSince)){
+          const since=document.createElement('small');since.textContent='🗓️ Mitglied seit '+person.memberSince.split('-').reverse().join('.');info.appendChild(since);
+        }
+        if(typeof getMemberRole==='function'){
+          const role=getMemberRole(person),badge=document.createElement('small');badge.textContent=role.label;badge.title=role.purpose;info.appendChild(badge);
+        }
       }else card.append(avatar,info,actions);
       grid.appendChild(card);
     }
@@ -2635,4 +2641,3 @@ async function setMemberInactive(name,inactive) {
   showToast(inactive?'Mitglied inaktiv':'Mitglied aktiv','success');
  }catch(e){person.inactive=old;renderAll();renderMemberManagement();showToast('Status konnte nicht gespeichert werden','error');console.error(e);}
 }
-
