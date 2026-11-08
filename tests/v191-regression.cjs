@@ -1,0 +1,51 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{parseHTML}=require('linkedom');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),now=Date.parse('2026-11-08T19:00:00Z'),evening='2026-11-08T18:00:00Z';
+function soundFixture({supported=true,suspended=false,storageFailure=false}={}){
+ const {document,window:dom}=parseHTML(read('dashboard.html')),oscillators=[],gains=[],contexts=[],storage=new Map(),gainParam=()=>({calls:[],value:0,setValueAtTime(...a){this.calls.push(['set',...a]);},exponentialRampToValueAtTime(...a){this.calls.push(['ramp',...a]);},setTargetAtTime(...a){this.calls.push(['target',...a]);},cancelScheduledValues(...a){this.calls.push(['cancel',...a]);}});
+ class AudioContext{constructor(){this.state=suspended?'suspended':'running';this.currentTime=0;this.destination={};contexts.push(this);}async resume(){this.state='running';this.onstatechange?.();}createGain(){const node={gain:gainParam(),connect(){},disconnect(){}};gains.push(node);return node;}createOscillator(){const node={frequency:gainParam(),connect(){},disconnect(){this.disconnected=true;},start(at){this.started=at;},stop(at){this.stopped=at??0;}};oscillators.push(node);return node;}}
+ const c={document,window:{...(supported?{AudioContext}:{}),localStorage:{getItem:k=>{if(storageFailure)throw Error('Blocked');return storage.get(k)??null;},setItem:(k,v)=>{if(storageFailure)throw Error('Blocked');storage.set(k,v);}}}};vm.createContext(c);vm.runInContext(read('js/dashboard-sounds.js'),c);
+ return {c,document,dom,audio:c.window.KCDashboardSounds,oscillators,gains,contexts,storage};
+}
+const event=(id,type='9er',at=now)=>({id,type,thrower:'A',createdAt:new Date(at).toISOString(),eveningStartedAt:evening});
+const feed=(f,logs,at=now,club='club',date=evening)=>f.audio.feed({currentEveningStartedAt:date,penaltyStatsLog:logs},club,at);
+test('audio is dashboard-only, off by default and creates no AudioContext before a deliberate click',async()=>{
+ const f=soundFixture({suspended:true});assert.equal(f.contexts.length,0);assert.equal(f.document.getElementById('dashboard-sound-toggle').getAttribute('aria-pressed'),'false');feed(f,[]);feed(f,[event('one')]);assert.equal(f.contexts.length,0);await f.audio.toggle();assert.equal(f.contexts.length,1);assert.equal(f.contexts[0].state,'running');assert.equal(f.document.getElementById('dashboard-sound-toggle').getAttribute('aria-pressed'),'true');assert(f.oscillators.length>0);assert(!read('getraenke-abrechnung.html').includes('dashboard-sounds.js'));
+});
+test('initial data and ordinary snapshot replays are silent; fresh nine and gutter entries use distinct sounds once',async()=>{
+ const f=soundFixture();await f.audio.toggle();f.oscillators.length=0;feed(f,[event('old')]);assert.equal(f.oscillators.length,0);feed(f,[event('old'),event('new')]);assert.equal(f.oscillators.length,4);feed(f,[event('new'),event('old')]);assert.equal(f.oscillators.length,4);feed(f,[event('new'),event('gutter','gosse')]);assert.equal(f.oscillators.length,6);const gutter=f.oscillators.slice(-2);assert(gutter.every(n=>n.type==='triangle'));assert(gutter[0].frequency.calls.some(c=>c[0]==='ramp'&&c[1]===70));
+});
+test('undo, duplicate IDs, kranz, stale/offline entries and other evenings do not replay throw sounds',async()=>{
+ const f=soundFixture();await f.audio.toggle();feed(f,[]);f.oscillators.length=0;feed(f,[event('nine')]);assert.equal(f.oscillators.length,4);feed(f,[]);feed(f,[event('nine'),event('kranz','kranz'),event('old','gosse',now-60000),{...event('other'),eveningStartedAt:'2026-11-07'}]);assert.equal(f.oscillators.length,4);
+});
+test('muting immediately stops scheduled sounds and suppressed events are never queued for later',async()=>{
+ const f=soundFixture();await f.audio.toggle();feed(f,[]);feed(f,[event('nine')]);const active=f.oscillators.slice();await f.audio.toggle();assert(active.every(n=>n.disconnected));feed(f,[event('nine'),event('muted','gosse')]);const count=f.oscillators.length;await f.audio.toggle();assert.equal(f.oscillators.length,count+1);feed(f,[event('nine'),event('muted','gosse')]);assert.equal(f.oscillators.length,count+1);
+});
+test('changing club/evening reseeds event history and cancels old notes without touching event data',async()=>{
+ const f=soundFixture();await f.audio.toggle();feed(f,[]);const events=[event('one')],before=JSON.stringify(events);feed(f,events);const count=f.oscillators.length;feed(f,events,now,'other');assert.equal(f.oscillators.length,count);assert.equal(JSON.stringify(events),before);feed(f,[{...event('two'),eveningStartedAt:'2026-11-09'}],now,'other','2026-11-09');assert.equal(f.oscillators.length,count);
+});
+test('last five countdown seconds tick once each, then the end chord sounds once',async()=>{
+ const f=soundFixture();await f.audio.toggle();f.oscillators.length=0;f.audio.timer(false,false,0,now);for(let n=5;n>=0;n--){f.audio.timer(true,true,n,now+(5-n)*1000);f.audio.timer(true,true,n,now+(5-n)*1000+250);}assert.equal(f.oscillators.length,11);for(let i=0;i<4;i++)f.audio.timer(true,true,0,now+6000+i*250);assert.equal(f.oscillators.length,11);
+});
+test('loading an already-running/expired timer never plays old countdown signals',async()=>{
+ for(const seconds of [3,0]){const f=soundFixture();await f.audio.toggle();f.oscillators.length=0;f.audio.timer(true,true,seconds,now);assert.equal(f.oscillators.length,0);if(seconds===3){f.audio.timer(true,true,2,now+1000);assert.equal(f.oscillators.length,1);}}
+});
+test('pause/resume retains per-second deduplication, reset rearms, and an old expiry after a gap stays silent',async()=>{
+ const f=soundFixture();await f.audio.toggle();f.oscillators.length=0;f.audio.timer(false,false,0,now);f.audio.timer(true,true,5,now);f.audio.timer(true,false,5,now+100);f.audio.timer(true,true,5,now+1000);assert.equal(f.oscillators.length,1);f.audio.timer(true,true,4,now+2000);assert.equal(f.oscillators.length,2);f.audio.timer(true,true,0,now+20000);assert.equal(f.oscillators.length,2);f.audio.timer(true,false,60,now+21000);f.audio.timer(true,true,5,now+22000);assert.equal(f.oscillators.length,3);
+});
+test('volume persists locally and mute/reenable cancels previous gain automation',async()=>{
+ const f=soundFixture({suspended:true});await f.audio.toggle();f.audio.setVolume(20);assert.equal(f.storage.get('kc_dashboard_volume'),'20');assert(Math.abs(f.gains[0].gain.calls.at(-1)[1]-.09)<1e-9);await f.audio.toggle();assert.equal(f.gains[0].gain.calls.at(-1)[1],0);f.audio.setVolume(60);await f.audio.toggle();assert(Math.abs(f.gains[0].gain.calls.at(-1)[1]-.27)<1e-9);assert.equal(f.gains[0].gain.calls.at(-2)[0],'cancel');f.audio.setVolume(0);const count=f.oscillators.length;f.audio.test('nine');assert.equal(f.oscillators.length,count);
+});
+test('missing audio support, blocked storage and context suspension fail safely',async()=>{
+ const no=soundFixture({supported:false});await no.audio.toggle();assert(no.document.getElementById('dashboard-sound-toggle').disabled);assert(!no.audio.test('nine'));const f=soundFixture({storageFailure:true});await f.audio.toggle();f.audio.setVolume(30);f.contexts[0].state='suspended';f.contexts[0].onstatechange();assert.equal(f.document.getElementById('dashboard-sound-toggle').getAttribute('aria-pressed'),'false');assert(f.document.getElementById('dashboard-sound-status').textContent.includes('erneut'));await f.audio.toggle();assert.equal(f.document.getElementById('dashboard-sound-toggle').getAttribute('aria-pressed'),'true');
+});
+test('hidden dashboards suppress sounds and stop existing voices',async()=>{
+ const f=soundFixture();await f.audio.toggle();Object.defineProperty(f.document,'hidden',{value:true,writable:true});f.document.dispatchEvent(new f.dom.Event('visibilitychange'));const count=f.oscillators.length;assert(f.oscillators.every(n=>n.disconnected));feed(f,[]);feed(f,[event('hidden')]);assert.equal(f.oscillators.length,count);f.document.hidden=false;feed(f,[event('hidden')]);assert.equal(f.oscillators.length,count);
+});
+test('real dashboard subscriptions and countdown rendering feed audio without changing the app or writing club state',async()=>{
+ const f=soundFixture(),c=f.c;let notify;const initial={persons:[],STRAFEN:[],penaltyStatsLog:[],currentEveningStartedAt:evening};
+ Object.assign(c,{localStorage:{getItem:()=>null,setItem(){}},location:{search:''},URLSearchParams,requestAnimationFrame(){},setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){},navigator:{onLine:true},console,crypto:require('node:crypto').webcrypto});c.window.addEventListener=()=>{};
+ c.window.firestoreApi={subscribeToClubState:(_,fn)=>{notify=fn;fn(initial);return ()=>{};},subscribeToSeatingLive:()=>()=>{},subscribeToLiveGameState:()=>()=>{},subscribeToLivePersons:()=>()=>{}};
+ vm.runInContext(read('js/game-rules.js'),c);c.KCGameRules=c.window.KCGameRules;vm.runInContext(read('js/birthdays.js'),c);c.KCBirthdays=c.window.KCBirthdays;const html=read('dashboard.html'),a=html.indexOf('<script type="module">')+22,b=html.indexOf('</script>',a),script=html.slice(a,b).replace("import './js/firebase.js';",'').replace('void bootstrap();','window.dashboardTest={connect,unsubscribe,paint};');vm.runInContext(script,c);c.window.dashboardTest.connect('club','Club');await f.audio.toggle();f.oscillators.length=0;
+ const log=event('live','9er',Date.now()),data={...initial,penaltyStatsLog:[log]};notify(data);assert.equal(f.oscillators.length,4);notify(data);assert.equal(f.oscillators.length,4);
+ notify({...data,teamStopwatchActive:true,teamStopwatchRunning:true,teamCountdownRemainingBefore:60,teamCountdownDuration:60,teamStopwatchStart:new Date(Date.now()-59900).toISOString()});assert.equal(f.oscillators.length,5);notify({...data,teamStopwatchActive:true,teamStopwatchRunning:false,teamCountdownRemainingBefore:0,teamCountdownDuration:60,teamStopwatchStart:null});assert.equal(f.document.getElementById('tv-countdown-time').textContent,'00:00');assert.equal(f.oscillators.length,11);c.window.dashboardTest.unsubscribe();assert(f.oscillators.every(n=>n.disconnected));
+});
