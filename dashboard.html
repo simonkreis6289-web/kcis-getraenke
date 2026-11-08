@@ -13,7 +13,7 @@
 header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px clamp(14px,2.4vw,32px);gap:15px;border-radius:10px;border-bottom:4px solid var(--accent)}
 .club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:11px;color:#ededed;margin-top:3px;line-height:1.35}.header-right{text-align:right;display:flex;align-items:center;gap:16px}.header-time{text-align:right}.fullscreen-btn{border:1px solid #fff;background:#f5a623;color:#111;border-radius:7px;padding:10px 13px;font:700 13px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap}.fullscreen-btn:hover{background:#ffd075}.fullscreen-btn:focus-visible{outline:3px solid white;outline-offset:3px}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
 .side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{flex:1;padding:5px 10px;min-height:0;overflow:hidden;display:grid;align-content:stretch}.listrow{display:flex;align-items:center;justify-content:space-between;min-height:0;gap:5px;padding:1px 0;border-bottom:1px solid #dedede;font-size:var(--list-font,clamp(11px,1.05vw,16px));line-height:1.1}.listrow:last-child{border:0}.listrow.paid-guest{background:#edf3f0;color:#586b61;border-radius:5px;padding:3px 5px}.drinks-paid-total{padding:7px 12px;display:flex;justify-content:space-between;background:#e8f3eb;color:#285a3a;font-size:12px;border-top:1px solid #bad5c2}.drinks-paid-total strong{font-variant-numeric:tabular-nums}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
-.stage{position:relative;display:flex;flex-direction:column;background:#fff}.stage-title{background:var(--panel2);padding:13px 18px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:2px solid var(--line);border-left:6px solid var(--accent)}.stage-title h1{font-size:clamp(16px,1.7vw,24px);margin:0}.stage-title .tag{font-size:12px;color:var(--muted)}.stage-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:20px}.placeholder{text-align:center;color:var(--muted);max-width:600px}.placeholder .symbol{font-size:clamp(55px,8vw,115px)}.placeholder h3{font-size:clamp(23px,3vw,42px);color:var(--text);margin:5px 0}.placeholder p{line-height:1.65}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0;background:white}.game-data{width:min(100%,850px);text-align:center}.game-data h3{font-size:clamp(26px,4vw,54px);margin:12px 0}.game-data .desc{font-size:clamp(15px,1.7vw,24px);white-space:pre-wrap;line-height:1.6;color:var(--muted)}.footnote{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);opacity:.78}
+.stage{position:relative;display:flex;flex-direction:column;background:#fff}.stage-title{background:var(--panel2);padding:13px 18px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:2px solid var(--line);border-left:6px solid var(--accent)}.stage-title h1{font-size:clamp(16px,1.7vw,24px);margin:0}.stage-title .tag{font-size:12px;color:var(--muted)}.stage-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:20px}.placeholder{text-align:center;color:var(--muted);max-width:600px}.placeholder .symbol{font-size:clamp(55px,8vw,115px)}.placeholder h3{font-size:clamp(23px,3vw,42px);color:var(--text);margin:5px 0}.placeholder p{line-height:1.65}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0;background:white}.game-data{width:min(100%,850px);text-align:center}.game-data h3{font-size:clamp(26px,4vw,54px);margin:12px 0}.game-data .desc{font-size:clamp(15px,1.7vw,24px);white-space:pre-wrap;line-height:1.6;color:var(--muted)}
 @media(max-width:850px){.dashboard{min-height:980px;height:auto;grid-template-columns:1fr 1fr;grid-template-rows:80px minmax(430px,1fr) minmax(340px,auto)}.stage{grid-column:1/-1;grid-row:2}.side{grid-row:3;grid-template-rows:1fr 1fr;min-height:340px}.side.left{grid-column:1}.side.right{grid-column:2}}
 @media(max-width:520px){.dashboard{grid-template-columns:1fr;grid-template-rows:78px 450px auto auto}.stage{grid-row:2}.side.left{grid-row:3;grid-column:1}.side.right{grid-row:4;grid-column:1}.side{min-height:380px}.club{font-size:22px}.clock{font-size:23px}header{padding:10px}.sub{font-size:10px}}
 
@@ -122,45 +122,51 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style></head>
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261108-v190">
+</head>
 <body>
 <section id="dashboard-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="dashboard-rules-title" hidden>
  <div class="dashboard-rules-sheet"><div class="dashboard-rules-heading"><h2 id="dashboard-rules-title">Spielregeln</h2><p>Die Anzeige wird in der App geschlossen.</p></div><div id="dashboard-rules-scroll" tabindex="0"><div id="dashboard-rules-content"></div></div></div>
 </section>
 <main class="dashboard">
-<header><div><div class="club">🎳 KC Invaliden Schwadron</div><div class="sub" id="version">Dashboard V189 · Update 08.11.2026, 10:20 Uhr</div><div class="kc-next-events"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span><span id="kc-next-birthdays"></span></div><div class="sub" id="club-name">Club wird gesucht …</div></div><div class="header-right"><div class="header-time"><div class="clock" id="clock">--:--:--</div><div class="state"><span id="indicator" class="dot"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span><div id="sync-time" style="font-size:10px;color:#ddd;margin-top:2px">Noch keine Daten empfangen</div></div></div><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren">⛶ Vollbild</button></div><div id="tv-countdown" aria-live="off"><div class="timer-label">⏳ Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></header>
+<header class="dashboard-header" aria-label="Dashboard-Kopfzeile">
+ <div class="header-identity"><div class="club" id="dashboard-club-title">🎳 KC Invaliden Schwadron</div><div class="header-status"><span id="indicator" class="dot" aria-hidden="true"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span></div></div>
+ <div class="kc-next-events" aria-label="Nächste Termine"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span><span id="kc-next-birthdays"></span></div>
+ <div class="header-tools"><div class="clock" id="clock" aria-label="Aktuelle Uhrzeit">--:--:--</div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="version">Dashboard V190 · Update 08.11.2026, 10:29 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div></div></details><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></div>
+ <div id="tv-countdown" aria-live="off"><div class="timer-label">Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div>
+</header>
 <div id="tv-announcement" role="status" aria-live="polite"></div>
 <section class="side left"><article class="panel"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div><div class="drinks-paid-total"><span>✓ Bereits bezahlt</span><strong id="drinks-paid-total">0,00 €</strong></div></article><article class="panel"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
-<section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="siebener">🎲 7er-Spiel</option><option value="hindernis">🏃 Hindernislauf</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div><div class="footnote" id="updated"></div></section>
+<section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="siebener">🎲 7er-Spiel</option><option value="hindernis">🏃 Hindernislauf</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261108-v189">
-<link rel="stylesheet" href="css/table-games.css?v=20261108-v189">
-<link rel="stylesheet" href="css/individual-games.css?v=20261108-v189">
-<link rel="stylesheet" href="css/game-rules.css?v=20261108-v189">
-<script src="js/games/individual-core.js?v=20261108-v189"></script><script src="js/games/individual-view.js?v=20261108-v189"></script>
-<script src="js/game-rules.js?v=20261108-v189"></script>
-<script src="js/birthdays.js?v=20261108-v189"></script>
-<script src="js/games/sechstage-core.js?v=20261108-v189"></script>
-<script src="js/games/table-games-core.js?v=20261108-v189"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261108-v190">
+<link rel="stylesheet" href="css/table-games.css?v=20261108-v190">
+<link rel="stylesheet" href="css/individual-games.css?v=20261108-v190">
+<link rel="stylesheet" href="css/game-rules.css?v=20261108-v190">
+<script src="js/games/individual-core.js?v=20261108-v190"></script><script src="js/games/individual-view.js?v=20261108-v190"></script>
+<script src="js/game-rules.js?v=20261108-v190"></script>
+<script src="js/birthdays.js?v=20261108-v190"></script>
+<script src="js/games/sechstage-core.js?v=20261108-v190"></script>
+<script src="js/games/table-games-core.js?v=20261108-v190"></script>
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V189";
-const DASH_RELEASE="08.11.2026, 10:20 Uhr";
+const DASH_VERSION="V190";
+const DASH_RELEASE="08.11.2026, 10:29 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
 const qs=new URLSearchParams(location.search);
 const numeric=v=>Number(v)||0;
 const button=$('fullscreen-btn');
-function fullLabel(){button.textContent=document.fullscreenElement?'⤢ Vollbild verlassen':'⛶ Vollbild'}
+function fullLabel(){const label=document.fullscreenElement?'Vollbild verlassen':'Vollbild aktivieren';button.textContent=document.fullscreenElement?'Zurück':'Vollbild';button.setAttribute('aria-label',label);button.title=label;}
 button.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){console.error(e)}};
 document.addEventListener('fullscreenchange',fullLabel); fullLabel();
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString('de-DE'),1000);$('clock').textContent=new Date().toLocaleTimeString('de-DE');
 function status(msg,ok=false){$('connection').textContent=msg;$('indicator').className='dot'+(ok?' ok':'');$('connection').title=msg}
 let lastReceived=0, firstSnapshot=false, connectStarted=0, fallbackBusy=false, fallbackTimer=null, connectionEpoch=0;
-function received(kind){lastReceived=Date.now();$('sync-time').textContent='Letzte Daten: '+new Date(lastReceived).toLocaleString('de-DE');if(kind==='live')status('● Live verbunden',true);else if(!firstSnapshot)status('Daten abrufbar · Live-Verbindung ausstehend',false)}
+function received(kind){lastReceived=Date.now();$('sync-time').textContent='Letzte Daten: '+new Date(lastReceived).toLocaleString('de-DE');if(kind==='live')status('Live verbunden',true);else if(!firstSnapshot)status('Daten abrufbar · Live-Verbindung ausstehend',false)}
 function errorText(e){const code=e?.code||'';const msg=e?.message||String(e||'Unbekannter Fehler');return code?code+' · '+msg:msg}
 function fail(context,e){const msg=errorText(e);status(context+': '+msg);console.error(context,e)}
 window.addEventListener('offline',()=>status('Keine Internetverbindung'));
@@ -340,7 +346,7 @@ function paint(){KCGameRules.renderDashboard(state?.dashboardRules);if(!state)re
  // werden nur nach ihrer expliziten Zeit eingeschlossen (niemals pauschal
  // anhand des heutigen Datums, da mehrere Abende am selben Tag möglich sind).
  renderDashboardSeating(people);
- $('updated').textContent=`${people.length} Personen · ${drinks.length} Getränkearten`;paintGame();
+ paintGame();
 }
 function gameState(k){
  const saved=state?.[k+'State'];
@@ -578,7 +584,7 @@ async function pollState(epoch){
 }
 function connect(id,name){
  unsubscribe();const epoch=connectionEpoch;clubId=id;channelStatus();
- $('club-name').textContent=name+' · '+id;status('Verbinde mit Firebase …');connectStarted=Date.now();
+ $('dashboard-club-title').textContent='🎳 '+(name||id);$('club-name').textContent=name+' · '+id;status('Verbinde mit Firebase …');connectStarted=Date.now();
  try {
   seatingUnsub=api.subscribeToSeatingLive(id,data=>{
    if(epoch!==connectionEpoch)return;
