@@ -5,16 +5,21 @@
 .dashboard-rules-heading{display:flex;align-items:baseline;justify-content:space-between;gap:15px;padding:18px 28px;background:#edf3fc;border-bottom:1px solid #c7d3e6;flex:0 0 auto}
 #dashboard-rules-title{margin:0;color:#17233d;font-family:inherit;font-size:clamp(26px,2.7vw,44px);letter-spacing:normal;line-height:1.2}
 .dashboard-rules-heading p{margin:0;color:#42536d;font-size:clamp(13px,1.1vw,18px)}
-#dashboard-rules-scroll{flex:1;min-height:0;overflow:auto;padding:20px 30px;overscroll-behavior:contain;scrollbar-gutter:stable}
-#dashboard-rules-content{font-size:clamp(16px,1.45vw,24px);line-height:1.5;column-count:2;column-gap:46px}
-#dashboard-rules-content ol{margin:0 0 20px;padding-left:1.4em}
-#dashboard-rules-content li{padding-left:5px;margin:0 0 14px;break-inside:avoid}
-#dashboard-rules-content p{margin:0 0 16px;break-inside:avoid}
+#dashboard-rules-scroll{flex:1;min-height:0;min-width:0;display:grid;grid-template: minmax(0,1fr) / minmax(0,1fr);overflow:hidden;padding:clamp(8px,1.5vh,20px) clamp(10px,1.6vw,30px)}
+#dashboard-rules-content{height:100%;min-height:0;min-width:0;max-width:100%;box-sizing:border-box;font-size:clamp(16px,1.45vw,24px);line-height:1.35;column-count:2;column-gap:1.7em;column-fill:balance;overflow-wrap:anywhere}
+#dashboard-rules-content ol{margin:0 0 .8em;padding-left:1.4em}
+#dashboard-rules-content li{padding-left:.2em;margin:0 0 .5em;break-inside:avoid}
+#dashboard-rules-content p{margin:0 0 .6em;break-inside:avoid}
 #dashboard-rules-content a{color:#1d5397}
-#dashboard-rules-content .six-rule-days{break-inside:avoid;display:flex;gap:6px;margin:8px 0 18px}
-#dashboard-rules-content .six-rule-days span{flex:1;text-align:center;background:#edf3fc;padding:7px 4px;border-radius:7px;font-size:.8em}
+#dashboard-rules-content .six-rule-days{break-inside:avoid;display:flex;gap:.25em;margin:.3em 0 .7em}
+#dashboard-rules-content .six-rule-days span{flex:1;text-align:center;background:#edf3fc;padding:.3em .2em;border-radius:7px;font-size:.8em}
 #dashboard-rules-content .six-rule-days strong{display:block;font-size:1.3em}
 .kc-rules-visible{overflow:hidden}
 @media(max-width:1000px){#dashboard-rules-content{column-count:1}.dashboard-rules-heading{flex-wrap:wrap;padding:16px 20px}#dashboard-rules-scroll{padding:16px 20px}}
 
 .rules-obstacle-table{width:100%;border-collapse:collapse;font:inherit}.rules-obstacle-table th,.rules-obstacle-table td{padding:7px 9px;border:1px solid #cbd5e5;text-align:left}.rules-obstacle-table th{background:#edf3fc}.rules-obstacle-table tr{break-inside:avoid}
+
+/* Alle Abstände im Regeltext schrumpfen zusammen mit der gemessenen Schriftgröße. */
+#dashboard-rules-content h3{font-size:1.1em;line-height:1.2;margin:.4em 0;break-after:avoid}
+#dashboard-rules-content .rules-obstacle-table th,#dashboard-rules-content .rules-obstacle-table td{font:inherit;padding:.25em .4em;white-space:normal}
+#dashboard-rules-content>:last-child{margin-bottom:0}

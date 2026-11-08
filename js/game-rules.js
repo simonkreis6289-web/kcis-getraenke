@@ -15,7 +15,7 @@
   },
   "hindernis": {
     "title": "🏃 Hindernislauf",
-    "body": "<ol><li>Reihum wird einmal in die Vollen geworfen. Holz wird zum persönlichen Punktestand addiert. Kranz zählt bei uns zwölf, Gosse und Vorbei null.</li><li>Beim Erreichen eines eingeschalteten Hindernispunkts wird die in der Hindernistabelle angezeigte Aktion ausgeführt. Die Tabelle der laufenden Partie ist maßgeblich.</li><li>Versetzungen lösen keine weiteren Hindernisse aus. Punktabzüge enden bei null. „Nächsten Wurf abziehen“ wertet eine Gosse mit neun Minuspunkten.</li><li>Der Doppelwurf ist ein sofortiger Zusatzwurf mit doppelter Punktzahl. Bei „Neustart oder 1 €“ wählt der Spieler in der App die gewünschte Möglichkeit.</li><li>Erreicht jemand das Ziel, endet das Spiel nach der laufenden Runde. Der höchste Punktestand gewinnt; Gleichstände teilen sich den Sieg.</li><li>Die übrigen Spieler zahlen den vereinbarten Grundbetrag abzüglich eines Cents pro Punkt, mindestens null Euro. Hinzu kommen Hindernisgebühren und die üblichen Sonderwurfstrafen.</li></ol><p>Unter Spiele → Einstellungen sind Ziel (Standard 90), Grundbetrag (Standard 1 €) und aktive Hindernispunkte wählbar. Eine kürzere Strecke erhält weniger Hindernispunkte. Ereignisse können zwischen diesen Feldern verschoben oder per Zufall aus dem vollständigen Pool ersetzt werden; Punkte und Häkchen bleiben dabei erhalten. Die angezeigte Verteilung wird beim Start fest übernommen. Alle Spielbeträge werden zusätzlich zur Strafobergrenze gebucht.</p><p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/hindernislauf\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a>. Auswahl, Kurzstrecken-Verteilung und die Erläuterungen zu Kettenreaktionen sind Anpassungen unserer App.</p>"
+    "body": "<ol><li>Reihum wird einmal in die Vollen geworfen. Holz wird zum persönlichen Punktestand addiert. Kranz zählt bei uns zwölf, Gosse und Vorbei null.</li><li>Beim Erreichen eines eingeschalteten Hindernispunkts wird die in der Hindernistabelle angezeigte Aktion ausgeführt. Die Tabelle der laufenden Partie ist maßgeblich.</li><li>Versetzungen lösen keine weiteren Hindernisse aus. Punktabzüge enden bei null. „Nächsten Wurf abziehen“ wertet eine Gosse mit neun Minuspunkten.</li><li>Der Doppelwurf ist ein sofortiger Zusatzwurf mit doppelter Punktzahl. Bei „Neustart oder 1 €“ wählt der Spieler in der App die gewünschte Möglichkeit.</li><li>Erreicht jemand das Ziel, endet das Spiel nach der laufenden Runde. Der höchste Punktestand gewinnt; Gleichstände teilen sich den Sieg.</li><li>Die übrigen Spieler zahlen Grundbetrag × fehlende Punkte ÷ Zielpunktzahl. Erst der gesamte Endbetrag wird auf den nächsten vollen Cent aufgerundet. Beispiel: 5 € Grundbetrag bei Ziel 100 ergibt 5 Cent pro fehlendem Punkt. Wer das Ziel erreicht oder gewinnt, zahlt keinen Endbetrag. Hinzu kommen Hindernisgebühren und die üblichen Sonderwurfstrafen.</li></ol><p>Unter Spiele → Einstellungen sind Ziel (Standard 90), Grundbetrag (Standard 1 €) und aktive Hindernispunkte wählbar. Eine kürzere Strecke erhält weniger Hindernispunkte. Ereignisse können zwischen diesen Feldern verschoben oder per Zufall aus dem vollständigen Pool ersetzt werden; Punkte und Häkchen bleiben dabei erhalten. Die angezeigte Verteilung wird beim Start fest übernommen. Alle Spielbeträge werden zusätzlich zur Strafobergrenze gebucht.</p><p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/hindernislauf\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a>. Auswahl, Kurzstrecken-Verteilung und die Erläuterungen zu Kettenreaktionen sind Anpassungen unserer App.</p>"
   }
 };
   function content(key,config){
@@ -27,6 +27,36 @@
     return body;
   }
   function fillApp(){for(const [key,prefix] of [['sechstage','sechs'],['gluecksspirale','spiral'],['siebener','siebener'],['hindernis','hindernis']]){const box=document.getElementById(prefix+'-rules-content');if(box)box.innerHTML=content(key);}}
+  let fitFrame=0,fitObserver=null;
+  function fitDashboard(){
+    const overlay=document.getElementById('dashboard-rules-overlay'),box=document.getElementById('dashboard-rules-scroll'),text=document.getElementById('dashboard-rules-content');
+    if(!overlay||overlay.hidden||!box||!text||!box.clientWidth||!box.clientHeight)return;
+    if(!fitObserver&&typeof window.ResizeObserver==='function'){
+      fitObserver=new window.ResizeObserver(scheduleFit);fitObserver.observe(box);
+    }
+    const max=Math.min(42,Math.max(22,box.clientWidth/50)),choices=[1,...(box.clientWidth>=680?[2]:[]),...(box.clientWidth>=1500?[3]:[])];
+    const apply=(size,columns)=>{text.style.fontSize=size+'px';text.style.columnCount=String(columns);};
+    const fits=()=>text.scrollWidth<=text.clientWidth&&text.scrollHeight<=text.clientHeight;
+    let best={size:1,columns:1};
+    for(const columns of choices){
+      let low=1,high=max;apply(high,columns);
+      if(fits())low=high;
+      else for(let i=0;i<12;i++){const size=(low+high)/2;apply(size,columns);if(fits())low=size;else high=size;}
+      if(low>best.size+.1)best={size:low,columns};
+    }
+    // Etwas Reserve für Rundung und das Zeichnen der letzten Textzeile lassen.
+    apply(Math.max(1,Math.floor((best.size-.2)*100)/100),best.columns);
+    box.scrollTop=0;box.scrollLeft=0;text.scrollTop=0;text.scrollLeft=0;
+  }
+  function scheduleFit(){
+    if(fitFrame||typeof window.requestAnimationFrame!=='function')return;
+    fitFrame=window.requestAnimationFrame(()=>{fitFrame=0;fitDashboard();});
+  }
+  window.addEventListener('resize',scheduleFit);
+  window.visualViewport?.addEventListener('resize',scheduleFit);
+  document.addEventListener('fullscreenchange',scheduleFit);
+  document.fonts?.ready?.then(scheduleFit);
+  document.fonts?.addEventListener('loadingdone',scheduleFit);
   function renderDashboard(value){
     const overlay=document.getElementById('dashboard-rules-overlay');if(!overlay)return;
     const rule=Object.hasOwn(rules,value?.gameKey)?rules[value.gameKey]:null,visible=!!(value?.open&&rule);
@@ -39,6 +69,7 @@
       document.getElementById('dashboard-rules-content').innerHTML=content(value.gameKey,value.rulesConfig);
       const scroll=document.getElementById('dashboard-rules-scroll');if(scroll)scroll.scrollTop=0;
       overlay.dataset.token=identity;
+      fitDashboard();scheduleFit();
     }
   }
   window.KCGameRules=Object.freeze({content,renderDashboard,fillApp});fillApp();
