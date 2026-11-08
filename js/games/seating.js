@@ -11,7 +11,7 @@ function getSoloState(id) {return ({lotterie:lotterieState,tiberius:tiberiusStat
 function getSoloNames(id) {
   const active = seatingActiveNames(), state = getSoloState(id);
   if(typeof gameSetupNames==='function'&&!state?.active)return gameSetupNames(id);
-  const custom = state && state.customOrder && Array.isArray(state.playerOrder) ? state.playerOrder : [];
+  const custom = state && (state.active || state.customOrder) && Array.isArray(state.playerOrder) ? state.playerOrder : [];
   const preferred = custom.length ? custom : getGlobalSeatOrder();
   return [...new Set([...preferred.filter(name => active.includes(name)),...active])];
 }

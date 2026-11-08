@@ -29,6 +29,20 @@
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   next.rules=next.rules.map(slot=>{const index=pool.findIndex(r=>r.id!==slot.id),event=pool.splice(index<0?0:index,1)[0];return {...slot,id:event.id,kind:event.kind,value:event.kind==='move'?Math.max(1,Math.min(next.target-1,Math.round(event.value*next.target/90))):event.value};});return next;
  }
+ function hurdleEndCents(config,score){
+  const remaining=Math.max(0,config.target-Math.max(0,Number(score)||0));
+  // Mit ganzen Cent rechnen; erst den gesamten Endbetrag aufrunden.
+  return Math.floor((config.baseCents*remaining+config.target-1)/config.target);
+ }
+ function settlementCents(s,name){
+  if(s.winners.includes(name))return 0;
+  if(s.finished){
+   const booked=s.bookings.find(b=>b.personName===name&&b.reason==='Hindernislauf · Endabrechnung');
+   if(booked)return booked.amountCents;
+   if(s.settlementVersion!==2)return Math.max(0,s.config.baseCents-s.scores[name]);
+  }
+  return hurdleEndCents(s.config,s.scores[name]);
+ }
  function empty(gameKey){return {gameKey,id:'',revision:0,active:false,finished:false,readyToFinish:false,players:[],index:0,round:1,turn:[],scores:{},sheet:{},addUsed:{},skip:{},subtract:{},double:{},pendingChoice:null,finalRound:0,winners:[],history:[],events:[],bookings:[],lastRules:[],config:defaults(),commands:[],receipts:[],startedAt:'',eveningStartedAt:''};}
  function current(s){return s.players[s.index]||'';}
  const active=p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly;
@@ -94,7 +108,7 @@
     if(!s.active||s.finished)throw Error('Dieses Spiel ist bereits beendet');
     if(req.action==='finish'){
      if(!s.readyToFinish)throw Error('Zuerst die Runde zu Ende spielen');const values=Object.values(s.scores),best=s.gameKey==='siebener'?Math.min(...values):Math.max(...values);s.winners=s.players.filter(n=>s.scores[n]===best);
-     const e={id:'finish'};for(const n of s.players){const cents=s.gameKey==='siebener'?s.scores[n]:s.winners.includes(n)?0:Math.max(0,s.config.baseCents-s.scores[n]);booking(s,e,n,cents,s.gameKey==='siebener'?'7er-Spiel · Abweichungen':'Hindernislauf · Endabrechnung');}s.active=false;s.finished=true;
+     const e={id:'finish'};if(s.gameKey==='hindernis')s.settlementVersion=2;for(const n of s.players){const cents=s.gameKey==='siebener'?s.scores[n]:settlementCents(s,n);booking(s,e,n,cents,s.gameKey==='siebener'?'7er-Spiel · Abweichungen':'Hindernislauf · Endabrechnung');}s.active=false;s.finished=true;
     }else if(req.action==='undo'){
      if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');const history=s.history.slice(0,-1),rebuilt=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config},{...ctx,people:s.players.map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});for(const e of history)play(rebuilt,e);s=rebuilt;
     }else{
@@ -119,5 +133,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({empty,defaults,settings,validSettings,makeRules,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({empty,defaults,settings,hurdleEndCents,settlementCents,validSettings,makeRules,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();

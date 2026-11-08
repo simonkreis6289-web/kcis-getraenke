@@ -103,3 +103,7 @@
 .bj-ace-settings .game-settings-values{grid-template-columns:1fr 1fr;margin:12px 0}
 @media(max-width:1050px){.bj-card-grid{grid-template-columns:repeat(4,minmax(74px,1fr))}.bj-card-choice{min-height:124px}}
 @media(max-width:420px){.bj-card-grid{gap:6px;grid-template-columns:repeat(4,minmax(0,1fr))}.bj-card-choice{min-height:118px;padding:21px 3px 9px}.bj-card-choice strong{font-size:14px}.bj-card-choice small{font-size:11px}.bj-card-symbol{font-size:27px}}
+
+/* Auf dem TV die komplette aktive Blackjack-Zeile deutlich absetzen. */
+.tg-tv-board .tg-board .tg-current>th,.tg-tv-board .tg-board .tg-current>td{background:#f6b900;color:#17233d;border-top:2px solid #9a5700;border-bottom:2px solid #9a5700;font-weight:700}
+.tg-tv-board .tg-board .tg-current>th:first-child{box-shadow:inset 6px 0 #8b4b00}
