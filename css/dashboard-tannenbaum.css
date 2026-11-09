@@ -1,0 +1,12 @@
+/* Tannenbaum: Zahlen wachsen von der Mitte nach außen, jeder Strich bleibt sichtbar. */
+.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(55px,1fr) minmax(0,3fr) 42px minmax(0,3fr) minmax(55px,1fr);gap:6px}
+.tree-v138 .tree-table-v138{flex:1 0 auto;min-height:min-content;overflow:visible}
+.tree-v138 .tree-row{flex:1 0 auto;min-height:43px}
+.tree-v138 .tree-side{min-width:0;justify-content:flex-start;align-content:center;padding:2px 0}
+.tree-v138 .tree-side-left{flex-direction:row-reverse}
+.tree-v138 .tree-side-right{flex-direction:row}
+.tree-v138 .tree-ball{flex:0 0 auto}
+.tree-v138 .tree-strikes{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;align-items:center;gap:5px 4px;min-width:0;max-width:100%;padding:5px 3px;overflow:visible;color:#626b7d;font-size:clamp(17px,1.6vw,25px);line-height:1}
+.tree-v138 .tree-strike{display:block;flex:0 0 3px;width:3px;height:1em;border-radius:2px;background:currentColor}
+.tree-v138 .tree-strikes-empty{font-size:.8em;color:#929bab}
+@media(max-width:650px){.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(38px,1fr) minmax(0,3fr) 28px minmax(0,3fr) minmax(38px,1fr);gap:3px}.tree-v138 .tree-strikes{gap:4px 3px;padding:4px 2px}.tree-v138 .tree-strike{flex-basis:2px;width:2px}.tree-v138 .tree-header{font-size:11px}}

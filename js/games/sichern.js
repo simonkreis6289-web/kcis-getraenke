@@ -51,7 +51,8 @@ function startSichernGame(){
   if(players.length<2){showToast('Mindestens zwei anwesende Kegler erforderlich','error');return;}
   let order=[],teams={};
   if(mode==='team'){
-    teams={T1:getSichernTeamPlayers('T1'),T2:getSichernTeamPlayers('T2')};
+    if(typeof gameSetupCheckGroups==='function'&&!gameSetupCheckGroups('sichern'))return;
+    teams=typeof gameSetupTeamMap==='function'?gameSetupTeamMap('sichern'):{T1:getSichernTeamPlayers('T1'),T2:getSichernTeamPlayers('T2')};
     if(!teams.T1.length||!teams.T2.length){showToast('Für Teamspiel müssen beide Teams besetzt sein','error');return;}
     order=['T1','T2'];
   }else{
