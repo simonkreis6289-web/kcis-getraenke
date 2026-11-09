@@ -35,6 +35,7 @@ function ensureDartsState() {
 }
 
 function startDartsGame() {
+  if(typeof gameSetupCheckGroups==='function'&&!gameSetupCheckGroups('darts'))return;
   const input = document.getElementById('darts-start-input');
   const startValue = parseInt(input?.value || '301', 10) || 301;
 

@@ -21,6 +21,7 @@ function torChoosePenaltyPlayer(team, reason) {
  });
 }
 function startTorGame(){
+ if(typeof gameSetupCheckGroups==='function'&&!gameSetupCheckGroups('tor'))return;
  const teams=typeof gameSetupTeamMap==='function'?gameSetupTeamMap('tor'):{T1:getSichernTeamPlayers('T1'),T2:getSichernTeamPlayers('T2')};
  if(!teams.T1.length||!teams.T2.length){showToast('Für Tor müssen beide Teams Spieler haben','error');return;}
  torState={...createTorState(),teams,active:true,coinPending:true,startedAt:new Date().toISOString()};
