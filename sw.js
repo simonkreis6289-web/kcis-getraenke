@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kcis-cache-v193';
+const CACHE_NAME = 'kcis-cache-v194';
 
 const ASSETS = [
   './',
@@ -6,7 +6,7 @@ const ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './sounds/bowling-strike.mp3',
-  './sounds/zonk.mp3'
+  './sounds/gutter-plop.mp3'
 ];
 
 self.addEventListener('install', event => {

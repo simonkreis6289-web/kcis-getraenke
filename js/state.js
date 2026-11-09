@@ -1,6 +1,6 @@
-const APP_VERSION = '20261109-193';
-const APPVersionSelf = 'V193 © SK';
-const APP_LAST_UPDATE = '09.11.2026, 08:59 Uhr';
+const APP_VERSION = '20261109-194';
+const APPVersionSelf = 'V194 © SK';
+const APP_LAST_UPDATE = '09.11.2026, 09:15 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;

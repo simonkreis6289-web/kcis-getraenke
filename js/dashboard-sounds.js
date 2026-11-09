@@ -3,7 +3,7 @@
  const button=document.getElementById('dashboard-sound-toggle'),slider=document.getElementById('dashboard-sound-volume'),label=document.getElementById('dashboard-sound-status');
  const Audio=window.AudioContext||window.webkitAudioContext;let context=null,master=null,enabled=false,request=0,volume=45,scope='',initialized=false,timerState=null,nextThrow=0;
  const seen=new Set(),voices=new Set(),samples=new Map(),sampleLoads=new Map();
- const sampleUrls={nine:'sounds/bowling-strike.mp3',gutter:'sounds/zonk.mp3'};let playbackEpoch=0;
+ const sampleUrls={nine:'sounds/bowling-strike.mp3',gutter:'sounds/gutter-plop.mp3'};let playbackEpoch=0;
  try{const saved=window.localStorage?.getItem('kc_dashboard_volume');if(saved!==null&&saved!==undefined&&Number.isFinite(Number(saved)))volume=Math.max(0,Math.min(100,Number(saved)));}catch(_){}
  function update(message){
   if(button){button.disabled=!Audio;button.textContent=!Audio?'Ton nicht verfügbar':enabled?'Ton aus':'Ton an';button.setAttribute('aria-pressed',String(enabled));button.title=enabled?'Dashboard-Töne ausschalten':'Dashboard-Töne aktivieren';}

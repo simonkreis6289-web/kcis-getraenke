@@ -18,12 +18,12 @@ test('the large countdown overlays the event block and cannot create an extra he
  assert(digits.style.getPropertyValue('font-size').includes('56px'));assert(digits.style.getPropertyValue('font-size').includes('84px'));
 });
 
-test('new 9er, Kranz and through throws use the same real bowling recording; gutters use the Zonk',async()=>{
+test('new 9er, Kranz and through throws use the same real bowling recording; gutters use the soft plop',async()=>{
  const f=fixture();await f.audio.toggle();feed(f,[]);f.oscillators.length=0;
  const logs=[];
  for(const [index,type] of ['9er','kranz','durchgeworfen','gosse'].entries()){
   f.contexts[0].currentTime+=4;logs.push(event(String(index),type));feed(f,logs);
-  assert.equal(f.oscillators.length,index+1);assert.equal(f.oscillators.at(-1).buffer.url,type==='gosse'?'sounds/zonk.mp3':'sounds/bowling-strike.mp3');
+  assert.equal(f.oscillators.length,index+1);assert.equal(f.oscillators.at(-1).buffer.url,type==='gosse'?'sounds/gutter-plop.mp3':'sounds/bowling-strike.mp3');
  }
  feed(f,logs.slice().reverse());assert.equal(f.oscillators.length,4);
 });
@@ -55,7 +55,7 @@ test('a missing sample gives feedback while the countdown works, and re-enabling
 });
 
 test('local MP3 files are bundled, documented, and cached for an offline dashboard',()=>{
- for(const name of ['bowling-strike','zonk']){
+ for(const name of ['bowling-strike','gutter-plop']){
   const bytes=fs.readFileSync(path.join(__dirname,'..','sounds',name+'.mp3'));
   assert(bytes.length>1000);assert(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===255);
   assert(read('sw.js').includes('./sounds/'+name+'.mp3'));
