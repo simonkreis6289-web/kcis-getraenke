@@ -96,6 +96,7 @@ function renderCashBook(){
   document.getElementById('cash-book-period').textContent=start+(ready?' · '+totals.count+' Abschlüsse · '+totals.expenseCount+' Ausgaben':'');
   renderCashYearOverview(ready,start);
   if(typeof renderCashExpenses==='function')renderCashExpenses(ready,start);
+  if(typeof renderCashAccounting==='function')renderCashAccounting();
 }
 
 function renderCashYearOverview(ready,start){
@@ -103,6 +104,7 @@ function renderCashYearOverview(ready,start){
   if(!box)return;
   period.textContent=start;
   if(!ready){box.innerHTML='<p class="cash-help">Die Jahresübersicht wird mit dem Archiv geladen.</p>';return;}
+  if(window.KCCashOverview){box.innerHTML=window.KCCashOverview.table(window.KCCashOverview.model(cashHistoryEntries,cashBookSettings,cashExpenseEntries,persons,typeof cashAccountingOrders==='undefined'?null:cashAccountingOrders));return;}
   const matrix=KCCashBook.matrix(cashHistoryEntries,cashBookSettings,persons),esc=escapeCashText;
   if(!matrix.columns.length){box.innerHTML='<p class="cash-help">Seit dem Neustart sind noch keine abgeschlossenen Kegelabende vorhanden.</p>';return;}
   const dates=new Map();matrix.columns.forEach(column=>dates.set(column.date,(dates.get(column.date)||0)+1));

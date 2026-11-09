@@ -5,6 +5,7 @@ let cashHistoryBusy = false;
 let cashHistoryClub = '';
 let cashHistoryUnsubscribe = null, cashHistorySubscriptionClub = '', cashHistoryGeneration = 0;
 function stopCashHistorySync() {
+  if(typeof stopCashAccountingSync==='function')stopCashAccountingSync();
   cashHistoryGeneration++;
   cashHistoryUnsubscribe?.();cashHistoryUnsubscribe=null;cashHistorySubscriptionClub='';
   cashHistoryEntries=[];cashExpenseEntries=[];cashHistoryClub='';
