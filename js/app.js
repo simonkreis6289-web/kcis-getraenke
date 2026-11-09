@@ -1830,7 +1830,15 @@ function getMissingGameCharges(p) {
       if (!alreadyBooked) result.push({amount, reason: label, onTop: !!charge.onTop});
     }
   }
-  for(const charge of typeof individualGameLedger==='undefined'?[]:individualGameLedger){if(String(charge.personName||'').trim().toLocaleLowerCase('de')===String(p.name||'').trim().toLocaleLowerCase('de')&&charge.eveningStartedAt===currentEveningStartedAt)result.push({amount:charge.amountCents/100,reason:charge.reason,onTop:true,individualChargeId:charge.id});}
+  let hurdleCents=0,hurdleSummary=null;
+  for(const charge of typeof individualGameLedger==='undefined'?[]:individualGameLedger){
+    if(String(charge.personName||'').trim().toLocaleLowerCase('de')!==String(p.name||'').trim().toLocaleLowerCase('de')||charge.eveningStartedAt!==currentEveningStartedAt)continue;
+    if(/^Hindernislauf(?:\s|·|$)/.test(String(charge.reason||''))){
+      hurdleCents+=charge.amountCents;
+      if(!hurdleSummary){hurdleSummary={amount:0,reason:'Hindernislauf',onTop:true,individualChargeId:'hindernis-summary'};result.push(hurdleSummary);}
+      hurdleSummary.amount=hurdleCents/100;
+    }else result.push({amount:charge.amountCents/100,reason:charge.reason,onTop:true,individualChargeId:charge.id});
+  }
   return result;
 }
 
@@ -6540,5 +6548,3 @@ function closeTeamLossQuickModalAfterSuccess() {
   document.getElementById('team-loss-quick-modal')?.classList.add('hidden');
   teamLossQuickSelection = null;
 }
-
-
