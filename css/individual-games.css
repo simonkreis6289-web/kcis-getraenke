@@ -9,6 +9,7 @@
 .ind-rules-modal .modal{width:min(760px,calc(100vw - 32px));max-width:760px;max-height:calc(100dvh - 40px);overflow:auto}.ind-rules-modal li{margin:10px 0;line-height:1.5}
 #game-body .ind-board{margin:0;border:0;padding:0}#game-body .ind-table th,#game-body .ind-table td{font-size:clamp(14px,1.1vw,21px);padding:7px 9px}#game-body .ind-hurdle-split{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}#game-body .ind-obstacles .ind-table{min-width:0}#game-body .ind-table small{font-size:13px}
 .ind-actions button:focus-visible,.ind-order button:focus-visible{outline:3px solid #df9f26;outline-offset:2px}
+.ind-penalty{white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:700px){.ind-hurdle-split{grid-template-columns:1fr}.ind-order{grid-template-columns:1fr}}
 
 #game-body .ind-table{min-width:0}#game-body .ind-table-scroll{overflow:visible}#game-body .ind-table small{white-space:normal}#game-body .ind-table th{overflow-wrap:anywhere}
