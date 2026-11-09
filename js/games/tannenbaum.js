@@ -3,6 +3,7 @@ let pendingTannenbaumKranzChoice = null;
 
 function createTannenbaumState() {
   return {
+    currentTeam: 'T1',
     teams: {
       T1: {
         remaining: { ...TANNENBAUM_BASE },
@@ -52,6 +53,10 @@ function ensureTannenbaumState() {
 
   if (!Array.isArray(tannenbaumState.history)) {
     tannenbaumState.history = [];
+  }
+  if (!['T1', 'T2'].includes(tannenbaumState.currentTeam)) {
+    const lastThrow = tannenbaumState.history.find(entry => entry.type !== 'manual-restore' && ['T1', 'T2'].includes(entry.team));
+    tannenbaumState.currentTeam = lastThrow ? getOtherTeam(lastThrow.team) : 'T1';
   }
 }
 
@@ -291,6 +296,7 @@ const booking = await bookTannenbaumPenalty(
   pendingTannenbaumPenaltyThrow = null;
 
   if (type === '9er' && number === 9) {
+    tannenbaumThrowTeam = team;
     handleTannenbaumThrow(9);
 
       const latestEntry = tannenbaumState.history?.[0];
@@ -326,6 +332,7 @@ refreshTannenbaumPenaltyUI();
     createdAt: new Date().toISOString()
   });
 
+  tannenbaumState.currentTeam = getOtherTeam(team);
   tannenbaumThrowTeam = null;
 
     renderTannenbaum();
@@ -900,6 +907,7 @@ function handleTannenbaumThrow(number) {
       createdAt: new Date().toISOString()
     });
 
+      tannenbaumState.currentTeam = otherTeam;
       closeTannenbaumThrowModal();
       renderTannenbaum();
       persistState();
@@ -939,6 +947,7 @@ function undoLastTannenbaumThrow() {
   }
 
   tannenbaumState.history.shift();
+  if (last.type !== 'manual-restore') tannenbaumState.currentTeam = team;
 
   renderTannenbaum();
   persistState();

@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261109-v195">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261109-v195">
-  <link rel="stylesheet" href="css/table-games.css?v=20261109-v195">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261109-v195">
-<link rel="stylesheet" href="css/game-rules.css?v=20261109-v195">
+  <link rel="stylesheet" href="css/styles.css?v=20261109-v196">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261109-v196">
+  <link rel="stylesheet" href="css/table-games.css?v=20261109-v196">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261109-v196">
+<link rel="stylesheet" href="css/game-rules.css?v=20261109-v196">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -128,10 +128,10 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261109-v195">
-<link rel="stylesheet" href="css/game-starts.css?v=20261109-v195">
-<link rel="stylesheet" href="css/game-settings.css?v=20261109-v195">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261109-v195">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261109-v196">
+<link rel="stylesheet" href="css/game-starts.css?v=20261109-v196">
+<link rel="stylesheet" href="css/game-settings.css?v=20261109-v196">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261109-v196">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1298,11 +1298,23 @@
  <div class="game-settings-grid">
   <section class="game-settings-card game-settings-wide" id="game-property-hindernis" data-game-property="hindernis" role="tabpanel" aria-labelledby="game-property-tab-hindernis">
    <header><span aria-hidden="true">🏃</span><div><h3 id="hurdle-settings-title">Hindernislauf</h3><p>Ziel, Grundbetrag und Hindernisverteilung</p></div></header>
-   <div class="game-settings-fields"><label class="game-settings-field" for="hurdle-target">Zielpunktzahl<input id="hurdle-target" type="number" min="20" max="500" value="90" step="1" onchange="indRebuildRules()"></label><label class="game-settings-field" for="hurdle-count">Anzahl Hindernisse<input id="hurdle-count" type="number" min="1" max="17" step="1" value="17" onchange="indRebuildRules()"></label><label class="game-settings-field" for="hurdle-base">Grundbetrag pro Spieler (€)<input id="hurdle-base" type="number" min="0" max="100" step="0.01" value="1.00"></label></div>
-   <p>Beim Erreichen oder Überschreiten der Zielpunktzahl endet das Spiel sofort. Endbetrag für die übrigen Spieler: Grundbetrag × fehlende Punkte ÷ Zielpunktzahl, auf volle Cent aufgerundet. Beispiel: 5 € bei Ziel 100 = 5 Cent pro fehlendem Punkt. Sieger zahlen keinen Endbetrag. Hindernisgebühren und Spielbeträge kommen zusätzlich zur Strafobergrenze dazu.</p>
-   <p>Zum Start gilt bei 90 Punkten die Originalverteilung. Mit einer eigenen Anzahl werden passende Punkte und Ereignisse ausgelost. Punktnummern und Bereiche kannst du anschließend direkt bearbeiten. Häkchen schalten Punktfelder aus. Die Kassenbeträge sind je Hindernis in Euro einstellbar (0–100 €). Mit ↑/↓ verschiebst du Ereignisse zwischen den Punktfeldern. „Alles zufällig“ erstellt Anzahl, Punktnummern und Ereignisse neu und aktiviert die neue Auswahl. Die automatische Anzahl passt zur Streckenlänge: etwa 4 bei Ziel 20, 9 bei Ziel 50 und höchstens 17. Grundbetrag und festgelegte Kassenbeträge bleiben erhalten. Neue Vorgaben gelten erst beim nächsten Spielstart.</p>
-   <button id="hurdle-shuffle" type="button" class="secondary-btn" onclick="indRandomizeEvents()">🎲 Alles zufällig</button><div id="hurdle-rules-edit"></div>
-   <footer><button id="hurdle-save" type="button" class="primary-btn" onclick="saveHurdleSettings()">💾 Hindernislauf speichern</button><span id="hurdle-settings-status" class="game-settings-status" role="status"></span></footer>
+   <div class="hurdle-basics">
+    <div class="hurdle-section-heading"><strong>Spielbasis</strong><span>Gilt ab dem nächsten Spielstart</span></div>
+    <div class="game-settings-fields hurdle-basic-fields">
+     <label class="game-settings-field" for="hurdle-target"><span>🎯 Zielpunktzahl</span><input id="hurdle-target" type="number" min="20" max="500" value="90" step="1" onchange="indRebuildRules()"><small>20 bis 500 Punkte</small></label>
+     <label class="game-settings-field" for="hurdle-count"><span>🚧 Hindernisse</span><input id="hurdle-count" type="number" min="1" max="17" step="1" value="17" onchange="indRebuildRules()"><small>1 bis 17 Hindernisse</small></label>
+     <label class="game-settings-field" for="hurdle-base"><span>💰 Grundbetrag pro Spieler (€)</span><input id="hurdle-base" type="number" min="0" max="100" step="0.01" value="1.00"><small>Basis für die Endabrechnung</small></label>
+    </div>
+    <p class="hurdle-calculation">🏁 Ziel erreicht? Das Spiel endet sofort. Die übrigen Spieler zahlen anteilig für ihre fehlenden Punkte.</p>
+   </div>
+   <details class="hurdle-help"><summary>Hinweise zu Zufall &amp; Abrechnung</summary>
+    <p>Endbetrag: Grundbetrag × fehlende Punkte ÷ Zielpunktzahl, auf volle Cent aufgerundet. Beispiel: 5 € bei Ziel 100 = 5 Cent pro fehlendem Punkt. Sieger zahlen keinen Endbetrag. Hindernisgebühren und Spielbeträge kommen zusätzlich zur Strafobergrenze dazu.</p>
+    <p>Bei 90 Punkten gilt zunächst die Originalverteilung. Eine eigene Anzahl erzeugt passende Punkte und Ereignisse. Punktnummern, Bereiche und Kassenbeträge (0–100 €) lassen sich direkt bearbeiten. Mit dem Häkchen aktivierst oder deaktivierst du ein Hindernis. ↑/↓ tauscht die Ereignisse zwischen benachbarten Punktfeldern.</p>
+    <p>„Alles zufällig“ erstellt Anzahl, Punktnummern und Ereignisse neu und aktiviert die neue Auswahl: etwa 4 Hindernisse bei Ziel 20, 9 bei Ziel 50 und höchstens 17. Grundbetrag und festgelegte Kassenbeträge bleiben erhalten. Laufende Spiele behalten ihre bisherigen Einstellungen.</p>
+   </details>
+   <div class="hurdle-section-heading hurdle-toolbar"><div><strong>Deine Hindernisse</strong><span>Punktbereich und Ereignis pro Karte</span></div><button id="hurdle-shuffle" type="button" class="secondary-btn" onclick="indRandomizeEvents()">🎲 Alles zufällig</button></div>
+   <div id="hurdle-rules-edit"></div>
+   <footer class="hurdle-savebar"><button id="hurdle-save" type="button" class="primary-btn" onclick="saveHurdleSettings()">💾 Hindernislauf speichern</button><span id="hurdle-settings-status" class="game-settings-status" role="status"></span></footer>
   </section>
   <section class="game-settings-card" id="game-property-blackjack" data-game-property="blackjack" role="tabpanel" aria-labelledby="game-property-tab-blackjack">
    <header><span aria-hidden="true">🃏</span><div><h3 id="blackjack-settings-title">17 + 4 / Blackjack</h3><p>Kartenwerte für neue Spiele</p></div></header>
@@ -2269,58 +2281,58 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261109-v195"></script>
-<script src="js/kegel-calendar.js?v=20261109-v195"></script>
-<script src="js/helpers.js?v=20261109-v195"></script>
-<script src="js/state.js?v=20261109-v195"></script>
-<script src="js/games/individual-core.js?v=20261109-v195"></script>
-<script src="js/game-rules.js?v=20261109-v195"></script>
-<script src="js/persons.js?v=20261109-v195"></script>
-<script src="js/member-profiles.js?v=20261109-v195"></script>
-<script src="js/clubs.js?v=20261109-v195"></script>
+<script src="js/birthdays.js?v=20261109-v196"></script>
+<script src="js/kegel-calendar.js?v=20261109-v196"></script>
+<script src="js/helpers.js?v=20261109-v196"></script>
+<script src="js/state.js?v=20261109-v196"></script>
+<script src="js/games/individual-core.js?v=20261109-v196"></script>
+<script src="js/game-rules.js?v=20261109-v196"></script>
+<script src="js/persons.js?v=20261109-v196"></script>
+<script src="js/member-profiles.js?v=20261109-v196"></script>
+<script src="js/clubs.js?v=20261109-v196"></script>
 
-<script src="js/games/avatar-select.js?v=20261109-v195"></script>
-<script src="js/games/tannenbaum.js?v=20261109-v195"></script>
-<script src="js/games/darts.js?v=20261109-v195"></script>
-<script src="js/games/tiberius.js?v=20261109-v195"></script>
-<script src="js/games/lotterie.js?v=20261109-v195"></script>
-<script src="js/games/solo-start-draw.js?v=20261109-v195"></script>
-<script src="js/games/start-setup.js?v=20261109-v195"></script>
-<script src="js/games/seating.js?v=20261109-v195"></script>
-<script src="js/games/mensch.js?v=20261109-v195"></script>
-<script src="js/games/plusminus.js?v=20261109-v195"></script>
-<script src="js/games/hausnummer-core.js?v=20261109-v195"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261109-v195"></script>
-<script src="js/games/hausnummer-tief.js?v=20261109-v195"></script>
-<script src="js/games/fuchsjagd.js?v=20261109-v195"></script>
-<script src="js/games/sichern.js?v=20261109-v195"></script>
-<script src="js/games/sechstage-core.js?v=20261109-v195"></script>
-<script src="js/games/sechstage.js?v=20261109-v195"></script>
-<script src="js/games/table-games-core.js?v=20261109-v195"></script>
-<script src="js/games/table-games-ui.js?v=20261109-v195"></script>
-<script src="js/games/individual-view.js?v=20261109-v195"></script><script src="js/games/individual-ui.js?v=20261109-v195"></script><script src="js/games/siebener.js?v=20261109-v195"></script><script src="js/games/hindernis.js?v=20261109-v195"></script>
-<script src="js/games/blackjack.js?v=20261109-v195"></script>
-<script src="js/games/gluecksspirale.js?v=20261109-v195"></script>
-<script src="js/games/tor.js?v=20261109-v195"></script>
-<script src="js/games/coinflip.js?v=20261109-v195"></script>
+<script src="js/games/avatar-select.js?v=20261109-v196"></script>
+<script src="js/games/tannenbaum.js?v=20261109-v196"></script>
+<script src="js/games/darts.js?v=20261109-v196"></script>
+<script src="js/games/tiberius.js?v=20261109-v196"></script>
+<script src="js/games/lotterie.js?v=20261109-v196"></script>
+<script src="js/games/solo-start-draw.js?v=20261109-v196"></script>
+<script src="js/games/start-setup.js?v=20261109-v196"></script>
+<script src="js/games/seating.js?v=20261109-v196"></script>
+<script src="js/games/mensch.js?v=20261109-v196"></script>
+<script src="js/games/plusminus.js?v=20261109-v196"></script>
+<script src="js/games/hausnummer-core.js?v=20261109-v196"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261109-v196"></script>
+<script src="js/games/hausnummer-tief.js?v=20261109-v196"></script>
+<script src="js/games/fuchsjagd.js?v=20261109-v196"></script>
+<script src="js/games/sichern.js?v=20261109-v196"></script>
+<script src="js/games/sechstage-core.js?v=20261109-v196"></script>
+<script src="js/games/sechstage.js?v=20261109-v196"></script>
+<script src="js/games/table-games-core.js?v=20261109-v196"></script>
+<script src="js/games/table-games-ui.js?v=20261109-v196"></script>
+<script src="js/games/individual-view.js?v=20261109-v196"></script><script src="js/games/individual-ui.js?v=20261109-v196"></script><script src="js/games/siebener.js?v=20261109-v196"></script><script src="js/games/hindernis.js?v=20261109-v196"></script>
+<script src="js/games/blackjack.js?v=20261109-v196"></script>
+<script src="js/games/gluecksspirale.js?v=20261109-v196"></script>
+<script src="js/games/tor.js?v=20261109-v196"></script>
+<script src="js/games/coinflip.js?v=20261109-v196"></script>
 
-<script src="js/groups.js?v=20261109-v195"></script>
+<script src="js/groups.js?v=20261109-v196"></script>
 
-<script src="js/app.js?v=20261109-v195"></script><script src="js/club-termine.js?v=20261109-v195"></script>
+<script src="js/app.js?v=20261109-v196"></script><script src="js/club-termine.js?v=20261109-v196"></script>
     
-<script src="js/live-games.js?v=20261109-v195"></script>
-<script src="js/strafe-pdf.js?v=20261109-v195"></script>
-<script src="js/cash-history.js?v=20261109-v195"></script>
-<script src="js/cash-book.js?v=20261109-v195"></script>
-<script src="js/penalty-statistics.js?v=20261109-v195"></script>
-<script src="js/cash-expenses.js?v=20261109-v195"></script>
-<script src="js/historical-evenings.js?v=20261109-v195"></script>
-<script src="js/game-inputs.js?v=20261109-v195"></script>
-<script src="js/table-headers.js?v=20261109-v195"></script>
+<script src="js/live-games.js?v=20261109-v196"></script>
+<script src="js/strafe-pdf.js?v=20261109-v196"></script>
+<script src="js/cash-history.js?v=20261109-v196"></script>
+<script src="js/cash-book.js?v=20261109-v196"></script>
+<script src="js/penalty-statistics.js?v=20261109-v196"></script>
+<script src="js/cash-expenses.js?v=20261109-v196"></script>
+<script src="js/historical-evenings.js?v=20261109-v196"></script>
+<script src="js/game-inputs.js?v=20261109-v196"></script>
+<script src="js/table-headers.js?v=20261109-v196"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261109-v195"
+  src="js/firebase.js?v=20261109-v196"
 ></script>
 
 </body>
