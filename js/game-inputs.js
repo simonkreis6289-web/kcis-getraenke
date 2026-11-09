@@ -4,7 +4,8 @@ const gameInputTeams={tannenbaum:'T1',darts:'T1'},gameInputPlaces={hoch:null,tie
 function giEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function gameInputButton(label,action,pin){return '<button type="button" '+(pin?'data-pin="'+pin+'" ':'')+'onclick="'+giEscape(action)+'">'+label+'</button>';}
 function gameInputNumbers(action,kranz=12){return Array.from({length:9},(_,i)=>gameInputButton(String(i+1),action(i+1,false),i+1)).join('')+gameInputButton('Gosse',action(0,true))+gameInputButton('Kranz'+(kranz===8?' (8 Holz)':''),action(kranz,false));}
-function gameInputTeam(key,team){if(!['T1','T2'].includes(team))return;gameInputTeams[key]=team;applyGameInputLayout(key);}
+function gameInputCurrentTeam(key){if(key==='tannenbaum'){ensureTannenbaumState();return tannenbaumState.currentTeam;}return gameInputTeams[key];}
+function gameInputTeam(key,team){if(!['T1','T2'].includes(team)||gameInputBusy[key])return;gameInputTeams[key]=team;if(key==='tannenbaum'){ensureTannenbaumState();tannenbaumState.currentTeam=team;persistState();}applyGameInputLayout(key);}
 function gameInputPlace(mode,place){const s=ensureHausState(mode),name=s.playerOrder[s.currentPlayerIndex];if(!s.active||s.rows[name]?.[place])return;gameInputPlaces[mode]=place;applyGameInputLayout(hausId(mode));}
 function gameInputTarget(){
  const s=lotterieState,names=getLotteriePlayers().map(p=>p.name);
@@ -22,7 +23,7 @@ function dispatchGameInputThrow(key,pins,gosse=false){
  if(key==='lotterie'){const target=gameInputTarget();if(!target)return;lotterieEdit={person:target.name,colIndex:target.col};return confirmLotterieThrow(pins);}
  if(key==='tiberius')return handleTiberiusThrow(pins);
  if(key==='haushoch'||key==='haustief'){const mode=key==='haushoch'?'hoch':'tief',name=s.playerOrder[s.currentPlayerIndex],free=(s.rows[name]||[]).map((v,i)=>v?null:i).filter(v=>v!==null),place=free.includes(gameInputPlaces[mode])?gameInputPlaces[mode]:free[0];return hausThrow(mode,pins,gosse,place);}
- const team=gameInputTeams[key];
+ const team=gameInputCurrentTeam(key);
  if(key==='tannenbaum'){
   tannenbaumThrowTeam=team;
   if(gosse||pins===9||pins===12)return openTannenbaumPenaltyPlayerModal(gosse?'gosse':pins===9?'9er':'kranz',team,pins===9?9:null);
@@ -37,7 +38,7 @@ function dispatchGameInputThrow(key,pins,gosse=false){
 function legacyGameInput(key){
  const s=gameSetupState(key);let context='',options='',numbers='';
  if(['tannenbaum','darts'].includes(key)){
-  const team=gameInputTeams[key];context='Mannschaft: '+giEscape(getGroupLabel(team));
+  const team=gameInputCurrentTeam(key);context=giEscape(getGroupLabel(team));
   options='<div class="gi-options">'+['T1','T2'].map(t=>'<button type="button" aria-pressed="'+(t===team)+'" onclick="gameInputTeam(\''+key+'\',\''+t+'\')">'+giEscape(getGroupLabel(t))+'</button>').join('')+'</div>';
  }else if(key==='lotterie'){
   const target=gameInputTarget();if(!target)return '<p>'+(s.columns.length?'Alle Würfe erfasst – Lotterie abschließen.':'Spaltenbeträge festlegen, um Würfe einzutragen.')+'</p>';
@@ -51,7 +52,7 @@ function legacyGameInput(key){
  }
  numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')');
  if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputTeams.darts;openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
- return '<div class="gi-turn">🎳 <strong>'+context+'</strong></div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
+ return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(key==='tannenbaum'?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
 }
 function normalizeGamePinpad(card){
  const selectors=['.gi-source-pinpad button','.six-pinpad button','.tg-pinpad button','.ind-pinpad button','.game-throw-toolbar .pinpad-btn','.sichern-buttons button[onclick^="sichernThrow("]','.fox-actions button[onclick^="applyFuchsjagdThrow("]'];
@@ -61,7 +62,7 @@ function normalizeGamePinpad(card){
  for(const button of buttons){
   const label=button.textContent.trim(),n=Number(button.dataset.pin||label);button.type='button';button.classList.add('gi-throw');
   if(Number.isInteger(n)&&n>=1&&n<=9){button.dataset.pin=String(n);byNumber.set(n,button);}
-  else{if(label==='G'||label==='0')button.textContent='Gosse';special.append(button);}
+  else{if(label==='G'||label==='0')button.textContent='Gosse';const text=button.textContent.toLowerCase();button.dataset.throwKind=text.includes('gosse')?'gosse':text.includes('kranz')?'kranz':'other';special.append(button);}
  }
  for(let n=1;n<=9;n++){let button=byNumber.get(n);if(!button){button=document.createElement('button');button.type='button';button.disabled=true;button.textContent=String(n);button.dataset.pin=String(n);button.className='gi-throw';}numeric.append(button);}
  pad.append(numeric,special);card.append(pad);
