@@ -48,6 +48,7 @@ async function finishFuchsjagd(escaped,killer){
  if(!(await changeMultipleSyncedPersonCounters(changes,'🦊 Fuchsjagd abgeschlossen')))return false;
  s.active=false;s.finished=true;s.penaltiesBooked=true;
  s.result=escaped?`Fuchs ${s.fox} entkommen · alle Jäger 1. Verlierer +1`:`Fuchs ${s.fox} erlegt durch ${killer} · 1. Verlierer +1`;
+ s.loserNames=losers.slice();s.winnerNames=escaped?[s.fox]:s.hunters.slice();if(typeof recordCompletedGame==='function')recordCompletedGame('fuchsjagd',s);
  renderAll();persistState();showToast(s.result,'success');return true;
 }
 async function undoFuchsjagdThrow(){

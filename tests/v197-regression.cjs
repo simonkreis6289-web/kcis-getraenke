@@ -40,14 +40,14 @@ function treeFixture(){const source=read('dashboard.html'),a=source.indexOf('fun
 
 test('Tannenbaum dashboard shows the real count instead of long strike lists above 15',()=>{
  const {base,render}=treeFixture(),s={teams:{T1:{remaining:{...base},strikes:Array.from({length:37},()=>({number:5,amount:.5}))},T2:{remaining:{...base},strikes:Array.from({length:21},()=>({number:5,amount:.5}))}}};
- const {document}=parseHTML(render(s)),row=[...document.querySelectorAll('.tree-row')].find(r=>r.querySelector('.tree-number').textContent==='5'),strikes=row.querySelectorAll('.tree-strikes');assert.equal(strikes[0].querySelector('.tree-strikes-count').textContent,'37');assert.equal(strikes[1].querySelector('.tree-strikes-count').textContent,'21');assert.equal(strikes[0].getAttribute('aria-label'),'37 Striche');assert.equal(row.querySelectorAll('.tree-strike').length,0);
- s.teams.T1.strikes.pop();const next=parseHTML(render(s)).document;assert.equal(next.querySelector('.tree-strikes-count').textContent,'36');
+ const {document}=parseHTML(render(s)),row=[...document.querySelectorAll('.tree-row')].find(r=>r.querySelector('.tree-number').textContent==='5'),strikes=['T1','T2'].map(k=>row.querySelector('[data-team='+k+'] .tree-strikes'));assert.equal(strikes[0].querySelector('.tree-strikes-count').textContent,'37');assert.equal(strikes[1].querySelector('.tree-strikes-count').textContent,'21');assert.equal(strikes[0].getAttribute('aria-label'),'37 Striche');assert.equal(row.querySelectorAll('.tree-strike').length,0);
+ s.teams.T1.strikes.pop();const next=parseHTML(render(s)).document;assert.equal(next.querySelector('[data-team=T1] .tree-strikes-count').textContent,'36');
  const css=read('css/dashboard-tannenbaum.css');assert.match(css,/\.tree-v138 \.tree-strikes\{[^}]*overflow:visible/);assert(read('dashboard.html').includes('css/dashboard-tannenbaum.css?v='));
 });
 
 test('remaining numbers start at the center for both teams and winner rendering stays intact',()=>{
  const {base,render}=treeFixture(),s={teams:{T1:{remaining:{...base,5:2}},T2:{remaining:{...base,5:3}}}},doc=parseHTML(render(s)).document,row=[...doc.querySelectorAll('.tree-row')].find(r=>r.querySelector('.tree-number').textContent==='5');
- for(const [selector,count] of [['.tree-side-left',2],['.tree-side-right',3]]){const balls=[...row.querySelectorAll(selector+' .tree-ball')];assert.equal(balls.length,5);balls.forEach((ball,i)=>assert.equal(ball.classList.contains('crossed'),i>=count));}
+ for(const [selector,count] of [['[data-team=T1] .tree-side',2],['[data-team=T2] .tree-side',3]]){const balls=[...row.querySelectorAll(selector+' .tree-ball')];assert.equal(balls.length,5);balls.forEach((ball,i)=>assert.equal(ball.classList.contains('crossed'),i>=count));}
  const css=read('css/dashboard-tannenbaum.css');assert.match(css,/\.tree-side-left\{flex-direction:row-reverse/);assert.match(css,/\.tree-side-right\{flex-direction:row/);
- s.teams.T1.remaining=Object.fromEntries(Object.keys(base).map(n=>[n,0]));const won=parseHTML(render(s)).document;assert(won.querySelector('.tree-win'));assert.equal(won.querySelectorAll('.tree-side-left .tree-ball').length,0);
+ s.teams.T1.remaining=Object.fromEntries(Object.keys(base).map(n=>[n,0]));const won=parseHTML(render(s)).document;assert(won.querySelector('.tree-win'));assert.equal(won.querySelectorAll('[data-team=T1] .tree-ball').length,0);
 });

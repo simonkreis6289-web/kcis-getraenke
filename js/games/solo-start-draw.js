@@ -4,7 +4,8 @@ let soloStartDrawState = {
   title: 'Startspieler',
   subtitle: 'Wer beginnt?',
   selected: '',
-  onConfirm: null
+  onConfirm: null,
+  drawId:null
 };
 
 let soloStartDrawRunning = false;
@@ -39,6 +40,7 @@ function closeSoloStartDraw() {
   if (soloStartDrawRunning) return;
   document.getElementById('solo-start-draw-modal')?.classList.add('hidden');
   soloStartDrawState.open = false;
+  if(typeof cancelDashboardDraw==='function')cancelDashboardDraw(soloStartDrawState.drawId);
 }
 
 function runSoloStartDraw() {
@@ -53,12 +55,14 @@ function runSoloStartDraw() {
   if (runBtn) runBtn.classList.add('hidden');
   let ticks = 0;
   const frames = soloStartDrawState.players;
+  const winner = frames[Math.floor(Math.random() * frames.length)];
+  const draw=typeof beginDashboardDraw==='function'?beginDashboardDraw({kind:'player',title:soloStartDrawState.title,frames,steps:18,interval:110,winner}):null;
+  soloStartDrawState.drawId=draw?.id;
   const timer = setInterval(() => {
-    ticks++;
+    ticks=draw?Math.floor((Date.now()-draw.startedAt)/110):ticks+1;
     if (spinEl) spinEl.textContent = frames[ticks % frames.length];
     if (ticks >= 18) {
       clearInterval(timer);
-      const winner = frames[Math.floor(Math.random() * frames.length)];
       soloStartDrawState.selected = winner;
       if (spinEl) spinEl.textContent = winner;
       if (resultEl) resultEl.textContent = `🎉 ${winner} beginnt.`;

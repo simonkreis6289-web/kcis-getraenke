@@ -26,17 +26,34 @@
     return Math.max(0,Math.ceil(delta/15));
   }
   function create(mode,people,catalog,prices,settings={}){
-    return {schema:1,mode,date:'',startTime:settings.startTime||'20:00',endTime:settings.endTime||'23:00',
+    return {schema:2,mode,date:'',startTime:settings.startTime||'20:00',endTime:settings.endTime||'23:00',
       monthlyFee:String(settings.monthlyFee||0),limit:String(settings.limit??30),autoGosseKing:true,note:'',laneFee:'',laneExpenseExcluded:false,
       catalog:catalog.map(s=>({key:s.key,label:s.label,price:String(prices[s.key]||0)})),
-      rows:people.filter(p=>!p.isDrinksOnly&&(mode!=='cancelled'||!p.isGuest)).map(p=>({
+      rows:people.filter(p=>!p.inactive&&!p.isDrinksOnly&&(mode!=='cancelled'||!p.isGuest)).sort((a,b)=>a.name.localeCompare(b.name,'de',{sensitivity:'base',numeric:true})).map(p=>({
         name:p.name,isGuest:!!p.isGuest,included:!p.inactive&&!p.isGuest,status:'unknown',
-        counts:Object.fromEntries(catalog.map(s=>[s.key,0])),normalExtra:'0',onTopExtra:'0',arrivalTime:'',leftEarlyAt:''
+        counts:Object.fromEntries(catalog.map(s=>[s.key,0])),freeItems:[],normalExtra:'0',onTopExtra:'0',arrivalTime:'',leftEarlyAt:''
       }))};
+  }
+  function extras(row,strict=true){
+    const items=Array.isArray(row.freeItems)?row.freeItems:[];
+    const legacy=[['normalExtra','Nachtrag: weiterer Betrag',false],['onTopExtra','Nachtrag: Zuschlag',true]].filter(([field])=>String(row[field]??'0').trim()&&Number(String(row[field]??'0').replace(',','.'))!==0).map(([field,reason,onTop])=>({amount:row[field],reason,onTop}));
+    return [...items,...legacy].filter(item=>String(item?.reason||'').trim()||String(item?.amount??'').trim()).map((item,index)=>{
+      const reason=String(item?.reason||'').trim(),cents=amount(item?.amount,'Freier Betrag '+(index+1)+' / '+row.name,strict);
+      if(strict&&(!reason||cents<=0||typeof item?.onTop!=='boolean'))throw Error('Freier Betrag '+(index+1)+' / '+row.name+': Grund und einen Betrag größer als 0 eingeben');
+      return {reason,amountCents:cents,onTop:item?.onTop===true};
+    }).filter(item=>item.amountCents>0);
+  }
+  function upgrade(draft,people=[]){
+    const d=clone(draft),inactive=new Set(people.filter(p=>p.inactive).map(p=>p.name));d.schema=2;
+    // Bereits ausdrücklich gespeicherte Teilnehmer bleiben beim Bearbeiten erhalten.
+    d.rows=d.rows.filter(r=>r.included||!inactive.has(r.name)).map(r=>{
+      const legacy=[['normalExtra','Nachtrag: weiterer Betrag',false],['onTopExtra','Nachtrag: Zuschlag',true]].filter(([field])=>String(r[field]??'0').trim()&&Number(String(r[field]??'0').replace(',','.'))!==0).map(([field,reason,onTop])=>({amount:String(r[field]),reason,onTop}));
+      return {...r,freeItems:[...(Array.isArray(r.freeItems)?r.freeItems:[]),...legacy],normalExtra:'0',onTopExtra:'0'};
+    });return d;
   }
   function snapshot(draft,{strict=true,today=KCBirthdays.today(),club=''}={}){
     if(strict&&(!KCBirthdays.parse(draft.date)||draft.date>today))throw new Error('Bitte ein gültiges Datum bis heute auswählen');
-    const selected=draft.rows.filter(p=>p.included),cancelled=draft.mode==='cancelled';
+    const selected=draft.rows.filter(p=>p.included).slice().sort((a,b)=>a.name.localeCompare(b.name,'de',{sensitivity:'base',numeric:true})),cancelled=draft.mode==='cancelled';
     if(strict&&!selected.length)throw new Error('Mindestens eine Person auswählen');
     const names=new Set();
     const monthly=cancelled?0:amount(draft.monthlyFee,'Monatsbeitrag',strict),limit=amount(draft.limit,'Strafobergrenze',strict);
@@ -56,10 +73,11 @@
       const counts=Object.fromEntries(catalog.map(s=>[s.key,present?count(row.counts[s.key],name+' / '+s.label,strict):0]));
       if(present&&late&&row.arrivalTime)counts[late]=quarters('late',row.arrivalTime,draft.startTime,draft.endTime);
       if(present&&early&&row.leftEarlyAt)counts[early]=quarters('early',row.leftEarlyAt,draft.startTime,draft.endTime);
-      const normal=present?amount(row.normalExtra,name+' / weitere Beträge',strict):0;
-      const onTop=present?amount(row.onTopExtra,name+' / Zuschläge',strict):0;
+      const free=present?extras(row,strict):[];
+      const normal=free.filter(i=>!i.onTop).reduce((sum,i)=>sum+i.amountCents,0);
+      const onTop=free.filter(i=>i.onTop).reduce((sum,i)=>sum+i.amountCents,0);
       const raw=catalog.reduce((sum,s)=>sum+counts[s.key]*Math.round(s.price*100),normal);
-      return {...row,name,status:cancelled?'cancelled':row.status,counts,normal,onTop,raw,actual:cancelled?5000:Math.min(raw,limit)+onTop,king:false};
+      return {...row,name,status:cancelled?'cancelled':row.status,counts,free,normal,onTop,raw,actual:cancelled?5000:Math.min(raw,limit)+onTop,king:false};
     });
     const maxGosse=Math.max(0,...rows.filter(r=>r.status==='present').map(r=>Number(r.counts[gosse])||0));
     if(!cancelled&&draft.autoGosseKing&&maxGosse>0)for(const row of rows){
@@ -72,9 +90,7 @@
     const highest=Math.max(0,...rows.filter(r=>!r.isGuest&&r.status==='present').map(r=>r.actual));
     const map=row=>{
       const penalty=cancelled?5000:row.status==='excused'?highest+200:row.status==='unexcused'?highest+2200:row.actual;
-      const freeStrafen=[];
-      if(row.normal)freeStrafen.push({amount:row.normal/100,reason:'Nachtrag: weiterer Betrag',onTop:false});
-      if(row.onTop)freeStrafen.push({amount:row.onTop/100,reason:'Nachtrag: Zuschlag',onTop:true});
+      const freeStrafen=row.free.map(item=>({amount:item.amountCents/100,reason:item.reason,onTop:item.onTop}));
       if(row.king&&!catalog.some(s=>/gossen(könig|koenig)/i.test(s.label)&&row.counts[s.key]>0))freeStrafen.push({amount:3,reason:'Gossenkönig',onTop:true});
       return {name:row.name,isGuest:!!row.isGuest,status:row.status,statusLabel:({present:'Anwesend',excused:'Abgemeldet',unexcused:'Nicht abgemeldet',cancelled:'Ausgefallen'})[row.status]||'Kein Status',
         strafen:row.counts,freeStrafen,tannenbaumCharges:[],isGosseKing:row.king,actualPenaltyTotal:row.actual/100,
@@ -91,22 +107,23 @@
       totals:{memberPenaltyTotal:sum(members,'penaltyTotal'),memberFeeTotal:sum(members,'monthlyFee'),memberTotal:sum(members,'total'),guestTotal:sum(guests,'total'),grandTotal:sum(mapped,'total')},
       manualDraft:clone(draft)};
   }
-  window.KCHistorical=Object.freeze({create,snapshot,quarters});
+  window.KCHistorical=Object.freeze({create,snapshot,quarters,extras,upgrade});
 })();
 
-let historicalDraft=null,historicalClub='',historicalBusy=false,historicalRevision=null,historicalOriginalId='';
+let historicalDraft=null,historicalClub='',historicalBusy=false,historicalRevision=null,historicalOriginalId='',historicalSelectedRow=0;
 function openHistoricalEvening(mode='backfill',archiveId=''){
   if(historicalBusy||!ACTIVE_CLUB)return;
   if(archiveId){
     if(cashHistoryClub!==getClubFirestoreId(ACTIVE_CLUB))return;
     const entry=cashHistoryEntries.find(e=>e.id===archiveId);
     if(!entry?.manualDraft){showToast('Dieser ältere Abschluss enthält keinen bearbeitbaren Entwurf.','error');return;}
-    historicalDraft=JSON.parse(JSON.stringify(entry.manualDraft));historicalDraft.archiveId=entry.id;historicalRevision=entry.manualRevision||0;historicalOriginalId=entry.id;
+    historicalDraft=KCHistorical.upgrade(entry.manualDraft,persons);historicalDraft.archiveId=entry.id;historicalRevision=entry.manualRevision||0;historicalOriginalId=entry.id;
   }else{
     historicalDraft=KCHistorical.create(mode,persons,STRAFEN,strafPrices,{monthlyFee:monatsbeitrag,limit:STRAFEN_LIMIT,...timePenaltySettings});
     historicalDraft.date=KCBirthdays.today();historicalRevision=null;historicalOriginalId='';
   }
   historicalClub=ACTIVE_CLUB;
+  historicalSelectedRow=0;
   document.getElementById('historical-evening-modal').classList.remove('hidden');
   renderHistoricalEvening();document.getElementById('historical-date').focus();
 }
@@ -128,12 +145,31 @@ function renderHistoricalEvening(){
   document.getElementById('historical-gosse').checked=d.autoGosseKing;
   document.getElementById('historical-submit').textContent=cancelled?'Erstellen (je 50 €)':'Strafen-PDF erstellen und archivieren';
   document.querySelectorAll('.historical-played-only').forEach(el=>el.hidden=cancelled);
-  const head=['Dabei','Name',...(cancelled?[]:['Status','Ankunft','Früher gegangen',...d.catalog.map((s,i)=>esc(s.label)+'<br><input aria-label="Preis '+esc(s.label)+'" type="number" min="0" step="0.01" value="'+esc(s.price)+'" data-price="'+i+'">'),'Weitere Beträge (€)','Zuschläge ohne Deckel (€)']),'Gesamt'];
-  document.getElementById('historical-head').innerHTML=head.map((h,i)=>'<th'+(i===1?' class="historical-name"':'')+'>'+h+'</th>').join('');
-  const input=(r,field,value,type='number',extra='')=>'<input aria-label="'+esc(field+' / '+r.name)+'" type="'+type+'" value="'+esc(value)+'" data-field="'+field+'" '+extra+'>';
-  document.getElementById('historical-body').innerHTML=d.rows.map((r,i)=>'<tr data-row="'+i+'"><td><input aria-label="'+esc(r.name)+' berücksichtigen" type="checkbox" data-field="included" '+(r.included?'checked':'')+'></td><td class="historical-name">'+input(r,'name',r.name,'text')+'<small>'+(r.isGuest?'Gastkegler':'Clubmitglied')+'</small></td>'+(cancelled?'':'<td><select aria-label="Status '+esc(r.name)+'" data-field="status">'+[['unknown','Bitte auswählen'],['present','Anwesend'],...(!r.isGuest?[['excused','Abgemeldet'],['unexcused','Nicht abgemeldet']]:[])].map(([k,label])=>'<option value="'+k+'" '+(r.status===k?'selected':'')+'>'+label+'</option>').join('')+'</select></td><td>'+input(r,'arrivalTime',r.arrivalTime,'time')+'</td><td>'+input(r,'leftEarlyAt',r.leftEarlyAt,'time')+'</td>'+d.catalog.map(s=>'<td><input aria-label="'+esc(s.label+' / '+r.name)+'" type="number" min="0" max="99999" step="1" data-count="'+esc(s.key)+'" value="'+esc(r.counts[s.key]||0)+'"></td>').join('')+'<td>'+input(r,'normalExtra',r.normalExtra,'number','min="0" step="0.01"')+'</td><td>'+input(r,'onTopExtra',r.onTopExtra,'number','min="0" step="0.01"')+'</td>')+'<td data-historical-total="'+i+'">–</td></tr>').join('');
+  document.getElementById('historical-workspace').classList.toggle('historical-cancelled',cancelled);
+  document.getElementById('historical-prices').innerHTML=d.catalog.map((c,i)=>'<label>'+esc(c.label)+' (€)<input aria-label="Preis '+esc(c.label)+'" type="number" min="0" step="0.01" value="'+esc(c.price)+'" data-price="'+i+'"></label>').join('');
+  renderHistoricalRoster();renderHistoricalPerson();
   updateHistoricalPreview();
 }
+function renderHistoricalRoster(){
+  const d=historicalDraft;if(!d)return;const esc=escapeCashText;
+  document.getElementById('historical-roster').innerHTML=d.rows.map((r,i)=>({r,i})).sort((a,b)=>a.r.name.localeCompare(b.r.name,'de',{sensitivity:'base',numeric:true})).map(({r,i})=>'<div class="historical-roster-row '+(i===historicalSelectedRow?'selected':'')+'" data-row="'+i+'"><input type="checkbox" aria-label="'+esc(r.name)+' berücksichtigen" data-field="included" '+(r.included?'checked':'')+'><button type="button" aria-pressed="'+(i===historicalSelectedRow)+'" onclick="selectHistoricalPerson('+i+')"><span><strong>'+esc(r.name)+'</strong><small>'+(r.isGuest?'Gastkegler':'Clubmitglied')+' · <span data-historical-status="'+i+'"></span></small></span><b data-historical-total="'+i+'">–</b></button></div>').join('');
+}
+function selectHistoricalPerson(index){if(historicalBusy)return;historicalSelectedRow=index;renderHistoricalRoster();renderHistoricalPerson();updateHistoricalPreview();}
+function renderHistoricalPerson(){
+  const d=historicalDraft,r=d?.rows[historicalSelectedRow],host=document.getElementById('historical-person-editor'),esc=escapeCashText;
+  if(!r){host.innerHTML='<p>Person links auswählen oder hinzufügen.</p>';return;}
+  const statuses=[['unknown','Bitte auswählen'],['present','Anwesend'],...(!r.isGuest?[['excused','Abgemeldet'],['unexcused','Nicht abgemeldet']]:[])];
+  const input=(field,value,type='text')=>'<input type="'+type+'" data-field="'+field+'" value="'+esc(value||'')+'">';
+  host.innerHTML='<div data-row="'+historicalSelectedRow+'"><div class="historical-person-heading"><h4>'+esc(r.name)+'</h4><span>Einzelbeträge werden automatisch addiert</span></div><div class="historical-person-fields"><label>Name'+input('name',r.name)+'</label><label>Anwesenheit<select data-field="status">'+statuses.map(([k,l])=>'<option value="'+k+'" '+(r.status===k?'selected':'')+'>'+l+'</option>').join('')+'</select></label><label>Ankunft (optional)'+input('arrivalTime',r.arrivalTime,'time')+'</label><label>Früher gegangen (optional)'+input('leftEarlyAt',r.leftEarlyAt,'time')+'</label></div><div data-historical-present><h4>Strafen erfassen</h4><div class="historical-counter-grid">'+d.catalog.map(c=>'<label>'+esc(c.label)+'<small>'+historicalMoney(Number(String(c.price).replace(',','.'))||0)+' je Eintrag</small><input aria-label="'+esc(c.label+' / '+r.name)+'" type="number" min="0" max="99999" step="1" data-count="'+esc(c.key)+'" value="'+esc(r.counts[c.key]||0)+'"></label>').join('')+'</div><div class="historical-free-heading"><h4>Freie Beträge</h4><button type="button" class="secondary-btn" onclick="addHistoricalFreeItem()">+ Betrag mit Grund</button></div><p class="profile-help">Beträge zählen zur Strafobergrenze. Zuschläge werden zusätzlich berechnet.</p><div id="historical-free-items"></div></div><p data-historical-attendance-help class="profile-help"></p></div>';
+  renderHistoricalFreeItems();
+}
+function renderHistoricalFreeItems(){
+  const r=historicalDraft?.rows[historicalSelectedRow];if(!r)return;const esc=escapeCashText;
+  document.getElementById('historical-free-items').innerHTML=(r.freeItems||[]).map((item,i)=>'<div class="historical-free-item" data-free-item="'+i+'"><label>Grund<input type="text" data-free-field="reason" value="'+esc(item.reason)+'" placeholder="z. B. verlorene Wette"></label><label>Betrag (€)<input type="number" min="0.01" step="0.01" data-free-field="amount" value="'+esc(item.amount)+'" placeholder="0,00"></label><label class="historical-check"><input type="checkbox" data-free-field="onTop" '+(item.onTop?'checked':'')+'>Zusätzlich zur Obergrenze</label><button type="button" class="secondary-btn" aria-label="Betrag '+(i+1)+' entfernen" onclick="removeHistoricalFreeItem('+i+')">Entfernen</button></div>').join('')||'<p class="historical-empty">Noch keine freien Beträge.</p>';
+}
+function addHistoricalFreeItem(){if(historicalBusy||!historicalDraft)return;const r=historicalDraft.rows[historicalSelectedRow];(r.freeItems??=[]).push({reason:'',amount:'',onTop:false});renderHistoricalFreeItems();document.querySelector('#historical-free-items .historical-free-item:last-child input')?.focus();}
+function removeHistoricalFreeItem(index){if(historicalBusy||!historicalDraft)return;historicalDraft.rows[historicalSelectedRow].freeItems.splice(index,1);renderHistoricalFreeItems();updateHistoricalPreview();}
+function markHistoricalPresent(){if(historicalBusy||!historicalDraft)return;historicalDraft.rows.filter(r=>r.included).forEach(r=>r.status='present');renderHistoricalPerson();updateHistoricalPreview();}
 function updateHistoricalPreview(){
   if(!historicalDraft)return;
   try{
@@ -142,6 +178,7 @@ function updateHistoricalPreview(){
     historicalDraft.rows.forEach((r,i)=>{
       const result=all.find(p=>p.name===r.name.trim());
       const el=document.querySelector('[data-historical-total="'+i+'"]');if(el)el.textContent=r.included?historicalMoney(result?.total||0):'–';
+      const status=document.querySelector('[data-historical-status="'+i+'"]');if(status)status.textContent=!r.included?'Nicht berücksichtigt':result?.statusLabel||'Bitte Status wählen';
       for(const input of document.querySelectorAll('[data-row="'+i+'"] [data-count]')){
         const label=historicalDraft.catalog.find(c=>c.key===input.dataset.count)?.label||'';
         const auto=s.autoTimeKeys.includes(input.dataset.count)?(/verspät|verspaet/i.test(label)?r.arrivalTime:r.leftEarlyAt):'';
@@ -151,6 +188,9 @@ function updateHistoricalPreview(){
         else if(wasAuto)input.value=r.counts[input.dataset.count]||0;
       }
     });
+    const selected=historicalDraft.rows[historicalSelectedRow],present=selected?.included&&selected.status==='present';
+    document.querySelectorAll('#historical-person-editor [data-historical-present] input,#historical-person-editor [data-historical-present] button').forEach(el=>el.disabled=!present);
+    const help=document.querySelector('[data-historical-attendance-help]');if(help)help.textContent=!selected?.included?'Diese Person wird nicht berücksichtigt.':selected.status==='excused'?'Abgemeldet: höchste Strafe eines anwesenden Mitglieds + 2 €.':selected.status==='unexcused'?'Nicht abgemeldet: höchste Strafe eines anwesenden Mitglieds + 22 €.':selected.status==='unknown'?'Bitte zuerst die Anwesenheit auswählen.':'';
     document.getElementById('historical-summary').textContent=s.members.length+' Mitglieder · '+s.guests.length+' Gastkegler · Gesamt '+historicalMoney(s.totals.grandTotal);
   }catch(error){document.getElementById('historical-summary').textContent=error.message;}
 }
@@ -192,18 +232,20 @@ function changeHistoricalInput(event){
   const index=el.closest('[data-row]')?.dataset.row;
   if(index!==undefined){
     const row=d.rows[Number(index)];
-    if(el.dataset.count)row.counts[el.dataset.count]=el.value;
+    if(el.dataset.freeField){const item=row.freeItems[Number(el.closest('[data-free-item]').dataset.freeItem)];item[el.dataset.freeField]=el.type==='checkbox'?el.checked:el.value;}
+    else if(el.dataset.count)row.counts[el.dataset.count]=el.value;
     else if(el.dataset.field)row[el.dataset.field]=el.type==='checkbox'?el.checked:el.value;
   }else if(el.dataset.price!==undefined)d.catalog[Number(el.dataset.price)].price=el.value;
   else if(el.dataset.setting)d[el.dataset.setting]=el.type==='checkbox'?el.checked:el.value;
   if(el.id==='historical-date'&&d.mode==='cancelled'&&historicalRevision===null)delete d.archiveId;
+  if(el.dataset.field==='name'){renderHistoricalRoster();const h=document.querySelector('.historical-person-heading h4');if(h)h.textContent=el.value;}
   updateHistoricalPreview();
 }
 function addHistoricalPerson(){
   const input=document.getElementById('historical-person-name'),name=input.value.trim();if(!name)return;
   if(historicalDraft.rows.some(r=>r.name.trim().toLocaleLowerCase('de')===name.toLocaleLowerCase('de'))){showToast('Name bereits vorhanden','error');return;}
-  historicalDraft.rows.push({name,isGuest:historicalDraft.mode!=='cancelled'&&document.getElementById('historical-person-kind').value==='guest',included:true,status:'unknown',counts:{},normalExtra:'0',onTopExtra:'0',arrivalTime:'',leftEarlyAt:''});
-  input.value='';renderHistoricalEvening();
+  historicalDraft.rows.push({name,isGuest:historicalDraft.mode!=='cancelled'&&document.getElementById('historical-person-kind').value==='guest',included:true,status:'unknown',counts:{},freeItems:[],normalExtra:'0',onTopExtra:'0',arrivalTime:'',leftEarlyAt:''});
+  historicalSelectedRow=historicalDraft.rows.length-1;input.value='';renderHistoricalEvening();
 }
 function addHistoricalPenalty(){
   const input=document.getElementById('historical-penalty-name'),label=input.value.trim();if(!label)return;

@@ -65,6 +65,7 @@ async function sechsRun(action,fields={}){
     for(const item of result.counters||[])if(typeof applyConfirmedLiveCounter==='function')applyConfirmedLiveCounter(item.personName,item.category,item.key,item.value);
     const removed=new Set(result.removed||[]),added=result.added||[],ids=new Set(added.map(e=>e.id));
     penaltyStatsLog=[...(result.gameStats||added),...(penaltyStatsLog||[]).filter(e=>!e.sixDaysRaceId&&!removed.has(e.id)&&!ids.has(e.id))];
+    if(typeof applyCompletedGameResults==='function')applyCompletedGameResults(result.gameResultsHistory);
     sechsPending=null;
     persistState();try{renderAll();}catch(error){console.error('Rennanzeige',error);renderSechsGame();}
     if(action==='finish')showToast('Rennen abgeschlossen – Verliererstrafe einmal gebucht','success');

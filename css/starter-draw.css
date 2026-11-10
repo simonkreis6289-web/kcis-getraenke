@@ -1,0 +1,9 @@
+#tv-starter-draw{position:fixed;inset:0;z-index:1200;background:#111d35d9;display:grid;place-items:center;backdrop-filter:blur(8px);pointer-events:none}
+#tv-starter-draw[hidden]{display:none}
+.tv-draw-card{min-width:min(620px,75vw);max-width:90vw;padding:42px 50px;text-align:center;border:3px solid #edb43f;border-radius:24px;background:linear-gradient(150deg,#273c60,#121f37);color:white;box-shadow:0 25px 100px #0007}
+#tv-draw-title{font-size:clamp(24px,2.5vw,44px);font-weight:700;color:#f4c965}
+#tv-draw-value{font-size:clamp(45px,6vw,100px);font-weight:900;overflow-wrap:anywhere;padding:30px 0}
+#tv-draw-status{font-size:clamp(20px,2vw,32px)}
+#tv-starter-draw.is-running .tv-draw-card{animation:tv-draw-pulse .8s ease-in-out infinite alternate}
+@keyframes tv-draw-pulse{to{box-shadow:0 0 65px #edb43f70;transform:scale(1.02)}}
+@media(prefers-reduced-motion:reduce){#tv-starter-draw.is-running .tv-draw-card{animation:none}}

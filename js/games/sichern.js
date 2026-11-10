@@ -131,6 +131,7 @@ async function finishSichernGame(winner){
     }
     if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'🔒 Sichern abgeschlossen')))return false;
     s.winner=winner;s.ranking=ranking;s.message=(s.mode==='team'?sichernTeamLabel(winner):winner)+' gewinnt!';s.finished=true;s.active=false;
+    if(typeof recordCompletedGame==='function')recordCompletedGame('sichern',s);
     // Abschlussergebnis vor dem Rendering speichern, damit eine fremde Renderfunktion
     // den Abschluss nicht blockieren kann.
     persistState();

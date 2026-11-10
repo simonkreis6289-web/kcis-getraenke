@@ -1,10 +1,12 @@
 // ── DARTS ── 
 
 let pendingDartsPenalty = null;
+let dartsPenaltyBusy = false;
 
 function createDartsState() {
   return {
     active: false,
+    currentTeam: 'T1',
     startValue: 301,
     scores: {
       T1: 301,
@@ -31,6 +33,10 @@ function ensureDartsState() {
   if (!dartsState.valueMap) dartsState.valueMap = { ...DARTS_DEFAULT_VALUES };
   if (!Array.isArray(dartsState.history)) dartsState.history = [];
   if (dartsState.buffer === undefined) dartsState.buffer = 0;
+  if (!['T1','T2'].includes(dartsState.currentTeam)) {
+    const all=['T1','T2'].flatMap(team=>dartsState.roundThrows[team].map(entry=>({team,at:entry.createdAt||''}))).sort((a,b)=>a.at.localeCompare(b.at));
+    dartsState.currentTeam=all.length?(all.at(-1).team==='T1'?'T2':'T1'):'T1';
+  }
   if (!dartsState.startValue) dartsState.startValue = 301;
 }
 
@@ -42,6 +48,7 @@ function startDartsGame() {
   dartsState = createDartsState();
   if(typeof gameSetupTeamMap==='function')dartsState.participantTeams=gameSetupTeamMap('darts');
   dartsState.active = true;
+  dartsState.startedAt = new Date().toISOString();
   dashboardActiveGame = "darts";
   dartsState.startValue = startValue;
   dartsState.scores.T1 = startValue;
@@ -160,7 +167,7 @@ function closeDartsPenaltyPlayerModal() {
 }
 
 async function confirmDartsPenaltyPlayer() {
-  if (!pendingDartsPenalty) return;
+  if (!pendingDartsPenalty||dartsPenaltyBusy) return;
 
   const personName =
     document.getElementById(
@@ -212,6 +219,8 @@ async function confirmDartsPenaltyPlayer() {
     delta: 1
   }));
 
+  dartsPenaltyBusy=true;
+  try{
   const success =
     await changeMultipleSyncedPersonCounters(
       changes
@@ -250,6 +259,8 @@ async function confirmDartsPenaltyPlayer() {
     createdAt: new Date().toISOString()
   });
 
+  dartsState.currentTeam=team==='T1'?'T2':'T1';
+  closeDartsThrowModal();
   closeDartsPenaltyPlayerModal();
 
   renderDarts();
@@ -261,6 +272,7 @@ async function confirmDartsPenaltyPlayer() {
       : `✅ ${type}: ${personName} ist straffrei`,
     'success'
   );
+  }finally{dartsPenaltyBusy=false;}
 }
 
 function handleDartsThrow(hitKey) {
@@ -268,7 +280,7 @@ function handleDartsThrow(hitKey) {
 
   const team = dartsThrowTeam;
 
-  if (!team) return;
+  if (!['T1','T2'].includes(team)||!dartsState.active||dartsState.winner) return;
 
   const value = parseInt(
     dartsState.valueMap[hitKey] ??
@@ -283,6 +295,7 @@ function handleDartsThrow(hitKey) {
     createdAt: new Date().toISOString()
   });
 
+  dartsState.currentTeam=team==='T1'?'T2':'T1';
   closeDartsThrowModal();
 
   renderDarts();
@@ -360,6 +373,7 @@ function finishDartsRound() {
   if (dartsState.scores[winningTeam] <= 0) {
     dartsState.winner = winningTeam;
     dartsState.active = false;
+    if(typeof recordCompletedGame==='function')recordCompletedGame('darts',dartsState);
     showToast(`🏆 ${getTeamLabel(winningTeam)} gewinnt Darts!`, 'success');
   } else {
     showToast(`${getTeamLabel(winningTeam)} gewinnt die Runde: -${winningPoints}`, 'success');

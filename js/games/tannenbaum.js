@@ -695,7 +695,7 @@ function confirmTannenbaumRestore() {
 
   const data = tannenbaumState.teams[team];
   data.remaining[number] = (data.remaining[number] || 0) + 1;
-  data.finished = false;
+  syncTannenbaumWinnerBonus();
 
   tannenbaumState.history.unshift({
     team,
@@ -741,8 +741,18 @@ function updateTannenbaumCountdownSummary() {
   });
 }
 
-function finishTannenbaumGame() {
+// Der Abschlusszuschlag folgt dem tatsächlichen Spielfeld, auch nach Korrekturen.
+function syncTannenbaumWinnerBonus(){
   ensureTannenbaumState();
+  const empty={T1:isTannenbaumTeamEmpty('T1'),T2:isTannenbaumTeamEmpty('T2')};
+  for(const team of ['T1','T2']){
+    tannenbaumState.teams[team].finished=empty[team];
+    tannenbaumState.teams[team].bonus=!empty[team]&&empty[getOtherTeam(team)]?5:0;
+  }
+}
+
+function finishTannenbaumGame() {
+  syncTannenbaumWinnerBonus();
 
   if (!confirm('Tannenbaum wirklich abschließen und den Personen zuordnen?')) return;
 
@@ -884,11 +894,9 @@ function handleTannenbaumThrow(number) {
       }
     }
 
-  if (isTannenbaumTeamEmpty(team) && !own.finished) {
-    own.finished = true;
-    other.bonus = (other.bonus || 0) + 5;
-    action += ` · ${getTeamLabel(team)} ist leer! ${getTeamLabel(otherTeam)} +5,00 €`;
-  }
+  const wasFinished=own.finished;
+  syncTannenbaumWinnerBonus();
+  if(own.finished&&!wasFinished&&other.bonus===5)action+=` · ${getTeamLabel(team)} ist leer! ${getTeamLabel(otherTeam)} +5,00 €`;
 
     tannenbaumState.history.unshift({
       team,
@@ -946,6 +954,8 @@ function undoLastTannenbaumThrow() {
     }
   }
 
+  if(last.type==='manual-restore'||last.type==='restore')own.remaining[n]=Math.max(0,(own.remaining[n]||0)-1);
+  syncTannenbaumWinnerBonus();
   tannenbaumState.history.shift();
   if (last.type !== 'manual-restore') tannenbaumState.currentTeam = team;
 
