@@ -221,6 +221,7 @@ window.firestoreApi = {
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
+      for(const key of ['dashboardCashView','cashStandingOrders']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
       const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
@@ -269,6 +270,41 @@ window.firestoreApi = {
       const repair=!current.clubCalendarData||JSON.stringify(current.clubTermine)!==JSON.stringify(next.clubTermine)||JSON.stringify(current.clubKegelSerie)!==JSON.stringify(next.clubKegelSerie)||current.calendarRevision!==revision;
       if(changed||repair)transaction.set(ref,{...calendar,clubCalendarData:calendar,updatedAt:serverTimestamp()},{merge:true});
       return calendar;
+    });
+  },
+
+  async setCashDashboardView(clubId,request={}) {
+    if(!clubId||typeof request.open!=='boolean'||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId)||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Abrechnungsanzeige');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardCashView||{};
+      if((before.commands||[]).includes(request.opId))return before;
+      if(Number(before.revision||0)!==request.expectedRevision)throw Error('Dashboard-Ansicht wurde inzwischen geändert. Bitte erneut versuchen.');
+      const value={open:request.open,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      transaction.set(ref,{dashboardCashView:value,updatedAt:serverTimestamp()},{merge:true});return value;
+    });
+  },
+
+  async updateCashStandingOrders(clubId,request={}) {
+    if(!clubId||!window.KCCashOverview||!['upsert','delete'].includes(request.action)||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId)||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültiger Dauerauftrag');
+    if(request.action==='upsert'&&!window.KCCashOverview.validOrder(request.order))throw Error('Ungültiger Dauerauftrag');
+    if(request.action==='delete'&&!/^standing_[a-zA-Z0-9_-]{1,100}$/.test(request.id))throw Error('Ungültiger Dauerauftrag');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.cashStandingOrders||{};
+      if((before.commands||[]).includes(request.opId))return before;
+      if(Number(before.revision||0)!==request.expectedRevision)throw Error('Daueraufträge wurden inzwischen geändert. Bitte erneut versuchen.');
+      let orders=(before.orders||[]).slice();
+      if(request.action==='delete')orders=orders.filter(o=>o.id!==request.id);
+      else{
+        const {id,personName,amountCents,interval,startDate,endDate=''}=request.order;
+        if(!(current.persons||[]).some(p=>p.name===personName&&!p.isGuest&&!p.isDrinksOnly))throw Error('Bitte ein vorhandenes Mitglied auswählen.');
+        if(orders.some(o=>o.id!==id&&window.KCCashOverview.key(o.personName)===window.KCCashOverview.key(personName)))throw Error('Für dieses Mitglied besteht bereits ein Dauerauftrag.');
+        orders=orders.filter(o=>o.id!==id);orders.push({id,personName,amountCents,interval,startDate,endDate});
+      }
+      if(orders.length>200)throw Error('Zu viele Daueraufträge.');
+      const value={orders,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      transaction.set(ref,{cashStandingOrders:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
 

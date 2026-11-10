@@ -38,11 +38,11 @@ function treeFixture(){const source=read('dashboard.html'),a=source.indexOf('fun
  const env={state:{TANNENBAUM_BASE:base,groupSettings:{T1:{name:'Wand'},T2:{name:'TV'}}},seatingLive:null,safe:x=>String(x),numeric:x=>Number(x)||0,dashboardTeamColor:t=>t==='T1'?'#111':'#d62828',fmt:new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'})};
  const render=new Function('env','with(env){'+source.slice(a,b)+';return renderTree;}')(env);return {base,render};}
 
-test('Tannenbaum dashboard renders every strike as an individual wrap-ready mark, including long lists',()=>{
+test('Tannenbaum dashboard shows the real count instead of long strike lists above 15',()=>{
  const {base,render}=treeFixture(),s={teams:{T1:{remaining:{...base},strikes:Array.from({length:37},()=>({number:5,amount:.5}))},T2:{remaining:{...base},strikes:Array.from({length:21},()=>({number:5,amount:.5}))}}};
- const {document}=parseHTML(render(s)),row=[...document.querySelectorAll('.tree-row')].find(r=>r.querySelector('.tree-number').textContent==='5'),strikes=row.querySelectorAll('.tree-strikes');assert.equal(strikes[0].querySelectorAll('.tree-strike').length,37);assert.equal(strikes[1].querySelectorAll('.tree-strike').length,21);assert.equal(strikes[0].getAttribute('aria-label'),'37 Striche');
- s.teams.T1.strikes.pop();const next=parseHTML(render(s)).document;assert.equal(next.querySelectorAll('.tree-strike').length,57);
- const css=read('css/dashboard-tannenbaum.css');assert.match(css,/\.tree-v138 \.tree-strikes\{[^}]*flex-wrap:wrap/);assert.match(css,/\.tree-v138 \.tree-strikes\{[^}]*overflow:visible/);assert(read('dashboard.html').includes('css/dashboard-tannenbaum.css?v='));
+ const {document}=parseHTML(render(s)),row=[...document.querySelectorAll('.tree-row')].find(r=>r.querySelector('.tree-number').textContent==='5'),strikes=row.querySelectorAll('.tree-strikes');assert.equal(strikes[0].querySelector('.tree-strikes-count').textContent,'37');assert.equal(strikes[1].querySelector('.tree-strikes-count').textContent,'21');assert.equal(strikes[0].getAttribute('aria-label'),'37 Striche');assert.equal(row.querySelectorAll('.tree-strike').length,0);
+ s.teams.T1.strikes.pop();const next=parseHTML(render(s)).document;assert.equal(next.querySelector('.tree-strikes-count').textContent,'36');
+ const css=read('css/dashboard-tannenbaum.css');assert.match(css,/\.tree-v138 \.tree-strikes\{[^}]*overflow:visible/);assert(read('dashboard.html').includes('css/dashboard-tannenbaum.css?v='));
 });
 
 test('remaining numbers start at the center for both teams and winner rendering stays intact',()=>{

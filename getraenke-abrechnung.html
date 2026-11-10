@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261109-v197">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261109-v197">
-  <link rel="stylesheet" href="css/table-games.css?v=20261109-v197">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261109-v197">
-<link rel="stylesheet" href="css/game-rules.css?v=20261109-v197">
+  <link rel="stylesheet" href="css/styles.css?v=20261109-v199">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261109-v199">
+  <link rel="stylesheet" href="css/table-games.css?v=20261109-v199">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261109-v199">
+<link rel="stylesheet" href="css/game-rules.css?v=20261109-v199">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -128,10 +128,11 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261109-v197">
-<link rel="stylesheet" href="css/game-starts.css?v=20261109-v197">
-<link rel="stylesheet" href="css/game-settings.css?v=20261109-v197">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261109-v197">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261109-v199">
+<link rel="stylesheet" href="css/game-starts.css?v=20261109-v199">
+<link rel="stylesheet" href="css/game-settings.css?v=20261109-v199">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261109-v199">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261109-v199">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -734,10 +735,24 @@
         </div>
         <div id="billing-panel-year" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-year" tabindex="0" hidden>
           <section class="cash-book-panel" aria-labelledby="cash-year-title">
-            <div class="cash-year-heading"><h3 id="cash-year-title">📊 Jahresübersicht</h3><button type="button" class="secondary-btn" onclick="refreshCashHistory()">🔄 Aktualisieren</button></div>
+            <div class="cash-year-heading"><h3 id="cash-year-title">📊 Jahresübersicht</h3><button id="cash-dashboard-toggle" type="button" class="primary-btn" aria-pressed="false" disabled onclick="toggleCashDashboard()">📺 Jahresübersicht auf Dashboard anzeigen</button><button type="button" class="secondary-btn" onclick="refreshCashHistory()">🔄 Aktualisieren</button></div>
             <p id="cash-year-period" class="cash-help"></p>
             <p class="cash-help">Beträge inklusive Monatsbeitrag. „—“ bedeutet: In diesem Abschluss wurde kein Betrag für diese Person erfasst. Startbetrag und Ausgaben werden separat beim Kassenstand berücksichtigt. Beim Neustart des Kegeljahres beginnt diese Übersicht neu; frühere Abschlüsse bleiben im Archiv.</p>
             <div id="cash-year-table" class="cash-year-scroller" role="region" aria-label="Beträge pro Mitglied und Termin" tabindex="0"></div>
+            <p class="cash-help">„Dauerauftrag (Plan)“ summiert die vorgesehenen Zahlungen vom Beginn des Kegeljahres bis heute. „Offen nach Plan“ ist der Jahresbetrag abzüglich dieser Planung. Ein Guthaben wird separat ausgewiesen. Zahlungseingänge sind damit nicht bestätigt; der Soll-Kassenstand bleibt unverändert.</p>
+          </section>
+          <section class="cash-book-panel" aria-labelledby="cash-standing-title">
+            <h3 id="cash-standing-title">🔁 Daueraufträge planen</h3>
+            <p class="cash-help">Mitglied auswählen, um einen Dauerauftrag anzulegen oder zu ändern. Der Starttag ist der erste vorgesehene Zahlungstermin. Bei Monatsterminen am 29.–31. gilt in kürzeren Monaten der letzte Tag.</p>
+            <form id="cash-standing-form" class="cash-standing-form" onsubmit="saveCashStandingOrder(event)">
+              <label>Mitglied<select id="cash-standing-person" required onchange="selectCashStandingMember()"><option value="">Mitglied wählen</option></select></label>
+              <label>Betrag (€)<input id="cash-standing-amount" type="number" min="0.01" max="100000" step="0.01" required inputmode="decimal"></label>
+              <label>Rhythmus<select id="cash-standing-interval"><option value="weekly">Wöchentlich</option><option value="fortnightly">Alle 2 Wochen</option><option value="fourweekly">Alle 4 Wochen</option><option value="monthly" selected>Monatlich</option><option value="quarterly">Vierteljährlich</option><option value="yearly">Jährlich</option></select></label>
+              <label>Erster Zahlungstermin<input id="cash-standing-start" type="date" required></label>
+              <label>Letzter Zahlungstermin (optional)<input id="cash-standing-end" type="date"></label>
+              <button type="submit" class="primary-btn">💾 Dauerauftrag speichern</button>
+            </form>
+            <div id="cash-standing-list"></div>
           </section>
         </div>
         <div id="billing-panel-expenses" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-expenses" tabindex="0" hidden>
@@ -2281,58 +2296,60 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261109-v197"></script>
-<script src="js/kegel-calendar.js?v=20261109-v197"></script>
-<script src="js/helpers.js?v=20261109-v197"></script>
-<script src="js/state.js?v=20261109-v197"></script>
-<script src="js/games/individual-core.js?v=20261109-v197"></script>
-<script src="js/game-rules.js?v=20261109-v197"></script>
-<script src="js/persons.js?v=20261109-v197"></script>
-<script src="js/member-profiles.js?v=20261109-v197"></script>
-<script src="js/clubs.js?v=20261109-v197"></script>
+<script src="js/birthdays.js?v=20261109-v199"></script>
+<script src="js/kegel-calendar.js?v=20261109-v199"></script>
+<script src="js/helpers.js?v=20261109-v199"></script>
+<script src="js/state.js?v=20261109-v199"></script>
+<script src="js/games/individual-core.js?v=20261109-v199"></script>
+<script src="js/game-rules.js?v=20261109-v199"></script>
+<script src="js/persons.js?v=20261109-v199"></script>
+<script src="js/member-profiles.js?v=20261109-v199"></script>
+<script src="js/clubs.js?v=20261109-v199"></script>
 
-<script src="js/games/avatar-select.js?v=20261109-v197"></script>
-<script src="js/games/tannenbaum.js?v=20261109-v197"></script>
-<script src="js/games/darts.js?v=20261109-v197"></script>
-<script src="js/games/tiberius.js?v=20261109-v197"></script>
-<script src="js/games/lotterie.js?v=20261109-v197"></script>
-<script src="js/games/solo-start-draw.js?v=20261109-v197"></script>
-<script src="js/games/start-setup.js?v=20261109-v197"></script>
-<script src="js/games/seating.js?v=20261109-v197"></script>
-<script src="js/games/mensch.js?v=20261109-v197"></script>
-<script src="js/games/plusminus.js?v=20261109-v197"></script>
-<script src="js/games/hausnummer-core.js?v=20261109-v197"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261109-v197"></script>
-<script src="js/games/hausnummer-tief.js?v=20261109-v197"></script>
-<script src="js/games/fuchsjagd.js?v=20261109-v197"></script>
-<script src="js/games/sichern.js?v=20261109-v197"></script>
-<script src="js/games/sechstage-core.js?v=20261109-v197"></script>
-<script src="js/games/sechstage.js?v=20261109-v197"></script>
-<script src="js/games/table-games-core.js?v=20261109-v197"></script>
-<script src="js/games/table-games-ui.js?v=20261109-v197"></script>
-<script src="js/games/individual-view.js?v=20261109-v197"></script><script src="js/games/individual-ui.js?v=20261109-v197"></script><script src="js/games/siebener.js?v=20261109-v197"></script><script src="js/games/hindernis.js?v=20261109-v197"></script>
-<script src="js/games/blackjack.js?v=20261109-v197"></script>
-<script src="js/games/gluecksspirale.js?v=20261109-v197"></script>
-<script src="js/games/tor.js?v=20261109-v197"></script>
-<script src="js/games/coinflip.js?v=20261109-v197"></script>
+<script src="js/games/avatar-select.js?v=20261109-v199"></script>
+<script src="js/games/tannenbaum.js?v=20261109-v199"></script>
+<script src="js/games/darts.js?v=20261109-v199"></script>
+<script src="js/games/tiberius.js?v=20261109-v199"></script>
+<script src="js/games/lotterie.js?v=20261109-v199"></script>
+<script src="js/games/solo-start-draw.js?v=20261109-v199"></script>
+<script src="js/games/start-setup.js?v=20261109-v199"></script>
+<script src="js/games/seating.js?v=20261109-v199"></script>
+<script src="js/games/mensch.js?v=20261109-v199"></script>
+<script src="js/games/plusminus.js?v=20261109-v199"></script>
+<script src="js/games/hausnummer-core.js?v=20261109-v199"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261109-v199"></script>
+<script src="js/games/hausnummer-tief.js?v=20261109-v199"></script>
+<script src="js/games/fuchsjagd.js?v=20261109-v199"></script>
+<script src="js/games/sichern.js?v=20261109-v199"></script>
+<script src="js/games/sechstage-core.js?v=20261109-v199"></script>
+<script src="js/games/sechstage.js?v=20261109-v199"></script>
+<script src="js/games/table-games-core.js?v=20261109-v199"></script>
+<script src="js/games/table-games-ui.js?v=20261109-v199"></script>
+<script src="js/games/individual-view.js?v=20261109-v199"></script><script src="js/games/individual-ui.js?v=20261109-v199"></script><script src="js/games/siebener.js?v=20261109-v199"></script><script src="js/games/hindernis.js?v=20261109-v199"></script>
+<script src="js/games/blackjack.js?v=20261109-v199"></script>
+<script src="js/games/gluecksspirale.js?v=20261109-v199"></script>
+<script src="js/games/tor.js?v=20261109-v199"></script>
+<script src="js/games/coinflip.js?v=20261109-v199"></script>
 
-<script src="js/groups.js?v=20261109-v197"></script>
+<script src="js/groups.js?v=20261109-v199"></script>
 
-<script src="js/app.js?v=20261109-v197"></script><script src="js/club-termine.js?v=20261109-v197"></script>
+<script src="js/app.js?v=20261109-v199"></script><script src="js/club-termine.js?v=20261109-v199"></script>
     
-<script src="js/live-games.js?v=20261109-v197"></script>
-<script src="js/strafe-pdf.js?v=20261109-v197"></script>
-<script src="js/cash-history.js?v=20261109-v197"></script>
-<script src="js/cash-book.js?v=20261109-v197"></script>
-<script src="js/penalty-statistics.js?v=20261109-v197"></script>
-<script src="js/cash-expenses.js?v=20261109-v197"></script>
-<script src="js/historical-evenings.js?v=20261109-v197"></script>
-<script src="js/game-inputs.js?v=20261109-v197"></script>
-<script src="js/table-headers.js?v=20261109-v197"></script>
+<script src="js/live-games.js?v=20261109-v199"></script>
+<script src="js/strafe-pdf.js?v=20261109-v199"></script>
+<script src="js/cash-history.js?v=20261109-v199"></script>
+<script src="js/cash-overview.js?v=20261109-v199"></script>
+<script src="js/cash-accounting.js?v=20261109-v199"></script>
+<script src="js/cash-book.js?v=20261109-v199"></script>
+<script src="js/penalty-statistics.js?v=20261109-v199"></script>
+<script src="js/cash-expenses.js?v=20261109-v199"></script>
+<script src="js/historical-evenings.js?v=20261109-v199"></script>
+<script src="js/game-inputs.js?v=20261109-v199"></script>
+<script src="js/table-headers.js?v=20261109-v199"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261109-v197"
+  src="js/firebase.js?v=20261109-v199"
 ></script>
 
 </body>
