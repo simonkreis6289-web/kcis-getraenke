@@ -1,32 +1,21 @@
-/* Bis 15 rote Striche direkt neben den Kästchen; darüber der tatsächliche Zähler. */
-.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);gap:6px}
-.tree-v138 .tree-table-v138{flex:1 0 auto;min-height:min-content;overflow:visible}
+/* Feste, einzeilige Zahlen- und Strichfelder. Die Gesamtansicht passt sich dem Bildschirm an. */
+.tree-v138{--tree-ball-size:clamp(24px,2.55vw,43px);--tree-ball-gap:3px;--tree-middle-width:42px;--tree-numbers-width:calc(var(--tree-slots,5) * var(--tree-ball-size) + (var(--tree-slots,5) - 1) * var(--tree-ball-gap))}
+.tree-v138 .tree-table-v138{flex:1 0 auto;min-height:min-content;overflow:visible;min-width:calc(2 * (var(--tree-numbers-width) + 116px) + var(--tree-middle-width) + 16px)}
+.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(0,1fr) var(--tree-middle-width) minmax(0,1fr);gap:6px}
+.tree-v138 .tree-header .tree-team-name{min-width:0;overflow-wrap:anywhere}
 .tree-v138 .tree-row{flex:1 0 auto;min-height:48px}
-.tree-v138 .tree-lane{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;padding:2px 5px}
-.tree-v138 .tree-lane-left{flex-direction:row-reverse}
-.tree-v138 .tree-lane-right{flex-direction:row}
-.tree-v138 .tree-side{flex:0 1 auto;min-width:0;justify-content:flex-start;align-content:center;padding:0}
-.tree-v138 .tree-side-left{flex-direction:row-reverse}
-.tree-v138 .tree-side-right{flex-direction:row}
-.tree-v138 .tree-ball{flex:0 0 auto}
-.tree-v138 .tree-strikes{display:grid;grid-template-columns:repeat(5,3px);justify-content:start;align-content:center;align-items:center;gap:3px;flex:0 0 36px;min-width:36px;min-height:42px;padding:0;overflow:visible;color:#d62828;font-size:24px;line-height:1}
-.tree-v138 .tree-lane-left .tree-strikes{justify-content:end}
-.tree-v138 .tree-strike{display:block;width:3px;height:12px;border-radius:1px;background:currentColor}
-.tree-v138 .tree-strikes-count,.tree-v138 .tree-strikes-empty{grid-column:1/-1;min-width:27px;text-align:center;font-weight:900;font-variant-numeric:tabular-nums}
-.tree-v138 .tree-strikes-count{font-size:clamp(18px,1.7vw,27px)}
+.tree-v138 .tree-lane{display:grid;align-items:center;gap:16px;min-width:0;padding:2px 5px}
+.tree-v138 .tree-lane-left{grid-template-columns:minmax(90px,1fr) var(--tree-numbers-width)}
+.tree-v138 .tree-lane-right{grid-template-columns:var(--tree-numbers-width) minmax(90px,1fr)}
+.tree-v138 .tree-side{display:flex;flex-wrap:nowrap;width:var(--tree-numbers-width);min-width:var(--tree-numbers-width);gap:var(--tree-ball-gap);justify-content:flex-start;align-items:center;padding:0}
+.tree-v138 .tree-side-left{flex-direction:row-reverse;grid-column:2;grid-row:1}
+.tree-v138 .tree-side-right{flex-direction:row;grid-column:1;grid-row:1}
+.tree-v138 .tree-ball{box-sizing:border-box;flex:0 0 var(--tree-ball-size);width:var(--tree-ball-size);min-width:var(--tree-ball-size)}
+.tree-v138 .tree-strikes{display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;gap:3px;width:90px;min-width:90px;min-height:25px;padding:0;overflow:visible;color:#d62828;font-size:clamp(18px,1.6vw,26px);line-height:1;white-space:nowrap}
+.tree-v138 .tree-lane-left .tree-strikes{grid-column:1;grid-row:1;justify-self:end}
+.tree-v138 .tree-lane-right .tree-strikes{grid-column:2;grid-row:1;justify-self:start}
+.tree-v138 .tree-strike{display:block;flex:0 0 3px;width:3px;height:1em;border-radius:1px;background:currentColor}
+.tree-v138 .tree-strikes-count,.tree-v138 .tree-strikes-empty{display:block;text-align:center;font-weight:900;font-variant-numeric:tabular-nums}
 .tree-v138 .tree-strikes-empty{font-size:16px;color:#929bab}
-@media(max-width:650px){.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:3px}.tree-v138 .tree-lane{gap:5px;padding:2px}.tree-v138 .tree-header{font-size:11px}}
-.tree-v138 .tree-strikes:has(.tree-strikes-count){display:flex;flex:0 0 auto;min-width:36px;justify-content:center}
-.tree-v138 .tree-strikes-count{display:block;white-space:nowrap}
-/* Feste Strichspalten je Mannschaft: alle Zeilen sauber untereinander. */
-.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(0,292px) 42px minmax(0,292px);justify-content:center}
-.tree-v138 .tree-lane{display:grid;gap:16px;padding:2px 5px}
-.tree-v138 .tree-lane-left{grid-template-columns:48px minmax(0,1fr)}
-.tree-v138 .tree-lane-right{grid-template-columns:minmax(0,1fr) 48px}
-.tree-v138 .tree-lane-left .tree-side{grid-column:2;grid-row:1}
-.tree-v138 .tree-lane-left .tree-strikes{grid-column:1;grid-row:1}
-.tree-v138 .tree-lane-right .tree-side{grid-column:1;grid-row:1}
-.tree-v138 .tree-lane-right .tree-strikes{grid-column:2;grid-row:1}
-.tree-v138 .tree-strikes,.tree-v138 .tree-strikes:has(.tree-strikes-count){width:48px;min-width:48px;justify-content:center}
-.tree-v138 .tree-strikes-count{font-size:20px}
-@media(max-width:650px){.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr)}.tree-v138 .tree-lane{gap:10px;padding:2px}.tree-v138 .tree-lane-left{grid-template-columns:36px minmax(0,1fr)}.tree-v138 .tree-lane-right{grid-template-columns:minmax(0,1fr) 36px}.tree-v138 .tree-strikes,.tree-v138 .tree-strikes:has(.tree-strikes-count){width:36px;min-width:36px}.tree-v138 .tree-strikes-count{font-size:18px}}
+.tree-v138 .tree-win{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:650px){.tree-v138{--tree-ball-size:24px;--tree-middle-width:28px}.tree-v138 .tree-header{font-size:11px}}
