@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261110-v201">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261110-v201">
-  <link rel="stylesheet" href="css/table-games.css?v=20261110-v201">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261110-v201">
-<link rel="stylesheet" href="css/game-rules.css?v=20261110-v201">
+  <link rel="stylesheet" href="css/styles.css?v=20261110-v202">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261110-v202">
+  <link rel="stylesheet" href="css/table-games.css?v=20261110-v202">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261110-v202">
+<link rel="stylesheet" href="css/game-rules.css?v=20261110-v202">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -128,12 +128,12 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261110-v201">
-<link rel="stylesheet" href="css/game-starts.css?v=20261110-v201">
-<link rel="stylesheet" href="css/game-settings.css?v=20261110-v201">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261110-v201">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261110-v201">
-<link rel="stylesheet" href="css/historical-evenings.css?v=20261110-v201">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261110-v202">
+<link rel="stylesheet" href="css/game-starts.css?v=20261110-v202">
+<link rel="stylesheet" href="css/game-settings.css?v=20261110-v202">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261110-v202">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261110-v202">
+<link rel="stylesheet" href="css/historical-evenings.css?v=20261110-v202">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1310,8 +1310,18 @@
 <div id="tab-spiele-einstellungen" class="hidden">
  <h2 class="section-title">⚙️ Spiel-Einstellungen</h2>
  <p class="game-settings-intro">Vorgaben für diesen Club. Neue Ziel- und Kartenwerte gelten ab dem nächsten Spielstart.</p>
-<nav class="game-properties-tabs" id="game-properties-tabs" role="tablist" aria-label="Spiel-Eigenschaften" onkeydown="gamePropertyKeydown(event)"><button type="button" role="tab" id="game-property-tab-hindernis" data-game-property-tab="hindernis" aria-controls="game-property-hindernis" aria-selected="true" tabindex="0" onclick="showGameProperty('hindernis')">🏃 Hindernislauf</button><button type="button" role="tab" id="game-property-tab-blackjack" data-game-property-tab="blackjack" aria-controls="game-property-blackjack" aria-selected="false" tabindex="-1" onclick="showGameProperty('blackjack')">🃏 17 + 4</button><button type="button" role="tab" id="game-property-tab-gluecksspirale" data-game-property-tab="gluecksspirale" aria-controls="game-property-gluecksspirale" aria-selected="false" tabindex="-1" onclick="showGameProperty('gluecksspirale')">🌀 Glücksspirale</button><button type="button" role="tab" id="game-property-tab-haushoch" data-game-property-tab="haushoch" aria-controls="game-property-haushoch" aria-selected="false" tabindex="-1" onclick="showGameProperty('haushoch')">🔢 Hohe Hausnummer</button><button type="button" role="tab" id="game-property-tab-haustief" data-game-property-tab="haustief" aria-controls="game-property-haustief" aria-selected="false" tabindex="-1" onclick="showGameProperty('haustief')">🔽 Tiefe Hausnummer</button><button type="button" role="tab" id="game-property-tab-tannenbaum" data-game-property-tab="tannenbaum" aria-controls="game-property-tannenbaum" aria-selected="false" tabindex="-1" onclick="showGameProperty('tannenbaum')">🌲 Tannenbaum</button><button type="button" role="tab" id="game-property-tab-lotterie" data-game-property-tab="lotterie" aria-controls="game-property-lotterie" aria-selected="false" tabindex="-1" onclick="showGameProperty('lotterie')">🎰 Lotterie</button><button type="button" role="tab" id="game-property-tab-tiberius" data-game-property-tab="tiberius" aria-controls="game-property-tiberius" aria-selected="false" tabindex="-1" onclick="showGameProperty('tiberius')">🎯 Tiberius</button></nav>
+<nav class="game-properties-tabs" id="game-properties-tabs" role="tablist" aria-label="Spiel-Eigenschaften" onkeydown="gamePropertyKeydown(event)"><button type="button" role="tab" id="game-property-tab-siebener" data-game-property-tab="siebener" aria-controls="game-property-siebener" aria-selected="false" tabindex="-1" onclick="showGameProperty('siebener')">🎲 7er-Spiel</button><button type="button" role="tab" id="game-property-tab-hindernis" data-game-property-tab="hindernis" aria-controls="game-property-hindernis" aria-selected="true" tabindex="0" onclick="showGameProperty('hindernis')">🏃 Hindernislauf</button><button type="button" role="tab" id="game-property-tab-blackjack" data-game-property-tab="blackjack" aria-controls="game-property-blackjack" aria-selected="false" tabindex="-1" onclick="showGameProperty('blackjack')">🃏 17 + 4</button><button type="button" role="tab" id="game-property-tab-gluecksspirale" data-game-property-tab="gluecksspirale" aria-controls="game-property-gluecksspirale" aria-selected="false" tabindex="-1" onclick="showGameProperty('gluecksspirale')">🌀 Glücksspirale</button><button type="button" role="tab" id="game-property-tab-haushoch" data-game-property-tab="haushoch" aria-controls="game-property-haushoch" aria-selected="false" tabindex="-1" onclick="showGameProperty('haushoch')">🔢 Hohe Hausnummer</button><button type="button" role="tab" id="game-property-tab-haustief" data-game-property-tab="haustief" aria-controls="game-property-haustief" aria-selected="false" tabindex="-1" onclick="showGameProperty('haustief')">🔽 Tiefe Hausnummer</button><button type="button" role="tab" id="game-property-tab-tannenbaum" data-game-property-tab="tannenbaum" aria-controls="game-property-tannenbaum" aria-selected="false" tabindex="-1" onclick="showGameProperty('tannenbaum')">🌲 Tannenbaum</button><button type="button" role="tab" id="game-property-tab-lotterie" data-game-property-tab="lotterie" aria-controls="game-property-lotterie" aria-selected="false" tabindex="-1" onclick="showGameProperty('lotterie')">🎰 Lotterie</button><button type="button" role="tab" id="game-property-tab-tiberius" data-game-property-tab="tiberius" aria-controls="game-property-tiberius" aria-selected="false" tabindex="-1" onclick="showGameProperty('tiberius')">🎯 Tiberius</button></nav>
  <div class="game-settings-grid">
+  <section class="game-settings-card" id="game-property-siebener" data-game-property="siebener" role="tabpanel" aria-labelledby="game-property-tab-siebener" hidden>
+   <header><span aria-hidden="true">🎲</span><div><h3>7er-Spiel</h3><p>Preis pro Pin Abstand und Kranzwertung</p></div></header>
+   <div class="game-settings-fields">
+    <label class="game-settings-field" for="seven-pin-price"><span>Preis je Pin Abstand (€)</span><input id="seven-pin-price" type="number" min="0" max="100" step="0.01" value="0.10"><small>Abstand zum Spaltenziel × Preis</small></label>
+    <label class="game-settings-field" for="seven-kranz-mode"><span>Kranzwertung</span><select id="seven-kranz-mode" onchange="sevenKranzModeChanged()"><option value="8">8 Holz</option><option value="12">12 Holz</option><option value="custom">Eigener fester Wert</option><option value="choose">Bei jedem Kranz wählen</option></select></label>
+    <label class="game-settings-field" id="seven-custom-value" for="seven-kranz-value" hidden><span>Eigener Kranzwert</span><input id="seven-kranz-value" type="number" min="1" max="12" step="1" value="8"><small>Ganze Zahl von 1 bis 12</small></label>
+   </div>
+   <p>Gilt ab dem nächsten Spielstart. Laufende Spiele behalten ihre Werte. Bei freier Kranzwahl wird nach jedem Kranz eine Zahl von 1 bis 12 ausgewählt; die Kranzstrafe wird weiterhin genau einmal gebucht.</p>
+   <button id="seven-save" type="button" class="primary-btn" onclick="saveSevenSettings()">💾 7er-Spiel speichern</button><span id="seven-settings-status" class="game-settings-status" role="status"></span>
+  </section>
   <section class="game-settings-card game-settings-wide" id="game-property-hindernis" data-game-property="hindernis" role="tabpanel" aria-labelledby="game-property-tab-hindernis">
    <header><span aria-hidden="true">🏃</span><div><h3 id="hurdle-settings-title">Hindernislauf</h3><p>Ziel, Grundbetrag und Hindernisverteilung</p></div></header>
    <div class="hurdle-basics">
@@ -2224,6 +2234,7 @@
   <div class="profile-actions"><button type="button" class="secondary-btn" onclick="kcCloseEventEdit()">Abbrechen</button><button type="submit" class="primary-btn">💾 Änderungen speichern</button></div>
  </form>
 </div>
+<div class="modal-overlay hidden" id="seven-kranz-modal" onclick="if(event.target===this)indCancelKranz()"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="seven-kranz-title"><h3 id="seven-kranz-title">👑 Kranz: Wert auswählen</h3><p>Mit welchem Wert soll dieser Kranz zählen?</p><div id="seven-kranz-choices" class="ind-actions"></div><button type="button" class="secondary-btn" onclick="indCancelKranz()">Abbrechen</button></div></div>
 <div class="modal-overlay hidden ind-rules-modal" id="siebener-rules-modal" onclick="if(event.target===this)closeIndividualRules('siebener')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="siebener-rules-title"><h3 id="siebener-rules-title">ℹ️ 7er-Spiel – unsere Regeln</h3><div id="siebener-rules-content"></div><p class="rules-sync-status" id="siebener-rules-sync-status" role="status"></p><button type="button" class="primary-btn" id="siebener-rules-close" onclick="closeIndividualRules('siebener')">Schließen</button></div></div>
 <div class="modal-overlay hidden ind-rules-modal" id="hindernis-rules-modal" onclick="if(event.target===this)closeIndividualRules('hindernis')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="hindernis-rules-title"><h3 id="hindernis-rules-title">ℹ️ Hindernislauf – unsere Regeln</h3><div id="hindernis-rules-content"></div><p class="rules-sync-status" id="hindernis-rules-sync-status" role="status"></p><button type="button" class="primary-btn" id="hindernis-rules-close" onclick="closeIndividualRules('hindernis')">Schließen</button></div></div>
 <div class="modal-overlay hidden" id="spiral-rules-modal" onclick="if(event.target===this)closeSpiralRules()">
@@ -2298,62 +2309,62 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261110-v201"></script>
-<script src="js/kegel-calendar.js?v=20261110-v201"></script>
-<script src="js/helpers.js?v=20261110-v201"></script>
-<script src="js/state.js?v=20261110-v201"></script>
-<script src="js/games/individual-core.js?v=20261110-v201"></script>
-<script src="js/game-rules.js?v=20261110-v201"></script>
-<script src="js/persons.js?v=20261110-v201"></script>
-<script src="js/member-profiles.js?v=20261110-v201"></script>
-<script src="js/clubs.js?v=20261110-v201"></script>
+<script src="js/birthdays.js?v=20261110-v202"></script>
+<script src="js/kegel-calendar.js?v=20261110-v202"></script>
+<script src="js/helpers.js?v=20261110-v202"></script>
+<script src="js/state.js?v=20261110-v202"></script>
+<script src="js/games/individual-core.js?v=20261110-v202"></script>
+<script src="js/game-rules.js?v=20261110-v202"></script>
+<script src="js/persons.js?v=20261110-v202"></script>
+<script src="js/member-profiles.js?v=20261110-v202"></script>
+<script src="js/clubs.js?v=20261110-v202"></script>
 
-<script src="js/games/avatar-select.js?v=20261110-v201"></script>
-<script src="js/games/tannenbaum.js?v=20261110-v201"></script>
-<script src="js/games/darts.js?v=20261110-v201"></script>
-<script src="js/games/tiberius.js?v=20261110-v201"></script>
-<script src="js/games/lotterie.js?v=20261110-v201"></script>
-<script src="js/game-results.js?v=20261110-v201"></script>
-<script src="js/starter-draw.js?v=20261110-v201"></script>
-<script src="js/games/solo-start-draw.js?v=20261110-v201"></script>
-<script src="js/games/start-setup.js?v=20261110-v201"></script>
-<script src="js/games/seating.js?v=20261110-v201"></script>
-<script src="js/games/mensch.js?v=20261110-v201"></script>
-<script src="js/games/plusminus.js?v=20261110-v201"></script>
-<script src="js/games/hausnummer-core.js?v=20261110-v201"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261110-v201"></script>
-<script src="js/games/hausnummer-tief.js?v=20261110-v201"></script>
-<script src="js/games/fuchsjagd.js?v=20261110-v201"></script>
-<script src="js/games/sichern.js?v=20261110-v201"></script>
-<script src="js/games/sechstage-core.js?v=20261110-v201"></script>
-<script src="js/games/sechstage.js?v=20261110-v201"></script>
-<script src="js/games/table-games-core.js?v=20261110-v201"></script>
-<script src="js/games/table-games-ui.js?v=20261110-v201"></script>
-<script src="js/games/individual-view.js?v=20261110-v201"></script><script src="js/games/individual-ui.js?v=20261110-v201"></script><script src="js/games/siebener.js?v=20261110-v201"></script><script src="js/games/hindernis.js?v=20261110-v201"></script>
-<script src="js/games/blackjack.js?v=20261110-v201"></script>
-<script src="js/games/gluecksspirale.js?v=20261110-v201"></script>
-<script src="js/games/tor.js?v=20261110-v201"></script>
-<script src="js/games/coinflip.js?v=20261110-v201"></script>
+<script src="js/games/avatar-select.js?v=20261110-v202"></script>
+<script src="js/games/tannenbaum.js?v=20261110-v202"></script>
+<script src="js/games/darts.js?v=20261110-v202"></script>
+<script src="js/games/tiberius.js?v=20261110-v202"></script>
+<script src="js/games/lotterie.js?v=20261110-v202"></script>
+<script src="js/game-results.js?v=20261110-v202"></script>
+<script src="js/starter-draw.js?v=20261110-v202"></script>
+<script src="js/games/solo-start-draw.js?v=20261110-v202"></script>
+<script src="js/games/start-setup.js?v=20261110-v202"></script>
+<script src="js/games/seating.js?v=20261110-v202"></script>
+<script src="js/games/mensch.js?v=20261110-v202"></script>
+<script src="js/games/plusminus.js?v=20261110-v202"></script>
+<script src="js/games/hausnummer-core.js?v=20261110-v202"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261110-v202"></script>
+<script src="js/games/hausnummer-tief.js?v=20261110-v202"></script>
+<script src="js/games/fuchsjagd.js?v=20261110-v202"></script>
+<script src="js/games/sichern.js?v=20261110-v202"></script>
+<script src="js/games/sechstage-core.js?v=20261110-v202"></script>
+<script src="js/games/sechstage.js?v=20261110-v202"></script>
+<script src="js/games/table-games-core.js?v=20261110-v202"></script>
+<script src="js/games/table-games-ui.js?v=20261110-v202"></script>
+<script src="js/games/individual-view.js?v=20261110-v202"></script><script src="js/games/individual-ui.js?v=20261110-v202"></script><script src="js/games/siebener.js?v=20261110-v202"></script><script src="js/games/hindernis.js?v=20261110-v202"></script>
+<script src="js/games/blackjack.js?v=20261110-v202"></script>
+<script src="js/games/gluecksspirale.js?v=20261110-v202"></script>
+<script src="js/games/tor.js?v=20261110-v202"></script>
+<script src="js/games/coinflip.js?v=20261110-v202"></script>
 
-<script src="js/groups.js?v=20261110-v201"></script>
+<script src="js/groups.js?v=20261110-v202"></script>
 
-<script src="js/app.js?v=20261110-v201"></script><script src="js/club-termine.js?v=20261110-v201"></script>
+<script src="js/app.js?v=20261110-v202"></script><script src="js/club-termine.js?v=20261110-v202"></script>
     
-<script src="js/live-games.js?v=20261110-v201"></script>
-<script src="js/strafe-pdf.js?v=20261110-v201"></script>
-<script src="js/cash-history.js?v=20261110-v201"></script>
-<script src="js/cash-overview.js?v=20261110-v201"></script>
-<script src="js/cash-accounting.js?v=20261110-v201"></script>
-<script src="js/cash-book.js?v=20261110-v201"></script>
-<script src="js/penalty-statistics.js?v=20261110-v201"></script>
-<script src="js/cash-expenses.js?v=20261110-v201"></script>
-<script src="js/historical-evenings.js?v=20261110-v201"></script>
-<script src="js/game-inputs.js?v=20261110-v201"></script>
-<script src="js/table-headers.js?v=20261110-v201"></script>
+<script src="js/live-games.js?v=20261110-v202"></script>
+<script src="js/strafe-pdf.js?v=20261110-v202"></script>
+<script src="js/cash-history.js?v=20261110-v202"></script>
+<script src="js/cash-overview.js?v=20261110-v202"></script>
+<script src="js/cash-accounting.js?v=20261110-v202"></script>
+<script src="js/cash-book.js?v=20261110-v202"></script>
+<script src="js/penalty-statistics.js?v=20261110-v202"></script>
+<script src="js/cash-expenses.js?v=20261110-v202"></script>
+<script src="js/historical-evenings.js?v=20261110-v202"></script>
+<script src="js/game-inputs.js?v=20261110-v202"></script>
+<script src="js/table-headers.js?v=20261110-v202"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261110-v201"
+  src="js/firebase.js?v=20261110-v202"
 ></script>
 
 </body>

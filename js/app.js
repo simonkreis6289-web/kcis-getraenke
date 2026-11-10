@@ -73,6 +73,7 @@ function getSerializableState() {
     hausnummerSettings,
     gluecksspiraleSettings,
     blackjackSettings,
+    siebenerSettings:typeof siebenerSettings==='undefined'?null:siebenerSettings,
     siebenerState,hindernisState,hindernisSettings,individualGameLedger,individualGameRevision,
     clubTermine,
     clubKegelSerie,
@@ -179,6 +180,7 @@ function getFirestoreState() {
     hausnummerSettings,
     gluecksspiraleSettings,
     blackjackSettings,
+    siebenerSettings:typeof siebenerSettings==='undefined'?null:siebenerSettings,
     siebenerState,hindernisState,hindernisSettings,individualGameLedger,individualGameRevision,
         sichernState: {...sichernState,busy:false,closing:false},
         sechstageState,
@@ -210,6 +212,7 @@ function applyLoadedState(state) {
   if(typeof applyPenaltyStatsSettings==='function')applyPenaltyStatsSettings(state.penaltyStatsSettings);else penaltyStatsSettings=state.penaltyStatsSettings||null;
   gluecksspiraleSettings = state.gluecksspiraleSettings || {target:50};
   blackjackSettings = KCTableGames.cardSettings(state.blackjackSettings);
+  siebenerSettings=state.siebenerSettings||null;
   siebenerState=state.siebenerState||null;hindernisState=state.hindernisState||null;hindernisSettings=state.hindernisSettings||null;individualGameLedger=state.individualGameLedger||[];individualGameRevision=Number(state.individualGameRevision)||0;
   dashboardActiveGame = state.dashboardActiveGame || null;
   if(typeof kcApplyCalendarState==='function')kcApplyCalendarState(state,false);

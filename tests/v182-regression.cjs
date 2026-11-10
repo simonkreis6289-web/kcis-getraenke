@@ -96,6 +96,6 @@ test('actual club cache and club selection restore their own target after switch
 test('the reorganized settings retain every existing control and use accessible card headings',()=>{
  const html=read('getraenke-abrechnung.html'),part=html.slice(html.indexOf('id="tab-spiele-einstellungen"'),html.indexOf('<!-- VERWALTUNG -->'));
  for(const id of ['haus-hoch-neun','haus-hoch-kranz','haus-hoch-gosse','haus-tief-neun','haus-tief-kranz','haus-tief-gosse','tannenbaum-settings-grid','tannenbaum-ontop-check','tannenbaum-hard-rule-check','lotterie-min-amount','lotterie-max-amount','tiberius-min-pins','tiberius-max-pins','spiral-settings-target'])assert(part.includes('id="'+id+'"'),id);
- assert.equal((part.match(/class="game-settings-card/g)||[]).length,8);assert.equal((part.match(/aria-labelledby=/g)||[]).length,8);assert(!part.includes('style='));
+ assert.equal((part.match(/class="game-settings-card/g)||[]).length,9);assert.equal((part.match(/aria-labelledby=/g)||[]).length,9);assert(!part.includes('style='));
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
 });
