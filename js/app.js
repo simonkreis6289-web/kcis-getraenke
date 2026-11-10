@@ -142,6 +142,7 @@ function getFirestoreState() {
     calendarRevision: kcCalendarRevision,
     clubTerminGruende,
     dashboardAnnouncement: window.kcDashboardAnnouncement || null,
+    dashboardDraw: window.kcDashboardDraw || null,
     currentEveningStartedAt,
     persons: getFirestorePersonsWithFineTotals(),
     seatingOrder,
@@ -282,6 +283,7 @@ function applyLoadedState(state) {
   bahnTimerRunning =
     !!state.bahnTimerRunning;
 
+  window.kcDashboardDraw=state.dashboardDraw||null;
   if (state.dashboardAnnouncement && (!window.kcDashboardAnnouncement ||
       Date.parse(state.dashboardAnnouncement.at) > Date.parse(window.kcDashboardAnnouncement.at))) {
     window.kcDashboardAnnouncement = state.dashboardAnnouncement;
@@ -1712,7 +1714,8 @@ function renderStrafenHistory() {
     return;
   }
 
-  el.innerHTML = strafenHistory.map(entry => {
+  el.innerHTML = strafenHistory.slice().sort((a,b)=>Date.parse(b.createdAt||b.date||0)-Date.parse(a.createdAt||a.date||0)).map(entry => {
+    const result=window.KCGameResults?.markup(entry);if(result!==null&&result!==undefined)return result;
     if (entry.type === 'tannenbaum') {
       const assigned = (entry.assignedTo || [])
         .map(x => `${x.name} (${x.team === 'T1' ? 'Wand' : 'TV'}): ${euros(x.amount)}`)
@@ -6535,7 +6538,7 @@ async function confirmTeamLossQuick() {
     if (!game || !members.length) return;
     const success = await addFirstLoserPenaltyToTeam(team);
     if (success) {
-      strafenHistory.unshift({ type: 'teamspiel_strafe', spieltyp: game, loser: team, members, date: new Date().toISOString() });
+      strafenHistory.unshift({ type: 'teamspiel_strafe', spieltyp: game, loser: team, teamName:getGroupLabel(team), members, date: new Date().toISOString() });
       persistState();
       closeTeamLossQuickModalAfterSuccess();
     }

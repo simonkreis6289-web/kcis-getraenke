@@ -46,8 +46,11 @@ function runCoinFlip() {
       getGroupEmoji('T2')
     ];
 
+  const winner = Math.random() < 0.5 ? 'T1' : 'T2';
+  const labels=[getGroupLabel('T1'),getGroupLabel('T2')];
+  const draw=typeof beginDashboardDraw==='function'?beginDashboardDraw({kind:'team',title:coinFlipContext?'Münzwurf für '+coinFlipContext:'Startteam',frames:labels,steps:14,interval:90,winner:getGroupLabel(winner)}):null;
   const timer = setInterval(() => {
-    ticks++;
+    ticks=draw?Math.floor((Date.now()-draw.startedAt)/90):ticks+1;
 
     if (coin) {
       coin.textContent = frames[ticks % 2];
@@ -58,7 +61,7 @@ function runCoinFlip() {
     if (ticks >= 14) {
       clearInterval(timer);
 
-      const winner = Math.random() < 0.5 ? 'T1' : 'T2';
+
         
         const modal = document.querySelector('#coinflip-modal .modal');
 

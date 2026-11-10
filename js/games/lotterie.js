@@ -10,6 +10,9 @@ function getLiveLotteriePayload() {
 
   return {
     active: !!lotterieState.active,
+    customOrder: !!lotterieState.customOrder,
+    restoreCustomOrder: !!lotterieState.restoreCustomOrder,
+    startedAt: lotterieState.startedAt || '',
     onTop: !!lotterieState.onTop,
     amountsGenerated:
       !!lotterieState.amountsGenerated,
@@ -240,7 +243,7 @@ function syncLotteriePlayerOrder() {
 }
 
 function getLotteriePlayers() {
-  const names=getSoloNames('lotterie');
+  const names=lotterieState.active&&lotterieState.startPlayer?rotateNameOrder(getSoloNames('lotterie'),lotterieState.startPlayer):getSoloNames('lotterie');
   const active=getActivePlayersForSoloGame();
   return names.map(name=>active.find(p=>p.name===name)).filter(Boolean);
 }
@@ -323,6 +326,7 @@ async function startLotterieGameFinal(starterName) {
   lotterieState.customOrder = true;
   lotterieState.startPlayer = starterName || lotterieState.playerOrder[0] || '';
   lotterieState.active = true;
+  lotterieState.startedAt = new Date().toISOString();
   dashboardActiveGame = "lotterie";
   lotterieState.finished = false;
   lotterieState.amountsGenerated = true;

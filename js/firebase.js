@@ -238,6 +238,9 @@ window.firestoreApi = {
         const owned=entry=>entry.sixDaysRaceId||entry.tableGameId||entry.individualGameId;
         next.penaltyStatsLog=[...incoming.filter(entry=>!owned(entry)),...(current.penaltyStatsLog||[]).filter(owned)];
       }
+      if(current.currentEveningStartedAt===next.currentEveningStartedAt&&Array.isArray(current.strafenHistory)){
+        next.strafenHistory=[...(current.strafenHistory.filter(e=>e.serverGameResult)),...(Array.isArray(payload.strafenHistory)?payload.strafenHistory:current.strafenHistory).filter(e=>!e.serverGameResult)];
+      }
       const managed=current.clubCalendarData?.calendarRevision?current.clubCalendarData:current;
       let calendar=null;
       if(Number(managed.calendarRevision)>0){
@@ -383,12 +386,13 @@ window.firestoreApi = {
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
+      const resultHistory=window.KCGameResults?.append(current.strafenHistory,'sechstage',next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
-        transaction.set(ref,{sechstageState:next,currentEveningStartedAt:evening,dashboardActiveGame:'sechstage',penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
+        transaction.set(ref,{sechstageState:next,currentEveningStartedAt:evening,dashboardActiveGame:'sechstage',penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
       }
-      return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.sixDaysRaceId),repeat:result.repeat};
+      return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.sixDaysRaceId),repeat:result.repeat};
     });
   },
 
@@ -435,12 +439,13 @@ window.firestoreApi = {
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
+      const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
-        transaction.set(ref,{[stateKey]:next,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
+        transaction.set(ref,{[stateKey]:next,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
       }
-      return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.tableGameId),repeat:result.repeat};
+      return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.tableGameId),repeat:result.repeat};
     });
   },
   async transactIndividualGame(clubId,request={}) {
@@ -486,6 +491,7 @@ window.firestoreApi = {
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
+      const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
@@ -494,9 +500,9 @@ window.firestoreApi = {
           const cents=ledger.filter(x=>x.eveningStartedAt===evening&&String(x.personName).trim().toLocaleLowerCase('de')===String(person.name).trim().toLocaleLowerCase('de')).reduce((sum,x)=>sum+x.amountCents,0);
           return {...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
         });
-        transaction.set(ref,{[stateKey]:next,persons:people,individualGameLedger:ledger,individualGameRevision:(Number(current.individualGameRevision)||0)+1,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,updatedAt:serverTimestamp()},{merge:true});
+        transaction.set(ref,{[stateKey]:next,persons:people,individualGameLedger:ledger,individualGameRevision:(Number(current.individualGameRevision)||0)+1,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
       }
-      return {state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,ledger:result.repeat?(current.individualGameLedger||[]):[...(current.individualGameLedger||[]).filter(x=>!new Set(effect.moneyRemoved).has(x.id)),...effect.moneyAdded],individualGameRevision:(Number(current.individualGameRevision)||0)+(result.repeat?0:1),gameStats:finalStats.filter(entry=>entry.individualGameId),repeat:result.repeat};
+      return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,ledger:result.repeat?(current.individualGameLedger||[]):[...(current.individualGameLedger||[]).filter(x=>!new Set(effect.moneyRemoved).has(x.id)),...effect.moneyAdded],individualGameRevision:(Number(current.individualGameRevision)||0)+(result.repeat?0:1),gameStats:finalStats.filter(entry=>entry.individualGameId),repeat:result.repeat};
     });
   },
 

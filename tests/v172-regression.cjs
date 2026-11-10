@@ -14,7 +14,7 @@ test('cancelled evening: 50 per selected member, no dues or individual fines',()
  const d=draft('cancelled');const s=snapshot(d);
  assert.equal(s.members.length,3);assert.equal(s.guests.length,0);assert.equal(s.totals.grandTotal,150);assert.equal(s.totals.memberFeeTotal,0);
  assert(s.members.every(p=>p.total===50&&Object.values(p.strafen).every(n=>n===0)));
- d.rows.find(p=>p.name==='Inaktiv').included=true;assert.equal(snapshot(d).totals.grandTotal,200);
+ assert(!d.rows.some(p=>p.name==='Inaktiv'));assert.equal(snapshot(d).totals.grandTotal,150);
 });
 test('played evening: statuses, highest member penalty, fees and guests',()=>{
  const d=draft();d.rows[0].status='present';d.rows[0].counts.gosse=2;d.rows[0].counts.neun=2;

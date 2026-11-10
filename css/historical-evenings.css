@@ -1,0 +1,45 @@
+/* V201: Teilnehmerliste und kompakte Erfassung ohne breite Strafentabelle. */
+#historical-evening-modal .historical-modal{width:min(1400px,calc(100vw - 32px));padding:22px;box-sizing:border-box;background:#f7f9fd}
+#historical-evening-modal h3{margin:0 0 18px}
+#historical-evening-modal h4{font:700 16px system-ui;margin:0}
+#historical-evening-modal .historical-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+#historical-evening-modal label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}
+#historical-evening-modal input:not([type=checkbox]),#historical-evening-modal select{width:100%;box-sizing:border-box;min-width:0;background:#fff;min-height:38px}
+#historical-evening-modal .historical-check{flex-direction:row;align-items:center;gap:8px;grid-column:span 2}
+#historical-evening-modal input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:#243c64}
+#historical-evening-modal .historical-note{margin-top:12px}
+#historical-evening-modal .profile-help{font-size:12px;line-height:1.5;color:#5b6680;margin:10px 0}
+#historical-evening-modal .historical-price-settings{border:1px solid #d9e0ec;background:#fff;border-radius:10px;padding:12px;margin-bottom:16px}
+#historical-evening-modal summary{cursor:pointer;font-weight:700;font-size:13px}
+#historical-evening-modal .historical-price-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding-top:14px}
+#historical-evening-modal .historical-workspace{display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;align-items:start}
+#historical-evening-modal .historical-people,#historical-evening-modal .historical-editor{background:white;border:1px solid #d9e0ec;border-radius:12px;padding:16px;min-width:0}
+#historical-evening-modal .historical-people{position:sticky;top:0}
+#historical-evening-modal .historical-list-heading{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}
+#historical-evening-modal .historical-list-heading button{font-size:11px;padding:7px}
+#historical-evening-modal #historical-roster{max-height:550px;overflow-y:auto}
+#historical-evening-modal .historical-roster-row{display:flex;align-items:center;gap:8px;border-bottom:1px solid #e8edf5;padding:3px 7px;border-radius:7px}
+#historical-evening-modal .historical-roster-row.selected{background:#eaf1fc;box-shadow:inset 3px 0 #edae25}
+#historical-evening-modal .historical-roster-row button{background:transparent;border:0;box-shadow:none;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:60px;flex:1;min-width:0;text-align:left;color:#233655;padding:8px 0}
+#historical-evening-modal .historical-roster-row small{display:block;font-size:10px;color:#66738b;margin-top:4px}
+#historical-evening-modal .historical-roster-row b{white-space:nowrap;font-size:12px}
+#historical-evening-modal .historical-person-heading{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-bottom:14px;border-bottom:1px solid #e8edf5;margin-bottom:14px}
+#historical-evening-modal .historical-person-heading span{font-size:11px;color:#66738b}
+#historical-evening-modal .historical-person-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:22px}
+#historical-evening-modal .historical-counter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+#historical-evening-modal .historical-counter-grid label{background:#f3f6fb;border:1px solid #e3e9f3;border-radius:8px;padding:10px;justify-content:space-between}
+#historical-evening-modal .historical-counter-grid small{font-weight:400;color:#66738b;font-size:10px}
+#historical-evening-modal .historical-counter-grid input{font-size:18px;text-align:center;font-weight:700}
+#historical-evening-modal .historical-free-heading{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:24px}
+#historical-evening-modal .historical-free-item{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px;border:1px solid #dde5f0;border-radius:8px;padding:12px;margin:8px 0;background:#fafbfe}
+#historical-evening-modal .historical-free-item .historical-check{grid-column:auto;font-size:11px}
+#historical-evening-modal .historical-free-item button{font-size:11px;justify-self:end;align-self:center}
+#historical-evening-modal .historical-empty{font-size:12px;color:#66738b}
+#historical-evening-modal .historical-add-row{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+#historical-evening-modal .historical-add-row input{flex:1 1 180px;max-width:350px}
+#historical-evening-modal .historical-add-row select{width:auto}
+#historical-evening-modal .historical-footer{position:sticky;bottom:-22px;margin:18px -22px -22px;padding:16px 22px;background:#fff;border-top:1px solid #d9e0ec;display:flex;gap:12px;justify-content:space-between;align-items:center;z-index:2}
+#historical-evening-modal .historical-cancelled{grid-template-columns:1fr}
+#historical-evening-modal [hidden]{display:none!important}
+@media(max-width:1050px){#historical-evening-modal .historical-fields{grid-template-columns:repeat(3,minmax(0,1fr))}#historical-evening-modal .historical-workspace{grid-template-columns:245px minmax(0,1fr)}#historical-evening-modal .historical-counter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#historical-evening-modal .historical-price-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){#historical-evening-modal .historical-modal{padding:14px;width:calc(100vw - 16px)}#historical-evening-modal .historical-fields{grid-template-columns:repeat(2,minmax(0,1fr))}#historical-evening-modal .historical-workspace{grid-template-columns:1fr}#historical-evening-modal .historical-people{position:static}#historical-evening-modal #historical-roster{max-height:210px}#historical-evening-modal .historical-counter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#historical-evening-modal .historical-footer{position:static;margin:16px -14px -14px;padding:14px;flex-wrap:wrap}}

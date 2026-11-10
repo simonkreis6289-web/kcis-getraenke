@@ -4,11 +4,12 @@ const gameInputTeams={tannenbaum:'T1',darts:'T1'},gameInputPlaces={hoch:null,tie
 function giEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function gameInputButton(label,action,pin){return '<button type="button" '+(pin?'data-pin="'+pin+'" ':'')+'onclick="'+giEscape(action)+'">'+label+'</button>';}
 function gameInputNumbers(action,kranz=12){return Array.from({length:9},(_,i)=>gameInputButton(String(i+1),action(i+1,false),i+1)).join('')+gameInputButton('Gosse',action(0,true))+gameInputButton('Kranz'+(kranz===8?' (8 Holz)':''),action(kranz,false));}
-function gameInputCurrentTeam(key){if(key==='tannenbaum'){ensureTannenbaumState();return tannenbaumState.currentTeam;}return gameInputTeams[key];}
-function gameInputTeam(key,team){if(!['T1','T2'].includes(team)||gameInputBusy[key])return;gameInputTeams[key]=team;if(key==='tannenbaum'){ensureTannenbaumState();tannenbaumState.currentTeam=team;persistState();}applyGameInputLayout(key);}
+function gameInputCurrentTeam(key){if(key==='tannenbaum'){ensureTannenbaumState();return tannenbaumState.currentTeam;}if(key==='darts'){ensureDartsState();return dartsState.currentTeam;}return gameInputTeams[key];}
+function gameInputTeam(key,team){if(!['T1','T2'].includes(team)||gameInputBusy[key])return;gameInputTeams[key]=team;if(key==='tannenbaum'){ensureTannenbaumState();tannenbaumState.currentTeam=team;persistState();}if(key==='darts'){ensureDartsState();dartsState.currentTeam=team;persistState();}applyGameInputLayout(key);}
 function gameInputPlace(mode,place){const s=ensureHausState(mode),name=s.playerOrder[s.currentPlayerIndex];if(!s.active||s.rows[name]?.[place])return;gameInputPlaces[mode]=place;applyGameInputLayout(hausId(mode));}
 function gameInputTarget(){
  const s=lotterieState,names=getLotteriePlayers().map(p=>p.name);
+ // Pro Spalte startet derselbe ausgeloste Spieler, danach im eingefrorenen Tischumlauf.
  for(let col=0;col<s.columns.length;col++)for(const name of names)if(s.throws[name]?.[col]===null||s.throws[name]?.[col]===undefined)return {name,col};
  return null;
 }
@@ -51,8 +52,8 @@ function legacyGameInput(key){
   context=giEscape(name)+' · Stelle wählen';options='<div class="gi-options">'+['Hunderter','Zehner','Einer'].map((label,i)=>'<button type="button" '+(row[i]?'disabled':'')+' aria-pressed="'+(gameInputPlaces[mode]===i)+'" onclick="gameInputPlace(\''+mode+'\','+i+')">'+label+'</button>').join('')+'</div>';
  }
  numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')');
- if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputTeams.darts;openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
- return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(key==='tannenbaum'?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
+ if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputCurrentTeam('darts');openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
+ return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(['tannenbaum','darts'].includes(key)?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
 }
 function normalizeGamePinpad(card){
  const selectors=['.gi-source-pinpad button','.six-pinpad button','.tg-pinpad button','.ind-pinpad button','.game-throw-toolbar .pinpad-btn','.sichern-buttons button[onclick^="sichernThrow("]','.fox-actions button[onclick^="applyFuchsjagdThrow("]'];
@@ -71,7 +72,7 @@ function normalizeGamePinpad(card){
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
  const s=gameSetupState(key),old=panel.querySelector(':scope > .game-input-panel');
- if(!s?.active){old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
+ if(!s?.active){if(key==='darts'){const finish=old?.querySelector('button[onclick="finishDartsRound()"]');if(finish)document.getElementById('darts-game-area')?.append(finish);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
  const card=document.createElement('section');card.className='game-input-panel';card.dataset.gameInput=key;card.setAttribute('aria-label','Wurfeingabe');
  const heading=document.createElement('h3');heading.className='gi-heading';heading.textContent='🎳 Wurf eingeben';card.append(heading);
  if(['tannenbaum','darts','lotterie','tiberius','haushoch','haustief'].includes(key)){
@@ -85,7 +86,7 @@ function applyGameInputLayout(key){
   if(!nodes.length){if(old)return;else return;}
   for(const node of nodes)card.append(node);
  }
- normalizeGamePinpad(card);if(gameInputBusy[key])for(const button of card.querySelectorAll('button'))button.disabled=true;old?.remove();
+ normalizeGamePinpad(card);if(key==='darts'){const finish=panel.querySelector('button[onclick="finishDartsRound()"]');if(finish){finish.type='button';finish.disabled=!!gameInputBusy[key]||!!s.busy;card.append(finish);}}if(gameInputBusy[key])for(const button of card.querySelectorAll('button'))button.disabled=true;old?.remove();
  const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');
  if(title)title.after(card);else panel.prepend(card);
 }

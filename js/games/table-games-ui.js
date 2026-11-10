@@ -125,6 +125,7 @@ async function tableRun(key,action,fields={}){
     applyTableServerStates({[key+'State']:result.state});dashboardActiveGame=key;
     for(const item of result.counters||[])applyConfirmedLiveCounter(item.personName,item.category,item.key,item.value);
     penaltyStatsLog=[...(result.gameStats||[]),...(penaltyStatsLog||[]).filter(e=>!e.tableGameId)];
+    if(typeof applyCompletedGameResults==='function')applyCompletedGameResults(result.gameResultsHistory);
     tablePending[key]=null;persistState();try{renderAll();}catch(error){console.error(error);renderTableGames();}
     if(action==='finish')showToast(key==='blackjack'?'Spiel abgeschlossen – Platzierungsstrafen zusätzlich gebucht':'Spiel abgeschlossen – Verlierer-Strafen gebucht','success');
   }catch(error){console.error(key,error);if(ACTIVE_CLUB===club&&tablePending[key]){if(error.code==='table-game-rejected'){tablePending[key]=null;reloadRejected=true;}else tablePending[key].error=error.message;showToast(error.message,'error');}}

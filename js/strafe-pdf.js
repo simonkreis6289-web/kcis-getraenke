@@ -681,6 +681,7 @@ async function generateStrafenPDF(snapshot) {
     };
   }
 
+  const overflowExtras=[];
   function drawTable({
     title,
     rows,
@@ -753,7 +754,7 @@ async function generateStrafenPDF(snapshot) {
 
     const headerHeight = 20;
 
-    const rowHeight = 18;
+
 
     let frameStartY =
       y;
@@ -1239,6 +1240,17 @@ async function generateStrafenPDF(snapshot) {
     drawHeader();
 
     rows.forEach(person => {
+      const extraLines = [
+        ...(person.freeStrafen || []).filter(item => Number(item.amount) !== 0).map(item => `${Number(item.amount) >= 0 ? '+' : ''}${formatEuro(Number(item.amount))} ${item.reason || 'Freier Betrag'}`),
+        ...(person.isGosseKing && !(person.freeStrafen || []).some(item => /gossen(könig|koenig)/i.test(String(item.reason || ''))) ? ['Gossenkönig +3,00 EUR'] : []),
+        ...(person.tannenbaumCharges || []).filter(item => Number(item.amount) !== 0).map(item => `+${formatEuro(Number(item.amount))} Tannenbaum`)
+      ];
+      doc.setFont('helvetica','normal');doc.setFontSize(5.5);
+      const extraWrapped=doc.splitTextToSize(getPlainText(extraLines.join('\n')),extrasWidth-2);
+      const extraHeight=extraLines.length?extraWrapped.length*3.2+4:18;
+      if(extraHeight>150){overflowExtras.push({name:person.name,lines:extraLines.slice()});extraLines.splice(0,extraLines.length,'Einzelposten siehe Anhang: '+person.name);}
+      const rowHeight=extraHeight>150?18:Math.max(18,extraHeight);
+
       if (
         y +
         rowHeight >
@@ -1388,11 +1400,6 @@ async function generateStrafenPDF(snapshot) {
           person
         );
 
-      const extraLines = [
-        ...(person.freeStrafen || []).filter(item => Number(item.amount) !== 0).map(item => `${Number(item.amount) >= 0 ? '+' : ''}${formatEuro(Number(item.amount))} ${item.reason || 'Freier Betrag'}`),
-        ...(person.isGosseKing && !(person.freeStrafen || []).some(item => /gossen(könig|koenig)/i.test(String(item.reason || ''))) ? ['Gossenkönig +3,00 EUR'] : []),
-        ...(person.tannenbaumCharges || []).filter(item => Number(item.amount) !== 0).map(item => `+${formatEuro(Number(item.amount))} Tannenbaum`)
-      ];
       drawCenteredText(extraLines.length ? extraLines.join('\n') : '-', x, y, extrasWidth, rowHeight, {fontSize: 5.5});
 
       x +=
@@ -2018,7 +2025,7 @@ async function generateStrafenPDF(snapshot) {
       [
         'tannenbaum',
         'lotterie',
-        'tiberius'
+        'tiberius','game_result','mensch','haushoch','haustief','plusminus'
       ].includes(
         entry.type
       )
@@ -2055,8 +2062,7 @@ async function generateStrafenPDF(snapshot) {
           currentY = margin;
         }
 
-        let gameTitle =
-          'Spiel';
+        let gameTitle =entry.title||window.KCGameResults?.titles?.[entry.gameKey||entry.type]||'Spiel';
 
         if (
           entry.type ===
@@ -2105,6 +2111,14 @@ async function generateStrafenPDF(snapshot) {
         );
 
         doc.setFontSize(8.5);
+        if(['game_result','mensch','haushoch','haustief','plusminus'].includes(entry.type)){
+          const winners=entry.winners||(entry.winner?[entry.winner]:[]);
+          const details=[...(winners.length?['Gewinner: '+winners.join(' · ')]:[]),...(entry.ranking||[]).slice(0,3).map((g,i)=>(g.rank||i+1)+'. Verlierer: '+(g.team?g.team+' · ':'')+(g.names||[]).join(', ')),...(entry.results||[]).map(r=>r.name+': '+(r.number??r.result??'-'))];
+          if(!details.length)details.push('Abschluss dokumentiert; Beträge nach den Spielregeln.');
+          for(const detail of details){for(const line of doc.splitTextToSize(getPlainText(detail),pageWidth-margin*2)){ensurePageSpace(5);doc.text(line,margin,currentY);currentY+=5;}}
+          currentY+=6;return;
+        }
+
 
         if (
           entry.type ===
@@ -2208,6 +2222,13 @@ async function generateStrafenPDF(snapshot) {
     doc.text('Bahngebühr: '+formatEuro(snapshot.laneCostCents/100),margin,currentY+10);
     doc.setFont('helvetica','normal');doc.setFontSize(9);
     doc.text(snapshot.laneExpenseExcluded?'Die Bahngebühr ist aus den Kassenausgaben ausgeschlossen.':'Ausgabe der Clubkasse; nicht in den Einzelbeträgen der Mitglieder enthalten.',margin,currentY+17);
+  }
+  if(Number.isSafeInteger(snapshot.laneCostCents))currentY+=29;
+  for(const extra of overflowExtras){
+    ensurePageSpace(20);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('Zusätzliche Beträge - '+getPlainText(extra.name),margin,currentY+8);currentY+=15;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    for(const entry of extra.lines){const lines=doc.splitTextToSize(getPlainText(entry),pageWidth-margin*2);for(const line of lines){ensurePageSpace(5);doc.text(line,margin,currentY+4);currentY+=5;}currentY+=2;}
+    currentY+=5;
   }
   return doc;
 }

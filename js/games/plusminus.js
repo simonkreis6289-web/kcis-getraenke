@@ -125,7 +125,8 @@ async function undoPlusminusThrow() {
       plusminusState.finished=false;
       plusminusState.active=true;
       plusminusState.customOrder=true;
-      plusminusState.history.shift();
+      const removed=plusminusState.history.shift();
+      if(Array.isArray(strafenHistory))strafenHistory=strafenHistory.filter(e=>e.id!==removed?.id);
     }
     plusminusState.rows[last.player][last.slot]=null;
     plusminusState.currentPlayerIndex=last.oldIndex;
@@ -171,6 +172,7 @@ async function confirmPlusminusSlotEdit(value,isGosse=false) {
       entry.rows=JSON.parse(JSON.stringify(plusminusState.rows));
       entry.results=players.map(player=>({name:player.name,...computePlusminusResult(plusminusState.rows[player.name]||[],plusminusState.smartGosse)}))
         .sort((a,b)=>(b.result??-Infinity)-(a.result??-Infinity));
+      const archived=strafenHistory.findIndex(e=>e.id===entry.id);if(archived>=0)strafenHistory[archived]=JSON.parse(JSON.stringify(entry));
     }
     closePlusminusSlotEdit();plusminusState.busy=false;renderAll();persistState();
     showToast('✅ Kästchen korrigiert','success');
@@ -212,6 +214,7 @@ function computePlusminusResult(row, smart = false) {
 }
 
 function finishPlusminusGame() {
+  if(plusminusState.finished)return;
   const players = getPlusminusPlayers();
   plusminusState.active = false;
   plusminusState.customOrder = !!plusminusState.restoreCustomOrder;
@@ -229,6 +232,7 @@ function finishPlusminusGame() {
     results
   };
   plusminusState.history.unshift(entry);
+  if(!Array.isArray(strafenHistory))strafenHistory=[];strafenHistory.unshift(entry);
   renderPlusminusGame();
   persistState();
   showToast('➕ Spiel abgeschlossen', 'success');
