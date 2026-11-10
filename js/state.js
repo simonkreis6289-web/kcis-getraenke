@@ -1,6 +1,6 @@
-const APP_VERSION = '20261110-201';
-const APPVersionSelf = 'V201 © SK';
-const APP_LAST_UPDATE = '10.11.2026, 07:09 Uhr';
+const APP_VERSION = '20261110-202';
+const APPVersionSelf = 'V202 © SK';
+const APP_LAST_UPDATE = '10.11.2026, 12:33 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -195,4 +195,5 @@ let clubTerminGruende = [{id:'kegeln',name:'Kegelabend',emoji:'🎳'},{id:'tour'
 
 
 
+let siebenerSettings=null;
 let siebenerState=null,hindernisState=null,hindernisSettings=null,individualGameLedger=[],individualGameRevision=0;

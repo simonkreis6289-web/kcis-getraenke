@@ -313,14 +313,14 @@ window.firestoreApi = {
 
   async setDashboardRules(clubId,request={}) {
     if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
-    if(request.rulesConfig!==undefined&&(request.gameKey!=='hindernis'||!window.KCIndividual?.validSettings(request.rulesConfig)))throw new Error('Ungültige Hindernisregeln');
+    if(request.rulesConfig!==undefined&&!(request.gameKey==='hindernis'&&window.KCIndividual?.validSettings(request.rulesConfig)||request.gameKey==='siebener'&&window.KCIndividual?.validSevenSettings(request.rulesConfig)))throw new Error('Ungültige Spielregeln');
     const ref=doc(db,'clubs',clubId,'state','current');
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardRules||{};
       if((before.commands||[]).includes(request.opId))return before;
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
-      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(request.gameKey==='hindernis'&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       transaction.set(ref,{dashboardRules:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },

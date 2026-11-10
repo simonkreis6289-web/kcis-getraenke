@@ -11,7 +11,7 @@
   },
   "siebener": {
     "title": "🎲 7er-Spiel",
-    "body": "<ol><li>Jeder spielt sechs Züge mit jeweils zwei Würfen in die Vollen.</li><li>Normalerweise werden die beiden Wurfzahlen multipliziert. Pro Person darf genau einmal stattdessen die Summe verwendet werden.</li><li>Danach wird das Ergebnis einer noch freien Spalte zugeordnet: 14, 21, 28, 35, 42 oder 49. Jede Spalte wird einmal belegt.</li><li>Der Abstand zum Spaltenziel kostet je Punkt 10 Cent. Nach allen sechs Spalten gewinnt die niedrigste Gesamtstrafe; gleiche Beträge teilen sich den Sieg.</li></ol><p>Kranz zählt acht Holz, Gosse und Vorbei null. Unsere üblichen Sonderwurfstrafen gelten zusätzlich. Die Spaltenbeträge werden beim Abschluss zusätzlich zur Strafobergrenze gebucht; bis dahin kann die letzte Aktion zurückgenommen werden.</p><p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/7er-spiel\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a></p>"
+    "body": "<ol><li>Jeder spielt sechs Züge mit jeweils zwei Würfen in die Vollen.</li><li>Normalerweise werden die beiden Wurfzahlen multipliziert. Pro Person darf genau einmal stattdessen die Summe verwendet werden.</li><li>Danach wird das Ergebnis einer noch freien Spalte zugeordnet: 14, 21, 28, 35, 42 oder 49. Jede Spalte wird einmal belegt.</li><li>Der absolute Abstand zum Spaltenziel wird mit dem eingestellten Preis pro Pin multipliziert (Standard: 10 Cent). Nach allen sechs Spalten gewinnt die niedrigste Gesamtstrafe; gleiche Beträge teilen sich den Sieg.</li></ol><p>Der Kranz zählt je nach Einstellung 8, 12 oder einen eigenen festen Wert. Bei freier Kranzwahl wird pro Kranzwurf eine Zahl von 1 bis 12 gewählt. Gosse und Vorbei zählen null. Unsere üblichen Sonderwurfstrafen gelten zusätzlich. Die Spaltenbeträge werden beim Abschluss zusätzlich zur Strafobergrenze gebucht; bis dahin kann die letzte Aktion zurückgenommen werden.</p><p><a href=\"https://xn--kegelclub-tddern-tzb.de/kegelspiele/7er-spiel\" target=\"_blank\" rel=\"noopener noreferrer\">Regelgrundlage: KC Mehr wie 9 geht nicht</a></p>"
   },
   "hindernis": {
     "title": "🏃 Hindernislauf",
@@ -20,6 +20,7 @@
 };
   function content(key,config){
     let body=rules[key]?.body||'';
+    if(key==='siebener'&&window.KCIndividual){const c=window.KCIndividual.sevenSettings(config?.seven||config);body+='<p><strong>Für dieses Spiel:</strong> '+(c.pinCents/100).toFixed(2).replace('.',',')+' € je Pin Abstand · '+window.KCIndividual.sevenKranzLabel(c)+'. Einstellungen unter Spiele → Einstellungen → 7er-Spiel. Änderungen gelten für neue Spiele.</p>';}
     if(key==='hindernis'&&window.KCIndividual){
       const value=window.KCIndividual.settings(config);
       body+='<h3>Hindernisse · Ziel '+value.target+' · Grundbetrag '+(value.baseCents/100).toFixed(2).replace('.',',')+' €</h3><table class="rules-obstacle-table"><thead><tr><th>Punkte</th><th>Aktion</th></tr></thead><tbody>'+value.rules.map(r=>'<tr><th>'+r.from+(r.to!==r.from?'–'+r.to:'')+'</th><td>'+window.KCIndividual.ruleLabel(r)+(!r.enabled?' · deaktiviert':'')+'</td></tr>').join('')+'</tbody></table>';
@@ -95,7 +96,8 @@ function kcPublishGameRules(gameKey,open){
     if(!session||session.gameKey!==gameKey)return;kcRulesSession=null;
   }
   let update=kcRulesUpdates.get(session.clubId);if(!update){update={pending:null,running:false,timer:null};kcRulesUpdates.set(session.clubId,update);}
-  const rulesConfig=gameKey==='hindernis'&&window.KCIndividual?window.KCIndividual.settings(typeof hindernisState!=='undefined'&&hindernisState?.id?hindernisState.config:typeof hindernisSettings!=='undefined'?hindernisSettings:null):null;
+  const sevenConfig=gameKey==='siebener'&&window.KCIndividual?window.KCIndividual.sevenSettings(typeof siebenerState!=='undefined'&&siebenerState?.id?siebenerState.config?.seven:typeof siebenerSettings!=='undefined'?siebenerSettings:null):null;
+  const rulesConfig=sevenConfig||(gameKey==='hindernis'&&window.KCIndividual?window.KCIndividual.settings(typeof hindernisState!=='undefined'&&hindernisState?.id?hindernisState.config:typeof hindernisSettings!=='undefined'?hindernisSettings:null):null);
   update.pending={session,request:{action:open?'open':'close',gameKey,...(rulesConfig?{rulesConfig}:{}),token:session.token,opId:'rules_'+kcRulesId()}};
   kcRulesStatus(session,open?'Dashboard wird aktualisiert …':'');void kcFlushGameRules(session.clubId);
 }

@@ -3,6 +3,10 @@
  const clone=x=>JSON.parse(JSON.stringify(x)),keys=['siebener','hindernis'],columns=[14,21,28,35,42,49],norm=n=>String(n).trim().toLocaleLowerCase('de-DE');
  const specs=[['start',0,0,'start',0],['pause',5,5,'skip',1],['pay11',11,11,'pay',20],['minus',17,17,'subtract',0],['reset19',19,19,'reset',0],['leader',28,28,'leader',0],['pay35',35,35,'pay',20],['back43',43,43,'move',20],['forward47',47,47,'move',66],['double',50,50,'double',0],['pay54',54,54,'pay',20],['pay60',60,65,'pay',20],['back69',69,69,'move',59],['others',70,70,'others',8],['forward77',77,77,'move',84],['back83',83,83,'move',66],['choice',89,89,'choice',100]];
  function ruleLabel(r){return r.kind==='start'?'Fehlstart – zurück auf 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?(r.value<100?r.value+' Cent':(r.value/100).toFixed(2).replace('.',',')+' €')+' in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
+ function sevenDefaults(){return {pinCents:10,kranzMode:'fixed',kranzValue:8};}
+ function validSevenSettings(v){return !!v&&Number.isSafeInteger(v.pinCents)&&v.pinCents>=0&&v.pinCents<=10000&&['fixed','choose'].includes(v.kranzMode)&&Number.isInteger(v.kranzValue)&&v.kranzValue>=1&&v.kranzValue<=12;}
+ function sevenSettings(v){return clone(validSevenSettings(v)?v:sevenDefaults());}
+ function sevenKranzLabel(v){const c=sevenSettings(v);return c.kranzMode==='choose'?'Kranz (Wert wählen)':'Kranz ('+c.kranzValue+')';}
  function defaults(){return {target:90,baseCents:100,rules:specs.map(([id,from,to,kind,value])=>({id,from,to,kind,value,enabled:true}))};}
  function validSettings(v){
   if(!v||!Number.isInteger(v.target)||v.target<20||v.target>500||!Number.isInteger(v.baseCents)||v.baseCents<0||v.baseCents>10000||!Array.isArray(v.rules)||v.rules.length>17)return false;
@@ -72,7 +76,9 @@
   const names=req.players;if(!Array.isArray(names)||names.length<2||names.length>16||names.some(n=>typeof n!=='string'||!n.trim())||new Set(names.map(norm)).size!==names.length||names.some(n=>!ctx.people.some(p=>p.name===n&&active(p))))throw Error('Bitte 2 bis 16 unterschiedliche aktive Kegler auswählen');
   if(typeof req.gameId!=='string'||!/^indgame_[a-zA-Z0-9_-]{1,100}$/.test(req.gameId))throw Error('Ungültige Spielkennung');
   if(req.gameKey==='hindernis'&&!validSettings(req.config))throw Error('Ziel, Betrag und Hindernispunkte prüfen');
-  const s=empty(req.gameKey);s.id=req.gameId;s.active=true;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):defaults();s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
+  const seven=req.sevenSettings??req.config?.seven;
+  if(req.gameKey==='siebener'&&seven!==undefined&&!validSevenSettings(seven))throw Error('Preis pro Pin und Kranzwert prüfen');
+  const s=empty(req.gameKey);s.id=req.gameId;s.active=true;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):{...defaults(),seven:sevenSettings(seven)};s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
  }
  function booking(s,e,name,cents,reason){if(cents>0)s.bookings.push({id:'indcharge_'+s.id+'_'+e.id+'_'+s.players.indexOf(name),personName:name,amountCents:cents,reason,onTop:true,eveningStartedAt:s.eveningStartedAt,gameId:s.id});}
  function next(s){
@@ -110,7 +116,7 @@
    if(s.gameKey==='siebener')s.turn.push(e.pins);else hurdle(s,e);
   }else if(e.action==='place'){
    if(s.gameKey!=='siebener'||s.turn.length!==2||!columns.includes(e.column)||Object.hasOwn(s.sheet[n],e.column)||e.add&&s.addUsed[n])throw Error('Zwei Würfe, eine freie Spalte und die noch ungenutzte Addition wählen');
-   const value=e.add?s.turn[0]+s.turn[1]:s.turn[0]*s.turn[1],diff=Math.abs(e.column-value);Object.defineProperty(s.sheet[n],e.column,{value:{value,diff,cents:diff*10,add:!!e.add,throws:s.turn.slice()},writable:true,enumerable:true,configurable:true});s.scores[n]+=diff*10;if(e.add)s.addUsed[n]=true;s.turn=[];next(s);
+   const value=e.add?s.turn[0]+s.turn[1]:s.turn[0]*s.turn[1],diff=Math.abs(e.column-value);Object.defineProperty(s.sheet[n],e.column,{value:{value,diff,cents:diff*sevenSettings(s.config?.seven).pinCents,add:!!e.add,throws:s.turn.slice()},writable:true,enumerable:true,configurable:true});s.scores[n]+=diff*sevenSettings(s.config?.seven).pinCents;if(e.add)s.addUsed[n]=true;s.turn=[];next(s);
   }else if(e.action==='choose'){
    if(!s.pendingChoice||s.pendingChoice.name!==n||!['reset','pay'].includes(e.choice))throw Error('Neustart oder 1 € Zahlung auswählen');
    if(e.choice==='reset')s.scores[n]=0;else booking(s,e,n,100,'Hindernislauf · Neustart vermieden');s.pendingChoice=null;next(s);
@@ -138,7 +144,9 @@
      const n=current(s),e={id:req.opId,name:n,action:req.action,at:ctx.now};
      if(req.action==='throw'){
       if(!ctx.people.some(p=>p.name===n&&active(p)))throw Error('Der Werfer ist nicht mehr aktiv');if(!['pins','kranz','gosse','miss'].includes(req.kind))throw Error('Ungültiger Wurf');
-      const pins=req.kind==='kranz'?(s.gameKey==='hindernis'?12:8):['gosse','miss'].includes(req.kind)?0:Number(req.pins);if(!Number.isInteger(pins)||pins<0||req.kind==='pins'&&(pins<1||pins>9))throw Error('1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');Object.assign(e,{kind:req.kind,pins});
+      const config=sevenSettings(s.config?.seven);
+      if(req.kind==='kranz'&&s.gameKey==='siebener'&&config.kranzMode==='choose'&&(!Number.isInteger(req.kranzValue)||req.kranzValue<1||req.kranzValue>12))throw Error('Kranzwert: eine ganze Zahl von 1 bis 12 wählen');
+      const pins=req.kind==='kranz'?(s.gameKey==='hindernis'?12:config.kranzMode==='choose'?req.kranzValue:config.kranzValue):['gosse','miss'].includes(req.kind)?0:Number(req.pins);if(!Number.isInteger(pins)||pins<0||req.kind==='pins'&&(pins<1||pins>9))throw Error('1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');Object.assign(e,{kind:req.kind,pins});
      }else if(req.action==='place')Object.assign(e,{column:req.column,add:!!req.add});else if(req.action==='choose')e.choice=req.choice;else throw Error('Ungültige Spielaktion');play(s,e);
      // Zielwurf und Endabrechnung sind eine einzige, wiederholsichere Spielaktion.
      if(reachedTarget(s))finish(s);
@@ -156,5 +164,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();
