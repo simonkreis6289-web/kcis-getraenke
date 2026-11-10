@@ -8,5 +8,5 @@ test('both teams show 0, up to 15 individual strikes, then an exact growing coun
 });
 test('undo across the threshold restores 15 marks without losing the total or the red styling',()=>{
  const {base,render}=treeFixture(),side={remaining:{...base},strikes:Array.from({length:16},()=>({number:5,amount:.5}))};let doc=parseHTML(render({teams:{T1:side}})).document;assert.equal(doc.querySelector('.tree-strikes-count').textContent,'16');side.strikes.pop();doc=parseHTML(render({teams:{T1:side}})).document;assert.equal(doc.querySelectorAll('.tree-strike').length,15);assert.equal(doc.querySelectorAll('.tree-strikes-count').length,0);
- const css=read('css/dashboard-tannenbaum.css');assert.match(css,/color:#d62828/);assert.match(css,/grid-template-columns:repeat\(5,3px\)/);
+ const css=read('css/dashboard-tannenbaum.css');assert.match(css,/color:#d62828/);assert.match(css,/\.tree-v138 \.tree-strikes\{[^}]*flex-wrap:nowrap/);
 });
