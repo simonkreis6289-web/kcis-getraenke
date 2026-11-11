@@ -34,6 +34,7 @@ function setupClubAvatarUpload() {
 
       saveClubSystem();
       renderClubList();
+      updateAppHeader();
 
       await saveClubMetaToFirestore(pendingClubAvatarName);
 
@@ -93,6 +94,8 @@ async function removeClubAvatar(clubName) {
 
   saveClubSystem();
   renderClubList();
+
+  updateAppHeader();
 
   await saveClubMetaToFirestore(clubName);
 
@@ -651,8 +654,8 @@ try {
 }
 
 function updateAppHeader() {
-  const title = document.querySelector('header h1');
-  const subtitle = document.querySelector('header .subtitle');
+  const title = document.querySelector('#app > header h1');
+  const subtitle = document.querySelector('#app > header .subtitle');
   const backBtn = document.getElementById('clubBackBtn');
 
   if (title) title.textContent = ACTIVE_CLUB || 'Kegelclub Manager';
@@ -661,6 +664,38 @@ function updateAppHeader() {
   if (backBtn) {
     backBtn.classList.toggle('hidden', !ACTIVE_CLUB);
   }
+  updateHeaderClubCrest();
+}
+
+function updateHeaderClubCrest() {
+  const crest = document.getElementById('app-club-crest');
+  if (!crest) return;
+  const name = ACTIVE_CLUB || '';
+  const avatar = CLUBS[name]?.avatar || '';
+  const key = JSON.stringify([name, avatar]);
+  crest.hidden = !name;
+  if (crest.dataset.avatarKey === key) return;
+  crest.dataset.avatarKey = key;
+  crest.replaceChildren();
+  if (!name) return;
+
+  const files = [...new Set([avatar, ...getClubAvatarFileCandidates(name)].filter(Boolean))];
+  const img = document.createElement('img');
+  img.alt = name + ' – Wappen';
+  let index = 0;
+  img.onerror = () => {
+    if (crest.firstElementChild !== img) return;
+    if (++index < files.length) {
+      img.src = files[index];
+      return;
+    }
+    const fallback = document.createElement('span');
+    fallback.textContent = name.split(/\s+/).map(word => word[0] || '').join('').toUpperCase().slice(0, 2);
+    fallback.setAttribute('aria-label', name + ' – Wappen fehlt');
+    crest.replaceChildren(fallback);
+  };
+  crest.append(img);
+  img.src = files[0];
 }
 
 function getClubAvatarFileCandidates(name) {
@@ -675,12 +710,8 @@ function getClubAvatarFileCandidates(name) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  return [
-    `clubbilder/${base}.jpg`,
-    `clubbilder/${base}.jpeg`,
-    `clubbilder/${base}.png`,
-    `clubbilder/${base}.webp`
-  ];
+  const bases = [...new Set([base, base.replace(/^kc-/, '')])];
+  return bases.flatMap(value => ['jpg', 'jpeg', 'png', 'webp'].map(ext => `clubbilder/${value}.${ext}`));
 }
 
 function getClubAvatarHtml(name) {

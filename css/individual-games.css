@@ -17,8 +17,63 @@
 /* 7er-Einstellungen und freie Kranzwahl. */
 #game-property-siebener input,#game-property-siebener select{min-height:42px;max-width:100%;box-sizing:border-box}
 #game-property-siebener [hidden]{display:none!important}
-#seven-kranz-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}
-#seven-kranz-choices button{min-height:50px;font-size:20px}
+
+/* Gemeinsame Kranzwahl für alle Spiele mit freier Wertauswahl. */
+.kranz-picker > .modal {
+  width: min(560px, calc(100vw - 32px));
+  max-width: 560px;
+  padding: 26px;
+  border: 1px solid #d5deeb;
+  border-top: 5px solid #efb445;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 75px #111c3966;
+}
+.kranz-picker-heading { display: flex; align-items: center; gap: 14px; }
+.kranz-picker-crown {
+  display: grid;
+  place-items: center;
+  flex: 0 0 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: #fff1cc;
+  font-size: 28px;
+}
+.kranz-picker-eyebrow { margin: 0 0 3px; color: #725020; font: 800 10px/1.4 'DM Sans', sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.kranz-picker .modal h3 { margin: 0; color: #263a59; font: 800 24px/1.2 'DM Sans', sans-serif; letter-spacing: -.04em; }
+.kranz-picker-help, .kranz-picker .modal-sub { margin: 16px 0 0; color: #53647e; font: 500 14px/1.5 'DM Sans', sans-serif; }
+.kranz-picker .kranz-value-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 20px 0; }
+.kranz-picker .kranz-value-grid-tree { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kranz-picker .kranz-value-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 10px 4px;
+  border: 1px solid #cbd5e5;
+  border-radius: 13px;
+  background: #f2f5fa;
+  color: #263a59;
+  font: 800 26px/1.1 'DM Sans', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #dce3ed;
+}
+.kranz-value-btn strong { font: inherit; }
+.kranz-value-btn span { font: 600 11px/1.4 'DM Sans', sans-serif; color: #53647e; }
+.kranz-picker .kranz-value-featured { background: #fff2ce; border-color: #e0b159; box-shadow: 0 3px 0 #e7ce97; }
+.kranz-picker .kranz-value-btn:hover { background: #e2eaf7; border-color: #566d93; }
+.kranz-picker .kranz-value-btn:active { transform: translateY(2px); box-shadow: none; }
+.kranz-picker .kranz-picker-cancel { width: 100%; min-height: 42px; padding: 10px 16px; border: 1px solid #ccd5e3; border-radius: 11px; background: #fff; color: #53647e; font: 700 13px/1.4 'DM Sans', sans-serif; cursor: pointer; }
+.kranz-picker button:focus-visible { outline: 3px solid #d79c29; outline-offset: 3px; }
+@media (max-width: 420px) {
+  .kranz-picker > .modal { padding: 18px; }
+  .kranz-picker .kranz-value-grid { gap: 7px; }
+  .kranz-picker .kranz-value-btn { min-height: 64px; font-size: 22px; }
+  .kranz-picker .modal h3 { font-size: 21px; }
+}
 
 .ind-add-count{display:block;margin-top:4px;color:#52637c;font-size:11px;font-weight:500;line-height:1.5;white-space:normal}
 .penalty-free-details{margin-top:5px;font:12px/1.5 'DM Sans',sans-serif;color:var(--text,#243651)}

@@ -24,7 +24,7 @@ function extraDraw(key){
 }
 function extraThrow(key,kind,pins){
  const s=indGet(key);if(!s?.active||indPending[key]||indBusy[key])return;
- if(kind==='kranz'&&s.config.kranzMode==='choose'){extraKranzPending={key,id:s.id,revision:s.revision,club:ACTIVE_CLUB};document.getElementById('extra-kranz-modal').classList.remove('hidden');document.getElementById('extra-kranz-choices').innerHTML=Array.from({length:12},(_,i)=>'<button type="button" onclick="extraChooseKranz('+(i+1)+')">'+(i+1)+'</button>').join('');return;}
+ if(kind==='kranz'&&s.config.kranzMode==='choose'){extraKranzPending={key,id:s.id,revision:s.revision,club:ACTIVE_CLUB};document.getElementById('extra-kranz-modal').classList.remove('hidden');document.getElementById('extra-kranz-choices').innerHTML=[1,2,3,4,5,6,7,8,9,12].map(value=>'<button type="button" class="kranz-value-btn'+([8,12].includes(value)?' kranz-value-featured':'')+'" onclick="extraChooseKranz('+value+')" aria-label="Kranz mit '+value+' Holz werten"><strong>'+value+'</strong><span>Holz</span></button>').join('');return;}
  return indAction(key,'throw',{kind,...(kind==='pins'?{pins}:{})});
 }
 function extraCancelKranz(){extraKranzPending=null;document.getElementById('extra-kranz-modal')?.classList.add('hidden');}

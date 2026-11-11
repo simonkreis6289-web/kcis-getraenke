@@ -152,7 +152,7 @@ async function saveSevenSettings(){
 function indKranz(){
  const s=indGet('siebener');if(!s?.active||s.readyToFinish||s.turn.length>=2||indBusy.siebener||indPending.siebener)return;
  if(KCIndividual.sevenSettings(s.config?.seven).kranzMode!=='choose')return indAction('siebener','throw',{kind:'kranz'});
- sevenKranzPending={id:s.id,revision:s.revision};document.getElementById('seven-kranz-modal').classList.remove('hidden');document.getElementById('seven-kranz-choices').innerHTML=Array.from({length:12},(_,i)=>'<button type="button" class="secondary-btn" onclick="indChooseKranz('+(i+1)+')">'+(i+1)+'</button>').join('');
+ sevenKranzPending={id:s.id,revision:s.revision};document.getElementById('seven-kranz-modal').classList.remove('hidden');document.getElementById('seven-kranz-choices').innerHTML=[1,2,3,4,5,6,7,8,9,12].map(value=>'<button type="button" class="kranz-value-btn'+([8,12].includes(value)?' kranz-value-featured':'')+'" onclick="indChooseKranz('+value+')" aria-label="Kranz mit '+value+' Holz werten"><strong>'+value+'</strong><span>Holz</span></button>').join('');
 }
 function indCancelKranz(){sevenKranzPending=null;document.getElementById('seven-kranz-modal').classList.add('hidden');}
 function indChooseKranz(value){

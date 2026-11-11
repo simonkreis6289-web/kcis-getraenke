@@ -374,7 +374,8 @@ function openTannenbaumKranzNumberModal() {
   for (let n = 1; n <= 9; n++) {
     const btn = document.createElement('button');
 
-    btn.className = 'tannenbaum-number-btn';
+    btn.className = 'tannenbaum-number-btn kranz-value-btn';
+    btn.type = 'button';
     btn.textContent = n;
 
     btn.onclick = () => {
