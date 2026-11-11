@@ -126,6 +126,49 @@
       justify-content: flex-end;
     }
 
+    #app > .app-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px 24px;
+      align-items: center;
+    }
+    .app-header-nav {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-header-nav .back-btn {
+      min-height: 36px;
+      padding: 7px 12px;
+      white-space: nowrap;
+    }
+    .app-header-identity { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .app-header-title { min-width: 0; }
+    #app > .app-header h1 { font-size: clamp(1.65rem, 2.55vw, 2.5rem); letter-spacing: 3px; overflow-wrap: anywhere; }
+    .app-club-crest {
+      display: grid;
+      place-items: center;
+      flex: 0 0 66px;
+      width: 66px;
+      height: 66px;
+      padding: 4px;
+      border: 1px solid #ffffff70;
+      border-radius: 13px;
+      background: #fff;
+      color: #293d6e;
+      overflow: hidden;
+      font-weight: 800;
+    }
+    .app-club-crest[hidden] { display: none; }
+    .app-club-crest img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .app-header-tools { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; }
+    @media (max-width: 1100px) {
+      #app > .app-header { grid-template-columns: minmax(0, 1fr); }
+      .app-header-tools { align-items: flex-start; }
+      .app-header-tools .header-btns { justify-content: flex-start; }
+    }
+
     .sync-btn, .add-btn, .round-btn {
       background: var(--accent);
       color: #000;
@@ -3499,9 +3542,9 @@ body.view-only #clubBackBtn {
 /* ── QUICK BAR EINHEITLICH ── */
 .quick-penalty-bar {
   display: grid;
-  grid-template-columns: 180px 120px 120px 150px 120px 160px 205px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
   justify-content: start;
 
   padding: 10px 14px;
@@ -3510,8 +3553,11 @@ body.view-only #clubBackBtn {
 }
 
 .quick-penalty-bar button {
+  min-width: 0;
   min-height: 42px;
   padding: 8px 10px;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 
   border: 1.5px solid var(--border);
   border-radius: 10px;
@@ -3538,7 +3584,11 @@ body.view-only #clubBackBtn {
 }
 
 .quick-penalty-bar .team-loss-btn {
-  min-width: 205px;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .quick-penalty-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .game-hub-grid {
