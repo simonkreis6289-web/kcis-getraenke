@@ -1,14 +1,15 @@
-const IND_KEYS=['siebener','hindernis'];
+const IND_KEYS=['siebener','hindernis',...(window.KCExtraGames?.keys||[])];
 let indDrafts={},indPending={},indBusy={},indAdd=false,indAddStamp='',indSettingsDraft=null,indSettingsClub='',indSettingsSaved='',indSettingsBusy=false,indRulesFocus=null;
-function indGet(key){return key==='siebener'?siebenerState:hindernisState;}
-function indSet(key,s){if(key==='siebener')siebenerState=s;else hindernisState=s;}
-function indEnsure(){for(const key of IND_KEYS){const s=indGet(key);if(!s||!Array.isArray(s.history)||(s.eveningStartedAt&&currentEveningStartedAt&&s.eveningStartedAt!==currentEveningStartedAt))indSet(key,KCIndividual.empty(key));}for(const name of ['7er-Spiel','Hindernislauf'])if(!SPIELE_KATALOG.includes(name))SPIELE_KATALOG.push(name);}
+function indGet(key){return key==='siebener'?siebenerState:key==='hindernis'?hindernisState:typeof extraGet==='function'?extraGet(key):null;}
+function indSet(key,s){if(key==='siebener')siebenerState=s;else if(key==='hindernis')hindernisState=s;else extraSet(key,s);}
+function indEnsure(){for(const key of IND_KEYS){const s=indGet(key);if(!s||!Array.isArray(s.history)||(s.eveningStartedAt&&currentEveningStartedAt&&s.eveningStartedAt!==currentEveningStartedAt))indSet(key,(window.KCExtraGames?.keys.includes(key)?KCExtraGames:KCIndividual).empty(key));}for(const name of ['7er-Spiel','Hindernislauf',...Object.values(window.KCExtraGames?.titles||{})])if(!SPIELE_KATALOG.includes(name))SPIELE_KATALOG.push(name);}
 function applyIndividualServerStates(data){
  if(data.currentEveningStartedAt&&currentEveningStartedAt&&data.currentEveningStartedAt!==currentEveningStartedAt)return;
  if(Number(data.individualGameRevision||0)<Number(individualGameRevision||0))return;
  for(const key of IND_KEYS)if(data[key+'State']&&Number(data[key+'State'].revision||0)>=Number(indGet(key)?.revision||0))indSet(key,JSON.parse(JSON.stringify(data[key+'State'])));
  if(Array.isArray(data.individualGameLedger))individualGameLedger=JSON.parse(JSON.stringify(data.individualGameLedger));individualGameRevision=Number(data.individualGameRevision)||0;
  if(Array.isArray(data.penaltyStatsLog))penaltyStatsLog=[...data.penaltyStatsLog.filter(e=>e.individualGameId),...penaltyStatsLog.filter(e=>!e.individualGameId)];
+ if(data.extraGameSettings&&typeof extraGameSettings!=='undefined'&&!extraSettingsBusy)extraGameSettings=JSON.parse(JSON.stringify(data.extraGameSettings));
  renderIndividualGames();if(typeof renderStrafen==='function')renderStrafen();if(typeof updateStats==='function')updateStats();
 }
 function indPeople(){return typeof tablePlayers==='function'?tablePlayers():getActivePlayersForSoloGame();}
@@ -37,7 +38,7 @@ async function indRun(key,action,fields={}){
  if(rejected)await indReload(key);
 }
 function indAction(key,action,fields={}){if(!indPending[key])return indRun(key,action,fields);}
-function indStart(key){const d=indDraft(key);return indRun(key,'start',{gameId:'indgame_'+crypto.randomUUID(),players:d.names,config:KCIndividual.settings(hindernisSettings),...(key==='siebener'?{sevenSettings:KCIndividual.sevenSettings(typeof siebenerSettings==='undefined'?null:siebenerSettings)}:{})});}
+function indStart(key){if(window.KCExtraGames?.keys.includes(key))return extraStart(key);const d=indDraft(key);return indRun(key,'start',{gameId:'indgame_'+crypto.randomUUID(),players:d.names,config:KCIndividual.settings(hindernisSettings),...(key==='siebener'?{sevenSettings:KCIndividual.sevenSettings(typeof siebenerSettings==='undefined'?null:siebenerSettings)}:{})});}
 function indRetry(key){const p=indPending[key];if(p)return indRun(key,p.request.action);}
 async function indReload(key){
  if(indBusy[key]||!ACTIVE_CLUB||!navigator.onLine)return;const club=ACTIVE_CLUB;indBusy[key]=true;renderIndividualGame(key);
@@ -47,8 +48,9 @@ async function indReload(key){
 function indReset(key){if(indBusy[key]||indPending[key])return;if(confirm('Neues Spiel vorbereiten? Bereits gebuchte Beträge und Wurfstrafen bleiben erhalten.'))return indRun(key,'reset');}
 function indUseAdd(value){indAdd=!!value;renderIndividualGame('siebener');}
 function indPlace(column){return indAction('siebener','place',{column,add:indAdd});}
-function renderIndividualGames(){indEnsure();for(const key of IND_KEYS)renderIndividualGame(key);renderHurdleSettings();renderSevenSettings();}
+function renderIndividualGames(){indEnsure();for(const key of IND_KEYS)renderIndividualGame(key);renderHurdleSettings();renderSevenSettings();if(typeof renderExtraSettings==='function')renderExtraSettings();}
 function renderIndividualGame(key){
+ if(window.KCExtraGames?.keys.includes(key))return renderExtraGame(key);
  const setup=document.getElementById(key+'-setup'),box=document.getElementById(key+'-board');if(!setup||!box)return;indEnsure();const s=indGet(key),seven=key==='siebener',ready=s.readyToFinish||KCIndividual.reachedTarget(s),pending=indPending[key],busy=!!(indBusy[key]||pending),disabled=busy?'disabled':'';
  setup.classList.toggle('hidden',!!s.id);
  if(!s.id){const d=indDraft(key),valid=d.names.length>=2,config=KCIndividual.settings(hindernisSettings);setup.innerHTML='<h3>Kegler und Reihenfolge wählen</h3><div class="kc-avatar-picker">'+indPeople().map((p,i)=>'<button type="button" class="kc-avatar-option '+(d.names.includes(p.name)?'selected':'')+'" '+disabled+' onclick="indToggle(\''+key+'\','+i+')">'+sixAvatar(p.name)+'</button>').join('')+'</div><div class="ind-order">'+d.names.map((n,i)=>'<div><span>'+(i+1)+'. '+indEscape(n)+'</span><button type="button" '+disabled+' onclick="indMove(\''+key+'\','+i+',-1)">↑</button><button type="button" '+disabled+' onclick="indMove(\''+key+'\','+i+',1)">↓</button></div>').join('')+'</div><p>'+(seven?'Sieben freie Spalten · '+indEuro(KCIndividual.sevenSettings(typeof siebenerSettings==='undefined'?null:siebenerSettings).pinCents)+' je Pin Abstand · '+KCIndividual.sevenSettings(typeof siebenerSettings==='undefined'?null:siebenerSettings).addLimit+'× pro Person addieren.':'Ziel '+config.target+' · Grundbetrag '+indEuro(config.baseCents)+' · '+config.rules.filter(r=>r.enabled).length+' aktive Hindernisse. Verteilung unter Spiele → Einstellungen prüfen.')+'</p><button type="button" class="primary-btn" '+(busy||!valid?'disabled':'')+' onclick="indStart(\''+key+'\')">🎳 Spiel starten</button>';}
@@ -127,7 +129,7 @@ async function saveHurdleSettings(){
  const club=ACTIVE_CLUB;hindernisSettings=JSON.parse(JSON.stringify(config));indSettingsBusy=true;persistState();renderIndividualGames();const status=document.getElementById('hurdle-settings-status');status.textContent='Wird gespeichert …';
  try{const saved=navigator.onLine?await saveToFirestore(false):false;if(ACTIVE_CLUB===club)status.textContent=saved?'Für neue Spiele gespeichert.':'Lokal gespeichert. Cloud-Abgleich ausstehend.';return saved;}catch(error){if(ACTIVE_CLUB===club)status.textContent='Lokal gespeichert. Cloud-Abgleich fehlgeschlagen.';return false;}finally{indSettingsBusy=false;renderHurdleSettings();}
 }
-function openIndividualRules(key){if(key==='siebener')document.getElementById(key+'-rules-content').innerHTML=KCGameRules.content(key,indGet(key)?.id?indGet(key).config.seven:typeof siebenerSettings==='undefined'?null:siebenerSettings);if(key==='hindernis')document.getElementById(key+'-rules-content').innerHTML=KCGameRules.content(key,indGet(key)?.id?indGet(key).config:hindernisSettings);indRulesFocus=document.activeElement;document.getElementById(key+'-rules-modal').classList.remove('hidden');document.getElementById(key+'-rules-close').focus();kcPublishGameRules(key,true);}
+function openIndividualRules(key){if(window.KCExtraGames?.keys.includes(key))document.getElementById(key+'-rules-content').innerHTML=KCGameRules.content(key,indGet(key)?.id?indGet(key).config:extraConfig(key));if(key==='siebener')document.getElementById(key+'-rules-content').innerHTML=KCGameRules.content(key,indGet(key)?.id?indGet(key).config.seven:typeof siebenerSettings==='undefined'?null:siebenerSettings);if(key==='hindernis')document.getElementById(key+'-rules-content').innerHTML=KCGameRules.content(key,indGet(key)?.id?indGet(key).config:hindernisSettings);indRulesFocus=document.activeElement;document.getElementById(key+'-rules-modal').classList.remove('hidden');document.getElementById(key+'-rules-close').focus();kcPublishGameRules(key,true);}
 function closeIndividualRules(key){kcPublishGameRules(key,false);document.getElementById(key+'-rules-modal').classList.add('hidden');indRulesFocus?.focus();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const key of IND_KEYS)if(document.getElementById(key+'-rules-modal')&&!document.getElementById(key+'-rules-modal').classList.contains('hidden'))closeIndividualRules(key);});
 

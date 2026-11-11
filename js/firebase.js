@@ -223,7 +223,7 @@ window.firestoreApi = {
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
       for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
-      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState'];
+      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
       const requestedEvening=Date.parse(payload.currentEveningStartedAt||''),savedEvening=Date.parse(savedEveningId);
       if(gameFields.some(key=>current[key]?.revision)&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
@@ -341,15 +341,15 @@ window.firestoreApi = {
   },
 
   async setDashboardRules(clubId,request={}) {
-    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
-    if(request.rulesConfig!==undefined&&!(request.gameKey==='hindernis'&&window.KCIndividual?.validSettings(request.rulesConfig)||request.gameKey==='siebener'&&window.KCIndividual?.validSevenSettings(request.rulesConfig)))throw new Error('Ungültige Spielregeln');
+    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
+    if(request.rulesConfig!==undefined&&!(request.gameKey==='hindernis'&&window.KCIndividual?.validSettings(request.rulesConfig)||request.gameKey==='siebener'&&window.KCIndividual?.validSevenSettings(request.rulesConfig)||window.KCExtraGames?.keys.includes(request.gameKey)&&window.KCExtraGames.validSettings(request.gameKey,request.rulesConfig)))throw new Error('Ungültige Spielregeln');
     const ref=doc(db,'clubs',clubId,'state','current');
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardRules||{};
       if((before.commands||[]).includes(request.opId))return before;
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
-      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener','bergundtal','ballermann','lattenzaun'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       const updates={dashboardRules:value,updatedAt:serverTimestamp()};if(value.open&&current.dashboardClubContent?.open)updates.dashboardClubContent={...current.dashboardClubContent,open:false,revision:Number(current.dashboardClubContent.revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
@@ -479,20 +479,20 @@ window.firestoreApi = {
     });
   },
   async transactIndividualGame(clubId,request={}) {
-    const gameKey=request.gameKey;if(!['siebener','hindernis'].includes(gameKey))throw new Error('Unbekanntes Spiel');
-    const stateKey=gameKey+'State';
-    if(!clubId||!window.KCIndividual)throw new Error('Spiel ist noch nicht verfügbar');
+    const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun'].includes(gameKey))throw new Error('Unbekanntes Spiel');
+    const stateKey=gameKey+'State',core=['siebener','hindernis'].includes(gameKey)?window.KCIndividual:window.KCExtraGames;
+    if(!clubId||!core)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
       const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current[stateKey]?.eveningStartedAt===existingEvening&&current[stateKey]?.commands?.includes(request.opId);
       if(String(request.eveningStartedAt||'')!==existingEvening&&!repeatedInitialStart)throw new Error('Der Kegelabend wurde inzwischen gewechselt');
-      const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
-      const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCIndividual.empty(gameKey);
-      const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
+      const now=new Date(core===window.KCExtraGames?Date.now():request.now||Date.now()).toISOString(),evening=existingEvening||now;
+      const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:core.empty(gameKey);
+      const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId,groups:current.groupSettings||{}};
       let result,effect;
-      try{result=window.KCIndividual.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCIndividual.effects(before,result.state,request,context);}catch(error){error.code='individual-game-rejected';throw error;}
+      try{result=core.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:core.effects(before,result.state,request,context);}catch(error){error.code='individual-game-rejected';throw error;}
       const next=result.state;
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
       const affected=result.repeat?(receipt?.changes||[]):effect.changes;
@@ -521,7 +521,8 @@ window.firestoreApi = {
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
-      const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
+      const keptHistory=request.action==='undo'&&before.finished&&!next.finished?(current.strafenHistory||[]).filter(e=>e.id!==('game_result_'+gameKey+'_'+before.id)):current.strafenHistory;
+      const resultHistory=window.KCGameResults?.append(keptHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
