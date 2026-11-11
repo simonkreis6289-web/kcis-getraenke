@@ -1,8 +1,8 @@
 /* Abschlussdokumentation: liest Ergebnisse, bucht selbst keine Strafen. */
 (() => {
- const titles={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷',haushoch:'Hohe Hausnummer',haustief:'Niedrige Hausnummer',sichern:'Sichern',fuchsjagd:'Fuchsjagd',tor:'Tor',sechstage:'6-Tage-Rennen',blackjack:'17 + 4 / Blackjack',gluecksspirale:'Glücksspirale',siebener:'7er-Spiel',hindernis:'Hindernislauf'};
+ const titles={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷',haushoch:'Hohe Hausnummer',haustief:'Niedrige Hausnummer',sichern:'Sichern',fuchsjagd:'Fuchsjagd',tor:'Tor',sechstage:'6-Tage-Rennen',blackjack:'17 + 4 / Blackjack',gluecksspirale:'Glücksspirale',siebener:'7er-Spiel',hindernis:'Hindernislauf',bergundtal:'Berg und Tal',ballermann:'Ballermann 6',lattenzaun:'Lattenzaun'};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const icons={tannenbaum:'🌲',darts:'🎯',lotterie:'🎰',tiberius:'🏛️',mensch:'🎲',plusminus:'➕',haushoch:'🔢',haustief:'🔽',sichern:'🔒',fuchsjagd:'🦊',tor:'⚽',sechstage:'🏁',blackjack:'🃏',gluecksspirale:'🌀',siebener:'🎲',hindernis:'🏃',free:'💸'};
+ const icons={tannenbaum:'🌲',darts:'🎯',lotterie:'🎰',tiberius:'🏛️',mensch:'🎲',plusminus:'➕',haushoch:'🔢',haustief:'🔽',sichern:'🔒',fuchsjagd:'🦊',tor:'⚽',sechstage:'🏁',blackjack:'🃏',gluecksspirale:'🌀',siebener:'🎲',hindernis:'🏃',bergundtal:'🏔️',ballermann:'🏖️',lattenzaun:'🪵',free:'💸'};
  const cents=v=>Math.round((Number(v)||0)*100),money=n=>(n>=0?'+':'')+(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
  function ordered(history){return (Array.isArray(history)?history:[]).filter(e=>e.type==='game_result'||e.type==='free'||e.type==='teamspiel_strafe'||Object.hasOwn(titles,e.type)).slice().sort((a,b)=>(Date.parse(a.createdAt||a.date)||0)-(Date.parse(b.createdAt||b.date)||0));}
  function number(history,entry){const index=ordered(history).findIndex(e=>e===entry||entry?.id&&e.id===entry.id);return index<0?0:index+1;}
@@ -14,7 +14,7 @@
  }
  function freeItems(person,items,ledger,history,evening){
   const entries=ordered(history),rows=items.filter(x=>!x.individualChargeId).map(item=>({amountCents:cents(item.amount),reason:item.reason||'Freier Betrag',key:Object.keys(titles).find(k=>String(item.reason||'').toLocaleLowerCase('de').includes(titles[k].toLocaleLowerCase('de')))||'free',entry:entries.find(e=>e.id&&e.id===item.id)}));
-  const grouped=new Map();for(const item of ledger||[]){if(String(item.personName||'').trim().toLocaleLowerCase('de')!==String(person.name||'').trim().toLocaleLowerCase('de')||item.eveningStartedAt!==evening)continue;const key=/^7er/.test(item.reason||'')?'siebener':/^Hindernislauf/.test(item.reason||'')?'hindernis':'free',id=item.gameId||item.id;
+  const grouped=new Map();for(const item of ledger||[]){if(String(item.personName||'').trim().toLocaleLowerCase('de')!==String(person.name||'').trim().toLocaleLowerCase('de')||item.eveningStartedAt!==evening)continue;const key=Object.hasOwn(titles,item.gameKey)?item.gameKey:/^7er/.test(item.reason||'')?'siebener':/^Hindernislauf/.test(item.reason||'')?'hindernis':'free',id=item.gameId||item.id;
    if(!grouped.has(id))grouped.set(id,{amountCents:0,reason:titles[key]||item.reason||'Spielbetrag',key,entry:entries.find(e=>gameId(e)===item.gameId&&!!item.gameId)});grouped.get(id).amountCents+=Number(item.amountCents)||0;
   }
   rows.push(...grouped.values());let fallback=entries.length;
@@ -30,8 +30,9 @@
   if(teams.length){
    winners=teams.filter(t=>(s.winners||[]).includes(t.id)).map(t=>t.name+' ('+t.players.join(', ')+')');
    ranking=(s.teamLoserGroups||[]).slice(0,3).flatMap((g,i)=>g.teamIds.map(id=>{const t=teams.find(t=>t.id===id);return {rank:i+1,team: t?.name||id,names:t?.players||[]};}));
-  }else if(['darts','tor'].includes(key)||key==='sichern'&&s.mode==='team'){
-   const winner=s.winner,other=winner==='T1'?'T2':'T1',map=s.participantTeams||s.teams||{};
+  }else if(['darts','tor','ballermann'].includes(key)||key==='sichern'&&s.mode==='team'){
+   if(key==='ballermann'){winners=(s.winners||[]).map(t=>(s.teamNames?.[t]||teamName(t))+' ('+(s.participantTeams[t]||[]).join(', ')+')');ranking=(s.loserGroups||[]).map(g=>({rank:1,team:s.teamNames?.[g.names[0]]||teamName(g.names[0]),names:(s.participantTeams[g.names[0]]||[]).slice()}));}
+   const winner=key==='ballermann'?null:s.winner,other=winner==='T1'?'T2':'T1',map=s.participantTeams||s.teams||{};
    if(winner){winners=[teamName(winner)+' ('+(map[winner]||[]).join(', ')+')'];ranking=[{rank:1,team:teamName(other),names:(map[other]||[]).slice()}];}
   }else if(key==='fuchsjagd'){
    ranking=[{rank:1,names:(s.loserNames||[]).slice()}];winners=(s.winnerNames||[]).slice();
@@ -41,7 +42,8 @@
   }
   const id=s.resultHistoryId||'game_result_'+key+'_'+(s.id||s.startedAt||now);
   return {id,type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,gameId:s.id||'',winners,ranking,
-   scores:JSON.parse(JSON.stringify(s.scores||{})),amounts:['siebener','hindernis'].includes(key)?(s.players||Object.keys(s.scores||{})).map(name=>({name,amountCents:(s.bookings||[]).filter(b=>b.personName===name).reduce((sum,b)=>sum+b.amountCents,0)})):(s.bookings||[]).map(b=>({name:b.personName,amountCents:b.amountCents,reason:b.reason}))};
+   results:['bergundtal','ballermann','lattenzaun'].includes(key)?Object.entries(s.scores||{}).map(([name,result])=>({name:key==='ballermann'?(s.teamNames?.[name]||teamName(name)):name,result:result+(key==='lattenzaun'?' Latten':' Punkte')})):[],
+   scores:JSON.parse(JSON.stringify(s.scores||{})),amounts:['siebener','hindernis','lattenzaun'].includes(key)?(s.players||Object.keys(s.scores||{})).map(name=>({name,amountCents:(s.bookings||[]).filter(b=>b.personName===name).reduce((sum,b)=>sum+b.amountCents,0)})):(s.bookings||[]).map(b=>({name:b.personName,amountCents:b.amountCents,reason:b.reason}))};
  }
  function append(history,key,s,context){
   const list=Array.isArray(history)?history:[],entry=build(key,s,context);if(!entry||list.some(e=>e.id===entry.id))return list;

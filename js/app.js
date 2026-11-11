@@ -75,6 +75,7 @@ function getSerializableState() {
     blackjackSettings,
     siebenerSettings:typeof siebenerSettings==='undefined'?null:siebenerSettings,
     siebenerState,hindernisState,hindernisSettings,individualGameLedger,individualGameRevision,
+    ...(typeof extraSnapshot==='function'?extraSnapshot():{}),
     clubTermine,
     clubKegelSerie,
     calendarRevision: kcCalendarRevision,
@@ -182,6 +183,7 @@ function getFirestoreState() {
     blackjackSettings,
     siebenerSettings:typeof siebenerSettings==='undefined'?null:siebenerSettings,
     siebenerState,hindernisState,hindernisSettings,individualGameLedger,individualGameRevision,
+    ...(typeof extraSnapshot==='function'?extraSnapshot():{}),
         sichernState: {...sichernState,busy:false,closing:false},
         sechstageState,
     blackjackState,
@@ -213,6 +215,7 @@ function applyLoadedState(state) {
   gluecksspiraleSettings = state.gluecksspiraleSettings || {target:50};
   blackjackSettings = KCTableGames.cardSettings(state.blackjackSettings);
   siebenerSettings=state.siebenerSettings||null;
+  if(typeof extraRestore==='function')extraRestore(state);
   siebenerState=state.siebenerState||null;hindernisState=state.hindernisState||null;hindernisSettings=state.hindernisSettings||null;individualGameLedger=state.individualGameLedger||[];individualGameRevision=Number(state.individualGameRevision)||0;
   dashboardActiveGame = state.dashboardActiveGame || null;
   if(typeof kcApplyCalendarState==='function')kcApplyCalendarState(state,false);
@@ -2743,6 +2746,7 @@ async function startNewKegelabend() {
   fuchsjagdState = createFuchsjagdState();
   sichernState = createSichernState();
   sechstageState = createSechstageState();
+  if(typeof extraRestore==='function')extraRestore({extraGameSettings});
   siebenerState=null;hindernisState=null;individualGameLedger=[];individualGameRevision=0;
   blackjackState = createBlackjackState();
   gluecksspiraleState = createGluecksspiraleState();
@@ -5683,7 +5687,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info', 'notizen']
 };

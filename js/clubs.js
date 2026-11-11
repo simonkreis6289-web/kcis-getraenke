@@ -171,6 +171,7 @@ function createEmptyClubData() {
     gluecksspiraleState: createGluecksspiraleState(),
     gluecksspiraleSettings: {target:50},
     blackjackSettings: {jack:2,queen:3,king:4,ace:[1,11]},
+    extraGameSettings:{},bergundtalState:null,ballermannState:null,lattenzaunState:null,
     siebenerSettings:null,siebenerState:null,hindernisState:null,hindernisSettings:null,individualGameLedger:[],individualGameRevision:0,
     currentEveningStartedAt: null,
     penaltyStatsLog: [],
@@ -263,6 +264,7 @@ function syncCurrentClubToStore() {
     blackjackSettings: JSON.parse(JSON.stringify(blackjackSettings)),
     siebenerSettings:typeof siebenerSettings==='undefined'?null:JSON.parse(JSON.stringify(siebenerSettings)),
     siebenerState:JSON.parse(JSON.stringify(siebenerState)),hindernisState:JSON.parse(JSON.stringify(hindernisState)),hindernisSettings:hindernisSettings?JSON.parse(JSON.stringify(hindernisSettings)):null,individualGameLedger:JSON.parse(JSON.stringify(individualGameLedger)),individualGameRevision,
+    ...(typeof extraSnapshot==='function'?extraSnapshot():{}),
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     penaltyStatsSettings: penaltyStatsSettings?JSON.parse(JSON.stringify(penaltyStatsSettings)):null,
@@ -475,6 +477,7 @@ async function selectClub(clubName) {
   gluecksspiraleSettings=JSON.parse(JSON.stringify(localClub.gluecksspiraleSettings||{target:50}));
   blackjackSettings=KCTableGames.cardSettings(localClub.blackjackSettings);
   siebenerSettings=localClub.siebenerSettings||null;
+  if(typeof extraRestore==='function')extraRestore(localClub);
   siebenerState=localClub.siebenerState||null;hindernisState=localClub.hindernisState||null;hindernisSettings=localClub.hindernisSettings||null;individualGameLedger=localClub.individualGameLedger||[];individualGameRevision=Number(localClub.individualGameRevision)||0;
   gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
   currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
