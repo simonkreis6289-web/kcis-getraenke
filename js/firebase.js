@@ -296,7 +296,9 @@ window.firestoreApi = {
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Spielübersicht wurde inzwischen geändert. Bitte erneut versuchen.');
       const value={open:request.open,gameStamp:window.KCGameOverview.context(current).gameStamp,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
-      transaction.set(ref,{dashboardGameOverview:value,updatedAt:serverTimestamp()},{merge:true});return value;
+      const updates={dashboardGameOverview:value,updatedAt:serverTimestamp()};
+      if(value.open)for(const key of ['dashboardCashView','dashboardRules','dashboardClubContent'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
+      transaction.set(ref,updates,{merge:true});return value;
     });
   },
 
@@ -339,7 +341,7 @@ window.firestoreApi = {
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardClubContent||null;
       const value=window.KCClubContent.view(before,request);if(value===before)return value;
       const updates={dashboardClubContent:value,updatedAt:serverTimestamp()};
-      if(request.action==='open')for(const key of ['dashboardCashView','dashboardRules'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
+      if(request.action==='open')for(const key of ['dashboardCashView','dashboardRules','dashboardGameOverview'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
   },
@@ -352,7 +354,7 @@ window.firestoreApi = {
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Dashboard-Ansicht wurde inzwischen geändert. Bitte erneut versuchen.');
       const value={open:request.open,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
-      const updates={dashboardCashView:value,updatedAt:serverTimestamp()};if(value.open&&current.dashboardClubContent?.open)updates.dashboardClubContent={...current.dashboardClubContent,open:false,revision:Number(current.dashboardClubContent.revision||0)+1};
+      const updates={dashboardCashView:value,updatedAt:serverTimestamp()};if(value.open)for(const key of ['dashboardClubContent','dashboardGameOverview', 'dashboardRules'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
   },
@@ -390,7 +392,7 @@ window.firestoreApi = {
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
       const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener','bergundtal','ballermann','lattenzaun'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
-      const updates={dashboardRules:value,updatedAt:serverTimestamp()};if(value.open&&current.dashboardClubContent?.open)updates.dashboardClubContent={...current.dashboardClubContent,open:false,revision:Number(current.dashboardClubContent.revision||0)+1};
+      const updates={dashboardRules:value,updatedAt:serverTimestamp()};if(value.open)for(const key of ['dashboardClubContent','dashboardGameOverview', 'dashboardCashView'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
   },

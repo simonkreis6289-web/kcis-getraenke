@@ -120,7 +120,9 @@
   const active=catalog.flatMap(g=>{const s=state[g.key+'State'];if(!s||s.finished||s.eveningStartedAt&&state.currentEveningStartedAt&&s.eveningStartedAt!==state.currentEveningStartedAt)return [];return s.active||g.key==='tannenbaum'&&s.history?.length?[g.key+':'+(s.id||s.startedAt||'laufend')]:[];});
   return {running:active.length>0,gameStamp:String(state.currentEveningStartedAt||'')+'|'+active.sort().join('|')};
  }
- function visible(state={}){const c=context(state),view=state.dashboardGameOverview;return view?.revision?!!view.open&&(!c.running||view.gameStamp===c.gameStamp):!c.running;}
+ // Der manuelle Schalter hat Vorrang vor jedem Spielstand, auch bei getrennten Live-Spielkanälen.
+ function requested(state={}){return !!(state.dashboardGameOverview?.revision&&state.dashboardGameOverview.open);}
+ function visible(state={}){const view=state.dashboardGameOverview;return view?.revision?!!view.open:!context(state).running;}
  function markup(state={}){const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));return '<section class="tv-game-overview" aria-label="Spielübersicht">'+catalog.map(g=>{const description=g.key==='gluecksspirale'?'Zweierteams: Ab 13 Holz folgen zwei Zusatzwürfe. Ziel: '+(Number(state.gluecksspiraleSettings?.target)||50)+' Holz.':g.description;return '<article class="tv-game-choice" data-overview-game="'+g.key+'"><span class="tv-game-icon" aria-hidden="true">'+g.icon+'</span><h2>'+esc(g.title)+'</h2><p>'+esc(description)+'</p></article>';}).join('')+'</section>';}
- window.KCGameOverview=Object.freeze({catalog,context,visible,markup});
+ window.KCGameOverview=Object.freeze({catalog,context,requested,visible,markup});
 })();
