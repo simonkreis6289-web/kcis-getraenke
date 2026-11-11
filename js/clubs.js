@@ -265,6 +265,7 @@ function syncCurrentClubToStore() {
     siebenerSettings:typeof siebenerSettings==='undefined'?null:JSON.parse(JSON.stringify(siebenerSettings)),
     siebenerState:JSON.parse(JSON.stringify(siebenerState)),hindernisState:JSON.parse(JSON.stringify(hindernisState)),hindernisSettings:hindernisSettings?JSON.parse(JSON.stringify(hindernisSettings)):null,individualGameLedger:JSON.parse(JSON.stringify(individualGameLedger)),individualGameRevision,
     ...(typeof extraSnapshot==='function'?extraSnapshot():{}),
+    ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
     currentEveningStartedAt,
     penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog)),
     penaltyStatsSettings: penaltyStatsSettings?JSON.parse(JSON.stringify(penaltyStatsSettings)):null,
@@ -384,6 +385,7 @@ function renderClubList() {
 }
 
 function goToClubSelection() {
+  if(typeof resetGameFineSettings==='function')resetGameFineSettings();
   window.KCClubContentApp?.stop();
   if(typeof kcClosePublishedRules==='function')kcClosePublishedRules();
   if (currentClubUnsubscribe) {
@@ -464,6 +466,7 @@ async function selectClub(clubName) {
   const clubId = getClubFirestoreId(clubName);
 
   const localClub = CLUBS[clubName] || createEmptyClubData();
+  if(typeof resetGameFineSettings==='function')resetGameFineSettings(localClub);
 
   lastLocalChangeAt = Number(localClub.lastLocalChangeAt || 0);
   lastRemoteChangeAt = Number(localClub.lastRemoteChangeAt || 0);

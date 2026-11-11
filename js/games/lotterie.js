@@ -409,6 +409,7 @@ const previousState =
 }
 
 async function toggleLotterieOnTop() {
+  if(typeof setGameFineOnTop==='function')return setGameFineOnTop('lotterie',!!document.getElementById('lotterie-ontop-check')?.checked);
   ensureLotterieState();
 
   const check =

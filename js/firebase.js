@@ -222,6 +222,7 @@ window.firestoreApi = {
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
       for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
+      if(current.gameFineSettingsRevision){next.gameFineSettings=current.gameFineSettings||{};next.gameFineSettingsRevision=current.gameFineSettingsRevision;next.gameFineSettingsCommands=current.gameFineSettingsCommands||[];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
       const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
@@ -229,9 +230,10 @@ window.firestoreApi = {
       if(gameFields.some(key=>current[key]?.revision)&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
         next.currentEveningStartedAt=savedEveningId;
         next.individualGameLedger=current.individualGameLedger||[];next.individualGameRevision=Number(current.individualGameRevision)||0;
+        if(Number(payload.individualGameRevision||0)<Number(current.individualGameRevision||0))next.dashboardActiveGame=current.dashboardActiveGame;
         if(Array.isArray(next.persons))next.persons=next.persons.map(person=>{
           const cents=next.individualGameLedger.filter(x=>x.eveningStartedAt===savedEveningId&&String(x.personName).trim().toLocaleLowerCase('de')===String(person.name).trim().toLocaleLowerCase('de')).reduce((sum,x)=>sum+x.amountCents,0);
-          return {...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
+          return window.KCGameFinePolicy?{...person,individualChargeCents:cents}:{...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
         });
         for(const key of gameFields)if(current[key]?.revision)next[key]=current[key];
         const incoming=Array.isArray(payload.penaltyStatsLog)?payload.penaltyStatsLog:(current.penaltyStatsLog||[]);
@@ -254,6 +256,16 @@ window.firestoreApi = {
         calendar={clubTermine:events,clubKegelSerie:managed.clubKegelSerie||null,calendarRevision:revision};
         Object.assign(next,calendar,{clubCalendarData:calendar});
       }
+      if(window.KCGameFinePolicy&&Array.isArray(next.persons)){
+        // Live-Zähler sind maßgeblich: ein verzögerter Gesamtupload darf eine
+        // gerade gebuchte Spielstrafe auch in der Dashboard-Summe nicht verlieren.
+        if(current.currentEveningStartedAt===next.currentEveningStartedAt){
+          const people=[];
+          for(const person of next.persons){const live=await transaction.get(doc(db,'clubs',clubId,'livePersons',this.getLivePersonId(person.name)));people.push(live.exists()?{...person,strafen:live.data().strafen||person.strafen}:person);}
+          next.persons=people;
+        }
+        next.persons=window.KCGameFinePolicy.applyTotals(next.persons,{...current,...next},current);
+      }
       transaction.set(ref,{...next,updatedAt:serverTimestamp()},{merge:true});
       return calendar;
     });
@@ -273,6 +285,22 @@ window.firestoreApi = {
       const repair=!current.clubCalendarData||JSON.stringify(current.clubTermine)!==JSON.stringify(next.clubTermine)||JSON.stringify(current.clubKegelSerie)!==JSON.stringify(next.clubKegelSerie)||current.calendarRevision!==revision;
       if(changed||repair)transaction.set(ref,{...calendar,clubCalendarData:calendar,updatedAt:serverTimestamp()},{merge:true});
       return calendar;
+    });
+  },
+
+  async updateGameFineSettings(clubId,request={}) {
+    const policy=window.KCGameFinePolicy;
+    if(!clubId||!policy||!Object.hasOwn(policy.titles,request.gameKey)||typeof request.onTop!=='boolean'||!/^fine_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige OnTop-Einstellung.');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
+      if((current.gameFineSettingsCommands||[]).includes(request.opId))return {gameFineSettings:current.gameFineSettings||{},gameFineSettingsRevision:current.gameFineSettingsRevision||0};
+      const settings={...(current.gameFineSettings||{}),[request.gameKey]:request.onTop},revision=Number(current.gameFineSettingsRevision||0)+1,people=[];
+      for(const person of current.persons||[]){const live=await transaction.get(doc(db,'clubs',clubId,'livePersons',this.getLivePersonId(person.name)));people.push(live.exists()?{...person,strafen:live.data().strafen||person.strafen}:person);}
+      const value={gameFineSettings:settings,gameFineSettingsRevision:revision};
+      const finalPeople=policy.applyTotals(people,{...current,...value},current);
+      transaction.set(ref,{...value,persons:finalPeople,gameFineSettingsCommands:[...(current.gameFineSettingsCommands||[]),request.opId].slice(-128),updatedAt:serverTimestamp()},{merge:true});
+      return value;
     });
   },
 
@@ -411,16 +439,18 @@ window.firestoreApi = {
           if(!Number.isSafeInteger(value)||value<0)throw new Error('Strafzähler wurde inzwischen geändert. Rückgängig nicht möglich.');
           values[change.key]=value;counters.push({personName:group.name,category:'strafen',key:change.key,value});
         }
+        group.finalValues=values;
         if(!result.repeat)transaction.set(group.ref,{
           ...(!group.exists?{present:!!group.current.present,isGuest:!!group.current.isGuest,left:!!group.current.left,drinks:{...(group.current.drinks||{})}}:{}),
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
-      const resultHistory=window.KCGameResults?.append(current.strafenHistory,'sechstage',next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
+      const resultHistory=window.KCGameResults?.append(current.strafenHistory,'sechstage',next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
-        transaction.set(ref,{sechstageState:next,currentEveningStartedAt:evening,dashboardActiveGame:'sechstage',penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
+        const finePeople=window.KCGameFinePolicy?window.KCGameFinePolicy.applyTotals((current.persons||[]).map(p=>{const live=loaded.find(g=>g.name===p.name);return live?{...p,strafen:live.finalValues}:p;}),{...current,sechstageState:next,strafenHistory:resultHistory,currentEveningStartedAt:evening},current):null;
+        transaction.set(ref,{sechstageState:next,...(finePeople?{persons:finePeople}:{}),currentEveningStartedAt:evening,dashboardActiveGame:'sechstage',penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
       }
       return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.sixDaysRaceId),repeat:result.repeat};
     });
@@ -464,16 +494,18 @@ window.firestoreApi = {
           if(!Number.isSafeInteger(value)||value<0)throw new Error('Strafzähler wurde inzwischen geändert. Rückgängig nicht möglich.');
           values[change.key]=value;counters.push({personName:group.name,category:'strafen',key:change.key,value});
         }
+        group.finalValues=values;
         if(!result.repeat)transaction.set(group.ref,{
           ...(!group.exists?{present:!!group.current.present,isGuest:!!group.current.isGuest,left:!!group.current.left,drinks:{...(group.current.drinks||{})}}:{}),
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
-      const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
+      const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
-        transaction.set(ref,{[stateKey]:next,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
+        const finePeople=window.KCGameFinePolicy?window.KCGameFinePolicy.applyTotals((current.persons||[]).map(p=>{const live=loaded.find(g=>g.name===p.name);return live?{...p,strafen:live.finalValues}:p;}),{...current,[stateKey]:next,strafenHistory:resultHistory,currentEveningStartedAt:evening},current):null;
+        transaction.set(ref,{[stateKey]:next,...(finePeople?{persons:finePeople}:{}),currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
       }
       return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.tableGameId),repeat:result.repeat};
     });
@@ -516,21 +548,23 @@ window.firestoreApi = {
           if(!Number.isSafeInteger(value)||value<0)throw new Error('Strafzähler wurde inzwischen geändert. Rückgängig nicht möglich.');
           values[change.key]=value;counters.push({personName:group.name,category:'strafen',key:change.key,value});
         }
+        group.finalValues=values;
         if(!result.repeat)transaction.set(group.ref,{
           ...(!group.exists?{present:!!group.current.present,isGuest:!!group.current.isGuest,left:!!group.current.left,drinks:{...(group.current.drinks||{})}}:{}),
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
       const keptHistory=request.action==='undo'&&before.finished&&!next.finished?(current.strafenHistory||[]).filter(e=>e.id!==('game_result_'+gameKey+'_'+before.id)):current.strafenHistory;
-      const resultHistory=window.KCGameResults?.append(keptHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true})||current.strafenHistory||[];
+      const resultHistory=window.KCGameResults?.append(keptHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
         const removedMoney=new Set(effect.moneyRemoved),ledger=[...(current.individualGameLedger||[]).filter(x=>!removedMoney.has(x.id)),...effect.moneyAdded];
-        const people=(current.persons||[]).map(person=>{
+        let people=(current.persons||[]).map(person=>{
           const cents=ledger.filter(x=>x.eveningStartedAt===evening&&String(x.personName).trim().toLocaleLowerCase('de')===String(person.name).trim().toLocaleLowerCase('de')).reduce((sum,x)=>sum+x.amountCents,0);
-          return {...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
+          const live=loaded.find(g=>g.name===person.name);return window.KCGameFinePolicy?{...person,...(live?{strafen:live.finalValues}:{}),individualChargeCents:cents}:{...person,strafTotal:Math.round(((Number(person.strafTotal)||0)-(Number(person.individualChargeCents)||0)/100+cents/100)*100)/100,individualChargeCents:cents};
         });
+        if(window.KCGameFinePolicy)people=window.KCGameFinePolicy.applyTotals(people,{...current,[stateKey]:next,individualGameLedger:ledger,currentEveningStartedAt:evening,strafenHistory:resultHistory},current);
         transaction.set(ref,{[stateKey]:next,persons:people,individualGameLedger:ledger,individualGameRevision:(Number(current.individualGameRevision)||0)+1,currentEveningStartedAt:evening,dashboardActiveGame:gameKey,penaltyStatsLog:finalStats,strafenHistory:resultHistory,updatedAt:serverTimestamp()},{merge:true});
       }
       return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,ledger:result.repeat?(current.individualGameLedger||[]):[...(current.individualGameLedger||[]).filter(x=>!new Set(effect.moneyRemoved).has(x.id)),...effect.moneyAdded],individualGameRevision:(Number(current.individualGameRevision)||0)+(result.repeat?0:1),gameStats:finalStats.filter(entry=>entry.individualGameId),repeat:result.repeat};

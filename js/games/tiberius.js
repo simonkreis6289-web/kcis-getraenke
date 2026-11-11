@@ -233,6 +233,7 @@ function resetTiberiusGame() {
 }
 
 function toggleTiberiusOnTop() {
+  if(typeof setGameFineOnTop==='function')return setGameFineOnTop('tiberius',!!document.getElementById('tiberius-ontop-check')?.checked);
   const check = document.getElementById('tiberius-ontop-check');
   tiberiusState.onTop = !!check?.checked;
 

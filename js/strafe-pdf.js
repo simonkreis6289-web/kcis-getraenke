@@ -191,7 +191,7 @@ function getStrafenSnapshot() {
         Array.isArray(
           person.freeStrafen
         )
-          ? [...person.freeStrafen.map(item => ({ ...item })), ...getMissingGameCharges(person)]
+          ? [...person.freeStrafen.map(item => ({ ...item,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(item):!!item.onTop })), ...getMissingGameCharges(person)]
           : getMissingGameCharges(person),
 
       isGosseKing: !!(person.present && getGosseKings().includes(person.name)),
@@ -202,7 +202,7 @@ function getStrafenSnapshot() {
         )
           ? person.tannenbaumCharges.map(
               item => ({
-                ...item
+                ...item,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(item,'tannenbaum'):!!item.onTop
               })
             )
           : [],
@@ -369,9 +369,7 @@ function getStrafenSnapshot() {
         strafenHistory
       )
         ? strafenHistory.map(
-            entry => ({
-              ...entry
-            })
+            entry => typeof gameFineHistoryEntry==='function'?gameFineHistoryEntry(entry):({...entry})
           )
         : []
   };
@@ -2096,7 +2094,7 @@ async function generateStrafenPDF(snapshot) {
         doc.setFontSize(10);
 
         doc.text(
-          `${index + 1}. ${gameTitle} | ${formatDateTimeSafe(
+          `${index + 1}. ${gameTitle}${entry.gameFineOnTop?' (OnTop)':''} | ${formatDateTimeSafe(
             entry.createdAt
           )}`,
           margin,
