@@ -16,11 +16,11 @@ function server(initial={}){
 }
 function sevenRound(s,column,pins=[7,column/7],add=false){for(let i=0;i<s.players.length;i++){s=roll(roll(s,pins[0]),pins[1]);s=step(s,'place',{column,add}).state;}return s;}
 
-test('7er uses six free columns, two throws and 10 cents per absolute difference',()=>{let s=start('siebener');s=roll(roll(s,6),2);assert.equal(g.current(s),'A');const out=step(s,'place',{column:14,add:false});assert.equal(out.state.sheet.A[14].value,12);assert.equal(out.state.scores.A,20);assert.equal(g.current(out.state),'B');assert.equal(out.effect.moneyAdded.length,0);assert.throws(()=>step(start('siebener'),'place',{column:14}),/Zwei Würfe/);});
+test('7er uses seven free columns, two throws and 10 cents per absolute difference',()=>{let s=start('siebener');s=roll(roll(s,6),2);assert.equal(g.current(s),'A');const out=step(s,'place',{column:14,add:false});assert.equal(out.state.sheet.A[14].value,12);assert.equal(out.state.scores.A,20);assert.equal(g.current(out.state),'B');assert.equal(out.effect.moneyAdded.length,0);assert.throws(()=>step(start('siebener'),'place',{column:14}),/Zwei Würfe/);});
 test('addition is usable once per person and undo restores both its availability and the cell',()=>{
  let s=start('siebener');s=roll(roll(s,7),7);s=step(s,'place',{column:14,add:true}).state;assert(s.addUsed.A);assert.equal(s.scores.A,0);s=step(s,'undo').state;assert(!s.addUsed.A);assert.equal(s.turn.length,2);assert(!Object.hasOwn(s.sheet.A,14));s=step(s,'place',{column:14,add:true}).state;s=roll(roll(s,7),2);s=step(s,'place',{column:14}).state;s=roll(roll(s,7),3);assert.throws(()=>step(s,'place',{column:21,add:true}),/Addition/);assert.throws(()=>step(s,'place',{column:14}),/freie Spalte/);
 });
-test('all six columns end the game and finish charges actual differences once, including a nonzero winner',async()=>{
+test('all seven columns end the game and finish charges actual differences once, including a nonzero winner',async()=>{
  let s=start('siebener');for(const col of g.columns)s=sevenRound(s,col,col===14?[6,2]:[7,col/7]);assert(s.readyToFinish);const out=step(s,'finish');assert.deepEqual(out.state.winners,['A','B']);assert.deepEqual(out.effect.moneyAdded.map(x=>x.amountCents),[20,20]);const store=server({siebenerState:s});const result=await store.api.transactIndividualGame('club',out.request);await store.api.transactIndividualGame('club',out.request);assert.equal(store.root().individualGameLedger.length,2);assert(result.state.finished);
 });
 test('Kranz is 8 for 7er and 12 for hurdles, with the usual separate special-throw statistic',()=>{
@@ -78,8 +78,8 @@ function ui(){
  const original=store.api.transactIndividualGame;let lose=false;c.window.firestoreApi={...store.api,loadClubState:async()=>copy(store.root()),transactIndividualGame:async function(...args){const out=await original.apply(this,args);if(lose){lose=false;throw Error('Response lost');}return out;}};c.renderIndividualGames();return {c,document,dom,store,log,lose:()=>lose=true};
 }
 test('actual 7er HTML runs a full game including add selection and provides stable retry after a lost response',async()=>{
- const f=ui(),c=f.c;await c.indStart('siebener');for(let round=0;round<6;round++)for(let player=0;player<2;player++){
-  const col=g.columns[round];await c.indAction('siebener','throw',{kind:'pins',pins:round===0?6:7});await c.indAction('siebener','throw',{kind:'pins',pins:col/7});assert(f.document.getElementById('siebener-board').innerHTML.includes('Einmal addieren'));await c.indPlace(col);
+ const f=ui(),c=f.c;await c.indStart('siebener');for(let round=0;round<g.columns.length;round++)for(let player=0;player<2;player++){
+  const col=g.columns[round];await c.indAction('siebener','throw',{kind:'pins',pins:round===0?6:7});await c.indAction('siebener','throw',{kind:'pins',pins:col/7});assert(f.document.getElementById('siebener-board').innerHTML.includes('Summe addieren'));await c.indPlace(col);
  }
  assert(c.siebenerState.readyToFinish);f.lose();await c.indAction('siebener','finish');assert(f.document.getElementById('siebener-board').innerHTML.includes('Erneut versuchen'));await c.indRetry('siebener');assert(c.siebenerState.finished);assert.equal(c.individualGameLedger.length,2);assert.equal(f.store.root().individualGameLedger.length,2);
  for(const el of f.document.getElementById('siebener-board').querySelectorAll('[onclick]'))new Function('event',el.getAttribute('onclick'));

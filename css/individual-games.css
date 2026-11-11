@@ -19,3 +19,15 @@
 #game-property-siebener [hidden]{display:none!important}
 #seven-kranz-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}
 #seven-kranz-choices button{min-height:50px;font-size:20px}
+
+.ind-add-count{display:block;margin-top:4px;color:#52637c;font-size:11px;font-weight:500;line-height:1.5;white-space:normal}
+.penalty-free-details{margin-top:5px;font:12px/1.5 'DM Sans',sans-serif;color:var(--text,#243651)}
+.penalty-free-list{margin:0;padding-left:25px;text-align:left;min-width:110px}
+.penalty-free-list li{padding:2px 0}
+.penalty-free-list li::marker{font-weight:600;color:#52637c}
+.penalty-free-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.game-result-amounts{list-style:none;margin:10px 0;padding:0;max-width:460px;border:1px solid #dae2ef;border-radius:9px;overflow:hidden}
+.game-result-amounts li{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:7px 11px;border-bottom:1px solid #e5eaf2;font-size:13px}
+.game-result-amounts li:last-child{border-bottom:0}
+.game-result-amounts li:nth-child(even){background:#f5f8fc}
+.game-result-amounts strong{white-space:nowrap}

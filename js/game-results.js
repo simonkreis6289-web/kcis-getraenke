@@ -2,6 +2,27 @@
 (() => {
  const titles={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷',haushoch:'Hohe Hausnummer',haustief:'Niedrige Hausnummer',sichern:'Sichern',fuchsjagd:'Fuchsjagd',tor:'Tor',sechstage:'6-Tage-Rennen',blackjack:'17 + 4 / Blackjack',gluecksspirale:'Glücksspirale',siebener:'7er-Spiel',hindernis:'Hindernislauf'};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const icons={tannenbaum:'🌲',darts:'🎯',lotterie:'🎰',tiberius:'🏛️',mensch:'🎲',plusminus:'➕',haushoch:'🔢',haustief:'🔽',sichern:'🔒',fuchsjagd:'🦊',tor:'⚽',sechstage:'🏁',blackjack:'🃏',gluecksspirale:'🌀',siebener:'🎲',hindernis:'🏃',free:'💸'};
+ const cents=v=>Math.round((Number(v)||0)*100),money=n=>(n>=0?'+':'')+(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+ function ordered(history){return (Array.isArray(history)?history:[]).filter(e=>e.type==='game_result'||e.type==='free'||e.type==='teamspiel_strafe'||Object.hasOwn(titles,e.type)).slice().sort((a,b)=>(Date.parse(a.createdAt||a.date)||0)-(Date.parse(b.createdAt||b.date)||0));}
+ function number(history,entry){const index=ordered(history).findIndex(e=>e===entry||entry?.id&&e.id===entry.id);return index<0?0:index+1;}
+ function gameId(entry){if(entry.gameId)return entry.gameId;const prefix='game_result_'+entry.gameKey+'_';return entry.id?.startsWith(prefix)?entry.id.slice(prefix.length):'';}
+ function amounts(entry){
+  const rows=new Map();for(const item of entry.amounts||[]){if(!item.name)continue;rows.set(item.name,(rows.get(item.name)||0)+(Number(item.amountCents)||0));}
+  if(entry.gameKey==='siebener')for(const [name,value] of Object.entries(entry.scores||{}))if(!rows.has(name))rows.set(name,Number(value)||0);
+  return [...rows].sort(([a],[b])=>a.localeCompare(b,'de',{sensitivity:'base'})).map(([name,amountCents])=>({name,amountCents}));
+ }
+ function freeItems(person,items,ledger,history,evening){
+  const entries=ordered(history),rows=items.filter(x=>!x.individualChargeId).map(item=>({amountCents:cents(item.amount),reason:item.reason||'Freier Betrag',key:Object.keys(titles).find(k=>String(item.reason||'').toLocaleLowerCase('de').includes(titles[k].toLocaleLowerCase('de')))||'free',entry:entries.find(e=>e.id&&e.id===item.id)}));
+  const grouped=new Map();for(const item of ledger||[]){if(String(item.personName||'').trim().toLocaleLowerCase('de')!==String(person.name||'').trim().toLocaleLowerCase('de')||item.eveningStartedAt!==evening)continue;const key=/^7er/.test(item.reason||'')?'siebener':/^Hindernislauf/.test(item.reason||'')?'hindernis':'free',id=item.gameId||item.id;
+   if(!grouped.has(id))grouped.set(id,{amountCents:0,reason:titles[key]||item.reason||'Spielbetrag',key,entry:entries.find(e=>gameId(e)===item.gameId&&!!item.gameId)});grouped.get(id).amountCents+=Number(item.amountCents)||0;
+  }
+  rows.push(...grouped.values());let fallback=entries.length;
+  return rows.map(row=>({...row,number:number(history,row.entry)||++fallback})).sort((a,b)=>a.number-b.number);
+ }
+ function moneyMarkup(person,items,ledger,history,evening){
+  const rows=freeItems(person,items,ledger,history,evening);return rows.length?'<ol class="penalty-free-list">'+rows.map(row=>'<li value="'+row.number+'" title="'+esc(row.reason)+'" aria-label="'+esc(row.number+'. '+row.reason+': '+money(row.amountCents))+'"><span class="penalty-free-item"><span aria-hidden="true">'+(icons[row.key]||icons.free)+'</span><strong>'+esc(money(row.amountCents))+'</strong></span></li>').join('')+'</ol>':'';
+ }
  function build(key,s,{now=new Date().toISOString(),groups={},server=false}={}){
   if(!s||(!s.finished&&!s.winner))return null;
   const teamName=k=>String(groups[k]?.name||({T1:'Wand',T2:'TV'}[k])||k);
@@ -19,22 +40,23 @@
    winners=Array.isArray(s.winners)?s.winners.slice():s.winner?[s.winner]:[];
   }
   const id=s.resultHistoryId||'game_result_'+key+'_'+(s.id||s.startedAt||now);
-  return {id,type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,winners,ranking,
-   scores:JSON.parse(JSON.stringify(s.scores||{})),amounts:(s.bookings||[]).map(b=>({name:b.personName,amountCents:b.amountCents,reason:b.reason}))};
+  return {id,type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,gameId:s.id||'',winners,ranking,
+   scores:JSON.parse(JSON.stringify(s.scores||{})),amounts:['siebener','hindernis'].includes(key)?(s.players||Object.keys(s.scores||{})).map(name=>({name,amountCents:(s.bookings||[]).filter(b=>b.personName===name).reduce((sum,b)=>sum+b.amountCents,0)})):(s.bookings||[]).map(b=>({name:b.personName,amountCents:b.amountCents,reason:b.reason}))};
  }
  function append(history,key,s,context){
   const list=Array.isArray(history)?history:[],entry=build(key,s,context);if(!entry||list.some(e=>e.id===entry.id))return list;
   return [entry,...list];
  }
- function markup(entry){
+ function markup(entry,position=0){
   if(entry.type==='teamspiel_strafe')entry={...entry,type:'game_result',title:entry.spieltyp||'Teamspiel',createdAt:entry.date,ranking:[{rank:1,team:entry.teamName||({T1:'Wand',T2:'TV'}[entry.loser])||entry.loser,names:entry.members||[]}]};
   const legacy=['mensch','haushoch','haustief','plusminus'].includes(entry.type);if(entry.type!=='game_result'&&!legacy)return null;
   const ranking=entry.ranking||[],winners=entry.winners||(entry.winner?[entry.winner]:[]),title=entry.title||titles[entry.type]||entry.type;
   const rows=ranking.slice(0,3).map((g,i)=>'<div class="spiel-detail"><strong>'+(g.rank||i+1)+'. Verlierer:</strong> '+(g.team?esc(g.team)+' · ':'')+(g.names||[]).map(esc).join(', ')+'</div>').join('');
   const results=(entry.results||[]).map(r=>esc(r.name)+': '+esc(r.number??r.result??'–')).join(' · ');
-  return '<div class="spiel-card"><div class="spiel-info"><div class="spiel-verlierer round">🏁 '+esc(title)+' abgeschlossen</div><div class="spiel-detail">'+esc(entry.createdAt?new Date(entry.createdAt).toLocaleString('de-DE'):'')+'</div>'+(winners.length?'<div class="spiel-detail"><strong>Gewinner:</strong> '+winners.map(esc).join(' · ')+'</div>':'')+rows+(results?'<div class="spiel-detail">'+results+'</div>':'')+(!rows?'<div class="spiel-detail">Abschluss dokumentiert · Beträge nach den Spielregeln</div>':'')+'</div></div>';
+  const priceRows=amounts(entry),prices=priceRows.length?'<ul class="game-result-amounts">'+priceRows.map(row=>'<li><span>'+esc(row.name)+'</span><strong>'+esc(money(row.amountCents))+'</strong></li>').join('')+'</ul>':'';
+  return '<div class="spiel-card"'+(position?' id="penalty-result-'+position+'"':'')+'><div class="spiel-info"><div class="spiel-verlierer round">'+(position?position+'. ':'')+(icons[entry.gameKey||entry.type]||'🏁')+' '+esc(title)+' abgeschlossen</div><div class="spiel-detail">'+esc(entry.createdAt?new Date(entry.createdAt).toLocaleString('de-DE'):'')+'</div>'+(winners.length?'<div class="spiel-detail"><strong>Gewinner:</strong> '+winners.map(esc).join(' · ')+'</div>':'')+prices+rows+(results?'<div class="spiel-detail">'+results+'</div>':'')+(!rows&&!prices?'<div class="spiel-detail">Abschluss dokumentiert · Beträge nach den Spielregeln</div>':'')+'</div></div>';
  }
- window.KCGameResults=Object.freeze({build,append,markup,titles});
+ window.KCGameResults=Object.freeze({build,append,markup,titles,icons,ordered,number,amounts,freeItems,moneyMarkup});
 })();
 function recordCompletedGame(key,s){
  if(!s||(!s.finished&&!s.winner))return;
