@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kcis-cache-v204';
+const CACHE_NAME = 'kcis-cache-v205';
 
 const ASSETS = [
   './',
