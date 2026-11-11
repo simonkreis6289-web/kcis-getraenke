@@ -5,7 +5,7 @@ function historical(){
  const {document}=parseHTML(read('getraenke-abrechnung.html')),people=[{name:'Zoe'},{name:'anna'},{name:'Ben',inactive:true},{name:'Gast',isGuest:true},{name:'Trinken',isDrinksOnly:true}];
  const c={window:{},document,persons:people,ACTIVE_CLUB:'Testclub',STRAFEN:[{key:'gosse',label:'Gosse'},{key:'klingel',label:'Klingel'}],strafPrices:{gosse:.1,klingel:2},monatsbeitrag:30,STRAFEN_LIMIT:10,timePenaltySettings:{},escapeCashText:x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;'),showToast(){},confirm:()=>true,navigator:{onLine:true},crypto:require('node:crypto').webcrypto,console,getClubFirestoreId:()=> 'testclub',refreshCashHistory:async()=>{}};
  for(const el of document.querySelectorAll('input,button'))el.focus=()=>{};
- vm.createContext(c);for(const file of ['js/birthdays.js','js/historical-evenings.js']){vm.runInContext(read(file),c);Object.assign(c,c.window);}c.openHistoricalEvening();return {c,document,people,d:vm.runInContext('historicalDraft',c)};
+ vm.createContext(c);for(const file of ['js/birthdays.js','js/historical-evenings.js']){vm.runInContext(read(file),c);Object.assign(c,c.window);}c.openHistoricalEvening();vm.runInContext("historicalDraft.date='2026-11-10'",c);return {c,document,people,d:vm.runInContext('historicalDraft',c)};
 }
 function snap(f){return f.c.KCHistorical.snapshot(f.d,{today:'2026-11-10'});}
 test('new backfills list only active keglers alphabetically and keep live member data unchanged',()=>{

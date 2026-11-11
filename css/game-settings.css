@@ -15,14 +15,14 @@
 .game-settings-card fieldset{margin:0;padding:10px 12px 12px;border:1px solid #d7deea;border-radius:10px;min-width:0}
 .game-settings-card legend{font-size:14px;font-weight:700;padding:0 6px}
 .game-settings-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.game-settings-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.game-settings-card .game-settings-field,.game-settings-values label{display:grid;gap:6px;font-weight:700;font-size:14px}
-#tab-spiele-einstellungen .game-settings-card input[type=number]{width:100%;min-width:0;max-width:none;min-height:44px;padding:9px 11px;box-sizing:border-box;border:1px solid var(--border,#a6b1c6);border-radius:8px;background:var(--surface,#fff);color:inherit;font:inherit;font-weight:700}
+.game-settings-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.game-settings-card .game-settings-field,.game-settings-values label{display:grid;gap:6px;align-content:start;min-width:0;font-weight:700;font-size:14px}
+#tab-spiele-einstellungen .game-settings-card input[type=number],#tab-spiele-einstellungen .game-settings-card select{width:100%;min-width:0;max-width:none;min-height:44px;padding:9px 11px;box-sizing:border-box;border:1px solid var(--border,#a6b1c6);border-radius:8px;background:var(--surface,#fff);color:inherit;font:inherit;font-weight:700}
 #spiral-settings-target{max-width:180px!important}
-.game-settings-card input:focus-visible,.game-settings-card button:focus-visible{outline:3px solid var(--accent,#f5a623);outline-offset:2px}
+.game-settings-card input:focus-visible,.game-settings-card select:focus-visible,.game-settings-card button:focus-visible{outline:3px solid var(--accent,#f5a623);outline-offset:2px}
 .game-settings-card input[aria-invalid=true]{border-color:#b62b27!important}
-.game-settings-card footer{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:3px}
-.game-settings-card footer button{min-height:44px;padding:10px 14px;width:auto}
+.game-settings-card footer{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:4px;padding-top:16px;border-top:1px solid #dce4ef}
+.game-settings-card footer button{min-height:44px;padding:10px 14px;width:min(100%,300px);max-width:100%;box-sizing:border-box;white-space:normal}
 .game-settings-status{flex:1 1 200px;font-size:13px;line-height:1.5}
 .game-settings-wide{grid-column:1/-1}
 .game-settings-checks{display:flex;flex-wrap:wrap;gap:12px 22px}
@@ -55,31 +55,34 @@
 #game-property-hindernis .hurdle-help p{margin:10px 0 0}
 #game-property-hindernis .hurdle-toolbar>div{display:grid;gap:5px}
 #game-property-hindernis #hurdle-shuffle{margin:0;min-height:44px;width:auto;padding:10px 16px;border:1px solid #b9c8de;border-radius:10px;background:#edf3fc;color:#243d63;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
-#game-property-hindernis .hurdle-rule-heading{display:flex;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:12px;line-height:1.5;color:#52637c}
-#game-property-hindernis .hurdle-rule-heading strong{padding:4px 9px;border-radius:20px;background:#e9f0fa;color:#344c70;white-space:nowrap}
-#game-property-hindernis .hurdle-rule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
-#game-property-hindernis .hurdle-rule-row{display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:12px;min-width:0;padding:14px;border:1px solid #cfd9e8;border-radius:14px;background:#fff;box-shadow:0 2px 6px #172a4508;font-size:14px;box-sizing:border-box}
-#game-property-hindernis .hurdle-rule-row.rule-disabled{opacity:1;border-style:dashed;background:#f3f5f8}
+/* Breite Hindernisliste: Punktbereich links, Ereignis und Betrag rechts. */
+#game-property-hindernis .hurdle-rule-heading{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;font-size:12px;color:#52637c;line-height:1.5}
+#game-property-hindernis .hurdle-rule-heading strong{padding:4px 9px;border-radius:20px;background:#e9f0fa;color:#344c70}
+#game-property-hindernis .hurdle-rule-grid{display:grid;grid-template-columns:1fr;gap:8px}
+#game-property-hindernis .hurdle-rule-row{display:grid;grid-template-columns:180px minmax(0,1fr) 112px;align-items:center;gap:16px;min-width:0;padding:12px;border:1px solid #d5deeb;border-radius:11px;background:#fff;box-sizing:border-box}
+#game-property-hindernis .hurdle-rule-row:nth-child(even){background:#f7f9fd}
+#game-property-hindernis .hurdle-rule-row.rule-disabled{border-style:dashed;background:#f1f3f7}
+#game-property-hindernis .hurdle-rule-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+#game-property-hindernis .hurdle-rule-points label,#game-property-hindernis .hurdle-rule-amount{display:grid;align-content:start;gap:5px;font-size:11px;font-weight:700;min-width:0;color:#52637c}
+#tab-spiele-einstellungen #game-property-hindernis .hurdle-rule-points input{min-height:42px;text-align:center;padding:8px;font-size:16px}
+#game-property-hindernis .hurdle-rule-event{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:12px;min-width:0}
+#game-property-hindernis .hurdle-rule-event.has-amount{grid-template-columns:minmax(0,1fr) 116px}
 #game-property-hindernis .hurdle-rule-top{display:flex;align-items:center;gap:10px;min-width:0}
-#game-property-hindernis .hurdle-rule-icon{display:grid;place-items:center;flex:0 0 38px;height:38px;border-radius:10px;background:#edf2fa;font-size:20px}
-#game-property-hindernis .hurdle-rule-title{display:grid;gap:3px;flex:1;min-width:0;overflow-wrap:anywhere}
-#game-property-hindernis .hurdle-rule-title small{font-size:11px}
+#game-property-hindernis .hurdle-rule-icon{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:9px;background:#edf2fa;font-size:19px}
+#game-property-hindernis .hurdle-rule-title{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+#game-property-hindernis .hurdle-rule-title small{font-size:10px}
 #game-property-hindernis .hurdle-rule-title strong{font-size:14px}
-#game-property-hindernis .hurdle-rule-toggle{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;cursor:pointer}
+#game-property-hindernis .hurdle-rule-copy{margin:0;min-height:0;color:#52637c;font-size:12px;font-weight:400;line-height:1.4}
+#game-property-hindernis .hurdle-rule-bottom{display:grid;justify-items:end;gap:8px;min-width:0}
+#game-property-hindernis .hurdle-rule-toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer}
 #game-property-hindernis .hurdle-rule-toggle input{width:20px;height:20px;min-height:20px;margin:0;accent-color:#344c70;cursor:pointer}
-#game-property-hindernis .hurdle-rule-copy{display:block;margin:0;min-height:40px;color:#465a77;line-height:1.5}
-#game-property-hindernis .hurdle-rule-fields{display:flex;flex-wrap:wrap;gap:10px;align-items:start}
-#game-property-hindernis .hurdle-rule-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;flex:2 1 140px;min-width:0}
-#game-property-hindernis .hurdle-rule-points label,#game-property-hindernis .hurdle-rule-amount{display:grid;gap:6px;font-size:11px;font-weight:700;min-width:0;color:#52637c}
-#game-property-hindernis .hurdle-rule-amount{flex:1 1 80px}
-#tab-spiele-einstellungen #game-property-hindernis input[type=number]{width:100%;height:auto;min-height:44px;padding:9px 10px;border:1px solid #b9c8de;border-radius:8px;background:#fff;color:#17233d;font:700 17px/1.3 'DM Sans',sans-serif;box-sizing:border-box}
-#game-property-hindernis .hurdle-rule-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:10px;border-top:1px solid #e6ebf3;color:#62738b;font-size:11px}
 #game-property-hindernis .hurdle-rule-moves{display:flex;gap:6px}
-#game-property-hindernis .hurdle-rule-moves button{min-width:44px;min-height:44px;padding:6px;border:1px solid #c3cfe1;border-radius:9px;background:#f0f4fa;color:#344c70;font-size:18px;cursor:pointer}
+#game-property-hindernis .hurdle-rule-moves button{min-width:40px;min-height:36px;padding:4px;border:1px solid #c3cfe1;border-radius:8px;background:#edf3fc;color:#344c70;font-size:18px;cursor:pointer}
 #game-property-hindernis button:disabled{opacity:.35;cursor:default}
 #game-property-hindernis .hurdle-savebar{margin:0;padding-top:16px;border-top:1px solid #dce4ef}
-@media(max-width:700px){#game-property-hindernis .hurdle-rule-grid{grid-template-columns:1fr}#game-property-hindernis .hurdle-basic-fields{grid-template-columns:1fr}#game-property-hindernis .hurdle-basic-fields .game-settings-field{grid-template-columns:minmax(0,1fr) 110px;align-items:center}#game-property-hindernis .hurdle-basic-fields small{grid-column:1/-1}#game-property-hindernis .hurdle-basics{padding:12px}}
-@media(max-width:380px){#game-property-hindernis .hurdle-rule-row{padding:10px}#game-property-hindernis .hurdle-basic-fields .game-settings-field{grid-template-columns:1fr}#game-property-hindernis .hurdle-rule-icon{flex-basis:30px;height:30px;font-size:17px}}
 #game-property-hindernis{container:hurdlesettings / inline-size}
-@container hurdlesettings (max-width:650px){#game-property-hindernis .hurdle-rule-grid,#game-property-hindernis .hurdle-basic-fields{grid-template-columns:1fr}#game-property-hindernis .hurdle-basic-fields .game-settings-field{grid-template-columns:minmax(0,1fr) 110px;align-items:center}#game-property-hindernis .hurdle-basic-fields small{grid-column:1/-1}}
-@container hurdlesettings (max-width:280px){#game-property-hindernis .hurdle-basic-fields .game-settings-field{grid-template-columns:1fr}}
+@container hurdlesettings (max-width:700px){#game-property-hindernis .hurdle-rule-row{grid-template-columns:156px minmax(0,1fr);gap:12px}#game-property-hindernis .hurdle-rule-bottom{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e3e9f2;padding-top:8px}#game-property-hindernis .hurdle-rule-event.has-amount{grid-template-columns:minmax(0,1fr) 90px}#game-property-hindernis .hurdle-basic-fields{grid-template-columns:1fr}}
+@container hurdlesettings (max-width:460px){#game-property-hindernis .hurdle-rule-row{grid-template-columns:1fr}#game-property-hindernis .hurdle-rule-points{max-width:240px}#game-property-hindernis .hurdle-rule-bottom{grid-column:auto}#game-property-hindernis .hurdle-rule-event.has-amount{grid-template-columns:minmax(0,1fr) 100px}#game-property-hindernis .hurdle-rule-icon{display:none}}
+@container gameproperties (min-width:940px){.game-properties-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@container gameproperties (max-width:600px){.game-properties-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container gameproperties (max-width:260px){.game-properties-tabs{grid-template-columns:1fr}}

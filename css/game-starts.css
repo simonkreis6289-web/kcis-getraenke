@@ -6,7 +6,13 @@
 .gs-moves{display:flex;gap:3px}.gs-moves button{min-width:32px;min-height:34px;padding:3px;border:1px solid #aebbd0;border-radius:6px;background:#edf3fc;color:#17233d;cursor:pointer;font-size:16px}.gs-moves button:disabled{opacity:.3;cursor:default}
 .gs-team-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 8px}.gs-team-actions button{min-height:40px}.gs-teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.gs-team{min-width:0;border-left:3px solid #97abc9;padding:8px;border-radius:8px;background:#edf3fc}.gs-team>strong{display:block;font-size:13px;margin-bottom:6px}.gs-role{margin-top:12px}.gs-role>strong{display:block;margin:5px 0}.gs-role-choice{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #b4c2d7;border-radius:9px;padding:6px 9px;font-size:13px;cursor:pointer;min-height:40px}.gs-role-choice.selected{border:2px solid #c28a1d;background:#fff4ce}
 .gs-setup button:focus-visible{outline:3px solid #df9f26;outline-offset:2px}.gs-start-card{padding:14px;border:1px solid #c5d0e2;border-radius:12px;background:white;margin:10px 0}
-.game-properties-tabs{display:flex;gap:7px;overflow-x:auto;padding:4px 0 12px;margin:10px 0;scrollbar-width:thin}.game-properties-tabs button{flex:0 0 auto;min-height:42px;padding:9px 13px;border:1px solid #9eacc4;border-radius:9px;background:#f3f6fc;color:#17233d;font-weight:700;cursor:pointer}.game-properties-tabs button[aria-selected=true]{background:#293d6e;color:#fff;border-color:#293d6e}.game-properties-tabs button:focus-visible{outline:3px solid #e1a633;outline-offset:2px}
+/* Gleich breite Spielauswahl in mehreren Zeilen, ohne horizontales Scrollen. */
+#tab-spiele-einstellungen{container:gameproperties / inline-size}
+.game-properties-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0;width:100%;box-sizing:border-box;padding:4px 0;margin:12px 0 18px;overflow:visible}
+.game-properties-tabs button{display:flex;align-items:center;justify-content:center;min-width:0;width:100%;min-height:52px;box-sizing:border-box;padding:10px 12px;border:1px solid #b6c4da;border-radius:10px;background:#f3f6fc;color:#243c62;font-family:inherit;font-size:14px;font-weight:700;line-height:1.3;text-align:center;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.game-properties-tabs button[aria-selected=true]{background:#293d6e;color:#fff;border-color:#293d6e;box-shadow:0 2px 6px #243c6220}
+.game-properties-tabs button:focus-visible{outline:3px solid #e1a633;outline-offset:2px}
+
 .game-settings-card[hidden]{display:none!important}#tab-spiele-einstellungen .game-settings-grid{display:block}.game-settings-card[data-game-property]{width:100%;box-sizing:border-box}
 @media(max-width:600px){.gs-chip{padding:5px 6px}.gs-name{max-width:100px}.gs-teams{grid-template-columns:1fr}}
 
