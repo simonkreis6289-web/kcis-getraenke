@@ -1,11 +1,14 @@
 /* Einzelspiele: 7er-Spiel und Hindernislauf. Alle Geldbeträge werden in Cent geführt. */
 (() => {
- const clone=x=>JSON.parse(JSON.stringify(x)),keys=['siebener','hindernis'],columns=[14,21,28,35,42,49],norm=n=>String(n).trim().toLocaleLowerCase('de-DE');
+ const clone=x=>JSON.parse(JSON.stringify(x)),keys=['siebener','hindernis'],columns=[7,14,21,28,35,42,49],norm=n=>String(n).trim().toLocaleLowerCase('de-DE');
  const specs=[['start',0,0,'start',0],['pause',5,5,'skip',1],['pay11',11,11,'pay',20],['minus',17,17,'subtract',0],['reset19',19,19,'reset',0],['leader',28,28,'leader',0],['pay35',35,35,'pay',20],['back43',43,43,'move',20],['forward47',47,47,'move',66],['double',50,50,'double',0],['pay54',54,54,'pay',20],['pay60',60,65,'pay',20],['back69',69,69,'move',59],['others',70,70,'others',8],['forward77',77,77,'move',84],['back83',83,83,'move',66],['choice',89,89,'choice',100]];
  function ruleLabel(r){return r.kind==='start'?'Fehlstart – zurück auf 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?(r.value<100?r.value+' Cent':(r.value/100).toFixed(2).replace('.',',')+' €')+' in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
- function sevenDefaults(){return {pinCents:10,kranzMode:'fixed',kranzValue:8};}
- function validSevenSettings(v){return !!v&&Number.isSafeInteger(v.pinCents)&&v.pinCents>=0&&v.pinCents<=10000&&['fixed','choose'].includes(v.kranzMode)&&Number.isInteger(v.kranzValue)&&v.kranzValue>=1&&v.kranzValue<=12;}
- function sevenSettings(v){return clone(validSevenSettings(v)?v:sevenDefaults());}
+ function sevenDefaults(){return {pinCents:10,kranzMode:'fixed',kranzValue:8,addLimit:1};}
+ function validSevenSettings(v){return !!v&&Number.isSafeInteger(v.pinCents)&&v.pinCents>=0&&v.pinCents<=10000&&['fixed','choose'].includes(v.kranzMode)&&Number.isInteger(v.kranzValue)&&v.kranzValue>=1&&v.kranzValue<=12&&(v.addLimit===undefined||Number.isInteger(v.addLimit)&&v.addLimit>=1&&v.addLimit<=3);}
+ function sevenSettings(v){return validSevenSettings(v)?{...clone(v),addLimit:v.addLimit??1}:sevenDefaults();}
+ function sevenColumns(s){return s?.sevenVersion===2?columns:columns.slice(1);}
+ function sevenAddCount(s,name){return s.addUsed?.[name]===true?1:Math.max(0,Number(s.addUsed?.[name])||0);}
+ function sevenAddLimit(s){return s?.sevenVersion===2?sevenSettings(s.config?.seven).addLimit:1;}
  function sevenKranzLabel(v){const c=sevenSettings(v);return c.kranzMode==='choose'?'Kranz (Wert wählen)':'Kranz ('+c.kranzValue+')';}
  function defaults(){return {target:90,baseCents:100,rules:specs.map(([id,from,to,kind,value])=>({id,from,to,kind,value,enabled:true}))};}
  function validSettings(v){
@@ -72,19 +75,19 @@
   s.active=false;s.finished=true;s.readyToFinish=true;
  }
  const active=p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly;
- function start(req,ctx){
+ function start(req,ctx,legacy=false){
   const names=req.players;if(!Array.isArray(names)||names.length<2||names.length>16||names.some(n=>typeof n!=='string'||!n.trim())||new Set(names.map(norm)).size!==names.length||names.some(n=>!ctx.people.some(p=>p.name===n&&active(p))))throw Error('Bitte 2 bis 16 unterschiedliche aktive Kegler auswählen');
   if(typeof req.gameId!=='string'||!/^indgame_[a-zA-Z0-9_-]{1,100}$/.test(req.gameId))throw Error('Ungültige Spielkennung');
   if(req.gameKey==='hindernis'&&!validSettings(req.config))throw Error('Ziel, Betrag und Hindernispunkte prüfen');
   const seven=req.sevenSettings??req.config?.seven;
   if(req.gameKey==='siebener'&&seven!==undefined&&!validSevenSettings(seven))throw Error('Preis pro Pin und Kranzwert prüfen');
-  const s=empty(req.gameKey);s.id=req.gameId;s.active=true;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):{...defaults(),seven:sevenSettings(seven)};s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
+  const s=empty(req.gameKey);if(req.gameKey==='siebener')s.sevenVersion=legacy?1:2;s.id=req.gameId;s.active=true;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):{...defaults(),seven:sevenSettings(seven)};s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
  }
  function booking(s,e,name,cents,reason){if(cents>0)s.bookings.push({id:'indcharge_'+s.id+'_'+e.id+'_'+s.players.indexOf(name),personName:name,amountCents:cents,reason,onTop:true,eveningStartedAt:s.eveningStartedAt,gameId:s.id});}
  function next(s){
   s.index++;
   for(let i=0;i<=s.players.length;i++){
-   if(s.index===s.players.length){if(s.gameKey==='siebener'&&s.players.every(n=>Object.keys(s.sheet[n]).length===6)){s.readyToFinish=true;return;}s.index=0;s.round++;}
+   if(s.index===s.players.length){if(s.gameKey==='siebener'&&s.players.every(n=>sevenColumns(s).every(col=>Object.hasOwn(s.sheet[n],col)))){s.readyToFinish=true;return;}s.index=0;s.round++;}
    const n=current(s);if(!s.skip[n])return;s.skip[n]=false;s.events.push({name:n,text:'Setzt diesen Zug aus',round:s.round});s.index++;
   }
  }
@@ -115,8 +118,8 @@
    if(s.pendingChoice||s.gameKey==='siebener'&&s.turn.length===2)throw Error('Zuerst die offene Auswahl abschließen');
    if(s.gameKey==='siebener')s.turn.push(e.pins);else hurdle(s,e);
   }else if(e.action==='place'){
-   if(s.gameKey!=='siebener'||s.turn.length!==2||!columns.includes(e.column)||Object.hasOwn(s.sheet[n],e.column)||e.add&&s.addUsed[n])throw Error('Zwei Würfe, eine freie Spalte und die noch ungenutzte Addition wählen');
-   const value=e.add?s.turn[0]+s.turn[1]:s.turn[0]*s.turn[1],diff=Math.abs(e.column-value);Object.defineProperty(s.sheet[n],e.column,{value:{value,diff,cents:diff*sevenSettings(s.config?.seven).pinCents,add:!!e.add,throws:s.turn.slice()},writable:true,enumerable:true,configurable:true});s.scores[n]+=diff*sevenSettings(s.config?.seven).pinCents;if(e.add)s.addUsed[n]=true;s.turn=[];next(s);
+   if(s.gameKey!=='siebener'||s.turn.length!==2||!sevenColumns(s).includes(e.column)||Object.hasOwn(s.sheet[n],e.column)||e.add&&sevenAddCount(s,n)>=sevenAddLimit(s))throw Error('Zwei Würfe, eine freie Spalte und die noch ungenutzte Addition wählen');
+   const value=e.add?s.turn[0]+s.turn[1]:s.turn[0]*s.turn[1],diff=Math.abs(e.column-value);Object.defineProperty(s.sheet[n],e.column,{value:{value,diff,cents:diff*sevenSettings(s.config?.seven).pinCents,add:!!e.add,throws:s.turn.slice()},writable:true,enumerable:true,configurable:true});s.scores[n]+=diff*sevenSettings(s.config?.seven).pinCents;if(e.add)s.addUsed[n]=sevenAddCount(s,n)+1;s.turn=[];next(s);
   }else if(e.action==='choose'){
    if(!s.pendingChoice||s.pendingChoice.name!==n||!['reset','pay'].includes(e.choice))throw Error('Neustart oder 1 € Zahlung auswählen');
    if(e.choice==='reset')s.scores[n]=0;else booking(s,e,n,100,'Hindernislauf · Neustart vermieden');s.pendingChoice=null;next(s);
@@ -137,7 +140,7 @@
     if(req.action==='finish'){
      if(!s.readyToFinish&&!reachedTarget(s))throw Error(s.gameKey==='hindernis'?'Zuerst die Zielpunktzahl erreichen':'Zuerst die Runde zu Ende spielen');finish(s);
     }else if(req.action==='undo'){
-     if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');const history=s.history.slice(0,-1),rebuilt=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config},{...ctx,people:s.players.map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});for(const e of history)play(rebuilt,e);s=rebuilt;
+     if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');const history=s.history.slice(0,-1),rebuilt=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config},{...ctx,people:s.players.map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt},s.gameKey==='siebener'&&s.sevenVersion!==2);for(const e of history)play(rebuilt,e);s=rebuilt;
     }else{
      if(s.readyToFinish||reachedTarget(s))throw Error('Das Ziel oder Rundenende ist erreicht. Abschließen oder zurücknehmen');
      if(s.history.length>=2000)throw Error('Maximale Spiellänge erreicht');
@@ -164,5 +167,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({sevenColumns,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();

@@ -2113,7 +2113,8 @@ async function generateStrafenPDF(snapshot) {
         doc.setFontSize(8.5);
         if(['game_result','mensch','haushoch','haustief','plusminus'].includes(entry.type)){
           const winners=entry.winners||(entry.winner?[entry.winner]:[]);
-          const details=[...(winners.length?['Gewinner: '+winners.join(' · ')]:[]),...(entry.ranking||[]).slice(0,3).map((g,i)=>(g.rank||i+1)+'. Verlierer: '+(g.team?g.team+' · ':'')+(g.names||[]).join(', ')),...(entry.results||[]).map(r=>r.name+': '+(r.number??r.result??'-'))];
+          const priceRows=window.KCGameResults?.amounts(entry)||entry.amounts||[];
+          const details=[...priceRows.map(row=>row.name+': '+formatEuro(row.amountCents/100)),...(winners.length?['Gewinner: '+winners.join(' · ')]:[]),...(entry.ranking||[]).slice(0,3).map((g,i)=>(g.rank||i+1)+'. Verlierer: '+(g.team?g.team+' · ':'')+(g.names||[]).join(', ')),...(entry.results||[]).map(r=>r.name+': '+(r.number??r.result??'-'))];
           if(!details.length)details.push('Abschluss dokumentiert; Beträge nach den Spielregeln.');
           for(const detail of details){for(const line of doc.splitTextToSize(getPlainText(detail),pageWidth-margin*2)){ensurePageSpace(5);doc.text(line,margin,currentY);currentY+=5;}}
           currentY+=6;return;

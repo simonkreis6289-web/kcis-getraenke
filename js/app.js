@@ -1585,9 +1585,7 @@ function renderStrafen() {
       .filter(item => item.onTop)
       .reduce((sum, item) => sum + (parseFloat(item.amount || 0) || 0), 0);
 
-    const freeDetails = manualFree
-      .map(item => `${item.reason || 'Ohne Grund'}: +${euros(item.amount)}${item.onTop ? ' 🔥' : ''}`)
-      .join('<br>');
+    const freeDetails=window.KCGameResults?.moneyMarkup(p,manualFree,typeof individualGameLedger==='undefined'?[]:individualGameLedger,strafenHistory,currentEveningStartedAt)||'';
 
     const freeDisplayTotal = freeNormalTotal + freeOnTopTotal;
     const extraLines = getPersonPenaltyExtraLines(p);
@@ -1669,10 +1667,10 @@ const avatarHtml =
     html += `
       <td class="total-cell">
         ${
-          freeDisplayTotal > 0
+          (freeDisplayTotal !== 0 || freeDetails)
             ? `
-              +${euros(freeDisplayTotal)}
-              <div style="font-family:'DM Sans';font-size:0.58rem;color:var(--muted);line-height:1.25;margin-top:3px;">
+              ${freeDisplayTotal>=0?'+':''}${euros(freeDisplayTotal)}
+              <div class="penalty-free-details">
                 ${freeDetails}
               </div>
             `
@@ -1717,8 +1715,9 @@ function renderStrafenHistory() {
     return;
   }
 
-  el.innerHTML = strafenHistory.slice().sort((a,b)=>Date.parse(b.createdAt||b.date||0)-Date.parse(a.createdAt||a.date||0)).map(entry => {
-    const result=window.KCGameResults?.markup(entry);if(result!==null&&result!==undefined)return result;
+  el.innerHTML = strafenHistory.slice().sort((a,b)=>(Date.parse(a.createdAt||a.date)||0)-(Date.parse(b.createdAt||b.date)||0)).map(entry => {
+    const position=window.KCGameResults?.number(strafenHistory,entry)||0,prefix=position?position+'. ':'';
+    const result=window.KCGameResults?.markup(entry,position);if(result!==null&&result!==undefined)return result;
     if (entry.type === 'tannenbaum') {
       const assigned = (entry.assignedTo || [])
         .map(x => `${x.name} (${x.team === 'T1' ? 'Wand' : 'TV'}): ${euros(x.amount)}`)
@@ -1735,7 +1734,7 @@ function renderStrafenHistory() {
       return `
         <div class="spiel-card">
           <div class="spiel-info">
-            <div class="spiel-verlierer round">🌲 Tannenbaum abgeschlossen</div>
+            <div class="spiel-verlierer round">${prefix}🌲 Tannenbaum abgeschlossen</div>
             <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
             <div class="spiel-detail"><strong>Wand:</strong> ${euros(entry.totals?.T1 || 0)}</div>
             <div class="spiel-detail"><strong>TV:</strong> ${euros(entry.totals?.T2 || 0)}</div>
@@ -1753,7 +1752,7 @@ function renderStrafenHistory() {
       return `
         <div class="spiel-card">
           <div class="spiel-info">
-            <div class="spiel-verlierer round">💸 Freier Betrag</div>
+            <div class="spiel-verlierer round">${prefix}💸 Freier Betrag</div>
             <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
             <div class="spiel-detail"><strong>Person:</strong> ${entry.person || '—'}</div>
             <div class="spiel-detail"><strong>Grund:</strong> ${entry.reason || '—'}</div>
@@ -1780,7 +1779,7 @@ function renderStrafenHistory() {
       return `
         <div class="spiel-card">
           <div class="spiel-info">
-            <div class="spiel-verlierer round">🎰 Lotterie abgeschlossen</div>
+            <div class="spiel-verlierer round">${prefix}🎰 Lotterie abgeschlossen</div>
             <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
             <div class="spiel-detail"><strong>Gebucht:</strong><br>${assigned || '—'}</div>
           </div>
@@ -1798,7 +1797,7 @@ function renderStrafenHistory() {
       return `
         <div class="spiel-card">
           <div class="spiel-info">
-            <div class="spiel-verlierer round">🏛️ Tiberius abgeschlossen</div>
+            <div class="spiel-verlierer round">${prefix}🏛️ Tiberius abgeschlossen</div>
             <div class="spiel-detail">${entry.createdAt ? formatDateTime(entry.createdAt) : ''}</div>
             <div class="spiel-detail"><strong>Gebucht:</strong><br>${assigned || '—'}</div>
           </div>

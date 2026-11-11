@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),plain=x=>JSON.parse(JSON.stringify(x)),src=read('tests/v186-regression.cjs'),prefix=src.slice(0,src.indexOf("test('7er")),uiCode=src.slice(src.indexOf('function ui(){'),src.indexOf("test('actual 7er HTML")),lib=new Function('require','__dirname',prefix+uiCode+';return {g,ctx,step,req,roll,sevenRound,server,ui};')(require,__dirname),{g,ctx,step,req,roll}=lib;
-const config=(pinCents=17,kranzMode='fixed',kranzValue=12)=>({pinCents,kranzMode,kranzValue});
+const config=(pinCents=17,kranzMode='fixed',kranzValue=12,addLimit=1)=>({pinCents,kranzMode,kranzValue,addLimit});
 const start=c=>step(g.empty('siebener'),'start',{players:['A','B'],sevenSettings:c}).state;
 test('7er validates money and kranz options; old games retain the 10-cent/8-wood fallback',()=>{
  assert.deepEqual(plain(g.sevenSettings(null)),config(10,'fixed',8));for(const c of [config(-1),config(1.5),config(10001),config(10,'bad'),config(10,'fixed',0),config(10,'fixed',13)]){assert(!g.validSevenSettings(c));assert.throws(()=>start(c));}
