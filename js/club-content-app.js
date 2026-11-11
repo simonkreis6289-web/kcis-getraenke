@@ -18,7 +18,7 @@
   for(const kind of ['notes','statutes']){
    const root=$('club-'+kind+'-reader'),editor=$('club-'+kind+'-editor');if(!root||readers[kind])continue;
    readers[kind]=window.KCContentPager.create(root,{notes:kind==='notes',controls:kind==='notes',onPage:()=>renderButtons(kind)});
-   editors[kind]=window.KCContentPager.editor(editor,{onInput:()=>{if(drafts[kind])drafts[kind].changed=true;renderButtons(kind);}});
+   editors[kind]=window.KCContentPager.editor(editor,{formatted:kind==='statutes',onInput:()=>{if(drafts[kind])drafts[kind].changed=true;renderButtons(kind);}});
   }
  }
  function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;for(const kind of ['notes','statutes']){const stage=$('club-'+kind+'-stage');if(!stage||!stage.getClientRects().length)continue;const height=Math.max(200,window.innerHeight-stage.getBoundingClientRect().top-32)+'px';if(stage.style.height!==height)stage.style.height=height;if(typeof ResizeObserver!=='function'){readers[kind]?.schedule();editors[kind]?.schedule();}}});}
@@ -31,11 +31,16 @@
   const count=$('club-'+kind+'-characters');if(count)count.textContent=length.toLocaleString('de-DE')+' / '+limit.toLocaleString('de-DE')+' Zeichen';
   const start=$('club-'+kind+'-edit');if(start){start.disabled=busy||!ready[kind]||!navigator.onLine;start.hidden=!!drafts[kind];}
   for(const control of $('club-'+kind+'-reader')?.querySelectorAll('[data-note-done],[data-note-delete]')||[])control.disabled=busy||!ready[kind]||!navigator.onLine;
+  editors[kind]?.setBusy(busy);
   const cancel=$('club-'+kind+'-cancel');if(cancel)cancel.disabled=busy;
  }
  function renderPanels(){
   initialize();for(const kind of ['notes','statutes']){
    const root=$('club-'+kind+'-reader');if(!root)continue;const current=model.value(kind,data[kind]),editing=!!drafts[kind];
+   if(kind==='statutes'){
+    const stage=$('club-statutes-stage');stage.classList.toggle('is-editing-statutes',editing);document.body.classList.toggle('club-statutes-is-editing',editing);
+    if(editing){stage.setAttribute('role','dialog');stage.setAttribute('aria-modal','true');}else{stage.removeAttribute('role');stage.removeAttribute('aria-modal');}
+   }
    root.hidden=editing;$('club-'+kind+'-editor').hidden=!editing;readers[kind].pause(editing);readers[kind].update(kind==='notes'?current.items:current.text);
    if(kind==='notes')$('club-notes-summary').textContent=current.items.filter(n=>!n.done).length+' offen · '+current.items.filter(n=>n.done).length+' erledigt · Älteste zuerst';
    $('club-'+kind+'-status').textContent=message||(!navigator.onLine?'Offline · Gespeicherte Inhalte lesen; Änderungen nach dem Verbinden.':!ready[kind]?'Clubunterlagen werden geladen …':editing&&current.revision!==drafts[kind].revision?'Auf einem anderen Gerät geändert. Dein Entwurf bleibt erhalten.':busy?'Wird gespeichert …':'');
@@ -66,6 +71,13 @@
  document.addEventListener('keydown',event=>{if(!event.target.matches('[data-club-info]')||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const key=event.key==='Home'?'dashboard':event.key==='End'?'statutes':event.target.dataset.clubInfo==='dashboard'?'statutes':'dashboard';infoTab(key);document.querySelector('[data-club-info='+key+']').focus();});
  document.addEventListener('change',event=>{if(event.target.matches('[data-note-done]')){const input=event.target;input.checked=!input.checked;void done(input.dataset.noteDone,!input.checked);}});
  document.addEventListener('click',event=>{const button=event.target.closest('[data-note-delete]');if(button)void remove(button.dataset.noteDelete);});
+ document.addEventListener('keydown',event=>{
+  if(!drafts.statutes||event.defaultPrevented)return;
+  if(event.key==='Escape'){event.preventDefault();cancel('statutes');return;}
+  if(event.key!=='Tab'||event.target===$('club-statutes-text'))return;
+  const controls=[...$('club-statutes-stage').querySelectorAll('button,textarea')].filter(el=>!el.disabled&&el.getClientRects().length),first=controls[0],last=controls.at(-1);
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+ });
  window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);window.addEventListener('online',render);window.addEventListener('offline',renderPanels);
  window.KCClubContentApp=Object.freeze({render,stop,edit,cancel,save,done,remove,toggle,turn,infoTab,schedule});
 })();

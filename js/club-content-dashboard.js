@@ -8,7 +8,7 @@
   const view=state?.dashboardClubContent,box=overlay();if(!box)return;
   if(!view?.open||!['notes','statutes'].includes(view.kind)){if(club)reset();else{box.hidden=true;inert();}return;}
   const changed=club!==clubId||kind!==view.kind||session!==view.session;
-  if(changed){reset();club=clubId;kind=view.kind;session=view.session;turn=Number(view.turn)||0;box.hidden=false;
+  if(changed){reset();club=clubId;kind=view.kind;session=view.session;turn=Number(view.turn)||0;box.hidden=false;box.dataset.contentKind=kind;
    document.getElementById('club-content-dashboard-title').textContent=kind==='notes'?'📝 Clubnotizen':'📜 Satzung';
    document.getElementById('club-content-dashboard-help').textContent=kind==='notes'?'Offene Notizen zuerst · Erledigte am Ende · Jeweils älteste zuerst':'In der App unter Info → Satzung bearbeiten und schließen';
    const reader=document.getElementById('club-content-dashboard-reader');reader.querySelector('[data-content-body]').setAttribute('aria-label',kind==='notes'?'Notizen':'Satzung');pager=window.KCContentPager.create(reader,{notes:kind==='notes'});const token=epoch;
