@@ -26,7 +26,7 @@
   s.winners=names.filter(n=>s.scores[n]===best);
   const bad=[...new Set(values.filter(v=>v!==best))].sort((a,b)=>fence?b-a:a-b);
   s.loserGroups=bad.slice(0,3).map((value,i)=>({rank:i+1,names:names.filter(n=>s.scores[n]===value)}));
-  if(fence)s.bookings=s.players.filter(n=>s.scores[n]*s.config.slatCents>0).map((n,i)=>({id:'indcharge_'+s.id+'_finish_'+i,personName:n,amountCents:s.scores[n]*s.config.slatCents,reason:'Lattenzaun · '+s.scores[n]+' Latten × '+s.config.slatCents+' Cent',gameKey:s.gameKey,gameId:s.id,onTop:true,eveningStartedAt:s.eveningStartedAt}));
+  if(fence)s.bookings=s.players.filter(n=>s.scores[n]*s.config.slatCents>0).map((n,i)=>({id:'indcharge_'+s.id+'_finish_'+i,personName:n,amountCents:s.scores[n]*s.config.slatCents,reason:'Lattenzaun · '+s.scores[n]+' Latten × '+s.config.slatCents+' Cent',gameKey:s.gameKey,gameId:s.id,onTop:false,eveningStartedAt:s.eveningStartedAt}));
   s.active=false;s.finished=true;s.readyToFinish=true;
  }
  function advance(s){s.index++;if(s.index>=s.players.length){s.index=0;s.round++;}}

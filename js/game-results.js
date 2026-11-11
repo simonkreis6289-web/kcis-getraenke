@@ -21,9 +21,9 @@
   return rows.map(row=>({...row,number:number(history,row.entry)||++fallback})).sort((a,b)=>a.number-b.number);
  }
  function moneyMarkup(person,items,ledger,history,evening){
-  const rows=freeItems(person,items,ledger,history,evening);return rows.length?'<ol class="penalty-free-list">'+rows.map(row=>'<li value="'+row.number+'" title="'+esc(row.reason)+'" aria-label="'+esc(row.number+'. '+row.reason+': '+money(row.amountCents))+'"><span class="penalty-free-item"><span aria-hidden="true">'+(icons[row.key]||icons.free)+'</span><strong>'+esc(money(row.amountCents))+'</strong></span></li>').join('')+'</ol>':'';
+  const rows=freeItems(person,items,ledger,history,evening);return rows.length?'<ol class="penalty-free-list">'+rows.map(row=>'<li value="'+row.number+'" title="'+esc(row.reason)+'" aria-label="'+esc(row.number+'. '+row.reason+': '+money(row.amountCents))+'"><span class="penalty-free-item"><span aria-hidden="true">'+(icons[row.key]||icons.free)+'</span><strong>'+esc(money(row.amountCents))+'</strong>'+((typeof gameFineOnTop==='function'?gameFineOnTop({gameKey:row.key,reason:row.reason}):false)?'<span title="Zusätzlich zur Strafobergrenze">🔥</span>':'')+'</span></li>').join('')+'</ol>':'';
  }
- function build(key,s,{now=new Date().toISOString(),groups={},server=false}={}){
+ function build(key,s,{now=new Date().toISOString(),groups={},server=false,catalog=[]}={}){
   if(!s||(!s.finished&&!s.winner))return null;
   const teamName=k=>String(groups[k]?.name||({T1:'Wand',T2:'TV'}[k])||k);
   const teams=Array.isArray(s.teams)?s.teams:[];let ranking=[],winners=[];
@@ -40,8 +40,10 @@
    ranking=(s.loserGroups||s.ranking||[]).slice(0,3).map((g,i)=>({rank:g.rank||i+1,names:(g.names||[]).slice()}));
    winners=Array.isArray(s.winners)?s.winners.slice():s.winner?[s.winner]:[];
   }
+  const counterCharges=(s.finishPenalties||[]).map(x=>({...x}));
+  if(key==='blackjack'){const penalty=catalog.find(x=>/^1\.?\s*verlierer/i.test(x.label))?.key||(s.history||[]).find(e=>e.action==='card'&&e.penalties?.length)?.penalties[0]?.key;for(const name of s.players||[]){const e=(s.history||[]).filter(e=>e.action==='card'&&e.name===name).at(-1);if(e?.bustPenalty&&penalty)counterCharges.push({personName:name,key:penalty,delta:1});}}
   const id=s.resultHistoryId||'game_result_'+key+'_'+(s.id||s.startedAt||now);
-  return {id,type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,gameId:s.id||'',winners,ranking,
+  return {id,...(counterCharges.length?{counterCharges}:{}),type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,gameId:s.id||'',winners,ranking,
    results:['bergundtal','ballermann','lattenzaun'].includes(key)?Object.entries(s.scores||{}).map(([name,result])=>({name:key==='ballermann'?(s.teamNames?.[name]||teamName(name)):name,result:result+(key==='lattenzaun'?' Latten':' Punkte')})):[],
    scores:JSON.parse(JSON.stringify(s.scores||{})),amounts:['siebener','hindernis','lattenzaun'].includes(key)?(s.players||Object.keys(s.scores||{})).map(name=>({name,amountCents:(s.bookings||[]).filter(b=>b.personName===name).reduce((sum,b)=>sum+b.amountCents,0)})):(s.bookings||[]).map(b=>({name:b.personName,amountCents:b.amountCents,reason:b.reason}))};
  }
@@ -56,7 +58,7 @@
   const rows=ranking.slice(0,3).map((g,i)=>'<div class="spiel-detail"><strong>'+(g.rank||i+1)+'. Verlierer:</strong> '+(g.team?esc(g.team)+' · ':'')+(g.names||[]).map(esc).join(', ')+'</div>').join('');
   const results=(entry.results||[]).map(r=>esc(r.name)+': '+esc(r.number??r.result??'–')).join(' · ');
   const priceRows=amounts(entry),prices=priceRows.length?'<ul class="game-result-amounts">'+priceRows.map(row=>'<li><span>'+esc(row.name)+'</span><strong>'+esc(money(row.amountCents))+'</strong></li>').join('')+'</ul>':'';
-  return '<div class="spiel-card"'+(position?' id="penalty-result-'+position+'"':'')+'><div class="spiel-info"><div class="spiel-verlierer round">'+(position?position+'. ':'')+(icons[entry.gameKey||entry.type]||'🏁')+' '+esc(title)+' abgeschlossen</div><div class="spiel-detail">'+esc(entry.createdAt?new Date(entry.createdAt).toLocaleString('de-DE'):'')+'</div>'+(winners.length?'<div class="spiel-detail"><strong>Gewinner:</strong> '+winners.map(esc).join(' · ')+'</div>':'')+prices+rows+(results?'<div class="spiel-detail">'+results+'</div>':'')+(!rows&&!prices?'<div class="spiel-detail">Abschluss dokumentiert · Beträge nach den Spielregeln</div>':'')+'</div></div>';
+  return '<div class="spiel-card"'+(position?' id="penalty-result-'+position+'"':'')+'><div class="spiel-info"><div class="spiel-verlierer round">'+(position?position+'. ':'')+(icons[entry.gameKey||entry.type]||'🏁')+' '+esc(title)+' abgeschlossen</div><div class="spiel-detail">'+esc(entry.createdAt?new Date(entry.createdAt).toLocaleString('de-DE'):'')+'</div>'+(winners.length?'<div class="spiel-detail"><strong>Gewinner:</strong> '+winners.map(esc).join(' · ')+'</div>':'')+(entry.gameFineOnTop?'<div class="game-fine-mode">🔥 OnTop · zusätzlich zur Strafobergrenze</div>':'')+prices+rows+(results?'<div class="spiel-detail">'+results+'</div>':'')+(!rows&&!prices?'<div class="spiel-detail">Abschluss dokumentiert · Beträge nach den Spielregeln</div>':'')+'</div></div>';
  }
  window.KCGameResults=Object.freeze({build,append,markup,titles,icons,ordered,number,amounts,freeItems,moneyMarkup});
 })();

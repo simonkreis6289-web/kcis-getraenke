@@ -1040,7 +1040,7 @@ function getTannenbaumOpenNumbersTotal(team) {
 }
 
 function getPersonTannenbaumTotal(p) {
-  return (p.tannenbaumCharges || []).reduce((sum, item) => {
+  return (p.tannenbaumCharges || []).filter(item=>!(typeof gameFineOnTop==='function'?gameFineOnTop(item,'tannenbaum'):item.onTop)).reduce((sum, item) => {
     return sum + (parseFloat(item.amount || 0) || 0);
   }, 0);
 }
@@ -1221,6 +1221,7 @@ function saveTannenbaumSettings() {
     
 const onTopCheck = document.getElementById('tannenbaum-ontop-check');
 tannenbaumOnTop = !!onTopCheck?.checked;
+if(typeof setGameFineOnTop==='function'&&tannenbaumOnTop!==!!gameFineSettings.tannenbaum)void setGameFineOnTop('tannenbaum',tannenbaumOnTop);
 
   const hardCheck = document.getElementById('tannenbaum-hard-rule-check');
   tannenbaumHardRule = !!hardCheck?.checked;

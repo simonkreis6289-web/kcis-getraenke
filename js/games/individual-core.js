@@ -83,7 +83,7 @@
   if(req.gameKey==='siebener'&&seven!==undefined&&!validSevenSettings(seven))throw Error('Preis pro Pin und Kranzwert prüfen');
   const s=empty(req.gameKey);if(req.gameKey==='siebener')s.sevenVersion=legacy?1:2;s.id=req.gameId;s.active=true;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):{...defaults(),seven:sevenSettings(seven)};s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
  }
- function booking(s,e,name,cents,reason){if(cents>0)s.bookings.push({id:'indcharge_'+s.id+'_'+e.id+'_'+s.players.indexOf(name),personName:name,amountCents:cents,reason,onTop:true,eveningStartedAt:s.eveningStartedAt,gameId:s.id});}
+ function booking(s,e,name,cents,reason){if(cents>0)s.bookings.push({id:'indcharge_'+s.id+'_'+e.id+'_'+s.players.indexOf(name),personName:name,amountCents:cents,reason,gameKey:s.gameKey,onTop:false,eveningStartedAt:s.eveningStartedAt,gameId:s.id});}
  function next(s){
   s.index++;
   for(let i=0;i<=s.players.length;i++){

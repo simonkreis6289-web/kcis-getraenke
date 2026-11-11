@@ -102,7 +102,7 @@ test('hurdle charges are one summed item per member/evening, including multiple 
  const ledger=[entry('one',20,{gameId:'first'}),entry('two',30,{gameId:'second'}),entry('end',115,{reason:'Hindernislauf · Endabrechnung'}),entry('seven',40,{reason:'7er-Spiel · Abweichungen'}),entry('otherperson',500,{personName:'B'}),entry('old',600,{eveningStartedAt:'old'})];
  const env={strafenHistory:[],individualGameLedger:ledger,currentEveningStartedAt:evening};
  const charges=new Function('env','with(env){'+app.slice(a,b)+';return getMissingGameCharges;}')(env);
- const original=JSON.stringify(ledger),first=charges({name:'A',freeStrafen:[]});assert.equal(first.length,2);assert.equal(first[0].reason,'Hindernislauf');assert.equal(first[0].amount,1.65);assert(first[0].onTop);assert.equal(first[1].amount,.4);assert.equal(JSON.stringify(ledger),original);
+ const original=JSON.stringify(ledger),first=charges({name:'A',freeStrafen:[]});assert.equal(first.length,2);assert.equal(first[0].reason,'Hindernislauf');assert.equal(first[0].amount,1.65);assert(!first[0].onTop);assert.equal(first[1].amount,.4);assert.equal(JSON.stringify(ledger),original);
  env.individualGameLedger=ledger.filter(x=>x.id!=='two');assert.equal(charges({name:'A'})[0].amount,1.35);
  assert(read('js/strafe-pdf.js').includes('...getMissingGameCharges(person)'));
 });
