@@ -73,12 +73,13 @@ function runSoloStartDraw() {
 }
 
 function confirmSoloStartDraw() {
-  if (!soloStartDrawState.selected) return;
+  if (soloStartDrawRunning || !soloStartDrawState.open || !soloStartDrawState.selected) return;
   const callback = soloStartDrawState.onConfirm;
   const starter = soloStartDrawState.selected;
+  soloStartDrawState.onConfirm = null;
   closeSoloStartDraw();
   if (typeof announceDashboardStarter === 'function') announceDashboardStarter('🎲 ' + starter + ' beginnt!');
   if (typeof callback === 'function') {
-    callback(starter);
+    return callback(starter);
   }
 }

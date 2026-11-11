@@ -385,6 +385,7 @@ function renderClubList() {
 }
 
 function goToClubSelection() {
+  window.KCGameOverviewApp?.reset();
   if(typeof resetGameFineSettings==='function')resetGameFineSettings();
   window.KCClubContentApp?.stop();
   if(typeof kcClosePublishedRules==='function')kcClosePublishedRules();
@@ -467,6 +468,7 @@ async function selectClub(clubName) {
 
   const localClub = CLUBS[clubName] || createEmptyClubData();
   if(typeof resetGameFineSettings==='function')resetGameFineSettings(localClub);
+  window.KCGameOverviewApp?.reset();
 
   lastLocalChangeAt = Number(localClub.lastLocalChangeAt || 0);
   lastRemoteChangeAt = Number(localClub.lastRemoteChangeAt || 0);

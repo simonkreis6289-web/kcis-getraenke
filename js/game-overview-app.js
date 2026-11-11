@@ -1,0 +1,10 @@
+/* Der kleine Menüschalter steuert ausschließlich die Spielübersicht auf dem Dashboard. */
+(()=>{
+ let club='',unsubscribe=null,epoch=0,ready=false,busy=false,state=null;
+ function button(){return document.getElementById('dashboard-games-toggle');}
+ function paint(){const b=button();if(!b)return;const open=!!state&&window.KCGameOverview.visible(state);b.setAttribute('aria-pressed',String(open));b.title=b.getAttribute('aria-label')||'';const label='Spielübersicht auf dem Dashboard '+(open?'ausblenden':'einblenden');b.title=label;b.setAttribute('aria-label',label);b.disabled=!ready||busy||!navigator.onLine;}
+ function reset(){epoch++;unsubscribe?.();unsubscribe=null;club='';ready=false;busy=false;state=null;paint();}
+ function render(){if(!button())return;const target=typeof ACTIVE_CLUB!=='undefined'&&ACTIVE_CLUB?getClubFirestoreId(ACTIVE_CLUB):'';if(target!==club){reset();club=target;const token=epoch;if(target&&window.firestoreApi?.subscribeToClubState)unsubscribe=window.firestoreApi.subscribeToClubState(target,data=>{if(token!==epoch)return;state=data||{};ready=true;paint();},()=>{if(token===epoch){ready=false;paint();}});}paint();}
+ async function toggle(){if(busy||!ready||!club||!navigator.onLine)return false;const target=club,token=epoch;busy=true;paint();try{const view=await window.firestoreApi.setDashboardGameOverview(target,{open:!window.KCGameOverview.visible(state||{}),expectedRevision:Number(state?.dashboardGameOverview?.revision)||0,opId:'overview_'+crypto.randomUUID()});if(token!==epoch||target!==club)return false;if(Number(view.revision)>=Number(state?.dashboardGameOverview?.revision||0))state={...state,dashboardGameOverview:view};return true;}catch(error){if(token===epoch)showToast(error.message||'Spielübersicht konnte nicht geändert werden.','error');return false;}finally{if(token===epoch){busy=false;paint();}}}
+ window.KCGameOverviewApp=Object.freeze({render,toggle,reset});window.addEventListener('online',render);window.addEventListener('offline',paint);
+})();
