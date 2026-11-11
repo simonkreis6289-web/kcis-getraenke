@@ -58,5 +58,61 @@
   }while(rest);}
   if(page.length)pages.push(page);return pages.length?pages:[[]];
  }
- window.KCClubContent=Object.freeze({placeholder,esc,sort,value,change,view,noteMarkup,take,textPages,notePages});
+ // Die Satzung bleibt als Klartext gespeichert; die Darstellung formatiert Abschnitte und Listen sicher.
+ function statuteLine(raw){
+  const indent=(raw.match(/^[\t ]*/)||[''])[0],depth=Math.min(6,[...indent].reduce((n,c)=>n+(c==='\t'?4:1),0)/4),line=raw.slice(indent.length).replace(/\r?\n$/,'');
+  const list=line.match(/^(?:(\d+)[.)]|([-*+•–]))[\t ]+(.*)$/);
+  return {raw,depth,kind:!line.trim()?'blank':/^(?:§\s*\d+|#{1,3}\s)/.test(line)?'heading':list?'list':'paragraph',text:list?list[3]:line.replace(/^#{1,3}\s+/,''),marker:list?(list[1]?list[1]+'.':'•'):'',ordered:!!list?.[1]};
+ }
+ function statutesMarkup(text,{before=''}={}){
+  const lines=String(text).match(/[^\n]*\n|[^\n]+$/g)||[],prefix=before.slice(before.lastIndexOf('\n')+1),continued=prefix?statuteLine(prefix):null;
+  let html='',list='',listDepth=-1;
+  const close=()=>{if(list){html+='</'+list+'>';list='';}};
+  for(let i=0;i<lines.length;i++){
+   let row=statuteLine(lines[i]);if(i===0&&continued){row={...row,kind:continued.kind==='blank'?'paragraph':continued.kind,depth:continued.depth,ordered:continued.ordered,marker:'',continued:true,text:lines[i].replace(/\r?\n$/,'')};}
+   if(row.kind==='blank'){close();if(html&&!html.endsWith('<div class="statutes-gap" aria-hidden="true"></div>'))html+='<div class="statutes-gap" aria-hidden="true"></div>';continue;}
+   const style=' style="--statute-indent:'+row.depth+'"';
+   if(row.kind==='list'){
+    const tag=row.ordered?'ol':'ul';if(list!==tag||listDepth!==row.depth||row.continued){close();list=tag;listDepth=row.depth;html+='<'+tag+' class="statutes-list"'+style+'>';}
+    html+='<li'+(row.ordered&&!row.continued?' value="'+Number.parseInt(row.marker,10)+'"':'')+(row.continued?' class="is-continuation"':'')+'>'+esc(row.text)+'</li>';
+   }else{close();const tag=row.kind==='heading'&&!row.continued?'h3':'p';html+='<'+tag+' class="statutes-'+(tag==='h3'?'heading':'paragraph')+'"'+style+'>'+esc(row.text)+'</'+tag+'>';}
+  }
+  close();return '<article class="club-statutes-text club-statutes-document">'+(html||'<p class="club-content-empty">Noch keine Satzung eingetragen.</p>')+'</article>';
+ }
+ function statutesPages(text,fits){
+  if(!text)return [''];const pages=[];let offset=0;
+  while(offset<text.length){
+   const rest=text.slice(offset),before=text.slice(0,offset);let count=take(rest,part=>fits(statutesMarkup(part,{before})));
+   // Eine neue Abschnittsüberschrift möglichst zusammen mit ihrem ersten Absatz auf der nächsten Seite zeigen.
+   const part=rest.slice(0,count),last=part.match(/(?:^|\n)([\t ]*(?:§\s*\d+|#{1,3}\s)[^\n]*\n?[\t \n]*)$/);
+   if(last&&last.index>0&&part.slice(0,last.index).trim())count=last.index+1;
+   pages.push(rest.slice(0,count));offset+=count;
+  }
+  return pages;
+ }
+ function editStatutes(text,start,end,action){
+  start=Math.max(0,Math.min(start,text.length));end=Math.max(start,Math.min(end,text.length));
+  if(action==='enter'){
+   const a=(start===0?0:text.lastIndexOf('\n',start-1)+1),line=text.slice(a,start),match=line.match(/^([\t ]*)(?:(\d+)([.)])|([-*+•–]))[\t ]+(.*)$/);
+   if(!match)return null;
+   if(!match[5].trim()&&end===start){const value=text.slice(0,a)+text.slice(end);return {text:value,start:a,end:a};}
+   const insert='\n'+match[1]+(match[2]?String(Number(match[2])+1)+match[3]:match[4])+' ',value=text.slice(0,start)+insert+text.slice(end);return {text:value,start:start+insert.length,end:start+insert.length};
+  }
+  const a=(start===0?0:text.lastIndexOf('\n',start-1)+1),anchor=end>start&&text[end-1]==='\n'?end-1:end,b=text.indexOf('\n',anchor),stop=b<0?text.length:b,lines=text.slice(a,stop).split('\n'),allBullets=lines.every(line=>/^[\t ]*[-*+•–][\t ]+/.test(line)),allNumbers=lines.every(line=>/^[\t ]*\d+[.)][\t ]+/.test(line));
+  let number=1,heading=1;for(const m of text.slice(0,a).matchAll(/^\s*§\s*(\d+)/gm))heading=Math.max(heading,Number(m[1])+1);
+  const changes=lines.map(line=>{
+   const indent=(line.match(/^[\t ]*/)||[''])[0],body=line.slice(indent.length),plain=body.replace(/^(?:[-*+•–]|\d+[.)])[\t ]+/,''),old=line;
+   if(action==='indent')line='\t'+line;
+   else if(action==='outdent')line=line.replace(/^(?:\t| {1,4})/,'');
+   else if(action==='bullet')line=indent+(allBullets?plain:'• '+plain);
+   else if(action==='number')line=indent+(allNumbers?plain:(number++)+'. '+plain);
+   else if(action==='heading')line=indent+(/^§\s*\d+/.test(body)?body.replace(/^§\s*\d+\s*[–—-]?\s*/,''):'§ '+(heading++)+' – '+plain);
+   return {old,line,delta:line.length-old.length};
+  });
+  const replacement=changes.map(c=>c.line).join('\n'),value=text.slice(0,a)+replacement+text.slice(stop);
+  if(start===end){const caret=Math.max(a,Math.min(a+replacement.length,start+changes[0].delta));return {text:value,start:caret,end:caret};}
+  return {text:value,start:a,end:a+replacement.length};
+ }
+
+ window.KCClubContent=Object.freeze({placeholder,esc,sort,value,change,view,noteMarkup,take,textPages,notePages,statuteLine,statutesMarkup,statutesPages,editStatutes});
 })();
