@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261111-v204">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261111-v204">
-  <link rel="stylesheet" href="css/table-games.css?v=20261111-v204">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261111-v204">
-<link rel="stylesheet" href="css/game-rules.css?v=20261111-v204">
+  <link rel="stylesheet" href="css/styles.css?v=20261111-v205">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261111-v205">
+  <link rel="stylesheet" href="css/table-games.css?v=20261111-v205">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261111-v205">
+<link rel="stylesheet" href="css/game-rules.css?v=20261111-v205">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -128,12 +128,13 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261111-v204">
-<link rel="stylesheet" href="css/game-starts.css?v=20261111-v204">
-<link rel="stylesheet" href="css/game-settings.css?v=20261111-v204">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261111-v204">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261111-v204">
-<link rel="stylesheet" href="css/historical-evenings.css?v=20261111-v204">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261111-v205">
+<link rel="stylesheet" href="css/game-starts.css?v=20261111-v205">
+<link rel="stylesheet" href="css/game-settings.css?v=20261111-v205">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261111-v205">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261111-v205">
+<link rel="stylesheet" href="css/historical-evenings.css?v=20261111-v205">
+<link rel="stylesheet" href="css/club-content.css?v=20261111-v205">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -384,6 +385,7 @@
       <div class="side-submenu hidden">
         <button onclick="showSideTab('verwaltung','kataloge',this)">📚 Kataloge & Preise</button>
         <button onclick="showSideTab('verwaltung','termine',this)">📅 Termine</button>
+        <button onclick="showSideTab('verwaltung','notizen',this)">📝 Notizen</button>
         <button onclick="showSideTab('verwaltung','einstellungen',this)">⚙️ Einstellungen</button><button onclick="showSideTab('verwaltung','info',this)">ℹ️ Info</button>
       </div>
     </div>
@@ -1416,7 +1418,7 @@
     </div>
 
     <!-- VERWALTUNG -->
-    <div id="main-verwaltung" class="main-panel hidden"><nav class="kc-admin-tabs" aria-label="Verwaltung"><button type="button" class="kc-admin-tab" data-kc-tab="spiele" onclick="showSideTab('verwaltung','spiele',this)">🎲 Spiele & Rundengründe</button><button type="button" class="kc-admin-tab" data-kc-tab="getraenkepreise" onclick="showSideTab('verwaltung','getraenkepreise',this)">🍺 Getränkepreise</button><button type="button" class="kc-admin-tab" data-kc-tab="strafpreise" onclick="showSideTab('verwaltung','strafpreise',this)">🚨 Strafpreise</button><button type="button" class="kc-admin-tab" data-kc-tab="termingruende" onclick="showSideTab('verwaltung','termingruende',this)">📅 Termingründe</button><button type="button" class="kc-admin-tab" data-kc-tab="termine" onclick="showSideTab('verwaltung','termine',this)">🗓️ Termine</button><button type="button" class="kc-admin-tab" data-kc-tab="einstellungen" onclick="showSideTab('verwaltung','einstellungen',this)">⚙️ Einstellungen</button><button type="button" class="kc-admin-tab" data-kc-tab="info" onclick="showSideTab('verwaltung','info',this)">ℹ️ Info</button></nav><div id="tab-kataloge"><div class="section-title">📚 Kataloge & Preise</div><p>Wähle oben einen Reiter, um Spiele, Preise und Termine zu bearbeiten.</p></div>
+    <div id="main-verwaltung" class="main-panel hidden"><nav class="kc-admin-tabs" aria-label="Verwaltung"><button type="button" class="kc-admin-tab" data-kc-tab="spiele" onclick="showSideTab('verwaltung','spiele',this)">🎲 Spiele & Rundengründe</button><button type="button" class="kc-admin-tab" data-kc-tab="getraenkepreise" onclick="showSideTab('verwaltung','getraenkepreise',this)">🍺 Getränkepreise</button><button type="button" class="kc-admin-tab" data-kc-tab="strafpreise" onclick="showSideTab('verwaltung','strafpreise',this)">🚨 Strafpreise</button><button type="button" class="kc-admin-tab" data-kc-tab="termingruende" onclick="showSideTab('verwaltung','termingruende',this)">📅 Termingründe</button><button type="button" class="kc-admin-tab" data-kc-tab="termine" onclick="showSideTab('verwaltung','termine',this)">🗓️ Termine</button><button type="button" class="kc-admin-tab" data-kc-tab="einstellungen" onclick="showSideTab('verwaltung','einstellungen',this)">⚙️ Einstellungen</button><button type="button" class="kc-admin-tab" data-kc-tab="notizen" onclick="showSideTab('verwaltung','notizen',this)">📝 Notizen</button><button type="button" class="kc-admin-tab" data-kc-tab="info" onclick="showSideTab('verwaltung','info',this)">ℹ️ Info</button></nav><div id="tab-kataloge"><div class="section-title">📚 Kataloge & Preise</div><p>Wähle oben einen Reiter, um Spiele, Preise und Termine zu bearbeiten.</p></div>
       <div id="tab-spiele">
         <div class="section-title">Spiele anlegen</div>
         <div class="add-person-row">
@@ -1473,7 +1475,7 @@
 <label for="kc-series-weekday">Wochentag<select id="kc-series-weekday" onchange="kcSeriesWeekdayChanged()"><option value="1">Montag</option><option value="2">Dienstag</option><option value="3">Mittwoch</option><option value="4">Donnerstag</option><option value="5" selected>Freitag</option><option value="6">Samstag</option><option value="0">Sonntag</option></select></label>
 <label for="kc-series-first">Erster Termin<input type="date" id="kc-series-first" onchange="kcSeriesFirstChanged()"></label>
 <label for="kc-series-time">Uhrzeit<input type="time" id="kc-series-time" value="20:00"></label>
-<button type="button" class="primary-btn" onclick="kcSaveSeriesSettings()">💾 Rhythmus speichern & neu planen</button></div><p class="profile-help">Ersetzt künftige Kegeltermine einschließlich einzelner Verschiebungen. Vergangene Termine, Touren und Geburtstage bleiben erhalten.</p><button type="button" class="secondary-btn" onclick="kcEnsureKegelSeries(true)">🔄 Termine ergänzen</button><p id="kc-calendar-status" class="profile-help" role="status"></p></section><div class="kc-event-form" id="kc-event-create-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="20:00"></label><label>Bemerkung<input id="kc-event-note" maxlength="500" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-info" class="hidden"><div class="section-title">ℹ️ Info & Dashboard</div><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="tab-einstellungen" class="hidden">
+<button type="button" class="primary-btn" onclick="kcSaveSeriesSettings()">💾 Rhythmus speichern & neu planen</button></div><p class="profile-help">Ersetzt künftige Kegeltermine einschließlich einzelner Verschiebungen. Vergangene Termine, Touren und Geburtstage bleiben erhalten.</p><button type="button" class="secondary-btn" onclick="kcEnsureKegelSeries(true)">🔄 Termine ergänzen</button><p id="kc-calendar-status" class="profile-help" role="status"></p></section><div class="kc-event-form" id="kc-event-create-form"><label>Art<select id="kc-event-type"><option value="kegeln">🎳 Kegelabend</option><option value="tour">🚌 Kegeltour</option></select></label><label>Datum<input id="kc-event-date" type="date"></label><label>Uhrzeit<input id="kc-event-time" type="time" value="20:00"></label><label>Bemerkung<input id="kc-event-note" maxlength="500" placeholder="Optional"></label><button class="add-btn" onclick="kcAddTermin()">+ Termin speichern</button></div><div id="kc-termine-list"></div></div><div id="tab-notizen" class="hidden"><section id="club-notes-stage" class="club-content-stage" aria-label="📝 Notizen"><div class="club-content-toolbar"><div><h3>📝 Notizen</h3><p id="club-notes-summary">Notizen und Aufgaben für euren Club</p></div><div class="club-content-actions"><button type="button" id="club-notes-edit" onclick="KCClubContentApp.edit('notes')">＋ Neue Notiz</button><button type="button" id="club-notes-dashboard" aria-pressed="false" onclick="KCClubContentApp.toggle('notes')">📺 Auf Dashboard anzeigen</button></div></div><div id="club-notes-remote" class="club-content-remote" hidden><span>Dashboard blättern:</span><button type="button" onclick="KCClubContentApp.turn('notes',-1)">← Zurück</button><button type="button" onclick="KCClubContentApp.turn('notes',1)">Weiter →</button></div><p id="club-notes-status" class="club-content-status" role="status"></p><div id="club-notes-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Notizen"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div><div id="club-notes-editor" class="club-content-editor" hidden><label for="club-notes-text">Neue Notiz · Lange Texte werden automatisch auf Seiten verteilt.</label><textarea id="club-notes-text" aria-label="Neue Notiz" spellcheck="true"></textarea><div data-editor-measure class="club-editor-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Editor-Seiten"><button type="button" data-editor-prev>← Zurück</button><span data-editor-page aria-live="polite">Seite 1 von 1</span><button type="button" data-editor-next>Weiter →</button></nav><div class="club-editor-footer"><span id="club-notes-characters"></span><div class="club-content-actions"><button type="button" id="club-notes-cancel" onclick="KCClubContentApp.cancel('notes')">Abbrechen</button><button type="button" id="club-notes-save" onclick="KCClubContentApp.save('notes')">💾 Speichern</button></div></div></div></section></div><div id="tab-info" class="hidden"><div class="club-info-tabs" role="tablist" aria-label="Info"><button type="button" role="tab" data-club-info="dashboard" id="club-info-tab-dashboard" aria-controls="club-info-dashboard" aria-selected="true" onclick="KCClubContentApp.infoTab('dashboard')">🖥️ Dashboard</button><button type="button" role="tab" data-club-info="statutes" id="club-info-tab-statutes" aria-controls="club-info-statutes" aria-selected="false" tabindex="-1" onclick="KCClubContentApp.infoTab('statutes')">📜 Satzung</button></div><div id="club-info-dashboard" role="tabpanel" aria-labelledby="club-info-tab-dashboard"><div class="kc-info-panel"><label>Vollständiger Dashboard-Link<input id="kc-dashboard-url" readonly onclick="this.select()"></label><div class="kc-info-actions"><button class="add-btn" onclick="kcCopyDashboard()">📋 Link kopieren</button><a id="kc-dashboard-link" href="dashboard.html" target="_blank" rel="noopener">🖥️ Dashboard öffnen</a></div></div></div><div id="club-info-statutes" role="tabpanel" aria-labelledby="club-info-tab-statutes" hidden><section id="club-statutes-stage" class="club-content-stage" aria-label="📜 Satzung"><div class="club-content-toolbar"><div><h3>📜 Satzung</h3><p id="club-statutes-summary">Dauerhaft gespeichert und jederzeit bearbeitbar</p></div><div class="club-content-actions"><button type="button" id="club-statutes-edit" onclick="KCClubContentApp.edit('statutes')">✏️ Satzung bearbeiten</button><button type="button" id="club-statutes-dashboard" aria-pressed="false" onclick="KCClubContentApp.toggle('statutes')">📺 Auf Dashboard anzeigen</button></div></div><div id="club-statutes-remote" class="club-content-remote" hidden><span>Dashboard blättern:</span><button type="button" onclick="KCClubContentApp.turn('statutes',-1)">← Zurück</button><button type="button" onclick="KCClubContentApp.turn('statutes',1)">Weiter →</button></div><p id="club-statutes-status" class="club-content-status" role="status"></p><div id="club-statutes-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div><div id="club-statutes-editor" class="club-content-editor" hidden><label for="club-statutes-text">Satzung bearbeiten · Lange Texte werden automatisch auf Seiten verteilt.</label><textarea id="club-statutes-text" aria-label="Text der Satzung" spellcheck="true"></textarea><div data-editor-measure class="club-editor-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Editor-Seiten"><button type="button" data-editor-prev>← Zurück</button><span data-editor-page aria-live="polite">Seite 1 von 1</span><button type="button" data-editor-next>Weiter →</button></nav><div class="club-editor-footer"><span id="club-statutes-characters"></span><div class="club-content-actions"><button type="button" id="club-statutes-cancel" onclick="KCClubContentApp.cancel('statutes')">Abbrechen</button><button type="button" id="club-statutes-save" onclick="KCClubContentApp.save('statutes')">💾 Speichern</button></div></div></div></section></div></div><div id="tab-einstellungen" class="hidden">
   <div class="section-title">Countdown</div>
 
   <div style="padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:grid;gap:14px;margin-bottom:18px;">
@@ -2310,62 +2312,63 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261111-v204"></script>
-<script src="js/kegel-calendar.js?v=20261111-v204"></script>
-<script src="js/helpers.js?v=20261111-v204"></script>
-<script src="js/state.js?v=20261111-v204"></script>
-<script src="js/games/individual-core.js?v=20261111-v204"></script>
-<script src="js/game-rules.js?v=20261111-v204"></script>
-<script src="js/persons.js?v=20261111-v204"></script>
-<script src="js/member-profiles.js?v=20261111-v204"></script>
-<script src="js/clubs.js?v=20261111-v204"></script>
+<script src="js/birthdays.js?v=20261111-v205"></script>
+<script src="js/kegel-calendar.js?v=20261111-v205"></script>
+<script src="js/helpers.js?v=20261111-v205"></script>
+<script src="js/state.js?v=20261111-v205"></script>
+<script src="js/games/individual-core.js?v=20261111-v205"></script>
+<script src="js/game-rules.js?v=20261111-v205"></script>
+<script src="js/persons.js?v=20261111-v205"></script>
+<script src="js/member-profiles.js?v=20261111-v205"></script>
+<script src="js/clubs.js?v=20261111-v205"></script>
 
-<script src="js/games/avatar-select.js?v=20261111-v204"></script>
-<script src="js/games/tannenbaum.js?v=20261111-v204"></script>
-<script src="js/games/darts.js?v=20261111-v204"></script>
-<script src="js/games/tiberius.js?v=20261111-v204"></script>
-<script src="js/games/lotterie.js?v=20261111-v204"></script>
-<script src="js/game-results.js?v=20261111-v204"></script>
-<script src="js/starter-draw.js?v=20261111-v204"></script>
-<script src="js/games/solo-start-draw.js?v=20261111-v204"></script>
-<script src="js/games/start-setup.js?v=20261111-v204"></script>
-<script src="js/games/seating.js?v=20261111-v204"></script>
-<script src="js/games/mensch.js?v=20261111-v204"></script>
-<script src="js/games/plusminus.js?v=20261111-v204"></script>
-<script src="js/games/hausnummer-core.js?v=20261111-v204"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261111-v204"></script>
-<script src="js/games/hausnummer-tief.js?v=20261111-v204"></script>
-<script src="js/games/fuchsjagd.js?v=20261111-v204"></script>
-<script src="js/games/sichern.js?v=20261111-v204"></script>
-<script src="js/games/sechstage-core.js?v=20261111-v204"></script>
-<script src="js/games/sechstage.js?v=20261111-v204"></script>
-<script src="js/games/table-games-core.js?v=20261111-v204"></script>
-<script src="js/games/table-games-ui.js?v=20261111-v204"></script>
-<script src="js/games/individual-view.js?v=20261111-v204"></script><script src="js/games/individual-ui.js?v=20261111-v204"></script><script src="js/games/siebener.js?v=20261111-v204"></script><script src="js/games/hindernis.js?v=20261111-v204"></script>
-<script src="js/games/blackjack.js?v=20261111-v204"></script>
-<script src="js/games/gluecksspirale.js?v=20261111-v204"></script>
-<script src="js/games/tor.js?v=20261111-v204"></script>
-<script src="js/games/coinflip.js?v=20261111-v204"></script>
+<script src="js/games/avatar-select.js?v=20261111-v205"></script>
+<script src="js/games/tannenbaum.js?v=20261111-v205"></script>
+<script src="js/games/darts.js?v=20261111-v205"></script>
+<script src="js/games/tiberius.js?v=20261111-v205"></script>
+<script src="js/games/lotterie.js?v=20261111-v205"></script>
+<script src="js/game-results.js?v=20261111-v205"></script>
+<script src="js/starter-draw.js?v=20261111-v205"></script>
+<script src="js/games/solo-start-draw.js?v=20261111-v205"></script>
+<script src="js/games/start-setup.js?v=20261111-v205"></script>
+<script src="js/games/seating.js?v=20261111-v205"></script>
+<script src="js/games/mensch.js?v=20261111-v205"></script>
+<script src="js/games/plusminus.js?v=20261111-v205"></script>
+<script src="js/games/hausnummer-core.js?v=20261111-v205"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261111-v205"></script>
+<script src="js/games/hausnummer-tief.js?v=20261111-v205"></script>
+<script src="js/games/fuchsjagd.js?v=20261111-v205"></script>
+<script src="js/games/sichern.js?v=20261111-v205"></script>
+<script src="js/games/sechstage-core.js?v=20261111-v205"></script>
+<script src="js/games/sechstage.js?v=20261111-v205"></script>
+<script src="js/games/table-games-core.js?v=20261111-v205"></script>
+<script src="js/games/table-games-ui.js?v=20261111-v205"></script>
+<script src="js/games/individual-view.js?v=20261111-v205"></script><script src="js/games/individual-ui.js?v=20261111-v205"></script><script src="js/games/siebener.js?v=20261111-v205"></script><script src="js/games/hindernis.js?v=20261111-v205"></script>
+<script src="js/games/blackjack.js?v=20261111-v205"></script>
+<script src="js/games/gluecksspirale.js?v=20261111-v205"></script>
+<script src="js/games/tor.js?v=20261111-v205"></script>
+<script src="js/games/coinflip.js?v=20261111-v205"></script>
 
-<script src="js/groups.js?v=20261111-v204"></script>
+<script src="js/groups.js?v=20261111-v205"></script>
 
-<script src="js/app.js?v=20261111-v204"></script><script src="js/club-termine.js?v=20261111-v204"></script>
+<script src="js/club-content.js?v=20261111-v205"></script><script src="js/club-content-pager.js?v=20261111-v205"></script><script src="js/club-content-app.js?v=20261111-v205"></script>
+<script src="js/app.js?v=20261111-v205"></script><script src="js/club-termine.js?v=20261111-v205"></script>
     
-<script src="js/live-games.js?v=20261111-v204"></script>
-<script src="js/strafe-pdf.js?v=20261111-v204"></script>
-<script src="js/cash-history.js?v=20261111-v204"></script>
-<script src="js/cash-overview.js?v=20261111-v204"></script>
-<script src="js/cash-accounting.js?v=20261111-v204"></script>
-<script src="js/cash-book.js?v=20261111-v204"></script>
-<script src="js/penalty-statistics.js?v=20261111-v204"></script>
-<script src="js/cash-expenses.js?v=20261111-v204"></script>
-<script src="js/historical-evenings.js?v=20261111-v204"></script>
-<script src="js/game-inputs.js?v=20261111-v204"></script>
-<script src="js/table-headers.js?v=20261111-v204"></script>
+<script src="js/live-games.js?v=20261111-v205"></script>
+<script src="js/strafe-pdf.js?v=20261111-v205"></script>
+<script src="js/cash-history.js?v=20261111-v205"></script>
+<script src="js/cash-overview.js?v=20261111-v205"></script>
+<script src="js/cash-accounting.js?v=20261111-v205"></script>
+<script src="js/cash-book.js?v=20261111-v205"></script>
+<script src="js/penalty-statistics.js?v=20261111-v205"></script>
+<script src="js/cash-expenses.js?v=20261111-v205"></script>
+<script src="js/historical-evenings.js?v=20261111-v205"></script>
+<script src="js/game-inputs.js?v=20261111-v205"></script>
+<script src="js/table-headers.js?v=20261111-v205"></script>
 
 <script
   type="module"
-  src="js/firebase.js?v=20261111-v204"
+  src="js/firebase.js?v=20261111-v205"
 ></script>
 
 </body>

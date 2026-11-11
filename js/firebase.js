@@ -221,7 +221,7 @@ window.firestoreApi = {
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
-      for(const key of ['dashboardCashView','cashStandingOrders']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
+      for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
       const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
@@ -276,6 +276,34 @@ window.firestoreApi = {
     });
   },
 
+  subscribeClubContent(clubId,kind,onChange,onError) {
+    if(!clubId||!['notes','statutes'].includes(kind))throw Error('Ungültige Clubunterlage.');
+    return onSnapshot(doc(db,'clubs',clubId,'documents',kind),snap=>onChange(snap.exists()?snap.data():null),onError);
+  },
+
+  async updateClubContent(clubId,request={}) {
+    if(!clubId||!window.KCClubContent||!['notes','statutes'].includes(request.kind))throw Error('Clubunterlagen nicht verfügbar.');
+    const ref=doc(db,'clubs',clubId,'documents',request.kind);
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),before=snap.exists()?snap.data():null;
+      const value=window.KCClubContent.change(request.kind,before,request);
+      if(value!==before)transaction.set(ref,{...value,updatedAt:serverTimestamp()});
+      return value;
+    });
+  },
+
+  async setClubContentDashboard(clubId,request={}) {
+    if(!clubId||!window.KCClubContent)throw Error('Dashboard-Steuerung nicht verfügbar.');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardClubContent||null;
+      const value=window.KCClubContent.view(before,request);if(value===before)return value;
+      const updates={dashboardClubContent:value,updatedAt:serverTimestamp()};
+      if(request.action==='open')for(const key of ['dashboardCashView','dashboardRules'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
+      transaction.set(ref,updates,{merge:true});return value;
+    });
+  },
+
   async setCashDashboardView(clubId,request={}) {
     if(!clubId||typeof request.open!=='boolean'||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId)||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Abrechnungsanzeige');
     const ref=doc(db,'clubs',clubId,'state','current');
@@ -284,7 +312,8 @@ window.firestoreApi = {
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Dashboard-Ansicht wurde inzwischen geändert. Bitte erneut versuchen.');
       const value={open:request.open,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
-      transaction.set(ref,{dashboardCashView:value,updatedAt:serverTimestamp()},{merge:true});return value;
+      const updates={dashboardCashView:value,updatedAt:serverTimestamp()};if(value.open&&current.dashboardClubContent?.open)updates.dashboardClubContent={...current.dashboardClubContent,open:false,revision:Number(current.dashboardClubContent.revision||0)+1};
+      transaction.set(ref,updates,{merge:true});return value;
     });
   },
 
@@ -321,7 +350,8 @@ window.firestoreApi = {
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
       const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
-      transaction.set(ref,{dashboardRules:value,updatedAt:serverTimestamp()},{merge:true});return value;
+      const updates={dashboardRules:value,updatedAt:serverTimestamp()};if(value.open&&current.dashboardClubContent?.open)updates.dashboardClubContent={...current.dashboardClubContent,open:false,revision:Number(current.dashboardClubContent.revision||0)+1};
+      transaction.set(ref,updates,{merge:true});return value;
     });
   },
 
