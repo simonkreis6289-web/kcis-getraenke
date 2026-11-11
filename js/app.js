@@ -3938,6 +3938,7 @@ applyGroupTheme();
   updateStrafenLimitInput();
   if(typeof renderCashBook==='function')renderCashBook();
   window.KCClubContentApp?.render();
+  window.KCGameOverviewApp?.render();
   if(typeof renderGameFineSettings==='function')renderGameFineSettings();
   if(typeof kcRenderTermine==='function'&&!document.getElementById('tab-termine')?.classList.contains('hidden'))kcRenderTermine();
 }

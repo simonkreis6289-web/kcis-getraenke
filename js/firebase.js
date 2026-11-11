@@ -221,7 +221,7 @@ window.firestoreApi = {
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
-      for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
+      for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent','dashboardGameOverview']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
       if(current.gameFineSettingsRevision){next.gameFineSettings=current.gameFineSettings||{};next.gameFineSettingsRevision=current.gameFineSettingsRevision;next.gameFineSettingsCommands=current.gameFineSettingsCommands||[];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
       const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState'];
@@ -285,6 +285,18 @@ window.firestoreApi = {
       const repair=!current.clubCalendarData||JSON.stringify(current.clubTermine)!==JSON.stringify(next.clubTermine)||JSON.stringify(current.clubKegelSerie)!==JSON.stringify(next.clubKegelSerie)||current.calendarRevision!==revision;
       if(changed||repair)transaction.set(ref,{...calendar,clubCalendarData:calendar,updatedAt:serverTimestamp()},{merge:true});
       return calendar;
+    });
+  },
+
+  async setDashboardGameOverview(clubId,request={}) {
+    if(!clubId||!window.KCGameOverview||typeof request.open!=='boolean'||!Number.isSafeInteger(request.expectedRevision)||!/^overview_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige Spielübersicht.');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardGameOverview||{};
+      if((before.commands||[]).includes(request.opId))return before;
+      if(Number(before.revision||0)!==request.expectedRevision)throw Error('Spielübersicht wurde inzwischen geändert. Bitte erneut versuchen.');
+      const value={open:request.open,gameStamp:window.KCGameOverview.context(current).gameStamp,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      transaction.set(ref,{dashboardGameOverview:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
 

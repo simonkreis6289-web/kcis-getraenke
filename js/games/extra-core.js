@@ -1,9 +1,9 @@
 /* Berg und Tal, Ballermann 6 und Lattenzaun. Zeitpunkte sind absolut, Geldbeträge ganze Cent. */
 (() => {
  const keys=['bergundtal','ballermann','lattenzaun'],titles={bergundtal:'Berg und Tal',ballermann:'Ballermann 6',lattenzaun:'Lattenzaun'},icons={bergundtal:'🏔️',ballermann:'🏖️',lattenzaun:'🪵'},clone=x=>JSON.parse(JSON.stringify(x)),norm=x=>String(x).trim().toLocaleLowerCase('de');
- function defaults(key){return {kranzMode:'fixed',kranzValue:8,...(key==='bergundtal'?{rounds:4}:key==='ballermann'?{seconds:360}:{slats:21,slatCents:10})};}
- function validSettings(key,c){return keys.includes(key)&&!!c&&['fixed','choose'].includes(c.kranzMode)&&Number.isInteger(c.kranzValue)&&c.kranzValue>=1&&c.kranzValue<=12&&(key==='bergundtal'?Number.isInteger(c.rounds)&&c.rounds>=1&&c.rounds<=50:key==='ballermann'?Number.isInteger(c.seconds)&&c.seconds>=1&&c.seconds<=3600:Number.isInteger(c.slats)&&c.slats>=1&&c.slats<=50&&Number.isInteger(c.slatCents)&&c.slatCents>=0&&c.slatCents<=20);}
- function settings(key,c){return clone(validSettings(key,c)?c:defaults(key));}
+ function defaults(key){return {kranzMode:'fixed',kranzValue:8,...(key==='bergundtal'?{rounds:4,gutterHigh:0,gutterLow:9}:key==='ballermann'?{seconds:360}:{slats:21,slatCents:10})};}
+ function validSettings(key,c){return keys.includes(key)&&!!c&&['fixed','choose'].includes(c.kranzMode)&&Number.isInteger(c.kranzValue)&&c.kranzValue>=1&&c.kranzValue<=12&&(key==='bergundtal'?Number.isInteger(c.rounds)&&c.rounds>=1&&c.rounds<=50&&((c.gutterHigh===undefined&&c.gutterLow===undefined)||[c.gutterHigh,c.gutterLow].every(n=>Number.isInteger(n)&&n>=0&&n<=12)):key==='ballermann'?Number.isInteger(c.seconds)&&c.seconds>=1&&c.seconds<=3600:Number.isInteger(c.slats)&&c.slats>=1&&c.slats<=50&&Number.isInteger(c.slatCents)&&c.slatCents>=0&&c.slatCents<=20);}
+ function settings(key,c){return clone(validSettings(key,c)?{...defaults(key),...c}:defaults(key));}
  function empty(gameKey){return {gameKey,id:'',revision:0,active:false,finished:false,readyToFinish:false,players:[],index:0,round:1,turn:[],scores:{},rows:{},history:[],bookings:[],commands:[],receipts:[],winners:[],loserGroups:[],finishPenalties:[],config:defaults(gameKey),startedAt:'',eveningStartedAt:'',previous:null,participantTeams:null,teamNames:null,teamOrder:[],phase:0,teamIndexes:{T1:0,T2:0},timer:{running:false,endsAt:0,remainingMs:0}};}
  function team(s){return s.teamOrder[s.phase]||'';}
  function current(s){if(s.gameKey==='ballermann'){const t=team(s),names=s.participantTeams?.[t]||[];return names[(s.teamIndexes[t]||0)%names.length]||'';}return s.players[s.index]||'';}
@@ -33,14 +33,14 @@
  function play(s,e){
   if(e.action==='throw'){
    if(s.gameKey==='bergundtal'){
-    s.turn.push({pins:e.pins,kind:e.kind});if(s.turn.length===2){const [a,b]=s.turn,result=a.pins===0||b.pins===0?0:a.pins-b.pins;s.rows[e.name].push({throws:clone(s.turn),result});s.scores[e.name]+=result;s.turn=[];advance(s);if(s.round>s.config.rounds)s.readyToFinish=true;}
+    s.turn.push({pins:e.pins,kind:e.kind});if(s.turn.length===2){const [a,b]=s.turn,result=s.config.gutterHigh===undefined&&(a.pins===0||b.pins===0)?0:a.pins-b.pins;s.rows[e.name].push({throws:clone(s.turn),result});s.scores[e.name]+=result;s.turn=[];advance(s);if(s.round>s.config.rounds)s.readyToFinish=true;}
    }else if(s.gameKey==='lattenzaun'){
     if(s.previous){const delta=Math.abs(e.pins-s.previous.pins),loser=e.pins>s.previous.pins?s.previous.name:e.name;s.scores[loser]=Math.min(s.config.slats,s.scores[loser]+delta);e.slatPerson=loser;e.slatDelta=delta;if(s.scores[loser]>=s.config.slats){s.fenceLoser=loser;finish(s);}}
     s.previous={name:e.name,pins:e.pins};s.rows[e.name].push({pins:e.pins,kind:e.kind});if(!s.finished)advance(s);
-   }else{const t=team(s);e.team=t;s.scores[t]+=e.kind==='kranz'||e.pins>=6?e.pins:0;s.rows[e.name].push({pins:e.pins,kind:e.kind,team:t});s.teamIndexes[t]++;}
+   }else{const t=team(s);e.team=t;if(e.afterTime)s.timer.lastThrowUsed=true;s.scores[t]+=e.kind==='kranz'||e.pins>=6?e.pins:0;s.rows[e.name].push({pins:e.pins,kind:e.kind,team:t});s.teamIndexes[t]++;}
   }else if(e.action==='timerStart'||e.action==='resume'){s.timer.running=true;s.timer.endsAt=e.atMs+s.timer.remainingMs;}
   else if(e.action==='pause'){s.timer.remainingMs=Math.max(0,s.timer.endsAt-e.atMs);s.timer.running=false;}
-  else if(e.action==='expire'){s.timer={running:false,endsAt:0,remainingMs:0};s.phase++;if(s.phase===2)finish(s);else s.timer.remainingMs=s.config.seconds*1000;}
+  else if(e.action==='expire'){s.timer={running:false,endsAt:0,remainingMs:0,lastThrowUsed:false};s.phase++;if(s.phase===2)finish(s);else s.timer.remainingMs=s.config.seconds*1000;}
   else throw Error('Ungültige Spielaktion.');s.history.push(e);
  }
  function command(previous,req,ctx){
@@ -63,10 +63,13 @@
      if(s.readyToFinish||s.history.length>=2000)throw Error('Rundenende oder maximale Spiellänge erreicht.');
      const e={id:req.opId,action:req.action,name:current(s),at:ctx.now,atMs};
      if(req.action==='throw'){
-      if(s.gameKey==='ballermann'&&(!s.timer.running||remaining(s,atMs)<=0))throw Error('Spielzeit starten bzw. abgelaufene Zeit bestätigen.');
+      if(s.gameKey==='ballermann'){
+       if(!s.timer.running)throw Error('Spielzeit zuerst starten.');
+       if(remaining(s,atMs)<=0){if(s.timer.lastThrowUsed)throw Error('Der letzte Wurf nach Zeitablauf wurde bereits gebucht.');e.afterTime=true;}
+      }
       if(!ctx.people.some(p=>p.name===e.name&&p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly))throw Error('Werfer ist nicht mehr aktiv.');
       if(!['pins','gosse','miss','kranz'].includes(req.kind))throw Error('Ungültiger Wurf.');
-      const pins=req.kind==='kranz'?(s.config.kranzMode==='choose'?req.kranzValue:s.config.kranzValue):['gosse','miss'].includes(req.kind)?0:req.pins;
+      const pins=req.kind==='gosse'&&s.gameKey==='bergundtal'&&s.config.gutterHigh!==undefined?(s.turn.length===0?s.config.gutterHigh:s.config.gutterLow):req.kind==='kranz'?(s.config.kranzMode==='choose'?req.kranzValue:s.config.kranzValue):['gosse','miss'].includes(req.kind)?0:req.pins;
       if(!Number.isInteger(pins)||pins<0||pins>12||req.kind==='pins'&&(pins<1||pins>9)||req.kind==='kranz'&&pins<1)throw Error('Gültigen Wurf bzw. Kranzwert (1 bis 12) wählen.');
       Object.assign(e,{kind:req.kind,pins});
      }else{
