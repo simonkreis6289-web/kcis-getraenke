@@ -3,7 +3,7 @@ const gameInputBusy={};
 const gameInputTeams={tannenbaum:'T1',darts:'T1'},gameInputPlaces={hoch:null,tief:null};
 function giEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function gameInputButton(label,action,pin){return '<button type="button" '+(pin?'data-pin="'+pin+'" ':'')+'onclick="'+giEscape(action)+'">'+label+'</button>';}
-function gameInputNumbers(action,kranz=12){return Array.from({length:9},(_,i)=>gameInputButton(String(i+1),action(i+1,false),i+1)).join('')+gameInputButton('Gosse',action(0,true))+gameInputButton('Kranz'+(kranz===8?' (8 Holz)':''),action(kranz,false));}
+function gameInputNumbers(action,kranz=12,kranzLabel=null){return Array.from({length:9},(_,i)=>gameInputButton(String(i+1),action(i+1,false),i+1)).join('')+gameInputButton('Gosse',action(0,true))+gameInputButton(kranzLabel||'Kranz'+(kranz===8?' (8 Holz)':''),action(kranz,false));}
 function gameInputCurrentTeam(key){if(key==='tannenbaum'){ensureTannenbaumState();return tannenbaumState.currentTeam;}if(key==='darts'){ensureDartsState();return dartsState.currentTeam;}return gameInputTeams[key];}
 function gameInputTeam(key,team){if(!['T1','T2'].includes(team)||gameInputBusy[key])return;gameInputTeams[key]=team;if(key==='tannenbaum'){ensureTannenbaumState();tannenbaumState.currentTeam=team;persistState();}if(key==='darts'){ensureDartsState();dartsState.currentTeam=team;persistState();}applyGameInputLayout(key);}
 function gameInputPlace(mode,place){const s=ensureHausState(mode),name=s.playerOrder[s.currentPlayerIndex];if(!s.active||s.rows[name]?.[place])return;gameInputPlaces[mode]=place;applyGameInputLayout(hausId(mode));}
@@ -51,7 +51,7 @@ function legacyGameInput(key){
   if(!free.includes(gameInputPlaces[mode]))gameInputPlaces[mode]=free[0];
   context=giEscape(name)+' · Stelle wählen';options='<div class="gi-options">'+['Hunderter','Zehner','Einer'].map((label,i)=>'<button type="button" '+(row[i]?'disabled':'')+' aria-pressed="'+(gameInputPlaces[mode]===i)+'" onclick="gameInputPlace(\''+mode+'\','+i+')">'+label+'</button>').join('')+'</div>';
  }
- numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')');
+ numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',12,window.KCKranzUI?KCKranzUI.label(key,s):null);
  if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputCurrentTeam('darts');openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
  return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(['tannenbaum','darts'].includes(key)?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
 }

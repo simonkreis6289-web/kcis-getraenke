@@ -120,3 +120,14 @@ Ein gespeicherter geschlossener Spiele-Schalter darf bei fehlenden oder leeren
 Spieldaten keinen leeren Begrüßungsbildschirm erzwingen. Das Dashboard zeigt dann
 alle 20 Spiele in der Mitte. Laufende Spielstände und die ausdrücklich eingeblendete
 Übersicht während eines Spiels behalten ihre bisherigen Anzeigewege.
+
+
+## V219: Einheitliche Kranzwertung für alle 20 Spiele
+
+Unter Spiele → Einstellungen steht bei jedem Spiel dieselbe Kranzwahl: 8, 12 oder frei wählbar. Die freie Wahl öffnet beim Kranzwurf die gemeinsame Zahlenauswahl (1–9 oder 12; Abbrechen und Escape buchen nichts). Beim guten Schnitt bleibt die automatische aktuelle Zielzahl zusätzlich verfügbar. Bestehende Sonderwerte, beispielsweise Darts 50 und tiefe Hausnummer 0, werden als bisheriger Wert erhalten, bis eine neue Einstellung gewählt wird.
+
+Die Vorgabe liegt pro Spiel und Club in `extraGameSettings.kranzRules`. Neue Partien speichern eine Kopie als `kranzRule`; Änderungen gelten erst für die nächste Partie. Die transaktionalen Spielstarts übernehmen die Vorgabe aus dem bestätigten Clubzustand. Alte Partien ohne Regelkopie behalten ihre bisherige Wertung. Beim Tor-Spiel bleibt das vollständige Abräumen ein Tor; der eingestellte Kranzwert wird im Wurf gespeichert. Beim Sechs-Tage-Rennen wird nach jedem Kranz wieder ins volle Bild geworfen.
+
+Wurfart und Spielwert bleiben getrennt. Ein mit 8 oder 9 gewerteter Kranz bleibt in Strafen und Statistik ein Kranz. Die gewählten Werte werden im Wurfverlauf gespeichert und bei Rückgängig wiederverwendet. Hausnummer und + − × ÷ berücksichtigen die gespeicherten Werte auch in der Dashboard-Berechnung. Die Lotterie ist jetzt ebenfalls Teil des gemeinsamen serialisierten Zustands; ihre früher ausschließlich für den Livepfad vorgesehene Auslassung würde sonst Spiel- und Kranzdaten verlieren.
+
+Validierung: 667 Tests bestanden, darunter bestehende Regressionen sowie neue Modell- und vollständige App-/Transaktionsprüfungen in `tests/v219-kranz.cjs` für alle Spiele, Wertwahl, Abbruch, Korrektur, Strafen, Rückgängig, Regelkopie, Zweitgerät und wiederholte Befehle. Kein echter Firebase-Emulator oder Browser-Sichttest.

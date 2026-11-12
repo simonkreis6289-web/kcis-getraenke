@@ -9,6 +9,7 @@ function getLiveLotteriePayload() {
   syncLotteriePlayerOrder();
 
   return {
+    ...(lotterieState.kranzRule?{kranzRule:{...lotterieState.kranzRule}}:{}),
     active: !!lotterieState.active,
     customOrder: !!lotterieState.customOrder,
     restoreCustomOrder: !!lotterieState.restoreCustomOrder,
@@ -614,7 +615,7 @@ function openLotterieThrowModal(personName, colIndex) {
 
   const kranzBtn = document.createElement('button');
   kranzBtn.className = 'darts-number-btn kranz';
-  kranzBtn.textContent = 'Kranz / 12';
+  kranzBtn.textContent = window.KCKranzUI?KCKranzUI.label('lotterie'):'Kranz / 12';
   kranzBtn.onclick = () => confirmLotterieThrow(12);
   grid.appendChild(kranzBtn);
 
@@ -633,6 +634,7 @@ async function confirmLotterieThrow(
   value
 ) {
   ensureLotterieState();
+  const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('lotterie'):value;if(scored===null)return;
 
   const personName =
     lotterieEdit.person;
@@ -789,6 +791,7 @@ const clubId =
     ACTIVE_CLUB
   );
 
+value=scored;
 const previousValue =
   lotterieState.throws[
     personName
@@ -874,13 +877,13 @@ try {
   let message =
     `🎳 ${value} Pins eingetragen`;
 
-  if (value === 0) {
+  if (penaltyType === 'gosse') {
     message =
       `💀 Gosse für ${personName} eingetragen`;
-  } else if (value === 9) {
+  } else if (penaltyType === '9er') {
     message =
       `🎯 9er von ${personName} eingetragen`;
-  } else if (value === 12) {
+  } else if (penaltyType === 'kranz') {
     message =
       `👑 Kranz von ${personName} eingetragen`;
   }

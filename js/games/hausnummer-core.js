@@ -27,6 +27,7 @@ function hausThrowValue(mode,throwData) {
   if (!throwData) return null;
   const settings=hausnummerSettings?.[mode]||HAUS_DEFAULTS[mode];
   const key=throwData.isGosse?'gosse':Number(throwData.value)===12?'kranz':Number(throwData.value)===9?'neun':null;
+  if(key==='kranz'&&Number.isInteger(throwData.kranzValue))return throwData.kranzValue;
   return key ? Number(settings[key]) : Number(throwData.value);
 }
 function hausNumber(mode,row) {
@@ -82,9 +83,10 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
   const free=row.map((x,i)=>x?null:i).filter(x=>x!==null);
   const place=chosenPlace===null ? (free.length===1?free[0]:Number(document.getElementById('haus-'+mode+'-place')?.value)) : Number(chosenPlace);
   if(!free.includes(place)){showToast('Bitte eine freie Stelle wählen','error');return;}
+  const scored=n===12&&!isGosse&&window.KCKranzUI?await KCKranzUI.select(hausId(mode)):n;if(scored===null)return;
   s.busy=true;
   try {
-    const throwData={value:n,isGosse:!!isGosse};
+    const throwData={value:n,isGosse:!!isGosse,...(n===12&&!isGosse&&window.KCKranzUI?{kranzValue:scored}:{})};
     if(!(await changeSoloThrowPenalty(name,null,throwData)))return false;
     row[place]=throwData;
     s.undoStack.push({name,place,index:s.currentPlayerIndex});
@@ -108,7 +110,7 @@ async function undoHausThrow(mode) {
 }
 function hausIsSchnapszahl(row) {
   return Array.isArray(row)&&row.length===3&&row.every(Boolean)&&
-    row.every(x=>Number(x.value)===Number(row[0].value)&&!!x.isGosse===!!row[0].isGosse);
+    row.every(x=>Number(x.kranzValue??x.value)===Number(row[0].kranzValue??row[0].value)&&!!x.isGosse===!!row[0].isGosse);
 }
 async function finishHausGame(mode) {
   const s=ensureHausState(mode);

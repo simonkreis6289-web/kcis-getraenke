@@ -15,13 +15,14 @@ async function applyFuchsjagdThrow(pins){
  ensureFuchsjagdState();let s=fuchsjagdState;if(!s.active||s.busy)return;
  pins=Number(pins);if(!Number.isInteger(pins)||pins<0||pins>12)return;
  const thrower=fuchsjagdCurrentThrower();if(!thrower)return;
+ const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('fuchsjagd'):pins;if(scored===null)return;
  s.busy=true;
  try{
    // Die identische Strafbuchung wie bei Mensch / +−×÷. 9er/Kranz: 1 € für alle anderen; Gosse: Werfer.
    if(!(await changeSoloThrowPenalty(thrower,null,{pins,isGosse:pins===0})))return;
-   let delta=s.phase==='hunt'?-pins:pins;
+   let delta=s.phase==='hunt'?-scored:scored;
    s.score+=delta;
-   s.throws.push({name:thrower,pins,delta,score:s.score,at:new Date().toISOString()});
+   s.throws.push({name:thrower,pins:scored,rawPins:pins,delta,score:s.score,at:new Date().toISOString()});
    if(s.phase==='start'){
      s.startThrows++;
      if(s.startThrows===2)s.phase='hunt';
@@ -55,7 +56,7 @@ async function undoFuchsjagdThrow(){
  ensureFuchsjagdState();let s=fuchsjagdState;if(s.busy||!s.throws.length||s.finished){showToast('Rückgängig nach Spielabschluss nicht möglich','error');return;}
  const last=s.throws[s.throws.length-1];s.busy=true;
  try{
-  if(!(await changeSoloThrowPenalty(last.name,{pins:last.pins,isGosse:last.pins===0},null)))return;
+  if(!(await changeSoloThrowPenalty(last.name,{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0},null)))return;
   s.throws.pop();
   // Aus Wurfprotokoll rekonstruieren: vermeidet Fehler bei der Wechselreihenfolge.
   const history=s.throws.slice(),fox=s.fox,hunters=s.hunters.slice(),startedAt=s.startedAt;
@@ -72,7 +73,7 @@ function renderFuchsjagdGame(){
  if(select){const names=getFuchsjagdPlayers().map(p=>p.name),keep=select.value||s.fox;select.innerHTML=names.map(n=>`<option value="${escapeFuchs(n)}">${escapeFuchs(n)}</option>`).join('');if(names.includes(keep))select.value=keep;}
  const turn=s.active?fuchsjagdCurrentThrower():'–';
  const phase=s.phase==='start'?`Startwurf ${s.startThrows+1}/2`:s.phase==='hunt'?'Jäger zieht ab':s.phase==='finalFox'?'Letzter Wurf des Fuchses':s.phase==='fox'?'Fuchs addiert':'Spiel beendet';
- const rows=s.throws.slice().reverse().map((x,i)=>`<tr><td>${s.throws.length-i}</td><td>${escapeFuchs(x.name)}</td><td>${x.pins===12?'Kranz':x.pins===0?'Gosse':x.pins}</td><td class="${x.delta>=0?'fox-plus':'fox-minus'}">${x.delta>0?'+':''}${x.delta}</td><td><strong>${x.score}</strong></td></tr>`).join('');
+ const rows=s.throws.slice().reverse().map((x,i)=>`<tr><td>${s.throws.length-i}</td><td>${escapeFuchs(x.name)}</td><td>${(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':x.pins===0?'Gosse':x.pins}</td><td class="${x.delta>=0?'fox-plus':'fox-minus'}">${x.delta>0?'+':''}${x.delta}</td><td><strong>${x.score}</strong></td></tr>`).join('');
  const actions=s.active?`<div class="fox-actions">${Array.from({length:10},(_,i)=>`<button class="btn" type="button" onclick="applyFuchsjagdThrow(${i})">${i}</button>`).join('')}<button class="btn fox-special" type="button" onclick="applyFuchsjagdThrow(12)">🎳 Kranz</button><button class="btn fox-special" type="button" onclick="undoFuchsjagdThrow()">↶ Rückgängig</button></div>`:'';
  el.innerHTML=`<div class="fox-layout"><div class="fox-top"><div class="fox-stat"><small>🦊 Fuchs</small><strong>${escapeFuchs(s.fox||'Noch keiner')}</strong></div><div class="fox-stat fox-score"><small>Aktueller Vorsprung</small><strong>${s.score} Holz</strong></div><div class="fox-stat"><small>Am Wurf</small><strong>${escapeFuchs(turn)}</strong></div></div>${s.active?`<div class="fox-turn">${escapeFuchs(phase)} · ${s.phase==='hunt'?`Jäger ${s.hunterIndex+1} von ${s.hunters.length}`:`${s.hunters.length} Jäger insgesamt`}</div>`:''}${s.result?`<div class="fox-result">🏁 ${escapeFuchs(s.result)}</div>`:''}${actions}<div class="fox-table-wrap"><table class="fox-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Noch keine Würfe</td></tr>'}</tbody></table></div></div>`;
 }

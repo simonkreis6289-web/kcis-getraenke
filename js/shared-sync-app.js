@@ -335,6 +335,7 @@
           count=unit.promises.length;
           await Promise.all(batch);
         }
+        window.KCKranzUI?.freeze(key,before);
         const after=snapshot(),messages=unit.messages,opened=unit.opened;
         unit=null;
         working=false;
@@ -523,7 +524,7 @@
     document.addEventListener('change',start,true);
   }
   function blocked(event){
-    if(unit&&event.target?.closest?.('.tor-person-backdrop'))return;
+    if(unit&&event.target?.closest?.('.tor-person-backdrop,.kc-kranz-backdrop'))return;
     if(ready&&!working&&navigator.onLine)return;
     const target=event.target?.closest?.('button,input,select,textarea,[onclick]');
     if(!target||target.closest('#club-start-screen'))return;

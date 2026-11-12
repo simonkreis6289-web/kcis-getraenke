@@ -36,6 +36,7 @@ function torTogglePin(n){ensureTorState();const s=torState;if(!s.active||s.coinP
 function torOther(t){return t==='T1'?'T2':'T1';}
 async function torThrow(kind='pins'){
  ensureTorState();const s=torState;if(!s.active||s.coinPending||s.busy)return;
+ const kranzValue=kind==='kranz'&&window.KCKranzUI?await KCKranzUI.select('tor'):undefined;if(kranzValue===null)return;
  const team=s.current;
  const hit=kind==='kranz'?s.standing.slice():kind==='pins'?s.selected.slice():[];
  if(kind==='pins'&&!hit.length){showToast('Kegel auswählen oder Vorbei/Gosse drücken','error');return;}
@@ -48,7 +49,7 @@ async function torThrow(kind='pins'){
    // Strafregeln für Gosse und 9er analog zu anderen Spielen.
    if(personalPenalty){if(!(await changeSoloThrowPenalty(thrower,null,{pins:isGosse?0:kind==='kranz'?12:9,isGosse})))return;}
    s.standing=s.standing.filter(n=>!hit.includes(n));s.selected=[];
-   s.history.push({team,thrower,kind,hit,pins:knocked,at:new Date().toISOString()});
+   s.history.push({team,thrower,kind,hit,pins:knocked,...(kranzValue!==undefined?{kranzValue}:{}),at:new Date().toISOString()});
    s.teamTurns[team]=(s.teamTurns[team]||0)+1;
    if(!s.standing.length){
      s.scores[team]++;
@@ -70,6 +71,6 @@ function renderTorGame(){if(typeof renderCommonGameSetups==='function')renderCom
  const el=document.getElementById('tor-board');if(!el)return;ensureTorState();const s=torState;
  const card=k=>`<div class="tor-team ${s.active&&s.current===k?'tor-active':''}" style="--tor-color:${torEscape(getGroupColor(k))}"><small>${torEscape(getGroupLabel(k))}</small><strong>${s.scores[k]||0}</strong><span>${s.active&&s.current===k?'🎳 Am Zug':''}</span></div>`;
  const pins=[7,8,9,4,5,6,1,2,3].map(n=>`<button type="button" data-pin="${n}" class="tor-pin ${s.standing.includes(n)?'standing':'down'} ${s.selected.includes(n)?'selected':''}" ${!s.active||s.coinPending||!s.standing.includes(n)?'disabled':''} onclick="torTogglePin(${n})" aria-pressed="${s.selected.includes(n)}">${s.standing.includes(n)?n:''}</button>`).join('');
- el.innerHTML=`<div class="tor-layout"><div class="tor-scoreboard">${card('T1')}<div class="tor-vs">⚽ TOR<small>Bis mindestens 5 · 2 Tore Vorsprung</small></div>${card('T2')}</div>${s.coinPending?`<div class="tor-turn" id="tor-coin-result">🪙 Wer beginnt?</div>`:s.active?`<div class="tor-turn">🎳 ${torEscape(getGroupLabel(s.current))} am Wurf</div>`:`<div class="tor-turn">${torEscape(s.message||'Neues Spiel starten')}</div>`}<div class="tor-pins">${pins}</div><div class="tor-remaining">${s.standing.length} von 9 Kegeln stehen · ${s.selected.length} zum Abräumen ausgewählt</div>${s.active&&!s.coinPending?`<div class="tor-actions"><button class="primary-btn" onclick="torThrow('pins')" ${!s.selected.length?'disabled':''}>🎳 Treffer bestätigen</button><button class="secondary-btn" onclick="torThrow('miss')">↪ Vorbeigeworfen</button><button class="secondary-btn" onclick="torThrow('gosse')">💀 Gosse</button><button class="secondary-btn" onclick="torThrow('kranz')" ${s.standing.length===9?'':'disabled'}>👑 Kranz</button></div>`:''}<div class="tor-history">${s.history.slice(-5).reverse().map(h=>`<div>${torEscape(getGroupLabel(h.team))} · ${h.thrower?torEscape(h.thrower)+': ':''}${h.kind==='gosse'?'Gosse':h.kind==='miss'?'Vorbei':h.kind==='kranz'?'Kranz':h.pins+' Kegel'}</div>`).join('')}</div></div>`;
+ el.innerHTML=`<div class="tor-layout"><div class="tor-scoreboard">${card('T1')}<div class="tor-vs">⚽ TOR<small>Bis mindestens 5 · 2 Tore Vorsprung</small></div>${card('T2')}</div>${s.coinPending?`<div class="tor-turn" id="tor-coin-result">🪙 Wer beginnt?</div>`:s.active?`<div class="tor-turn">🎳 ${torEscape(getGroupLabel(s.current))} am Wurf</div>`:`<div class="tor-turn">${torEscape(s.message||'Neues Spiel starten')}</div>`}<div class="tor-pins">${pins}</div><div class="tor-remaining">${s.standing.length} von 9 Kegeln stehen · ${s.selected.length} zum Abräumen ausgewählt</div>${s.active&&!s.coinPending?`<div class="tor-actions"><button class="primary-btn" onclick="torThrow('pins')" ${!s.selected.length?'disabled':''}>🎳 Treffer bestätigen</button><button class="secondary-btn" onclick="torThrow('miss')">↪ Vorbeigeworfen</button><button class="secondary-btn" onclick="torThrow('gosse')">💀 Gosse</button><button class="secondary-btn" onclick="torThrow('kranz')" ${s.standing.length===9?'':'disabled'}>👑 Kranz</button></div>`:''}<div class="tor-history">${s.history.slice(-5).reverse().map(h=>`<div>${torEscape(getGroupLabel(h.team))} · ${h.thrower?torEscape(h.thrower)+': ':''}${h.kind==='gosse'?'Gosse':h.kind==='miss'?'Vorbei':h.kind==='kranz'?'Kranz'+(h.kranzValue!==undefined?' ('+h.kranzValue+')':''):h.pins+' Kegel'}</div>`).join('')}</div></div>`;
 }
 window.KCGameModules=window.KCGameModules||{};window.KCGameModules.tor={id:'tor',title:'Tor',ready:true};

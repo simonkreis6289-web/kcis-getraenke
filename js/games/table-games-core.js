@@ -37,6 +37,7 @@
   function totals(s){if(s.gameKey==='gluecksspirale')return {...s.scores};return Object.fromEntries(s.players.map(name=>[name,cardTotal(s.wood[name]||0,(Object.hasOwn(s.cardValues,name)?s.cardValues[name]:0),s.cardSettings)]));}
   function initialize(request,context){
     const k=request.gameKey,s=empty(k),names=k==='blackjack'?request.players:request.teams?.flatMap(t=>t.players||[]);
+    if(request.kranzRule){if(!window.KCKranzPolicy?.valid(request.kranzRule,k))throw Error('Ungültige Kranzwertung');s.kranzRule=copy(request.kranzRule);}
     if(!keys.includes(k)||!Array.isArray(names)||names.length<2||names.length>16||names.some(n=>typeof n!=='string'||!n.trim())||new Set(names.map(normalize)).size!==names.length)throw Error('Bitte 2 bis 16 unterschiedliche aktive Kegler auswählen');
     const active=new Set(context.people.filter(validPerson).map(p=>p.name));
     if(names.some(n=>!active.has(n)))throw Error('Teilnehmer sind nicht mehr aktiv. Auswahl aktualisieren.');
@@ -47,6 +48,7 @@
       s.teams=request.teams.map((t,i)=>({id:'G'+(i+1),name:'Team '+(i+1),players:t.players.slice()}));s.target=request.target;s.scores=Object.fromEntries(s.teams.map(t=>[t.id,0]));
       s.rounds=[{round:1,wood:{}}];
     }else{if(request.cardSettings!==undefined&&!validCardSettings(request.cardSettings))throw Error('Kartenwerte: ganze Zahlen von 0 bis 21 und ein oder zwei unterschiedliche Ass-Werte eingeben');s.cardSettings=cardSettings(request.cardSettings);s.players=names.slice();s.cards=true;s.wood=Object.fromEntries(names.map(n=>[n,0]));}
+    if(s.kranzRule?.mode==='fixed')s.kranzValue=s.kranzRule.value;
     return {...s,gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true,id:request.gameId,active:true,startedAt:context.now,eveningStartedAt:context.eveningStartedAt};
   }
   function advanceSolo(s){s.currentIndex++;}
@@ -112,7 +114,7 @@
         }else if(request.action==='undo'){
           if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');
           const history=s.history.slice(0,-1);
-          const rebuilt=initialize({gameKey:s.gameKey,gameId:s.id,players:s.players,teams:s.teams,target:s.target,cards:s.cards,cardSettings:s.cardSettings,kranzValue:s.kranzValue,onTop:s.onTop},{...context,people:participants(s).map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});
+          const rebuilt=initialize({gameKey:s.gameKey,gameId:s.id,players:s.players,teams:s.teams,target:s.target,cards:s.cards,cardSettings:s.cardSettings,kranzValue:s.kranzValue,kranzRule:s.kranzRule,onTop:s.onTop},{...context,people:participants(s).map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});
           for(const entry of history)play(rebuilt,entry);
           s=rebuilt;
         }else{
@@ -122,7 +124,7 @@
           const entry={id:request.opId,action:request.action,name:request.action==='card'?(request.playerName||name):name,at:context.now,round:s.round,teamId:s.teams[s.currentIndex]?.id||''};
           if(request.action==='throw'){
             if(!['pins','kranz','gosse','miss'].includes(request.kind))throw Error('Ungültiger Wurf');
-            const pins=request.kind==='kranz'?(s.kranzValue??8):['gosse','miss'].includes(request.kind)?0:Number(request.pins);
+            const pins=request.kind==='kranz'?(s.kranzRule&&window.KCKranzPolicy?KCKranzPolicy.resolve(s.kranzRule,request.kranzValue):(s.kranzValue??8)):['gosse','miss'].includes(request.kind)?0:Number(request.pins);
             if(!Number.isInteger(pins)||pins<0||pins>(request.kind==='kranz'?12:9)||(request.kind==='pins'&&pins<1))throw Error('Bitte 1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');
             Object.assign(entry,{kind:request.kind,pins});
           }else if(request.action==='card'){entry.value=request.value;entry.corrected=Object.hasOwn(s.cardValues,entry.name);}

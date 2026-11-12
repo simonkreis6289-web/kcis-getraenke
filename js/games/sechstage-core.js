@@ -21,7 +21,7 @@
     const current=team(state),turn=state.turn,index=current.players.indexOf(entry.name);
     if(index<0||turn.used[index]>=quota(current))throw new Error('Jeder Partner hat genau zwei Würfe pro Tag; ein Einzelteam hat vier');
     let pins=entry.pins;
-    if(entry.kind==='kranz'){if(turn.standing!==9)throw new Error('Kranz ist nur ins volle Bild möglich');pins=state.kranzValue??8;}
+    if(entry.kind==='kranz'){if(turn.standing!==9)throw new Error('Kranz ist nur ins volle Bild möglich');pins=state.kranzRule&&window.KCKranzPolicy?KCKranzPolicy.resolve(state.kranzRule,entry.kranzValue):(state.kranzValue??8);}
     else if(entry.kind==='gosse'||entry.kind==='miss')pins=0;
     else if(entry.kind!=='pins'||!Number.isInteger(pins)||pins<1||pins>turn.standing)throw new Error('Bitte nur die tatsächlich gefallenen, noch stehenden Kegel eingeben');
     turn.wood+=pins;turn.used[index]++;turn.standing=entry.kind==='kranz'&&state.kranzReset?9:turn.standing-pins;
@@ -42,12 +42,13 @@
     }
     state.scores=scores(state);return recorded;
   }
-  function start(teams,bonus,id,now,evening,kranzValue,kranzReset=false){
+  function start(teams,bonus,id,now,evening,kranzValue,kranzReset=false,kranzRule){
+    if(kranzRule&&!window.KCKranzPolicy?.valid(kranzRule,'sechstage'))throw Error('Ungültige Kranzwertung');
     if(kranzValue!==undefined&&(!Number.isInteger(kranzValue)||kranzValue<1||kranzValue>12))throw Error('Kranzwert: 1 bis 12 Holz');
     if(!Array.isArray(teams)||teams.length<2||teams.length>8)throw new Error('Bitte zwei bis acht Teams bilden');
     const names=teams.flatMap(t=>t.players||[]);
     if(names.length<3||teams.some(t=>!Array.isArray(t.players)||![1,2].includes(t.players.length))||teams.filter(t=>t.players.length===1).length!==names.length%2||names.some(name=>typeof name!=='string'||!name.trim())||new Set(names.map(name=>name.trim().toLocaleLowerCase('de-DE'))).size!==names.length)throw new Error('Zweierteams bilden; bei ungerader Anzahl genau ein Einzelteam. Niemand darf doppelt spielen.');
-    return {...empty(),id,active:true,...(kranzValue!==undefined?{kranzValue}:{}),kranzReset,teams:teams.map((t,i)=>({id:'R'+(i+1),name:'Team '+(i+1),players:t.players.slice()})),bonus:!!bonus,startedAt:now,eveningStartedAt:evening,rounds:[{day:1,wood:{},points:{},complete:false,bonusWinners:[]}]};
+    return {...empty(),id,active:true,...(kranzRule?{kranzRule:clone(kranzRule)}:{}),...(kranzValue!==undefined?{kranzValue}:{}),kranzReset,teams:teams.map((t,i)=>({id:'R'+(i+1),name:'Team '+(i+1),players:t.players.slice()})),bonus:!!bonus,startedAt:now,eveningStartedAt:evening,rounds:[{day:1,wood:{},points:{},complete:false,bonusWinners:[]}]};
   }
   function command(previous,request,context){
     const before=previous||empty(),now=context.now;
@@ -58,7 +59,7 @@
     if(request.action==='start'){
       if(before.active)throw new Error('Das aktuelle Rennen zuerst beenden oder abbrechen');
       if(typeof request.raceId!=='string'||!/^race_[a-zA-Z0-9_-]{1,100}$/.test(request.raceId))throw new Error('Ungültige Rennkennung');
-      state=start(request.teams,request.bonus,request.raceId,now,context.eveningStartedAt,request.kranzValue??8,true);
+      state=start(request.teams,request.bonus,request.raceId,now,context.eveningStartedAt,request.kranzRule?.mode==='fixed'?request.kranzRule.value:request.kranzValue??8,true,request.kranzRule);
       Object.assign(state,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});
       const active=new Set(context.people.filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly).map(p=>p.name));
       if(state.teams.some(t=>t.players.some(name=>!active.has(name))))throw new Error('Teilnehmer sind nicht mehr aktiv. Bitte Auswahl aktualisieren.');
@@ -74,11 +75,11 @@
           if(state.readyToFinish)throw new Error('Alle sechs Tage sind gespielt');
           const name=thrower(state),person=context.people.find(p=>p.name===name);
           if(!person?.present||person.left||person.inactive||person.isDrinksOnly)throw new Error('Der Werfer ist nicht mehr aktiv');
-          takeThrow(state,{id:request.opId,name,kind:request.kind,pins:Number(request.pins),at:now});
+          takeThrow(state,{id:request.opId,name,kind:request.kind,pins:Number(request.pins),...(request.kranzValue!==undefined?{kranzValue:request.kranzValue}:{}),at:now});
         }else if(request.action==='undo'){
           if(!state.history.length)throw new Error('Noch kein Wurf zum Zurücknehmen');
           const removed=state.history.pop(),history=state.history;
-          const rebuilt=start(state.teams,state.bonus,state.id,state.startedAt,state.eveningStartedAt,state.kranzValue,state.kranzReset);
+          const rebuilt=start(state.teams,state.bonus,state.id,state.startedAt,state.eveningStartedAt,state.kranzValue,state.kranzReset,state.kranzRule);
           for(const entry of history)takeThrow(rebuilt,entry);
           if(team(rebuilt)?.id===removed.teamId)rebuilt.turn.playerIndex=team(rebuilt).players.indexOf(removed.name);
           state={...state,...rebuilt};

@@ -498,7 +498,7 @@ window.firestoreApi = {
       const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
       const before=current.sechstageState?.eveningStartedAt===existingEvening?current.sechstageState:window.KCSixDays.empty();
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
-      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,'sechstage')===true};
+      if(request.action==='start')request={...(window.KCKranzPolicy?KCKranzPolicy.startRequest(current,'sechstage',request):request),onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,'sechstage')===true};
       const result=window.KCSixDays.command(before,request,context),next=result.state;
       const effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCSixDays.effects(before,next,request,context);
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
@@ -554,7 +554,7 @@ window.firestoreApi = {
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCTableGames.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
       let result,effect;
-      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,request.gameKey)===true};
+      if(request.action==='start')request={...(window.KCKranzPolicy?KCKranzPolicy.startRequest(current,gameKey,request):request),onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,request.gameKey)===true};
       try{result=window.KCTableGames.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCTableGames.effects(before,result.state,request,context);}catch(error){error.code='table-game-rejected';throw error;}
       const next=result.state;if(request.action==='start')Object.assign(next,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});if(next.gameFineFrozen)for(const row of effect.moneyAdded||[])Object.assign(row,{gameFineFrozen:true,onTop:next.onTop===true});
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
@@ -609,7 +609,7 @@ window.firestoreApi = {
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:core.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId,groups:current.groupSettings||{}};
       let result,effect;
-      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,gameKey)===true};
+      if(request.action==='start')request={...(window.KCKranzPolicy?KCKranzPolicy.startRequest(current,gameKey,request):request),onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,gameKey)===true};
       try{result=core.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:core.effects(before,result.state,request,context);}catch(error){error.code='individual-game-rejected';throw error;}
       const next=result.state;if(request.action==='start')Object.assign(next,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});if(next.gameFineFrozen)for(const row of effect.moneyAdded||[])Object.assign(row,{gameFineFrozen:true,onTop:next.onTop===true});
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
