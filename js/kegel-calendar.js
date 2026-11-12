@@ -50,7 +50,9 @@
   }
   function validateEvent(event,types){
     if(!types.includes(event.type)||event.type==='geburtstag')throw new Error('Bitte eine gültige Terminart auswählen');
-    if(!KCBirthdays.parse(event.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(event.time||''))throw new Error('Bitte ein gültiges Datum und eine Uhrzeit eingeben');
+    if(!KCBirthdays.parse(event.date))throw new Error('Bitte ein gültiges Datum eingeben');
+    if(event.type==='tour'){if(!KCBirthdays.parse(event.endDate||event.date)||(event.endDate||event.date)<event.date)throw new Error('Das Bis-Datum der Kegeltour muss am oder nach dem Von-Datum liegen');}
+    if((event.type!=='tour'||event.time)&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(event.time||''))throw new Error('Bitte eine gültige Uhrzeit eingeben');
     if(String(event.note||'').length>500)throw new Error('Bemerkung darf höchstens 500 Zeichen enthalten');
   }
   function perform(state={},request={}){
@@ -71,8 +73,8 @@
       const types=[...new Set(['kegeln','tour',...(state.clubTerminGruende||[]).map(type=>type.id),...(existing?[existing.type]:[])])];
       if(request.action==='add'){
         if(typeof request.id!=='string'||!/^kc_manual_[a-zA-Z0-9_-]+$/.test(request.id))throw new Error('Ungültige Termin-ID');
-        const next={id:request.id,type:request.event?.type,date:request.event?.date,time:request.event?.time,note:String(request.event?.note||'').trim(),eventRevision:1};validateEvent(next,types);
-        if(existing){if(['type','date','time','note'].some(key=>existing[key]!==next[key]))throw new Error('Termin wurde bereits gespeichert. Bitte erneut öffnen.');}
+        const next={id:request.id,type:request.event?.type,date:request.event?.date,time:request.event?.time||'',...(request.event?.type==='tour'?{endDate:request.event.endDate||request.event.date}:{}),note:String(request.event?.note||'').trim(),eventRevision:1};validateEvent(next,types);
+        if(existing){if(['type','date','time','note'].some(key=>existing[key]!==next[key])||next.type==='tour'&&(existing.endDate||existing.date)!==next.endDate)throw new Error('Termin wurde bereits gespeichert. Bitte erneut öffnen.');}
         else{
           if(events.some(e=>e.type===next.type&&e.date===next.date&&e.time===next.time))throw new Error('Für diesen Zeitpunkt ist bereits ein Termin dieser Art vorhanden');
           events.push(next);
@@ -84,8 +86,8 @@
         if(slot){series.issuedDates=[...new Set([...series.issuedDates,slot])];existing.seriesKey=seriesKey(series);existing.seriesDate=slot;}
         if(request.action==='delete')events.splice(index,1);
         else{
-          const next={...existing,type:request.event?.type,date:request.event?.date,time:request.event?.time,note:String(request.event?.note||'').trim(),eventRevision:(Number(existing.eventRevision)||0)+1};
-          validateEvent(next,types);events[index]=next;
+          const next={...existing,type:request.event?.type,date:request.event?.date,time:request.event?.time||'',...(request.event?.type==='tour'?{endDate:request.event.endDate||request.event.date}:{}),note:String(request.event?.note||'').trim(),eventRevision:(Number(existing.eventRevision)||0)+1};
+          if(next.type!=='tour')delete next.endDate;validateEvent(next,types);events[index]=next;
         }
       }else throw new Error('Unbekannte Kalenderaktion');
     }
