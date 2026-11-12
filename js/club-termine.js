@@ -72,7 +72,7 @@ function kcPopulateEventTypes(select,selected){
 }
 function kcRenderTermine(){
   const box=document.getElementById('kc-termine-list'),select=document.getElementById('kc-event-type');if(!box||!select)return;
-  kcPopulateEventTypes(select,select.value);
+  kcPopulateEventTypes(select,select.value);kcEventTypeChanged();
   const info=document.getElementById('kc-series-info');
   const config=KCKegelCalendar.seriesFor(clubTermine||[],clubKegelSerie,KCBirthdays.today()),days=['sonntags','montags','dienstags','mittwochs','donnerstags','freitags','samstags'];
   if(info)info.textContent='Automatisch alle '+config.intervalDays/7+' Wochen '+days[new Date(KCKegelCalendar.timestamp(config.anchorDate)).getUTCDay()]+' um '+config.time+' Uhr · Rhythmus ab '+config.anchorDate.split('-').reverse().join('.')+' · Vorschau bis '+KCKegelCalendar.through(KCBirthdays.today()).split('-').reverse().join('.')+'. Einzelne Änderungen verschieben die übrige Serie nicht.';
@@ -83,7 +83,7 @@ function kcRenderTermine(){
   for(const event of events){
     const type=kcTerminArten().find(type=>type.id===event.type),row=document.createElement('div');row.className='kc-event-row';
     const label=document.createElement('span'),date=kcSafeDate(event);
-    const when=date?(event.recurring?date.toLocaleDateString('de-DE'):date.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):event.date;
+    const when=event.type==='tour'&&date?kcTourDateLabel(event):date?(event.recurring?date.toLocaleDateString('de-DE'):date.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):event.date;
     label.textContent=(event.type==='geburtstag'?'🎂':type?.emoji||'📅')+' '+(event.type==='geburtstag'?'Geburtstag':type?.name||event.type)+' · '+when+(event.note?' · '+event.note:'')+(event.recurring?' · jährlich':'');
     if(event.seriesDate){const hint=document.createElement('small');hint.className='kc-series-label';hint.textContent=event.date!==event.seriesDate||event.time!==config.time||event.type!=='kegeln'?'Serientermin · individuell geändert':'Serientermin';label.append(hint);}
     const actions=document.createElement('div');actions.className='kc-event-actions';
@@ -98,9 +98,18 @@ function kcRenderTermine(){
   }
   if(!events.length)box.textContent='Noch keine Termine angelegt.';
 }
+function kcTourDateLabel(event){const format=day=>new Date(day+'T12:00').toLocaleDateString('de-DE',{dateStyle:'medium'});return format(event.date)+(event.endDate&&event.endDate>event.date?' – '+format(event.endDate):'');}
+function kcEventTypeChanged(edit=false){
+ const prefix=edit?'kc-edit-event':'kc-event',tour=document.getElementById(prefix+'-type')?.value==='tour',date=document.getElementById(prefix+'-date'),end=document.getElementById(prefix+'-end-date');
+ const label=document.getElementById(prefix+'-date-label');if(label)label.textContent=tour?'Von':'Datum';
+ for(const [suffix,hide] of [['-time-field',tour],['-end-field',!tour]]){const field=document.getElementById(prefix+suffix);if(field){field.hidden=hide;field.classList.toggle('hidden',hide);}}
+ document.getElementById(prefix+'-time').required=!tour;if(end){end.required=tour;end.min=date.value;if(tour&&!end.value)end.value=date.value;}
+}
+function kcReadEventFields(edit=false){const prefix=edit?'kc-edit-event':'kc-event',type=document.getElementById(prefix+'-type').value,date=document.getElementById(prefix+'-date').value;return {type,date,time:type==='tour'?'':document.getElementById(prefix+'-time').value,note:document.getElementById(prefix+'-note').value.trim(),...(type==='tour'?{endDate:document.getElementById(prefix+'-end-date').value||date}:{})};}
+function kcValidateEventFields(event){if(!KCBirthdays.parse(event.date)||event.type==='tour'&&(!KCBirthdays.parse(event.endDate)||event.endDate<event.date)){showToast('Gültiges Von- und Bis-Datum eingeben. Bis darf nicht vor Von liegen.','error');return false;}if(event.type!=='tour'&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(event.time||'')){showToast('Gültiges Datum und Uhrzeit eingeben','error');return false;}return true;}
 async function kcAddTermin(){
-  const event={type:document.getElementById('kc-event-type').value,date:document.getElementById('kc-event-date').value,time:document.getElementById('kc-event-time').value,note:document.getElementById('kc-event-note').value.trim()};
-  if(!KCBirthdays.parse(event.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(event.time||'')){showToast('Gültiges Datum und Uhrzeit eingeben','error');return;}
+  const event=kcReadEventFields();
+  if(!kcValidateEventFields(event))return;
   if(!kcNewEventId)kcNewEventId='kc_manual_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2));
   if(await kcChangeCalendar({action:'add',id:kcNewEventId,event})){kcNewEventId='';document.getElementById('kc-event-note').value='';showToast('Termin gespeichert','success');}
 }
@@ -108,7 +117,7 @@ function kcOpenEventEdit(id){
   if(kcCalendarBusy)return;const event=clubTermine.find(event=>event.id===id);if(!event)return;
   kcCalendarEdit={id,club:ACTIVE_CLUB,revision:Number(event.eventRevision)||0};
   kcPopulateEventTypes(document.getElementById('kc-edit-event-type'),event.type);
-  document.getElementById('kc-edit-event-date').value=event.date;document.getElementById('kc-edit-event-time').value=event.time||'20:00';document.getElementById('kc-edit-event-note').value=event.note||'';
+  document.getElementById('kc-edit-event-date').value=event.date;document.getElementById('kc-edit-event-time').value=event.time||'20:00';document.getElementById('kc-edit-event-note').value=event.note||'';document.getElementById('kc-edit-event-end-date').value=event.endDate||event.date;kcEventTypeChanged(true);
   document.getElementById('kc-edit-event-series').textContent=event.seriesDate?'Ursprünglicher Serientermin: '+event.seriesDate.split('-').reverse().join('.')+'. Verschieben ist auch auf einen anderen Wochentag möglich. Der ursprüngliche Termin wird nicht erneut erstellt.':'Dieser einzelne Termin kann frei geändert werden.';
   document.getElementById('kc-event-edit-modal').classList.remove('hidden');document.getElementById('kc-edit-event-date').focus();
 }
@@ -116,7 +125,7 @@ function kcCloseEventEdit(){if(!kcCalendarBusy){kcCalendarEdit=null;document.get
 async function kcSaveEventEdit(event){
   event?.preventDefault();const draft=kcCalendarEdit;if(!draft||kcCalendarBusy)return;
   if(draft.club!==ACTIVE_CLUB){showToast('Club gewechselt. Bitte Termin erneut öffnen.','error');return;}
-  const fields={type:document.getElementById('kc-edit-event-type').value,date:document.getElementById('kc-edit-event-date').value,time:document.getElementById('kc-edit-event-time').value,note:document.getElementById('kc-edit-event-note').value.trim()};
+  const fields=kcReadEventFields(true);if(!kcValidateEventFields(fields))return;
   if(await kcChangeCalendar({action:'edit',id:draft.id,expectedRevision:draft.revision,event:fields})){kcCloseEventEdit();showToast('Termin geändert','success');}
 }
 function kcShowInfo(){const input=document.getElementById('kc-dashboard-url');if(!input)return;const url=new URL('dashboard.html',location.href);const club=new URLSearchParams(location.search).get('club');if(club)url.searchParams.set('club',club);input.value=url.href;document.getElementById('kc-dashboard-link').href=url.href}
