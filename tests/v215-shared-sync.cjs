@@ -138,3 +138,9 @@ test('new evening clears both seating documents and opens the dashboard overview
  const w={};new Function('window',read('js/game-overview.js'))(w);assert(w.KCGameOverview.visible(state));assert(!state.dartsState.active);
  const {document}=parseHTML('<html><body><div id="dashboard-seating"></div></body></html>'),source=read('dashboard.html'),start=source.indexOf('function renderDashboardSeating('),end=source.indexOf('\nfunction ',start+1);const fn=new Function('state','seatingLive','document','$',source.slice(start,end)+';return renderDashboardSeating;')(state,{seatingOrder:['A']},document,id=>document.getElementById(id));fn(state.persons);assert.equal(document.querySelectorAll('.tv-seat.taken').length,0);
 });
+test('an idempotent no-op API still commits pending independent changes atomically',async()=>{
+ const {db,a,core}=await prepared(),base=db.root(),next=copy(base);next.persons[0].memberRole='cashier';const ctx=context(db,'setDashboardRules');ctx.sideOperations=core.diff(base,next);
+ // The underlying handler intentionally makes no writes, as repeated modern
+ // commands may do. The pending member edit must still reach the root/mirror.
+ const transport=a.KCSharedTransport.create({...db.sdk,db:{},core,policy:a.KCGameFinePolicy});await transport.transaction('club',ctx,async()=>({repeat:true}));assert.equal(db.root().persons[0].memberRole,'cashier');assert.equal(db.data.get(personPath('A')).memberRole,'cashier');
+});

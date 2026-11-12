@@ -17,8 +17,8 @@
  function initialize(){
   for(const kind of ['notes','statutes','penalties']){
    const root=$('club-'+kind+'-reader'),editor=$('club-'+kind+'-editor');if(!root||readers[kind])continue;
-   readers[kind]=window.KCContentPager.create(root,{notes:kind==='notes',controls:kind==='notes',onPage:()=>renderButtons(kind)});
-   editors[kind]=window.KCContentPager.editor(editor,{formatted:kind!=='notes',onInput:()=>{if(drafts[kind])drafts[kind].changed=true;renderButtons(kind);}});
+   readers[kind]=window.KCContentPager.create(root,{notes:kind==='notes',penalties:kind==='penalties'&&!!window.KCPenaltyTable,controls:kind==='notes',onPage:()=>renderButtons(kind)});
+   editors[kind]=(kind==='penalties'&&window.KCPenaltyTable?window.KCPenaltyTable:window.KCContentPager).editor(editor,{formatted:kind!=='notes',onInput:()=>{if(drafts[kind])drafts[kind].changed=true;renderButtons(kind);}});
   }
  }
  function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;for(const kind of ['notes','statutes','penalties']){const stage=$('club-'+kind+'-stage');if(!stage||!stage.getClientRects().length)continue;const height=Math.max(200,window.innerHeight-stage.getBoundingClientRect().top-32)+'px';if(stage.style.height!==height)stage.style.height=height;if(typeof ResizeObserver!=='function'){readers[kind]?.schedule();editors[kind]?.schedule();}}});}
@@ -41,7 +41,7 @@
     const stage=$('club-'+kind+'-stage');stage.classList.toggle('is-editing-statutes',editing);document.body.classList.toggle('club-statutes-is-editing',!!(drafts.statutes||drafts.penalties));
     if(editing){stage.setAttribute('role','dialog');stage.setAttribute('aria-modal','true');}else{stage.removeAttribute('role');stage.removeAttribute('aria-modal');}
    }
-   root.hidden=editing;$('club-'+kind+'-editor').hidden=!editing;readers[kind].pause(editing);readers[kind].update(kind==='notes'?current.items:current.text);
+   root.hidden=editing;$('club-'+kind+'-editor').hidden=!editing;readers[kind].pause(editing);readers[kind].update(kind==='notes'?current.items:kind==='penalties'&&window.KCPenaltyTable?current.table:current.text);
    if(kind==='notes')$('club-notes-summary').textContent=current.items.filter(n=>!n.done).length+' offen · '+current.items.filter(n=>n.done).length+' erledigt · Älteste zuerst';
    $('club-'+kind+'-status').textContent=message||(!navigator.onLine?'Offline · Gespeicherte Inhalte lesen; Änderungen nach dem Verbinden.':!ready[kind]?'Clubunterlagen werden geladen …':editing&&current.revision!==drafts[kind].revision?'Auf einem anderen Gerät geändert. Dein Entwurf bleibt erhalten.':busy?'Wird gespeichert …':'');
    renderButtons(kind);
@@ -58,9 +58,9 @@
   }catch(error){if(token===epoch&&target===club){message=error.message||'Speichern fehlgeschlagen. Bitte erneut versuchen.';if(/inzwischen/.test(message))pending.delete(key);}return false;}
   finally{if(token===epoch&&target===club){busy=false;renderPanels();}}
  }
- function edit(kind){if(busy||!ready[kind]||!navigator.onLine)return;const current=model.value(kind,data[kind]);drafts[kind]={revision:current.revision,id:kind==='notes'?id('note_'):null};message='';renderPanels();editors[kind].open(kind==='notes'?'':current.text);renderButtons(kind);schedule();requestAnimationFrame(()=>editors[kind].focus());}
+ function edit(kind){if(busy||!ready[kind]||!navigator.onLine)return;const current=model.value(kind,data[kind]);drafts[kind]={revision:current.revision,id:kind==='notes'?id('note_'):null};message='';renderPanels();editors[kind].open(kind==='notes'?'':kind==='penalties'&&window.KCPenaltyTable?current.table:current.text);renderButtons(kind);schedule();requestAnimationFrame(()=>editors[kind].focus());}
  function cancel(kind){if(busy)return;if(drafts[kind]?.changed&&!confirm('Ungespeicherten Entwurf verwerfen?'))return;delete drafts[kind];message='';renderPanels();}
- async function save(kind){const draft=drafts[kind];if(!draft||busy)return false;const fields=kind==='notes'?{action:'add',id:draft.id,text:editors[kind].text}:{action:'save',text:editors[kind].text};
+ async function save(kind){const draft=drafts[kind];if(!draft||busy)return false;const fields=kind==='notes'?{action:'add',id:draft.id,text:editors[kind].text}:{action:'save',text:editors[kind].text,...(kind==='penalties'&&editors[kind].table?{table:editors[kind].table}:{})};
   const target=club,token=epoch,ok=await request('updateClubContent',kind,fields,kind==='notes'?model.value('notes',data.notes).revision:draft.revision);if(ok&&target===club&&token===epoch){delete drafts[kind];message='Gespeichert.';if(kind==='notes')readers.notes.showNote(draft.id);renderPanels();}return ok;
  }
  async function done(noteId,checked){if(!ready.notes)return false;return request('updateClubContent','notes',{action:'done',id:noteId,done:checked},model.value('notes',data.notes).revision);}

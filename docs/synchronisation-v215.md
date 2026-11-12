@@ -1,4 +1,4 @@
-# Synchronisation V215
+# Synchronisation V216 (Protokoll 1)
 
 ## Verhalten
 
@@ -29,21 +29,29 @@ nicht stoppen. Dafür müssen die Firestore-Sicherheitsregeln das neue
 Transaktionsprotokoll verlangen. Erst mit diesen aktiven Regeln gilt die
 Absicherung auch gegenüber alten App-Versionen.
 
-Die aktuelle produktive Regeldatei ist nicht im Repository enthalten. Deshalb
-ist `firebase/shared-sync.rules.fragment` bewusst eine Ergänzung und kein
-ungeprüfter Ersatz für die vorhandenen Lese-, Anmelde- und Rollenrechte.
+Der Nutzer hat die bisherigen produktiven Regeln bereitgestellt: eine globale
+Freigabe `allow read, write: if true`. `firestore.rules` ersetzt diese vollständig.
+Die bisherigen öffentlichen Leserechte bleiben erhalten; Schreiben ist nur auf
+bekannten App-Pfaden im Zusammenhang mit einem neuen Clubstand und einem neuen,
+unveränderlichen Befehlsbeleg erlaubt. Andere Schreibpfade und das direkte
+Löschen von Clubs/Clubständen sind gesperrt.
 
-1. Firebase-Konsole → Projekt `kegelclub-invaliden-schwadron` → Firestore Database → Regeln öffnen.
-2. Den aktuellen Regeltext sichern und bereitstellen. Die Funktionen aus dem Fragment werden in diesen Text integriert; alle bestehenden Schreibfreigaben einschließlich überlappender Wildcards müssen die passenden zusätzlichen Guards erhalten. Die bestehende Zugriffsprüfung wird mit `&&` beibehalten, niemals durch `true` ersetzt.
-3. Regeln im Emulator bzw. Regeltest prüfen: Einzelbuchung und Initialisierung zulassen; alte Snapshot-/Live-Schreibvorgänge, wiederverwendete Belege und direkte Löschungen ohne neuen Clubstand ablehnen. Die Funktionen verwenden gemeinsame, zwischengespeicherte Root-/Belegzugriffe und sollen innerhalb der Firestore-Regelzugriffsgrenzen bleiben.
-4. Schreibbetrieb auf allen Geräten kurz beenden. V215 bereitstellen und die integrierten Regeln veröffentlichen. V214 darf anschließend nicht weiter schreiben.
+1. Alle Geräte kurz aus dem Schreibbetrieb nehmen. Die bisherigen Regeln separat sichern.
+2. den Pull Request für V216 bereitstellen und auf dem Hauptgerät laden. Ohne die V216-Dateien würden die neuen Regeln auch eure normalen Eingaben der alten Version ablehnen.
+3. Firebase-Konsole → Projekt `kegelclub-invaliden-schwadron` → Firestore Database → Regeln öffnen. Den vollständigen bisherigen Text durch den Inhalt von `firestore.rules` ersetzen. Die bisherige globale Schreibfreigabe darf nicht zusätzlich stehen bleiben, weil eine überlappende Freigabe den Schutz umgehen würde.
+4. Den Regeltext in Firebase auf Fehler prüfen und veröffentlichen. Hier wurde kein Zugriff auf die produktive Firebase-Konsole verwendet und kein Firestore-Emulator ausgeführt; die lokalen Guard-Tests ersetzen diese Prüfung nicht.
 5. Alle App-/Dashboard-Tabs neu laden. Auf einem Gerät zuerst den bestätigten Serverstand öffnen, danach die übrigen Geräte.
 6. Mit zwei Geräten verschiedene Getränke auf dieselbe Person buchen, unabhängige Einstellungen ändern, denselben Spielzug parallel versuchen und ein Gerät kurz trennen. Beide Geräte sowie das Dashboard müssen nach Bestätigung denselben Stand zeigen.
 
-Die Regelergänzung ist ein Protokollschutz. Sie ersetzt keine Benutzeranmeldung
-oder Rollenprüfung. Ohne die bisherige produktive Regeldatei und Zugriff auf das
-Firebase-Projekt wurde sie hier nicht veröffentlicht oder gegen das reale
-Projekt geprüft. Der neue Stand bleibt bis dahin zur Überprüfung im Pull Request.
+Die Regeln prüfen monotone Clubrevisionen, einen neuen Befehlsbeleg und zusammen
+mit dem Clubstand bestätigte Schreibvorgänge. Versionen ohne das neue Synchronisationsprotokoll erzeugen diese
+Nachweise nicht und dürfen nicht weiter schreiben. Bereits bestehende Daten und
+Archive werden durch das Veröffentlichen der Regeln nicht gelöscht.
+
+Dies ist Protokollschutz für die Synchronisation, keine Benutzeranmeldung oder
+Rollenprüfung: Daten bleiben entsprechend den bisherigen Regeln öffentlich lesbar;
+auch regelkonforme Schreibbefehle sind noch nicht auf bestimmte Personen beschränkt.
+Ein vollständiger Konten-/Rollenschutz wäre ein zusätzlicher Umbau.
 
 ## Prüfung im Repository
 
@@ -68,3 +76,18 @@ alten Geräte-Snapshots ein.
 Offizielle Grundlagen: [Firestore-Transaktionen](https://firebase.google.com/docs/firestore/manage-data/transactions),
 [Regelbedingungen und Zugriffsgrenzen](https://firebase.google.com/docs/firestore/security/rules-conditions),
 [existsAfter/getAfter](https://firebase.google.com/docs/reference/rules/rules.firestore).
+
+## Strafentabelle V216
+
+Die Strafentabelle ist ein eigenständiges Tabellendokument mit Abschnitten und
+den Spalten Vergehen/Anlass, Betrag/Einsatz und Hinweise. Bestehende Klartexte
+werden beim Lesen automatisch aufgeteilt; erst Speichern legt die strukturierte
+Tabelle an. Ein lesbarer Klartext bleibt zusätzlich erhalten. App und Dashboard
+verwenden dasselbe Tabellenmodell mit wiederholten Spaltenköpfen pro Seite.
+Lange Zeilen werden bei Bedarf fortgesetzt. Der Editor bietet Abschnitts- und
+Zeilenfelder, Hinzufügen, Entfernen und Rückgängig. Die Satzung bleibt unverändert.
+
+Die vollständigen Regeln liegen in `firestore.rules`. Die bisherigen offenen
+Regeln sind durch den Nutzer bestätigt; die Erweiterung muss nicht installiert
+werden. Die Regeln wurden lokal auf ihre Guard-Bedingungen geprüft, aber weder
+mit einem Firebase-Emulator noch gegen die produktive Datenbank ausgeführt.

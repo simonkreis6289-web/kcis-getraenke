@@ -98,7 +98,7 @@
           })
         };
         const result=await fn(facade);
-        if(!writes.size)return result;
+        if(!writes.size&&!context.sideOperations?.length)return result;
         let next=writes.get(path(rootRef))?.value||core.clone(root);
         const absolute=['saveLivePersonStatus','saveLivePerson','saveLivePersonPayment'];
         for(const row of writes.values()){
