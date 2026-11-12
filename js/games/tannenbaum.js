@@ -282,6 +282,7 @@ async function confirmTannenbaumPenaltyPlayer() {
 
     pendingTannenbaumPenaltyThrow = null;
 
+    if(window.KCKranzUI){const value=await KCKranzUI.select('tannenbaum');if(value===null){pendingTannenbaumKranzChoice=null;return;}return confirmTannenbaumKranzNumber(value);}
     openTannenbaumKranzNumberModal();
     return;
   }

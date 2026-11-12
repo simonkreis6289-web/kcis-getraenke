@@ -1,0 +1,28 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{parseHTML}=require('linkedom');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),w={addEventListener(){}};
+new Function('window','setInterval',read('js/shared-clock.js'))(w,()=>0);
+const epoch=Date.parse('2026-11-12T19:00:00Z'),flush=()=>new Promise(r=>setImmediate(r));
+function clock(skew){let elapsed=0,wall=epoch+skew;const requests=[],clock=w.KCSharedClock.create({wall:()=>wall,mono:()=>elapsed,fetcher:(url,options)=>new Promise(resolve=>requests.push({url,options,resolve}))});clock.configure({projectId:'test-project',apiKey:'test-key'});return {clock,requests,set:ms=>elapsed=ms,jump:ms=>wall+=ms};}
+async function sync(f){const p=f.clock.useClub('club');assert.equal(f.requests.length,3);for(const [i,ms] of [100,300,700].entries()){f.set(ms);const server=epoch+ms/2;f.requests[i].resolve({ok:true,json:async()=>[{readTime:new Date(server).toISOString(),found:{name:'state/current'}}]});await flush();}assert(await p);return p;}
+test('two clocks five seconds apart show the same countdown using the fastest server sample',async()=>{
+ const a=clock(0),b=clock(5000);await sync(a);await sync(b);a.set(1500);b.set(1500);assert.equal(a.clock.now(),epoch+1500);assert.equal(b.clock.now(),epoch+1500);const timer={active:true,running:true,start:new Date(epoch).toISOString(),remaining:60};assert.equal(a.clock.seconds(timer),59);assert.equal(b.clock.seconds(timer),59);b.jump(120000);assert.equal(b.clock.seconds(timer),59,'manual system-clock changes cannot jump the countdown');
+});
+test('clock sync only reads a masked document, deduplicates requests and does not fetch every tick',async()=>{
+ const f=clock(-5000),p=f.clock.useClub('club');const same=f.clock.sync();assert.equal(f.requests.length,3);for(const r of f.requests){assert.equal(r.options.method,'POST');const body=JSON.parse(r.options.body);assert.deepEqual(body.mask,{fieldPaths:['syncRevision']});assert.deepEqual(body.documents,['projects/test-project/databases/(default)/documents/clubs/club/state/current']);r.resolve({ok:true,json:async()=>[{readTime:new Date(epoch).toISOString()}]});}assert(await p);assert(await same);for(let i=0;i<50;i++){f.clock.now();f.clock.seconds({active:true,remaining:60});}assert(await f.clock.sync());assert.equal(f.requests.length,3);
+});
+test('paused zero never falls back to the original duration; fractional seconds have one shared rounding rule',()=>{
+ const c=w.KCSharedClock.create({wall:()=>epoch+5500,mono:()=>0,fetcher:null});assert.equal(c.seconds({active:true,running:false,remaining:0,duration:60}),0);assert.equal(c.seconds({active:true,running:true,start:new Date(epoch).toISOString(),remaining:60}),55);assert.equal(c.seconds({active:false,remaining:60}),0);assert.equal(c.seconds({active:true,running:true,start:new Date(epoch).toISOString(),remaining:1}),0);
+});
+test('an unavailable time source leaves a calibrated clock intact and rejects an uncalibrated start',async()=>{
+ const f=clock(9000);await sync(f);f.set(400000);const p=f.clock.sync();for(const r of f.requests.slice(3))r.resolve({ok:false});assert(await p);assert.equal(f.clock.now(),epoch+400000);const g=clock(9000),q=g.clock.useClub('club');for(const r of g.requests)r.resolve({ok:true,json:async()=>[{readTime:'invalid'}]});assert.equal(await q,false);assert.equal(g.clock.ready,false);
+});
+const source=read('tests/v185-regression.cjs'),a=source.indexOf('function context(html){'),b=source.indexOf('async function settle(',a),factory=new Function('read','vm','parseHTML','assert','require','let sequence=0;'+source.slice(a,b)+';return dashboard;')(read,vm,parseHTML,assert,require);
+test('the general header countdown stays visible while a Ballermann game is also active',()=>{
+ const state={teamStopwatchActive:true,teamStopwatchRunning:false,teamCountdownRemainingBefore:45,persons:[],ballermannState:{active:true,id:'ball',timer:{running:false,remainingMs:10000}}};const f=factory({root:()=>state,subscribe:(_,fn)=>{fn(state);return ()=>{};}});f.c.KCExtraGames=f.c.window.KCExtraGames={remaining:()=>10000,team:()=> 'T1'};f.c.window.KCSharedClock={seconds:()=>45};f.c.KCSharedClock=f.c.window.KCSharedClock;f.c.window.dashboardTest.connect('club','Club');assert(f.document.getElementById('tv-countdown').classList.contains('active'));assert.equal(f.document.getElementById('tv-countdown-time').textContent,'00:45');assert.equal(f.document.querySelector('#tv-countdown .timer-label').textContent,'Countdown');
+});
+test('Ballermann uses the same calibrated server time as the header',()=>{
+ const c={window:{KCSharedClock:{now:()=>epoch+5000}}};vm.createContext(c);vm.runInContext(read('js/games/extra-core.js'),c);assert.equal(c.window.KCExtraGames.remaining({timer:{running:true,endsAt:epoch+60000}}),55000);
+});
+test('dashboard shows elapsed lane time and the price per started hour, including a stopped timer',()=>{
+ const state={persons:[],bahnTimerStart:new Date(epoch).toISOString(),bahnTimerRunning:true,bahnPreisProStunde:20};let receive;const f=factory({root:()=>state,subscribe:(_,fn)=>{receive=fn;fn(state);return ()=>{};}});f.c.window.KCSharedClock={now:()=>epoch+3661000};f.c.KCSharedClock=f.c.window.KCSharedClock;f.c.window.dashboardTest.connect('club','Club');const el=f.document.getElementById('dashboard-lane');assert(!el.hidden);assert(el.textContent.includes('01:01:01'));assert(el.textContent.includes('40,00'));receive({...state,bahnTimerRunning:false,bahnElapsedSeconds:1800});assert(el.textContent.includes('00:30:00'));assert(el.textContent.includes('20,00'));assert(el.textContent.includes('gestoppt'));
+});

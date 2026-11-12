@@ -1,8 +1,9 @@
 /* One acknowledged server state for every app instance. Local storage is a read cache only. */
 (()=>{
+  if(window.KCTabletSync){window.KCSharedSync=window.KCTabletSync;return;}
   const C=window.KCSharedCore;
   let api=null,raw=null,club='',epoch=0,ready=false,working=false,server=null,baseline=null,pending=[],unit=null,tail=Promise.resolve(),timer=0,lastError='',metadataOff=null,preparing=false;
-  let actionBase=null;
+  let actionBase=null,receivedWhileWorking=null;
   const formBases=new WeakMap();
   const metaBases=new Map(),modalBases=new Map();
   const id=()=> 'sync_'+crypto.randomUUID(),snapshot=()=>C.clean(typeof getFirestoreState==='function'?getFirestoreState():{}),active=()=>typeof ACTIVE_CLUB!=='undefined'&&ACTIVE_CLUB?getClubFirestoreId(ACTIVE_CLUB):'',toast=(m,t='error')=>{
@@ -77,7 +78,8 @@
     status();
   }
   function receive(state,meta={}){
-    if(!state||meta.fromCache||meta.pending||working||preparing)return;
+    if(!state||meta.fromCache||meta.pending||preparing)return;
+    if(working){if(!receivedWhileWorking||Number(state.syncRevision||0)>=Number(receivedWhileWorking.syncRevision||0))receivedWhileWorking=C.clone(state);return;}
     if(!state.syncInitialized){
       ready=false;
       status();
@@ -91,6 +93,7 @@
   }
   function begin(target){
     actionBase=null;
+    receivedWhileWorking=null;
     preparing=false;
     epoch++;
     clearTimeout(timer);
@@ -243,7 +246,10 @@
       if(token===epoch&&target===club){
         pending=[];
         working=false;
-        accept(await raw.loadClubState(target));
+        let confirmed=ctx.confirmedState;
+        if(confirmed&&receivedWhileWorking&&Number(receivedWhileWorking.syncRevision||0)>Number(confirmed.syncRevision||0))confirmed=receivedWhileWorking;
+        receivedWhileWorking=null;
+        accept(confirmed||await raw.loadClubState(target));
         ready=true;
         lastError='';
         try{
@@ -335,6 +341,7 @@
           count=unit.promises.length;
           await Promise.all(batch);
         }
+        window.KCKranzUI?.freeze(key,before);
         const after=snapshot(),messages=unit.messages,opened=unit.opened;
         unit=null;
         working=false;
@@ -523,7 +530,7 @@
     document.addEventListener('change',start,true);
   }
   function blocked(event){
-    if(unit&&event.target?.closest?.('.tor-person-backdrop'))return;
+    if(unit&&event.target?.closest?.('.tor-person-backdrop,.kc-kranz-backdrop'))return;
     if(ready&&!working&&navigator.onLine)return;
     const target=event.target?.closest?.('button,input,select,textarea,[onclick]');
     if(!target||target.closest('#club-start-screen'))return;

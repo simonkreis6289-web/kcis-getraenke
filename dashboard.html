@@ -9,7 +9,7 @@
 <style>
 :root{--bg:#ffffff;--panel:#ffffff;--panel2:#f5f5f5;--line:#2e3350;--text:#000000;--muted:#50535c;--gold:#f5a623;--ok:#009844;--warn:#d62828;--header:#4a4a4a;--accent:#f5a623}
 *{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg)}
-.dashboard{height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:100px minmax(0,1fr);gap:8px}
+.dashboard{height:100vh;height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:100px minmax(0,1fr);gap:8px}
 header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px clamp(14px,2.4vw,32px);gap:15px;border-radius:10px;border-bottom:4px solid var(--accent)}
 .club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:11px;color:#ededed;margin-top:3px;line-height:1.35}.header-right{text-align:right;display:flex;align-items:center;gap:16px}.header-time{text-align:right}.fullscreen-btn{border:1px solid #fff;background:#f5a623;color:#111;border-radius:7px;padding:10px 13px;font:700 13px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap}.fullscreen-btn:hover{background:#ffd075}.fullscreen-btn:focus-visible{outline:3px solid white;outline-offset:3px}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
 .side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{flex:1;padding:5px 10px;min-height:0;overflow:hidden;display:grid;align-content:stretch}.listrow{display:flex;align-items:center;justify-content:space-between;min-height:0;gap:5px;padding:1px 0;border-bottom:1px solid #dedede;font-size:var(--list-font,clamp(11px,1.05vw,16px));line-height:1.1}.listrow:last-child{border:0}.listrow.paid-guest{background:#edf3f0;color:#586b61;border-radius:5px;padding:3px 5px}.drinks-paid-total{padding:7px 12px;display:flex;justify-content:space-between;background:#e8f3eb;color:#285a3a;font-size:12px;border-top:1px solid #bad5c2}.drinks-paid-total strong{font-variant-numeric:tabular-nums}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
@@ -123,12 +123,12 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261112-v218">
-<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261112-v218">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261112-v218">
-<link rel="stylesheet" href="css/club-content.css?v=20261112-v218">
-<link rel="stylesheet" href="css/extra-games.css?v=20261112-v218">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261112-v218">
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261112-v220">
+<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261112-v220">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261112-v220">
+<link rel="stylesheet" href="css/club-content.css?v=20261112-v220">
+<link rel="stylesheet" href="css/extra-games.css?v=20261112-v220">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261112-v220">
 </head>
 <body>
 <section id="club-content-dashboard" role="dialog" aria-modal="true" aria-labelledby="club-content-dashboard-title" hidden><div><h2 id="club-content-dashboard-title">Clubunterlagen</h2><p id="club-content-dashboard-help"></p></div><p id="club-content-dashboard-status" class="club-content-status" role="status"></p><div id="club-content-dashboard-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div></section>
@@ -145,7 +145,7 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <header class="dashboard-header" aria-label="Dashboard-Kopfzeile">
  <div class="header-identity"><div class="club" id="dashboard-club-title">🎳 KC Invaliden Schwadron</div><div class="header-status"><span id="indicator" class="dot" aria-hidden="true"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span></div></div>
  <div class="kc-next-events" aria-label="Nächste Termine"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span><span id="kc-next-birthdays"></span> <div id="tv-countdown" aria-live="off"><div class="timer-label">Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></div>
- <div class="header-tools"><div class="clock" id="clock" aria-label="Aktuelle Uhrzeit">--:--:--</div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="version">Dashboard V208 · Update 11.11.2026, 10:49 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></div>
+ <div class="header-tools"><div class="clock" id="clock" aria-label="Aktuelle Uhrzeit">--:--:--</div><div id="dashboard-lane" class="dashboard-lane" hidden></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="version">Dashboard V220 · Update 12.11.2026, 20:28 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></div>
 </header>
 <div id="tv-starter-draw" hidden aria-live="off"><div class="tv-draw-card"><div id="tv-draw-title"></div><div id="tv-draw-value"></div><div id="tv-draw-status"></div></div></div>
 <div id="tv-announcement" role="status" aria-live="polite"></div>
@@ -153,31 +153,33 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="siebener">🎲 7er-Spiel</option><option value="hindernis">🏃 Hindernislauf</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option><option value="bergundtal">🏔️ Berg und Tal</option><option value="ballermann">🏖️ Ballermann 6</option><option value="lattenzaun">🪵 Lattenzaun</option><option value="guterschnitt">✂️ Der gute Schnitt</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261112-v218">
-<link rel="stylesheet" href="css/table-games.css?v=20261112-v218">
-<link rel="stylesheet" href="css/individual-games.css?v=20261112-v218">
-<link rel="stylesheet" href="css/game-rules.css?v=20261112-v218">
-<script src="js/games/extra-core.js?v=20261112-v218"></script><script src="js/games/extra-view.js?v=20261112-v218"></script>
-<script src="js/games/individual-core.js?v=20261112-v218"></script><script src="js/games/individual-view.js?v=20261112-v218"></script>
-<script src="js/game-rules.js?v=20261112-v218"></script>
-<link rel="stylesheet" href="css/starter-draw.css?v=20261112-v218"><script src="js/starter-draw.js?v=20261112-v218"></script>
-<script src="js/birthdays.js?v=20261112-v218"></script>
-<script src="js/games/sechstage-core.js?v=20261112-v218"></script>
-<script src="js/games/table-games-core.js?v=20261112-v218"></script>
-<script src="js/dashboard-sounds.js?v=20261112-v218"></script>
-<script src="js/cash-book.js?v=20261112-v218"></script>
-<script src="js/cash-overview.js?v=20261112-v218"></script>
-<script src="js/penalty-table.js?v=20261112-v218"></script>
-<script src="js/club-content.js?v=20261112-v218"></script><script src="js/club-content-pager.js?v=20261112-v218"></script><script src="js/club-content-dashboard.js?v=20261112-v218"></script>
-<script src="js/cash-dashboard.js?v=20261112-v218"></script>
-<link rel="stylesheet" href="css/game-overview.css?v=20261112-v218"><script src="js/game-overview.js?v=20261112-v218"></script>
-<script src="js/shared-sync-core.js?v=20261112-v218"></script>
-<script src="js/shared-sync-transport.js?v=20261112-v218"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261112-v220">
+<link rel="stylesheet" href="css/table-games.css?v=20261112-v220">
+<link rel="stylesheet" href="css/individual-games.css?v=20261112-v220">
+<link rel="stylesheet" href="css/game-rules.css?v=20261112-v220">
+<script src="js/shared-clock.js?v=20261112-v220"></script>
+<script src="js/kranz-policy.js?v=20261112-v220"></script>
+<script src="js/games/extra-core.js?v=20261112-v220"></script><script src="js/games/extra-view.js?v=20261112-v220"></script>
+<script src="js/games/individual-core.js?v=20261112-v220"></script><script src="js/games/individual-view.js?v=20261112-v220"></script>
+<script src="js/game-rules.js?v=20261112-v220"></script>
+<link rel="stylesheet" href="css/starter-draw.css?v=20261112-v220"><script src="js/starter-draw.js?v=20261112-v220"></script>
+<script src="js/birthdays.js?v=20261112-v220"></script>
+<script src="js/games/sechstage-core.js?v=20261112-v220"></script>
+<script src="js/games/table-games-core.js?v=20261112-v220"></script>
+<script src="js/dashboard-sounds.js?v=20261112-v220"></script>
+<script src="js/cash-book.js?v=20261112-v220"></script>
+<script src="js/cash-overview.js?v=20261112-v220"></script>
+<script src="js/penalty-table.js?v=20261112-v220"></script>
+<script src="js/club-content.js?v=20261112-v220"></script><script src="js/club-content-pager.js?v=20261112-v220"></script><script src="js/club-content-dashboard.js?v=20261112-v220"></script>
+<script src="js/cash-dashboard.js?v=20261112-v220"></script>
+<link rel="stylesheet" href="css/game-overview.css?v=20261112-v220"><script src="js/game-overview.js?v=20261112-v220"></script>
+<script src="js/shared-sync-core.js?v=20261112-v220"></script>
+<script src="js/shared-sync-transport.js?v=20261112-v220"></script>
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V218";
-const DASH_RELEASE="12.11.2026, 13:42 Uhr";
+const DASH_VERSION="V220";
+const DASH_RELEASE="12.11.2026, 20:28 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -320,18 +322,20 @@ let seenAnnouncementId=null;
 let announcementHideTimer=null;
 function paintDashboardExtras(){
   if(typeof paintDashboardDraw==='function')paintDashboardDraw([state?.dashboardRandomDraw,state?.dashboardDraw].filter(d=>window.KCStarterDraw.frame(d)).sort((a,b)=>(b.startedAt||0)-(a.startedAt||0))[0]);
+  const lane=$('dashboard-lane');
+  if(lane){const start=Date.parse(state?.bahnTimerStart),running=!!state?.bahnTimerRunning,seconds=running&&Number.isFinite(start)?Math.max(0,Math.floor(((window.KCSharedClock?.now()??Date.now())-start)/1000)):Math.max(0,Number(state?.bahnElapsedSeconds)||0),amount=seconds>0?Math.ceil(seconds/3600)*Math.max(0,Number(state?.bahnPreisProStunde)||0):0;lane.hidden=!Number.isFinite(start)&&!seconds;lane.textContent='🎳 Bahn '+[Math.floor(seconds/3600),Math.floor(seconds%3600/60),seconds%60].map(n=>String(n).padStart(2,'0')).join(':')+' · '+fmt.format(amount)+(running?'':' · gestoppt');}
   const timer=$('tv-countdown');
-  const ball=gameState('ballermann'),ballTimer=!!(ball?.active&&window.KCExtraGames),active=ballTimer||!!state?.teamStopwatchActive;let soundSeconds=0;
-  timer.classList.toggle('active',active&&!ballTimer);
-  const timerLabel=timer.querySelector('.timer-label');if(timerLabel)timerLabel.textContent=ballTimer?'Ballermann 6 · '+(ball.teamNames?.[KCExtraGames.team(ball)]||''):'Countdown';
+  const ball=gameState('ballermann'),ballTimer=!!(ball?.active&&window.KCExtraGames),generalTimer=!!state?.teamStopwatchActive,useBall=ballTimer&&!generalTimer,active=ballTimer||generalTimer;let soundSeconds=0;
+  timer.classList.toggle('active',generalTimer);
+  const timerLabel=timer.querySelector('.timer-label');if(timerLabel)timerLabel.textContent=useBall?'Ballermann 6 · '+(ball.teamNames?.[KCExtraGames.team(ball)]||''):'Countdown';
   if(active){
-    const remaining=Number(state.teamCountdownRemainingBefore);
-    let seconds=ballTimer?KCExtraGames.remaining(ball)/1000:Math.max(0,Number.isFinite(remaining)?remaining:Number(state.teamCountdownDuration)||0);
-    if(!ballTimer&&state.teamStopwatchRunning&&state.teamStopwatchStart){const start=Date.parse(state.teamStopwatchStart);if(Number.isFinite(start))seconds=Math.max(0,seconds-Math.floor((Date.now()-start)/1000));}
+    const remaining=Number(state?.teamCountdownRemainingBefore??state?.teamCountdownDuration)||0;
+    let seconds=useBall?KCExtraGames.remaining(ball)/1000:window.KCSharedClock?KCSharedClock.seconds({active:generalTimer,running:state?.teamStopwatchRunning,start:state?.teamStopwatchStart,remaining,duration:state?.teamCountdownDuration}):remaining;
+    if(!useBall&&!window.KCSharedClock&&state?.teamStopwatchRunning&&state?.teamStopwatchStart){const start=Date.parse(state.teamStopwatchStart);if(Number.isFinite(start))seconds=Math.max(0,seconds-Math.max(0,Date.now()-start)/1000);}
     seconds=Math.ceil(seconds);soundSeconds=seconds;$('tv-countdown-time').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');timer.classList.toggle('urgent',seconds<=10);
   }
   for(const clock of document.querySelectorAll('[data-extra-clock]'))if(ball&&clock.dataset.extraClock===ball.id){const ms=KCExtraGames.remaining(ball);clock.querySelector('[data-extra-time]').textContent=extraClockText(ms);clock.classList.toggle('urgent',ball.timer.running&&ms<=10000);clock.querySelector('[data-extra-clock-status]').textContent=ball.finished?'Beendet':ball.timer.running?(ms?'Zeit läuft':ball.timer.lastThrowUsed?'Letzter Wurf gebucht':'Zeit abgelaufen · Ein letzter Wurf möglich'):'Bereit · Zeit in der App starten';}
-  window.KCDashboardSounds?.timer(active,ballTimer?ball.timer.running:!!state?.teamStopwatchRunning,soundSeconds);
+  window.KCDashboardSounds?.timer(active,useBall?ball.timer.running:!!state?.teamStopwatchRunning,soundSeconds);
   const msg=state?.dashboardAnnouncement;
   if(msg?.id && msg.id!==seenAnnouncementId){
     seenAnnouncementId=msg.id;
@@ -474,7 +478,7 @@ function renderLottery(d){const columns=d.columns||[],names=activeNames(d.player
 function renderTiberiusBoard(d){const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;const score=Number(d.score)||0;const next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🏛️ Tiberius</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`)}</div>`}
 function plusminusSlotValue(idx,slot,partial,smart){
  if(!slot)return null;
- if(!slot.isGosse)return Number.parseInt(slot.value||0,10)||0;
+ if(!slot.isGosse)return Number.parseInt(slot.kranzValue??slot.value??0,10)||0;
  if(!smart)return [0,0,9,0,9][idx];
  if(idx<=1)return 0;
  if(idx===2)return 9;
@@ -509,14 +513,14 @@ function renderPlusminusBoard(d){
   const r=Array.isArray(rows[n])?rows[n]:[];
   const value=plusminusResult(r,!!d.smartGosse);
   return `<tr class="${d.active&&current===n?'tv-current':''}"><td class="tv-name">${safe(n)}</td>${Array.from({length:5},(_,j)=>{
-   const slot=r[j];const v=slot?(slot.isGosse?'G':slot.value):'–';
+   const slot=r[j];const v=slot?(slot.isGosse?'G':slot.kranzValue??slot.value):'–';
    const highlight=d.active&&i===selected&&j===(Number(d.selectedSlot)||0);
    return `<td><span class="tv-slot ${slot?'tv-slot-filled':''} ${highlight?'tv-slot-selected':''}">${safe(v)}</span></td>`;
   }).join('')}<td class="tv-result">${value===null?'–':safe(Number(value.toFixed(2)).toLocaleString('de-DE'))}</td></tr>`;
  }).join('');
  return `<div class="tv-board plusminus-board"><h2 class="tv-headline">➕ + − × ÷</h2><div class="tv-stats"><div class="tv-stat">${d.finished?'Spiel abgeschlossen':'Aktueller Spieler'}<strong>${safe(d.finished?'🏁':current)}</strong></div><div class="tv-stat">Gewähltes Feld<strong>${d.finished?'–':(Number(d.selectedSlot)||0)+1}</strong></div></div><table class="tv-table tv-plusminus"><thead><tr><th>Spieler</th>${operators.map(x=>`<th>${x}</th>`).join('')}<th>Ergebnis</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
 }
-function renderMenschBoard(d){const names=activeNames(d.playerOrder),scores=d.scores||{};if(!names.length)return null;return `<div class="tv-board"><h2 class="tv-headline">🎲 Mensch ärgere dich nicht</h2><div class="tv-stats"><div class="tv-stat">Ziel<strong>36 Punkte</strong></div><div class="tv-stat">Am Wurf<strong>${safe(names[d.currentIndex]||'–')}</strong></div></div><table class="tv-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody>${names.map((n,i)=>{const score=Number(scores[n])||0;const throws=(d.throws?.[n]||[]).slice(-5).map(t=>t.pins===0?'G':t.pins===12?'K':safe(t.pins)).join(' · ');return `<tr><td class="tv-name ${i===d.currentIndex?'tv-current':''}">${safe(n)} ${d.winner===n?'🏆':''}</td><td><strong>${score}</strong></td><td><div class="tv-progress"><span style="width:${Math.min(100,Math.max(0,score/36*100))}%"></span></div></td><td>${throws||'–'}</td></tr>`}).join('')}</tbody></table><div class="tv-note">Bei 6 nochmal werfen · Punktgleichheit wirft zurück auf 0 · über 36 rückwärts zählen</div></div>`}
+function renderMenschBoard(d){const names=activeNames(d.playerOrder),scores=d.scores||{};if(!names.length)return null;return `<div class="tv-board"><h2 class="tv-headline">🎲 Mensch ärgere dich nicht</h2><div class="tv-stats"><div class="tv-stat">Ziel<strong>36 Punkte</strong></div><div class="tv-stat">Am Wurf<strong>${safe(names[d.currentIndex]||'–')}</strong></div></div><table class="tv-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody>${names.map((n,i)=>{const score=Number(scores[n])||0;const throws=(d.throws?.[n]||[]).slice(-5).map(t=>t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+t.pins+')':safe(t.pins)).join(' · ');return `<tr><td class="tv-name ${i===d.currentIndex?'tv-current':''}">${safe(n)} ${d.winner===n?'🏆':''}</td><td><strong>${score}</strong></td><td><div class="tv-progress"><span style="width:${Math.min(100,Math.max(0,score/36*100))}%"></span></div></td><td>${throws||'–'}</td></tr>`}).join('')}</tbody></table><div class="tv-note">Bei 6 nochmal werfen · Punktgleichheit wirft zurück auf 0 · über 36 rückwärts zählen</div></div>`}
 function renderDartsBoard(d){
  const scores=d.scores||{}, start=Number(d.startValue)||301;
  const roundThrows=d.roundThrows||{}, keys=['T2','T1'];
@@ -532,7 +536,7 @@ function renderDartsBoard(d){
 function renderHausBoard(d,mode){
  const names=activeNames(d.playerOrder),rows=d.rows||{};
  const settings=state?.hausnummerSettings?.[mode]||{neun:mode==='hoch'?9:0,kranz:mode==='hoch'?12:0,gosse:0};
- const val=t=>t?(t.isGosse?settings.gosse:Number(t.value)===12?settings.kranz:Number(t.value)===9?settings.neun:t.value):null;
+ const val=t=>t?(t.isGosse?settings.gosse:Number(t.value)===12?(t.kranzValue??settings.kranz):Number(t.value)===9?settings.neun:t.value):null;
  const num=r=>r.length===3&&r.every(Boolean)?Number(r.map(x=>String(val(x))).join('')):null;
  const schnaps=r=>r.length===3&&r.every(Boolean)&&r.every(t=>Number(t.value)===Number(r[0].value)&&!!t.isGosse===!!r[0].isGosse);
  const current=names[d.currentPlayerIndex]||'–';
@@ -589,7 +593,7 @@ function renderFuchsjagdBoard(d){
  const fox=safe(d.fox||'–'),score=Number(d.score)||0, hunters=d.hunters||[];
  const current=d.active?(d.phase==='hunt'?hunters[d.hunterIndex]:d.fox):'🏁';
  const phase=d.phase==='start'?`Startwurf ${(d.startThrows||0)+1}/2`:d.phase==='hunt'?'Jäger jagt den Fuchs':d.phase==='fox'?'Fuchs baut Vorsprung aus':'Spiel abgeschlossen';
- const rows=(d.throws||[]).slice().reverse().map((x,i)=>`<tr><td>${d.throws.length-i}</td><td class="tv-name">${safe(x.name)}</td><td>${x.pins===12?'🎳 Kranz':x.pins===0?'Gosse':safe(x.pins)}</td><td style="font-weight:800;color:${x.delta<0?'#be2323':'#177e3b'}">${x.delta>0?'+':''}${safe(x.delta)}</td><td><strong>${safe(x.score)}</strong></td></tr>`).join('');
+ const rows=(d.throws||[]).slice().reverse().map((x,i)=>`<tr><td>${d.throws.length-i}</td><td class="tv-name">${safe(x.name)}</td><td>${(x.rawPins??x.pins)===12?'🎳 Kranz ('+x.pins+')':x.pins===0?'Gosse':safe(x.pins)}</td><td style="font-weight:800;color:${x.delta<0?'#be2323':'#177e3b'}">${x.delta>0?'+':''}${safe(x.delta)}</td><td><strong>${safe(x.score)}</strong></td></tr>`).join('');
  return `<div class="tv-board fox-tv-board"><h2 class="tv-headline">🦊 Fuchsjagd</h2><div class="fox-tv-grid"><div class="fox-tv-card">🦊 Fuchs<strong>${fox}</strong></div><div class="fox-tv-card fox-tv-score">Vorsprung<strong>${score} Holz</strong></div><div class="fox-tv-card">🎳 Am Wurf<strong>${safe(current||'🏁')}</strong></div></div><div class="fox-tv-phase">${safe(phase)} · ${hunters.length} Jäger</div>${d.result?`<div class="fox-tv-result">🏆 ${safe(d.result)}</div>`:''}<table class="tv-table fox-tv-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;
 }
 function sichernDashboardThrower(d,key){
@@ -602,7 +606,7 @@ function sichernDashboardThrower(d,key){
   }
   return players[index%players.length]||'–';
 }
-function renderSichernBoard(d){const mode=d.mode==='team',order=d.order||[],secured=d.secured||{},open=d.open||{},target=Number(d.target)||69;const name=k=>mode?(k==='T1'?'Wand':'TV'):k;const current=order[d.currentIndex]||'';const displayOrder=mode?['T2','T1'].filter(k=>order.includes(k)):order;const cards=displayOrder.map(k=>{const locked=Number(secured[k])||0,pending=Number(open[k])||0,total=locked+pending;return `<div style="border:2px solid ${k===current&&d.active?'#efa92c':'#2b3658'};border-radius:12px;padding:14px;background:${k===current&&d.active?'#fff9e7':'#fff'};display:grid;gap:8px"><strong style="font-size:clamp(17px,2vw,28px)">${safe(name(k))}</strong><span>🔒 ${locked} gesichert</span><span>+${pending} offen</span><strong style="font-size:clamp(23px,3vw,42px)">${total} / ${target}</strong><div style="height:11px;border-radius:8px;background:#e8e8ee;overflow:hidden"><div style="height:100%;width:${Math.min(100,total/target*100)}%;background:#159e5a"></div></div>${mode?`<small>${(d.teams?.[k]||[]).map(safe).join(' · ')}</small>`:''}</div>`}).join('');const throws=(d.throwHistory||[]).slice(-10).reverse().map(x=>`<tr><td>${safe(x.name)}</td><td>${x.saved?'🔒 Sichern':x.pins===0?'Gosse':x.pins===12?'Kranz':safe(x.pins)}</td><td>${x.failed?'❌ Rückfall':safe(x.total)}</td></tr>`).join('');return `<div class="tv-board"><h2 class="tv-headline">🔒 Sichern · ${mode?'Teamspiel':'Einzelspiel'} · Ziel ${target}</h2>${d.finished?`<h2 style="text-align:center;color:#168d4b">🏆 ${safe(d.message)}</h2>`:`<h3 style="text-align:center">🎳 Aktuell: ${safe(name(current)||'–')} · ${mode?safe(sichernDashboardThrower(d,current))+' am Wurf':'Spieler am Wurf'}</h3>`}<div style="display:grid;grid-template-columns:repeat(${Math.min(4,Math.max(1,order.length))},minmax(0,1fr));gap:10px">${cards}</div><h3 style="margin:14px 0 6px">Letzte Würfe</h3><table class="tv-table"><thead><tr><th>Spieler</th><th>Wurf</th><th>Stand</th></tr></thead><tbody>${throws||'<tr><td colspan="3">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;}
+function renderSichernBoard(d){const mode=d.mode==='team',order=d.order||[],secured=d.secured||{},open=d.open||{},target=Number(d.target)||69;const name=k=>mode?(k==='T1'?'Wand':'TV'):k;const current=order[d.currentIndex]||'';const displayOrder=mode?['T2','T1'].filter(k=>order.includes(k)):order;const cards=displayOrder.map(k=>{const locked=Number(secured[k])||0,pending=Number(open[k])||0,total=locked+pending;return `<div style="border:2px solid ${k===current&&d.active?'#efa92c':'#2b3658'};border-radius:12px;padding:14px;background:${k===current&&d.active?'#fff9e7':'#fff'};display:grid;gap:8px"><strong style="font-size:clamp(17px,2vw,28px)">${safe(name(k))}</strong><span>🔒 ${locked} gesichert</span><span>+${pending} offen</span><strong style="font-size:clamp(23px,3vw,42px)">${total} / ${target}</strong><div style="height:11px;border-radius:8px;background:#e8e8ee;overflow:hidden"><div style="height:100%;width:${Math.min(100,total/target*100)}%;background:#159e5a"></div></div>${mode?`<small>${(d.teams?.[k]||[]).map(safe).join(' · ')}</small>`:''}</div>`}).join('');const throws=(d.throwHistory||[]).slice(-10).reverse().map(x=>`<tr><td>${safe(x.name)}</td><td>${x.saved?'🔒 Sichern':x.pins===0?'Gosse':(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':safe(x.pins)}</td><td>${x.failed?'❌ Rückfall':safe(x.total)}</td></tr>`).join('');return `<div class="tv-board"><h2 class="tv-headline">🔒 Sichern · ${mode?'Teamspiel':'Einzelspiel'} · Ziel ${target}</h2>${d.finished?`<h2 style="text-align:center;color:#168d4b">🏆 ${safe(d.message)}</h2>`:`<h3 style="text-align:center">🎳 Aktuell: ${safe(name(current)||'–')} · ${mode?safe(sichernDashboardThrower(d,current))+' am Wurf':'Spieler am Wurf'}</h3>`}<div style="display:grid;grid-template-columns:repeat(${Math.min(4,Math.max(1,order.length))},minmax(0,1fr));gap:10px">${cards}</div><h3 style="margin:14px 0 6px">Letzte Würfe</h3><table class="tv-table"><thead><tr><th>Spieler</th><th>Wurf</th><th>Stand</th></tr></thead><tbody>${throws||'<tr><td colspan="3">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;}
 function renderTorBoard(d){
  const settings=seatingLive?.groupSettings||state?.groupSettings||{};
  const label=k=>safe(settings[k]?.name||({T1:'Wand',T2:'TV'}[k]));
@@ -615,6 +619,7 @@ function showDashboardGameOverview(overviewState){
  if(!window.KCGameOverview)return false;
  $('game-title').textContent='🎮 Spielübersicht';
  $('game-info').textContent='Spiel in der App wählen';
+ $('game-body').classList.add('has-game-overview');
  $('game-body').innerHTML=window.KCGameOverview.markup(overviewState);
  return true;
 }
@@ -623,7 +628,7 @@ function isEmptyDashboardGame(data){
  return !data.active&&!data.finished&&!data.id&&!data.startedAt&&!data.history?.length&&!data.rounds?.length&&
   !Object.values(data.throws||{}).some(row=>Array.isArray(row)?row.some(value=>value!==null&&value!==undefined):row!==null&&row!==undefined);
 }
-function paintGame(){const key=chosenGame(),data=key?gameState(key):null,body=$('game-body'),detailsOpen=!!body.querySelector('.tg-spiral-rounds')?.open;body.replaceChildren();const overviewState={...state,...Object.fromEntries(games.map(k=>[k+'State',gameState(k)]))};if(window.KCGameOverview?.visible(overviewState)||isEmptyDashboardGame(data)){if(showDashboardGameOverview(overviewState))return;}$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';let html=null;if(data){try{html=['bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key)?'<div class="tv-board">'+renderExtraGameBoard(data)+'</div>':['siebener','hindernis'].includes(key)?'<div class="tv-board ind-tv-board">'+renderIndividualBoard(data)+'</div>':key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data):key==='plusminus'?renderPlusminusBoard(data):key==='haushoch'?renderHausBoard(data,'hoch'):key==='haustief'?renderHausBoard(data,'tief'):key==='fuchsjagd'?renderFuchsjagdBoard(data):['blackjack','gluecksspirale'].includes(key)?'<div class="tv-board tg-tv-board">'+renderTableGameBoard(data,{detailsOpen})+'</div>':key==='sechstage'?'<div class="tv-board six-tv-board">'+renderSixDaysBoard(data)+'</div>':key==='sichern'?renderSichernBoard(data):key==='tor'?renderTorBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;requestAnimationFrame(fitTvBoard);return}if(showDashboardGameOverview(overviewState))return;const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
+function paintGame(){const key=chosenGame(),data=key?gameState(key):null,body=$('game-body'),detailsOpen=!!body.querySelector('.tg-spiral-rounds')?.open;body.classList.remove('has-game-overview');body.replaceChildren();const overviewState={...state,...Object.fromEntries(games.map(k=>[k+'State',gameState(k)]))};if(window.KCGameOverview?.visible(overviewState)||isEmptyDashboardGame(data)){if(showDashboardGameOverview(overviewState))return;}$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';let html=null;if(data){try{html=['bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key)?'<div class="tv-board">'+renderExtraGameBoard(data)+'</div>':['siebener','hindernis'].includes(key)?'<div class="tv-board ind-tv-board">'+renderIndividualBoard(data)+'</div>':key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data):key==='plusminus'?renderPlusminusBoard(data):key==='haushoch'?renderHausBoard(data,'hoch'):key==='haustief'?renderHausBoard(data,'tief'):key==='fuchsjagd'?renderFuchsjagdBoard(data):['blackjack','gluecksspirale'].includes(key)?'<div class="tv-board tg-tv-board">'+renderTableGameBoard(data,{detailsOpen})+'</div>':key==='sechstage'?'<div class="tv-board six-tv-board">'+renderSixDaysBoard(data)+'</div>':key==='sichern'?renderSichernBoard(data):key==='tor'?renderTorBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;requestAnimationFrame(fitTvBoard);return}if(showDashboardGameOverview(overviewState))return;const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
 
 function unsubscribe(){
  window.KCCashDashboard?.reset();window.KCClubContentDashboard?.reset();

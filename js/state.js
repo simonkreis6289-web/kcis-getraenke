@@ -1,6 +1,6 @@
-const APP_VERSION = '20261112-218';
-const APPVersionSelf = 'V218 © SK';
-const APP_LAST_UPDATE = '12.11.2026, 13:42 Uhr';
+const APP_VERSION = '20261112-220';
+const APPVersionSelf = 'V220 © SK';
+const APP_LAST_UPDATE = '12.11.2026, 20:28 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -75,6 +75,7 @@ let pendingClubAvatarName = null;
 let bahnPreisProStunde = 0;
 let bahnTimerStart = null;
 let bahnTimerRunning = false;
+let bahnElapsedSeconds = 0;
 let bahnTimerInterval = null;
 
 let teamStopwatchActive = false;

@@ -1,0 +1,12 @@
+.kc-kranz-setting{padding:12px 0 16px;border-bottom:1px solid #d7e0ef;margin-bottom:16px}
+.kc-kranz-setting small{display:block;color:#52657f;margin-top:7px;line-height:1.4}
+.kc-kranz-backdrop{position:fixed;inset:0;z-index:100001;display:grid;place-items:center;background:#10203999;padding:16px}
+.kc-kranz-dialog{background:#fff;color:#243657;width:min(420px,100%);max-height:90dvh;overflow:auto;padding:22px;border-radius:20px;box-shadow:0 20px 70px #10203955}
+.kc-kranz-dialog h3{margin:0;font-size:24px}.kc-kranz-dialog p{margin:8px 0 18px;color:#52657f}
+.kc-kranz-choices{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
+.kc-kranz-choices .kranz-value-btn{min-height:64px;padding:8px;background:#f1f5fc;border:1px solid #b6c7e0;border-bottom:3px solid #91a9cb;border-radius:14px;color:#243657}
+.kc-kranz-choices strong{display:grid;place-items:center;width:40px;height:40px;border:2px solid #c4d5ee;border-radius:50%;margin:auto;background:white;font:800 25px/1 system-ui}
+.kc-kranz-choices .kranz-value-btn:last-child{grid-column:2}.kc-kranz-dialog>.secondary-btn{width:100%}
+.kc-kranz-choices button:focus-visible{outline:3px solid #e9a91e;outline-offset:2px}
+
+.kc-kranz-legacy{display:none!important}

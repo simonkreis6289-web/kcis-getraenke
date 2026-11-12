@@ -109,7 +109,7 @@ function openDartsThrowModal(team) {
 
   const kranzBtn = document.createElement('button');
   kranzBtn.className = 'darts-number-btn kranz';
-  kranzBtn.innerHTML = `Kranz<br><span style="font-size:0.72rem;">${kranzValue} Punkte</span>`;
+  kranzBtn.textContent = window.KCKranzUI?KCKranzUI.label('darts'):('Kranz ('+kranzValue+')');
   kranzBtn.onclick = () => openDartsPenaltyPlayerModal('kranz', team, kranzValue);
   grid.appendChild(kranzBtn);
 
@@ -185,8 +185,9 @@ async function confirmDartsPenaltyPlayer() {
   const {
     type,
     team,
-    points
+    points:rawPoints
   } = pendingDartsPenalty;
+  const points=type==='kranz'&&window.KCKranzUI?await KCKranzUI.select('darts'):rawPoints;if(points===null)return;
 
   const key = getPenaltyKeyByType(type);
 
@@ -275,20 +276,21 @@ async function confirmDartsPenaltyPlayer() {
   }finally{dartsPenaltyBusy=false;}
 }
 
-function handleDartsThrow(hitKey) {
+async function handleDartsThrow(hitKey) {
   ensureDartsState();
 
   const team = dartsThrowTeam;
 
   if (!['T1','T2'].includes(team)||!dartsState.active||dartsState.winner) return;
 
-  const value = parseInt(
+  const rawValue = parseInt(
     dartsState.valueMap[hitKey] ??
     DARTS_DEFAULT_VALUES[hitKey] ??
     0,
     10
   ) || 0;
 
+  const value=hitKey==='kranz'&&window.KCKranzUI?await KCKranzUI.select('darts'):rawValue;if(value===null)return;
   dartsState.roundThrows[team].push({
     hit: hitKey,
     value,
@@ -501,7 +503,7 @@ function renderDartsSettings() {
 
   entries.forEach(([key, label]) => {
     const card = document.createElement('div');
-    card.className = 'darts-setting-card';
+    card.className = 'darts-setting-card'+(key==='kranz'&&window.KCKranzUI?' kc-kranz-legacy':'');
     card.innerHTML = `
       <label>${label}</label>
       <input

@@ -28,6 +28,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+window.KCSharedClock?.configure(firebaseConfig);
 
 
 // ─────────────────────────────────────────────
@@ -197,11 +198,31 @@ window.firestoreApi = {
   // GESAMTZUSTAND
   // ─────────────────────────────────────────────
 
-  async initializeSharedState(clubId,defaults,opId){if(!sharedTransport)throw Error('Synchronisierung nicht geladen');return sharedTransport.initialize(clubId,defaults,opId);},
+  async readTabletDocument(clubId,path){
+    if(typeof path!=='string'||(path!=='clubs/'+clubId&&!path.startsWith('clubs/'+clubId+'/'))||path.split('/').length%2)throw Error('Ungültiger Dokumentpfad');
+    const snap=await getDocFromServer(doc(db,...path.split('/')));return snap.exists()?snap.data():null;
+  },
+  async commitTabletBatch(clubId,batch={},syncContext=null){
+    if(!clubId||!Number.isSafeInteger(batch.sequence)||batch.sequence<1||!batch.state||!Array.isArray(batch.documents)||batch.documents.length>400)throw Error('Ungültige Tablet-Übertragung');
+    const target=doc(db,'clubs',clubId,'state','current');
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const snap=await tx.get(target),current=snap.exists()?snap.data():{};
+      if(Number(current.tabletSequence||0)>=batch.sequence)return {sequence:current.tabletSequence};
+      const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
+      await Promise.all(docs.map(row=>tx.get(row.ref)));
+      const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
+      tx.set(target,{...current,...timestamps(batch.state),tabletSequence:batch.sequence});
+      for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(row.value));}
+      return {sequence:batch.sequence};
+    });
+  },
+
+  async initializeSharedState(clubId,defaults,opId){if(window.KCSharedClock)await KCSharedClock.useClub(clubId);if(!sharedTransport)throw Error('Synchronisierung nicht geladen');return sharedTransport.initialize(clubId,defaults,opId);},
   async commitSharedChanges(clubId,request,context){if(!sharedTransport)throw Error('Synchronisierung nicht geladen');return sharedTransport.changes(clubId,request,context);},
   async getSharedReceipt(clubId,opId){const snap=await getDocFromServer(doc(db,'clubs',clubId,'syncCommands',opId));return snap.exists()?snap.data():null;},
   subscribeClubList(onData,onError){return onSnapshot(collection(db,'clubs'),snap=>onData(snap.docs.map(item=>({id:item.id,...item.data()}))),onError);},
   async loadClubState(clubId) {
+    if(window.KCSharedClock)await KCSharedClock.useClub(clubId);
     const ref = doc(
       db,
       "clubs",
@@ -218,6 +239,22 @@ window.firestoreApi = {
   },
 
 
+  async cancelGame(clubId,request={},syncContext=null){
+    const key=request.gameKey;
+    if(!clubId||!window.KCSharedCore?.games.includes(key))throw Error('Unbekanntes Spiel');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const snap=await tx.get(ref),current=snap.exists()?snap.data():{},field=key+'State',before=current[field];
+      if(!before?.active)return before||null;
+      if(!KCSharedCore.equal(KCSharedCore.clean(syncContext?.base?.[field]),KCSharedCore.clean(before)))throw Error('Spielstand wurde inzwischen geändert. Bitte erneut abbrechen.');
+      const makers={tannenbaum:'createTannenbaumState',darts:'createDartsState',lotterie:'createLotterieState',tiberius:'createTiberiusState',mensch:'createMenschState',plusminus:'createPlusminusState',haushoch:'createHausState',haustief:'createHausState',sichern:'createSichernState',fuchsjagd:'createFuchsjagdState',tor:'createTorState'};
+      const empty=KCExtraGames.keys.includes(key)?KCExtraGames.empty(key):['siebener','hindernis'].includes(key)?KCIndividual.empty(key):['blackjack','gluecksspirale'].includes(key)?KCTableGames.empty(key):key==='sechstage'?KCSixDays.empty():window[makers[key]]();
+      empty.revision=(Number(before.revision)||0)+1;empty.eveningStartedAt=current.currentEveningStartedAt||'';
+      tx.set(ref,{[field]:empty,dashboardActiveGame:null,dashboardGameOverview:{open:true,revision:Number(current.dashboardGameOverview?.revision||0)+1},dashboardDraw:null,dashboardRules:null,updatedAt:serverTimestamp()},{merge:true});
+      return empty;
+    });
+  },
+
   async startNewEvening(clubId,request={}, syncContext = null) {
     if(!clubId||!/^evening_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!request.payload||!Number.isFinite(Date.parse(request.payload.currentEveningStartedAt)))throw Error('Ungültiger Kegelabend');
     const ref=doc(db,'clubs',clubId,'state','current');
@@ -227,7 +264,7 @@ window.firestoreApi = {
       if(String(current.currentEveningStartedAt||'')!==String(request.expectedEvening||''))throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
       const payload=JSON.parse(JSON.stringify(request.payload)),evening=payload.currentEveningStartedAt,keys=Object.keys(window.KCGameFinePolicy.titles);
       const next={...payload,...current};
-      for(const key of ['currentEveningStartedAt','seatingOrder','spiele','selectedLoser','teamDrinks','bahnTimerStart','bahnTimerRunning','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore'])if(payload[key]!==undefined)next[key]=payload[key];
+      for(const key of ['currentEveningStartedAt','seatingOrder','spiele','selectedLoser','teamDrinks','bahnTimerStart','bahnTimerRunning','bahnElapsedSeconds','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore'])if(payload[key]!==undefined)next[key]=payload[key];
       const gameDocs=[];for(const key of keys){const target=doc(db,'clubs',clubId,'liveGames',key),old=await tx.get(target);gameDocs.push({key,target,revision:Number(old.exists()?old.data().revision:0)||0});}
       const seatingRef=doc(db,'clubs',clubId,'live','seating');await tx.get(seatingRef);
       const roster=new Map();for(const p of (current.syncProtocol?(current.persons||[]):[...(payload.persons||[]),...(current.persons||[])]))roster.set(String(p.name).trim().toLocaleLowerCase('de'),p);
@@ -498,7 +535,7 @@ window.firestoreApi = {
       const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
       const before=current.sechstageState?.eveningStartedAt===existingEvening?current.sechstageState:window.KCSixDays.empty();
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
-      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,'sechstage')===true};
+      if(request.action==='start')request={...(window.KCKranzPolicy?KCKranzPolicy.startRequest(current,'sechstage',request):request),onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,'sechstage')===true};
       const result=window.KCSixDays.command(before,request,context),next=result.state;
       const effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCSixDays.effects(before,next,request,context);
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
@@ -508,12 +545,11 @@ window.firestoreApi = {
         const id=this.getLivePersonId(change.personName);
         if(!groups.has(id))groups.set(id,{name:change.personName,changes:[]});groups.get(id).changes.push(change);
       }
-      const loaded=[];
-      for(const [id,group] of groups){
+      const loaded=await Promise.all([...groups].map(async([id,group])=>{
         const personRef=doc(db,'clubs',clubId,'livePersons',id),personSnap=await transaction.get(personRef);
         const fallback=context.people.find(person=>person.name===group.name)||{};
-        loaded.push({...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()});
-      }
+        return {...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()};
+      }));
       const counters=[];
       let finalStats=current.penaltyStatsLog||[];
       for(const group of loaded){
@@ -554,7 +590,7 @@ window.firestoreApi = {
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCTableGames.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
       let result,effect;
-      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,request.gameKey)===true};
+      if(request.action==='start')request={...(window.KCKranzPolicy?KCKranzPolicy.startRequest(current,gameKey,request):request),onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,request.gameKey)===true};
       try{result=window.KCTableGames.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCTableGames.effects(before,result.state,request,context);}catch(error){error.code='table-game-rejected';throw error;}
       const next=result.state;if(request.action==='start')Object.assign(next,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});if(next.gameFineFrozen)for(const row of effect.moneyAdded||[])Object.assign(row,{gameFineFrozen:true,onTop:next.onTop===true});
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
@@ -564,12 +600,11 @@ window.firestoreApi = {
         const id=this.getLivePersonId(change.personName);
         if(!groups.has(id))groups.set(id,{name:change.personName,changes:[]});groups.get(id).changes.push(change);
       }
-      const loaded=[];
-      for(const [id,group] of groups){
+      const loaded=await Promise.all([...groups].map(async([id,group])=>{
         const personRef=doc(db,'clubs',clubId,'livePersons',id),personSnap=await transaction.get(personRef);
         const fallback=context.people.find(person=>person.name===group.name)||{};
-        loaded.push({...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()});
-      }
+        return {...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()};
+      }));
       const counters=[];
       let finalStats=current.penaltyStatsLog||[];
       for(const group of loaded){
@@ -596,6 +631,7 @@ window.firestoreApi = {
     });
   },
   async transactIndividualGame(clubId,request={}, syncContext = null) {
+    if(request.gameKey==='ballermann'&&window.KCSharedClock?.enabled&&!(await KCSharedClock.useClub(clubId)))throw Error('Zeitabgleich nicht erreichbar. Bitte erneut versuchen.');
     const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(gameKey))throw new Error('Unbekanntes Spiel');
     const stateKey=gameKey+'State',core=['siebener','hindernis'].includes(gameKey)?window.KCIndividual:window.KCExtraGames;
     if(!clubId||!core)throw new Error('Spiel ist noch nicht verfügbar');
@@ -605,11 +641,11 @@ window.firestoreApi = {
       const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
       const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current[stateKey]?.eveningStartedAt===existingEvening&&current[stateKey]?.commands?.includes(request.opId);
       if(String(request.eveningStartedAt||'')!==existingEvening&&!repeatedInitialStart)throw new Error('Der Kegelabend wurde inzwischen gewechselt');
-      const now=new Date(core===window.KCExtraGames?Date.now():request.now||Date.now()).toISOString(),evening=existingEvening||now;
+      const now=new Date(core===window.KCExtraGames?(window.KCSharedClock?.now()??Date.now()):request.now||Date.now()).toISOString(),evening=existingEvening||now;
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:core.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId,groups:current.groupSettings||{}};
       let result,effect;
-      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,gameKey)===true};
+      if(request.action==='start')request={...(window.KCKranzPolicy?KCKranzPolicy.startRequest(current,gameKey,request):request),onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,gameKey)===true};
       try{result=core.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:core.effects(before,result.state,request,context);}catch(error){error.code='individual-game-rejected';throw error;}
       const next=result.state;if(request.action==='start')Object.assign(next,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});if(next.gameFineFrozen)for(const row of effect.moneyAdded||[])Object.assign(row,{gameFineFrozen:true,onTop:next.onTop===true});
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
@@ -619,12 +655,11 @@ window.firestoreApi = {
         const id=this.getLivePersonId(change.personName);
         if(!groups.has(id))groups.set(id,{name:change.personName,changes:[]});groups.get(id).changes.push(change);
       }
-      const loaded=[];
-      for(const [id,group] of groups){
+      const loaded=await Promise.all([...groups].map(async([id,group])=>{
         const personRef=doc(db,'clubs',clubId,'livePersons',id),personSnap=await transaction.get(personRef);
         const fallback=context.people.find(person=>person.name===group.name)||{};
-        loaded.push({...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()});
-      }
+        return {...group,ref:personRef,current:personSnap.exists()?personSnap.data():fallback,exists:personSnap.exists()};
+      }));
       const counters=[];
       let finalStats=current.penaltyStatsLog||[];
       for(const group of loaded){
@@ -1263,6 +1298,7 @@ subscribeToLiveLotterie(
   },
 
   subscribeToClubState(clubId, onData, onError) {
+    if(window.KCSharedClock)void KCSharedClock.useClub(clubId);
     const ref = doc(
       db,
       "clubs",
@@ -2445,31 +2481,11 @@ async deleteLivePerson(
          * einer Transaktion zuerst alle Reads
          * und danach alle Writes stattfinden.
          */
-        const loadedPersons = [];
-
-        for (
-          const group of groupedChanges.values()
-        ) {
-          const personRef = doc(
-            db,
-            "clubs",
-            clubId,
-            "livePersons",
-            group.personId
-          );
-
-          const snap =
-            await transaction.get(personRef);
-
-          loadedPersons.push({
-            ...group,
-            personRef,
-
-            current: snap.exists()
-              ? snap.data()
-              : {}
-          });
-        }
+        const loadedPersons = await Promise.all([...groupedChanges.values()].map(async group => {
+          const personRef=doc(db,'clubs',clubId,'livePersons',group.personId);
+          const snap=await transaction.get(personRef);
+          return {...group,personRef,current:snap.exists()?snap.data():{}};
+        }));
 
         const results = [];
 
@@ -2563,7 +2579,7 @@ async deleteLivePerson(
 };
 
 
-window.firestoreApi.__syncArity={"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
+window.firestoreApi.__syncArity={"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
 window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 

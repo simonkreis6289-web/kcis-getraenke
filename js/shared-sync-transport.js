@@ -21,7 +21,7 @@
           if(typeof getDocFromServer==='function'){
             try{
               const proof=await getDocFromServer(receipt(club,context.opId));
-              if(proof.exists())return proof.data().result;
+              if(proof.exists()){if(context)delete context.confirmedState;return proof.data().result;}
               if(code==='permission-denied'){
                 const latest=await getDocFromServer(ref(club));
                 advanced=observedRevision!==null&&latest.exists()&&Number(latest.data().syncRevision||0)>observedRevision;
@@ -90,14 +90,15 @@
     async function transaction(club,context,fn){
       if(context?.preview)return context.preview.run(fn);
       return confirmedCommand(club,context,async(raw,observed)=>{
-        const rootRef=ref(club),rootSnap=await raw.get(rootRef),root=rootSnap.exists()?rootSnap.data():{};
+        if(context)delete context.confirmedState;
+        const rootRef=ref(club),commandRef=context?receipt(club,context.opId):null;
+        const [rootSnap,done]=await Promise.all([raw.get(rootRef),commandRef?raw.get(commandRef):Promise.resolve(null)]),root=rootSnap.exists()?rootSnap.data():{};
         observed(Number(root.syncRevision)||0);
         if(!context){
           if(root.syncProtocol)throw Error('Diese App-Version ist veraltet. Bitte neu laden.');
           return fn(raw);
         }
         if(!/^sync_[a-zA-Z0-9_-]{1,120}$/.test(context.opId||''))throw Error('Ungültige Synchronisationskennung');
-        const commandRef=receipt(club,context.opId),done=await raw.get(commandRef);
         if(done.exists())return done.data().result;
         if(String(context.eveningStartedAt||'')!==String(root.currentEveningStartedAt||''))throw core.conflict(['Kegelabend']);
         const cache=new Map([[path(rootRef),rootSnap]]),writes=new Map();
@@ -125,13 +126,13 @@
           })
         };
         const result=await fn(facade);
-        if(!writes.size&&!context.sideOperations?.length)return result;
+        if(!writes.size&&!context.sideOperations?.length){context.confirmedState=core.clone(root);return result;}
         let next=writes.get(path(rootRef))?.value||core.clone(root);
         const absolute=['saveLivePersonStatus','saveLivePerson','saveLivePersonPayment'];
         for(const row of writes.values()){
           const parts=path(row.target).split('/');
           if(parts[0]!=='clubs'||parts[1]!==club)throw Error('Falscher Club in Synchronisation');
-          if(parts.length===2){
+          if(parts.length===2&&context.method!=='commitTabletBatch'){
             const old=cache.get(path(row.target))?.exists()?core.clean(cache.get(path(row.target)).data()):{},base=core.clean(context.metaBase||{}),partial=core.clean(row.partial);
             delete partial.id;
             if(old.createdAt)partial.createdAt=old.createdAt;
@@ -205,15 +206,17 @@
           next=core.apply(next,sides);
         }
         if(!next.currentEveningStartedAt&&(core.legacy.some(k=>next[k+'State']?.active)||next.penaltyStatsLog?.length))next.currentEveningStartedAt=(next.penaltyStatsLog||[]).find(x=>x.eveningStartedAt)?.eveningStartedAt||new Date().toISOString();
+        const started=core.games.find(key=>{const a=root[key+'State'],b=next[key+'State'];return b?.active&&(!a?.active||a.id!==b.id||a.startedAt!==b.startedAt);});
+        if(started){next.dashboardActiveGame=started;next.dashboardGameOverview={...next.dashboardGameOverview,open:false,revision:Number(next.dashboardGameOverview?.revision||0)+1};for(const key of ['dashboardCashView','dashboardClubContent','dashboardRules'])if(next[key]?.open)next[key]={...next[key],open:false,revision:Number(next[key].revision||0)+1};}
         next=core.totals(next,policy);
         const revision=(Number(root.syncRevision)||0)+1,id=context.opId;
         // Read every mirror before flushing any writes. The root is authoritative.
-        const mirrors=[];
+        const mirrors=[],mirrorReads=[];
         for(const p of next.persons||[]){
           const previous=(root.persons||[]).find(x=>core.norm(x.name)===core.norm(p.name));
           if(!core.equal(previous,p)){
             const target=personRef(club,p.name);
-            await facade.get(target);
+            mirrorReads.push(facade.get(target));
             mirrors.push({
               target,value:p
             });
@@ -221,28 +224,25 @@
         }
         for(const p of root.persons||[])if(!(next.persons||[]).some(x=>core.norm(x.name)===core.norm(p.name))){
           const target=personRef(club,p.name);
-          await facade.get(target);
+          mirrorReads.push(facade.get(target));
           mirrors.push({
             target,deleted:true
           });
         }
-        for(const key of core.games)if(!core.equal(root[key+'State'],next[key+'State'])){
+        await Promise.all(core.games.filter(key=>!core.equal(root[key+'State'],next[key+'State'])).map(async key=>{
           const target=doc(db,'clubs',club,'liveGames',key),old=await facade.get(target);
-          mirrors.push({
-            target,value:{
-              gameKey:key,state:next[key+'State']||{},revision:Number(old.exists()?old.data().revision:0)+1
-            }
-          });
-        }
+          mirrors.push({target,value:{gameKey:key,state:next[key+'State']||{},revision:Number(old.exists()?old.data().revision:0)+1}});
+        }));
         if(!core.equal(root.seatingOrder,next.seatingOrder)||!core.equal(root.groupSettings,next.groupSettings)){
           const target=doc(db,'clubs',club,'live','seating');
-          await facade.get(target);
+          mirrorReads.push(facade.get(target));
           mirrors.push({
             target,value:{
               seatingOrder:next.seatingOrder||[],groupSettings:next.groupSettings||{}
             }
           });
         }
+        await Promise.all(mirrorReads);
         for(const row of mirrors)writes.set(path(row.target),row);
         next=stamp(next,revision,id);
         writes.set(path(rootRef),{
@@ -256,6 +256,7 @@
           if(row.deleted)raw.delete(row.target);
           else raw.set(row.target,stamp(row.value,revision,id));
         }
+        context.confirmedState=core.clone(next);
         return result;
       });
     }

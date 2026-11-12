@@ -327,7 +327,7 @@ function openTiberiusThrowModal() {
 
   const kranzBtn = document.createElement('button');
   kranzBtn.className = 'darts-number-btn kranz';
-  kranzBtn.textContent = 'Kranz / 12';
+  kranzBtn.textContent = window.KCKranzUI?KCKranzUI.label('tiberius'):'Kranz / 12';
   kranzBtn.onclick = () => handleTiberiusThrow(12);
   grid.appendChild(kranzBtn);
 
@@ -459,15 +459,16 @@ function continueTiberiusAfterThrower(personName = '') {
 
     showToast(
       pendingThrow.value === 12
-        ? '👑 Kranz addiert (+12)'
+        ? '👑 Kranz addiert (+'+(pendingThrow.newScore-pendingThrow.oldScore)+')'
         : `🎳 +${pendingThrow.value} Pins`,
       'success'
     );
   }
 }
 
-function handleTiberiusThrow(value) {
+async function handleTiberiusThrow(value) {
   ensureTiberiusState();
+  const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('tiberius'):value;if(scored===null)return;
     
     tiberiusState.undoStack.push({
       score: tiberiusState.score,
@@ -484,12 +485,12 @@ function handleTiberiusThrow(value) {
     });
 
   const oldScore = parseInt(tiberiusState.score || 0, 10) || 0;
-  const newScore = oldScore + value;
+  const newScore = oldScore + scored;
 
   tiberiusState.score = newScore;
 
   const throwEntry = {
-    value,
+    value:scored,rawValue:value,
     oldScore,
     newScore,
     createdAt: new Date().toISOString()
@@ -500,7 +501,7 @@ function handleTiberiusThrow(value) {
   closeTiberiusThrowModal();
 
   tiberiusPendingThrower = {
-    ...throwEntry,
+    ...throwEntry,value,
     needsThrower: value === 0 || value === 9 || value === 12
   };
 

@@ -24,7 +24,7 @@ function extraDraw(key){
 }
 function extraThrow(key,kind,pins){
  const s=indGet(key);if(!s?.active||indPending[key]||indBusy[key])return;
- if(kind==='kranz'&&s.config.kranzMode==='choose'){extraKranzPending={key,id:s.id,revision:s.revision,club:ACTIVE_CLUB};document.getElementById('extra-kranz-modal').classList.remove('hidden');document.getElementById('extra-kranz-choices').innerHTML=[1,2,3,4,5,6,7,8,9,12].map(value=>'<button type="button" class="kranz-value-btn'+([8,12].includes(value)?' kranz-value-featured':'')+'" onclick="extraChooseKranz('+value+')" aria-label="Kranz mit '+value+' Holz werten"><strong>'+value+'</strong><span>Holz</span></button>').join('');return;}
+ if(kind==='kranz'&&!window.KCKranzUI&&s.config.kranzMode==='choose'){extraKranzPending={key,id:s.id,revision:s.revision,club:ACTIVE_CLUB};document.getElementById('extra-kranz-modal').classList.remove('hidden');document.getElementById('extra-kranz-choices').innerHTML=[1,2,3,4,5,6,7,8,9,12].map(value=>'<button type="button" class="kranz-value-btn'+([8,12].includes(value)?' kranz-value-featured':'')+'" onclick="extraChooseKranz('+value+')" aria-label="Kranz mit '+value+' Holz werten"><strong>'+value+'</strong><span>Holz</span></button>').join('');return;}
  return indAction(key,'throw',{kind,...(kind==='pins'?{pins}:{})});
 }
 function extraCancelKranz(){extraKranzPending=null;document.getElementById('extra-kranz-modal')?.classList.add('hidden');}
@@ -49,6 +49,7 @@ function renderExtraGame(key){
  box.innerHTML=error+renderExtraGameBoard(s,{controls})+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="indReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'');
 }
 function renderExtraSettings(){
+ if(window.KCKranzUI)KCKranzUI.render();
  if(typeof renderRaceKranzSettings==='function')renderRaceKranzSettings();
  const stamp=ACTIVE_CLUB+'|'+JSON.stringify(extraGameSettings);if(stamp===extraSettingsStamp)return;extraSettingsStamp=stamp;
  if(typeof renderGoodCutSettings==='function')renderGoodCutSettings();for(const key of KCExtraGames.keys){if(key==='guterschnitt')continue;const c=extraConfig(key);for(const field of ['rounds','seconds','slats','slatCents','kranzValue','gutterHigh','gutterLow']){const el=document.getElementById('extra-'+key+'-'+field);if(el)el.value=field==='slatCents'?(c[field]/100).toFixed(2):c[field];}const mode=document.getElementById('extra-'+key+'-kranzMode');if(mode)mode.value=c.kranzMode==='choose'?'choose':[8,12].includes(c.kranzValue)?String(c.kranzValue):'custom';extraKranzMode(key);}
