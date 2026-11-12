@@ -5,7 +5,7 @@
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const validId=id=>typeof id==='string'&&/^note_[a-zA-Z0-9_-]{1,100}$/.test(id);
  const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(a.done)-Number(b.done)||Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id));
- function value(kind,data){return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:kind==='penalties'?penaltiesPlaceholder:placeholder,revision:Number(data?.revision)||0};}
+ function value(kind,data){if(kind==='penalties'&&window.KCPenaltyTable)return {text:typeof data?.text==='string'?data.text:penaltiesPlaceholder,table:window.KCPenaltyTable.value(data),revision:Number(data?.revision)||0};return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:kind==='penalties'?penaltiesPlaceholder:placeholder,revision:Number(data?.revision)||0};}
  function change(kind,before,request,now=new Date().toISOString()){
   if(!['notes','statutes','penalties'].includes(kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Änderung.');
   if((before?.commands||[]).includes(request.opId))return before;
@@ -25,7 +25,7 @@
    result={items:sort(items)};
   }else{
    if(request.action!=='save'||typeof request.text!=='string'||request.text.length>100000)throw Error('Die Satzung darf höchstens 100.000 Zeichen enthalten.');
-   result={text:request.text};
+   if(kind==='penalties'&&request.table!==undefined){if(!window.KCPenaltyTable?.valid(request.table))throw Error('Bitte gültige Abschnitte und Strafen eintragen (höchstens 500 Zeilen / 100.000 Zeichen).');result={text:window.KCPenaltyTable.text(request.table),table:window.KCPenaltyTable.normalize(request.table)};if(result.text.length>100000)throw Error('Die Strafentabelle darf höchstens 100.000 Zeichen enthalten.');}else result={text:request.text};
   }
   return {...result,revision:current.revision+1,commands:[...(before?.commands||[]),request.opId].slice(-128),changedAt:now};
  }

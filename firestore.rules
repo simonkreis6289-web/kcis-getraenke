@@ -1,0 +1,80 @@
+rules_version = '2';
+
+// Synchronisationsprotokoll 1 ab App V216. Kein Ersatz fuer Anmeldung/Rollenrechte.
+// Erst zusammen mit der bereitgestellten V216-App aktivieren.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Bisherige Leserechte beibehalten. Keine pauschale Schreibfreigabe!
+    match /{document=**} {
+      allow read: if true;
+    }
+
+    function kcRoot(clubId) {
+      return /databases/$(database)/documents/clubs/$(clubId)/state/current;
+    }
+    function kcNextRevision(clubId) {
+      let root = kcRoot(clubId);
+      return exists(root) && get(root).data.keys().hasAll(['syncRevision'])
+        ? get(root).data.syncRevision + 1 : 1;
+    }
+    function kcSharedCommand(clubId) {
+      let root = getAfter(kcRoot(clubId)).data;
+      let operation = root.syncOperation;
+      let proof = /databases/$(database)/documents/clubs/$(clubId)/syncCommands/$(operation);
+      return root.syncProtocol == 1
+        && root.syncRevision is int
+        && root.syncRevision > 0
+        && root.syncRevision == kcNextRevision(clubId)
+        && root.updatedAt == request.time
+        && operation is string
+        && operation.matches('^sync_[a-zA-Z0-9_-]{1,120}$')
+        && !exists(proof)
+        && existsAfter(proof)
+        && getAfter(proof).data.commandId == operation
+        && getAfter(proof).data.createdAt == request.time;
+    }
+    function kcSharedRow(clubId) {
+      let root = getAfter(kcRoot(clubId)).data;
+      return kcSharedCommand(clubId)
+        && request.resource.data.syncProtocol == 1
+        && request.resource.data.syncRevision == root.syncRevision
+        && request.resource.data.syncOperation == root.syncOperation
+        && request.resource.data.updatedAt == request.time;
+    }
+    function kcSharedReceipt(clubId, commandId) {
+      return kcSharedCommand(clubId)
+        && commandId == getAfter(kcRoot(clubId)).data.syncOperation
+        && request.resource.data.commandId == commandId;
+    }
+
+    match /clubs/{clubId} {
+      allow create, update: if kcSharedRow(clubId);
+
+      match /state/current {
+        allow create, update: if kcSharedRow(clubId);
+      }
+      match /livePersons/{personId} {
+        allow create, update: if kcSharedRow(clubId);
+        allow delete: if kcSharedCommand(clubId);
+      }
+      match /liveGames/{gameId} {
+        allow create, update: if kcSharedRow(clubId);
+        allow delete: if kcSharedCommand(clubId);
+      }
+      match /live/seating {
+        allow create, update: if kcSharedRow(clubId);
+      }
+      match /archive/{archiveId} {
+        allow create, update: if kcSharedRow(clubId);
+        allow delete: if kcSharedCommand(clubId);
+      }
+      match /documents/{documentId} {
+        allow create, update: if kcSharedRow(clubId);
+      }
+      match /syncCommands/{commandId} {
+        allow create: if kcSharedReceipt(clubId, commandId);
+        // Belege duerfen weder geaendert noch geloescht werden.
+      }
+    }
+  }
+}

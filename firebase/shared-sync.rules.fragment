@@ -1,8 +1,6 @@
-// V215: FRAGMENT, keine vollständige Regeldatei.
-// Innerhalb von match /databases/{database}/documents einfügen.
-// Die Guards müssen mit UND in JEDE bestehende Schreibfreigabe für clubs
-// integriert werden. Eine überlappende pauschale allow-write-Regel umgeht sie!
-// Bestehende Lese- und Anmelde-/Rollenbedingungen unverändert beibehalten.
+// Die vollstaendige Regeldatei ist jetzt ../firestore.rules.
+// Grundlage: die vom Nutzer bereitgestellten bisherigen offenen Regeln.
+// Diese Funktionen ersetzen nicht allein die pauschale Schreibfreigabe.
 
 function kcRoot(clubId) {
   return /databases/$(database)/documents/clubs/$(clubId)/state/current;
@@ -17,6 +15,8 @@ function kcSharedCommand(clubId) {
   let operation = root.syncOperation;
   let proof = /databases/$(database)/documents/clubs/$(clubId)/syncCommands/$(operation);
   return root.syncProtocol == 1
+    && root.syncRevision is int
+    && root.syncRevision > 0
     && root.syncRevision == kcNextRevision(clubId)
     && root.updatedAt == request.time
     && operation is string
@@ -39,21 +39,3 @@ function kcSharedReceipt(clubId, commandId) {
     && commandId == getAfter(kcRoot(clubId)).data.syncOperation
     && request.resource.data.commandId == commandId;
 }
-
-// Integration in bestehende Matches (AUTH steht hier für die bereits
-// vorhandene Zugriffsbedingung und ist KEIN ausführbarer Funktionsname):
-//
-// clubs/{clubId}:                       create/update: AUTH && kcSharedRow(clubId)
-// clubs/{clubId}/state/current:         create/update: AUTH && kcSharedRow(clubId)
-// clubs/{clubId}/livePersons/{id}:      create/update: AUTH && kcSharedRow(clubId)
-//                                      delete: AUTH && kcSharedCommand(clubId)
-// clubs/{clubId}/liveGames/{id}:        create/update: AUTH && kcSharedRow(clubId)
-//                                      delete: AUTH && kcSharedCommand(clubId)
-// clubs/{clubId}/live/seating:          create/update: AUTH && kcSharedRow(clubId)
-// clubs/{clubId}/archive/{id}:          create/update: AUTH && kcSharedRow(clubId)
-//                                      delete: AUTH && kcSharedCommand(clubId)
-// clubs/{clubId}/documents/{id}:          create/update: AUTH && kcSharedRow(clubId)
-// clubs/{clubId}/syncCommands/{id}:     create: AUTH && kcSharedReceipt(clubId, id)
-//                                      update/delete: NICHT freigeben
-// Root/Club-Löschungen sind kein unterstützter App-Befehl.
-// Weitere Schreibpfade aus der bestehenden Regeldatei ebenfalls prüfen.
