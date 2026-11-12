@@ -175,13 +175,14 @@ test('new statistics UI exposes cycle and custom range without deleting its hist
  assert(!script.includes('penaltyStatsLog = []'));assert(!script.includes('kegelAbende = []'));
  assert(html.indexOf('js/penalty-statistics.js')<html.indexOf('src="js/firebase.js'));
 });
-test('the real evening archive stores distinct same-day sessions and updates each only once',()=>{
+test('automatic evening backups stay distinct but are excluded from the PDF-only statistics',()=>{
  const source=read('js/app.js'),start=source.indexOf('function archiveCurrentKegelabendForStats()'),end=source.indexOf('\nasync function loadFromFirestore()',start);
  const env={window:{},persons:plain(people),STRAFEN:catalog,kegelAbende:[],penaltyStatsLog:[log('one')],penaltyStatsSettings:null,currentEveningStartedAt:evening,ACTIVE_CLUB:'Club',getClubFirestoreId:()=> 'club'};
  vm.createContext(env);for(const file of ['js/birthdays.js','js/penalty-statistics.js']){vm.runInContext(read(file),env);Object.assign(env,env.window);}
  vm.runInContext(source.slice(start,end),env);env.archiveCurrentKegelabendForStats();
  env.currentEveningStartedAt='2026-11-06T22:00:00Z';env.persons.forEach(p=>p.strafen.g=0);env.archiveCurrentKegelabendForStats();env.archiveCurrentKegelabendForStats();
- assert.equal(env.kegelAbende.length,2);const result=plain(env.KCPenaltyStats.summary(env.penaltyStatsSource(),{people:env.persons}));
+ assert.equal(env.kegelAbende.length,2);const shown=plain(env.KCPenaltyStats.summary(env.penaltyStatsSource(),{people:env.persons}));assert.equal(row(shown).present,0);assert.equal(row(shown).gosse,0);
+ const result=plain(env.KCPenaltyStats.summary(env.penaltyStatsSource(true),{people:env.persons}));
  assert.equal(row(result).present,2);assert.equal(row(result).gosse,3);assert.equal(row(result).nine,1);
 });
 test('real local/cloud snapshots and club cache retain the independent statistics start',async()=>{
