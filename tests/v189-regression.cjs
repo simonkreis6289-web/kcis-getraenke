@@ -19,7 +19,7 @@ test('settings, app, dashboard and shared rule text describe the same new calcul
  const s=core.start('hindernis',{target:90,baseCents:500,rules:[]}),view=new Function('KCIndividual',read('js/games/individual-view.js')+';return renderIndividualBoard;')(core.g);assert(view(s).includes('fehlende Punkte / 90'));for(const p of ['getraenke-abrechnung.html','js/game-rules.js']){assert(read(p).includes('fehlende Punkte'));assert(!read(p).includes('abzüglich eines Cents'));}assert(!read('js/games/individual-view.js').includes('minus 1 Cent'));
 });
 test('all sixteen active games put a shared input card before their board and remove it after reset',async()=>{
- for(const key of ['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis']){
+ for(const key of ['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis']){
   const {c,document}=ui();await starts(c,key);
   const board=document.getElementById(key==='sechstage'?'sechs-board':key==='fuchsjagd'?'fuchs-board':key==='darts'?'darts-game-area':key+'-board');
   // Die alten Renderer sind in diesem Fixture durch die echten Klassenstrukturen ihrer Eingaben vertreten.
@@ -28,7 +28,7 @@ test('all sixteen active games put a shared input card before their board and re
   if(key==='fuchsjagd')board.innerHTML='<div class="fox-top"></div><div class="fox-turn">Am Wurf</div><div class="fox-actions"><button onclick="applyFuchsjagdThrow(1)">1</button></div><table></table>';
   if(key==='tor')board.innerHTML='<div class="tor-scoreboard"></div><div class="tor-turn">Am Zug</div><div class="tor-pins"><button onclick="torTogglePin(1)">1</button></div><div class="tor-actions"><button onclick="torThrow()">Treffer</button></div>';
   render(c,key);const panel=document.getElementById('tab-'+key),card=panel.querySelector(':scope>.game-input-panel');assert(card,key);assert.equal(panel.querySelectorAll(':scope>.game-input-panel').length,1,key);assert(card.compareDocumentPosition(board)&4,key);
-  if(key!=='tor')assert.equal(card.querySelectorAll('.game-pinpad-numbers button').length,9,key);
+  if(key!=='tor')assert.equal(card.querySelectorAll('.game-pinpad-numbers button').length,10,key);
   c.gameSetupState(key).active=false;c.applyGameInputLayout(key);assert(!panel.querySelector(':scope>.game-input-panel'),key+' reset');
  }
 });

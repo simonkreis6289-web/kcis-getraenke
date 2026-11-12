@@ -6,12 +6,12 @@
  function reset(){epoch++;off?.();pager?.destroy();off=null;club='';kind='';session='';turn=0;current=null;pager=null;const box=overlay();if(box)box.hidden=true;inert();}
  function update(state,clubId){
   const view=state?.dashboardClubContent,box=overlay();if(!box)return;
-  if(!view?.open||!['notes','statutes'].includes(view.kind)){if(club)reset();else{box.hidden=true;inert();}return;}
+  if(!view?.open||!['notes','statutes','penalties'].includes(view.kind)){if(club)reset();else{box.hidden=true;inert();}return;}
   const changed=club!==clubId||kind!==view.kind||session!==view.session;
   if(changed){reset();club=clubId;kind=view.kind;session=view.session;turn=Number(view.turn)||0;box.hidden=false;box.dataset.contentKind=kind;
-   document.getElementById('club-content-dashboard-title').textContent=kind==='notes'?'📝 Clubnotizen':'📜 Satzung';
-   document.getElementById('club-content-dashboard-help').textContent=kind==='notes'?'Offene Notizen zuerst · Erledigte am Ende · Jeweils älteste zuerst':'In der App unter Info → Satzung bearbeiten und schließen';
-   const reader=document.getElementById('club-content-dashboard-reader');reader.querySelector('[data-content-body]').setAttribute('aria-label',kind==='notes'?'Notizen':'Satzung');pager=window.KCContentPager.create(reader,{notes:kind==='notes'});const token=epoch;
+   document.getElementById('club-content-dashboard-title').textContent=kind==='notes'?'📝 Clubnotizen':kind==='penalties'?'💶 Strafentabelle':'📜 Satzung';
+   document.getElementById('club-content-dashboard-help').textContent=kind==='notes'?'Offene Notizen zuerst · Erledigte am Ende · Jeweils älteste zuerst':'In der App unter Info → '+(kind==='penalties'?'Strafentabelle':'Satzung')+' bearbeiten und schließen';
+   const reader=document.getElementById('club-content-dashboard-reader');reader.querySelector('[data-content-body]').setAttribute('aria-label',kind==='notes'?'Notizen':kind==='penalties'?'Strafentabelle':'Satzung');pager=window.KCContentPager.create(reader,{notes:kind==='notes'});const token=epoch;
    document.getElementById('club-content-dashboard-status').textContent='Wird geladen …';
    if(window.firestoreApi?.subscribeClubContent)off=window.firestoreApi.subscribeClubContent(club,kind,value=>{if(token!==epoch)return;current=value;document.getElementById('club-content-dashboard-status').textContent='';const data=window.KCClubContent.value(kind,current);pager.update(kind==='notes'?data.items:data.text);},()=>{if(token===epoch)document.getElementById('club-content-dashboard-status').textContent='Verbindung unterbrochen · Letzter geladener Stand';});
    else document.getElementById('club-content-dashboard-status').textContent='Bitte das Dashboard aktualisieren.';

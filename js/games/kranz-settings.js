@@ -1,0 +1,4 @@
+/* Kranzwerte für neue Rennen und Glücksspiralen; laufende Partien behalten ihren Wert. */
+function gameKranzValue(key){const n=Number(extraGameSettings?.[key]?.kranzValue);return Number.isInteger(n)&&n>=1&&n<=12?n:8;}
+function renderRaceKranzSettings(){for(const key of ['sechstage','gluecksspirale']){const el=document.getElementById(key+'-kranz-setting');if(el&&document.activeElement!==el)el.value=gameKranzValue(key);}}
+async function saveRaceKranz(key){const n=Number(document.getElementById(key+'-kranz-setting')?.value);if(!Number.isInteger(n)||n<1||n>12){showToast('Kranzwert: 1 bis 12 Holz eingeben.','error');return;}extraGameSettings={...extraGameSettings,[key]:{kranzValue:n}};persistState();const saved=navigator.onLine&&await saveToFirestore(false);showToast(saved?'Kranzwert für neue Spiele gespeichert.':'Lokal gespeichert; Cloud-Abgleich ausstehend.',saved?'success':'error');}

@@ -316,6 +316,8 @@ function applyLiveGameState(
       ) || 0
     );
 
+  if(remoteDocument.state?.eveningStartedAt&&typeof currentEveningStartedAt!=='undefined'&&currentEveningStartedAt&&remoteDocument.state.eveningStartedAt!==currentEveningStartedAt)return;
+
   const remoteClientAt =
     Number(
       remoteDocument.updatedClientAt ||
@@ -555,6 +557,7 @@ async function saveLiveGame(
           normalizedGameKey,
           state,
           {
+            eveningStartedAt:typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt,
             updatedClientId:
               typeof CLIENT_ID !==
                 'undefined'
@@ -1008,6 +1011,7 @@ async function resetLiveGame(
           normalizedGameKey,
           initialState,
           {
+            eveningStartedAt:typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt,
             updatedClientId:
               typeof CLIENT_ID !==
                 'undefined'
@@ -1175,6 +1179,7 @@ async function runLiveGameAction(
           },
 
           {
+            eveningStartedAt:typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt,
             updatedClientId:
               typeof CLIENT_ID !==
                 'undefined'

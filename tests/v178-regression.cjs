@@ -37,9 +37,9 @@ test('clearing all pins restores nine within the same four-throw turn',()=>{
  let s=started();s=step(s,'throw',{kind:'pins',pins:9}).state;assert.equal(s.turn.standing,9);assert.equal(s.turn.wood,9);assert.equal(s.teamIndex,0);
  s=step(s,'throw',{kind:'pins',pins:4}).state;assert.equal(s.turn.standing,5);assert.throws(()=>step(s,'throw',{kind:'pins',pins:6}),/stehenden Kegel/);
 });
-test('kranz scores eight, leaves the king, and books the special fine rather than a normal nine',()=>{
- let s=started();const result=step(s,'throw',{kind:'kranz'});s=result.state;assert.equal(s.turn.wood,8);assert.equal(s.turn.standing,1);assert.equal(result.effect.added[0].type,'kranz');
- assert.throws(()=>step(s,'throw',{kind:'kranz'}),/volle Bild/);s=step(s,'throw',{kind:'pins',pins:1}).state;assert.equal(s.turn.wood,9);assert.equal(s.turn.standing,9);
+test('kranz scores eight, resets the full image, and books the special fine rather than a normal nine',()=>{
+ let s=started();const result=step(s,'throw',{kind:'kranz'});s=result.state;assert.equal(s.turn.wood,8);assert.equal(s.turn.standing,9);assert.equal(result.effect.added[0].type,'kranz');
+ s=step(s,'throw',{kind:'pins',pins:1}).state;assert.equal(s.turn.wood,9);assert.equal(s.turn.standing,8);assert.throws(()=>step(s,'throw',{kind:'kranz'}),/volle Bild/);
 });
 test('miss and gosse both use a throw without knocking pins; only gosse books the thrower',()=>{
  let s=started();const miss=step(s,'throw',{kind:'miss'});assert.equal(miss.effect.changes.length,0);s=miss.state;

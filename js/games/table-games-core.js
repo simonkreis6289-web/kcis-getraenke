@@ -41,12 +41,13 @@
     const active=new Set(context.people.filter(validPerson).map(p=>p.name));
     if(names.some(n=>!active.has(n)))throw Error('Teilnehmer sind nicht mehr aktiv. Auswahl aktualisieren.');
     if(k==='gluecksspirale'){
+      if(request.kranzValue!==undefined&&(!Number.isInteger(request.kranzValue)||request.kranzValue<1||request.kranzValue>12))throw Error('Kranzwert: 1 bis 12 Holz');s.kranzValue=request.kranzValue??8;
       if(!Array.isArray(request.teams)||request.teams.length<2||request.teams.length>8||names.length<3||request.teams.some(t=>!Array.isArray(t.players)||![1,2].includes(t.players.length))||request.teams.filter(t=>t.players.length===1).length!==names.length%2)throw Error('Zwei bis acht Teams bilden; bei ungerader Anzahl genau ein Einzelteam');
       if(!Number.isInteger(request.target)||request.target<10||request.target>1000)throw Error('Ziel muss zwischen 10 und 1000 Holz liegen');
       s.teams=request.teams.map((t,i)=>({id:'G'+(i+1),name:'Team '+(i+1),players:t.players.slice()}));s.target=request.target;s.scores=Object.fromEntries(s.teams.map(t=>[t.id,0]));
       s.rounds=[{round:1,wood:{}}];
     }else{if(request.cardSettings!==undefined&&!validCardSettings(request.cardSettings))throw Error('Kartenwerte: ganze Zahlen von 0 bis 21 und ein oder zwei unterschiedliche Ass-Werte eingeben');s.cardSettings=cardSettings(request.cardSettings);s.players=names.slice();s.cards=true;s.wood=Object.fromEntries(names.map(n=>[n,0]));}
-    return {...s,id:request.gameId,active:true,startedAt:context.now,eveningStartedAt:context.eveningStartedAt};
+    return {...s,gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true,id:request.gameId,active:true,startedAt:context.now,eveningStartedAt:context.eveningStartedAt};
   }
   function advanceSolo(s){s.currentIndex++;}
   function play(s,entry){
@@ -111,7 +112,7 @@
         }else if(request.action==='undo'){
           if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');
           const history=s.history.slice(0,-1);
-          const rebuilt=initialize({gameKey:s.gameKey,gameId:s.id,players:s.players,teams:s.teams,target:s.target,cards:s.cards,cardSettings:s.cardSettings},{...context,people:participants(s).map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});
+          const rebuilt=initialize({gameKey:s.gameKey,gameId:s.id,players:s.players,teams:s.teams,target:s.target,cards:s.cards,cardSettings:s.cardSettings,kranzValue:s.kranzValue,onTop:s.onTop},{...context,people:participants(s).map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt});
           for(const entry of history)play(rebuilt,entry);
           s=rebuilt;
         }else{
@@ -121,8 +122,8 @@
           const entry={id:request.opId,action:request.action,name:request.action==='card'?(request.playerName||name):name,at:context.now,round:s.round,teamId:s.teams[s.currentIndex]?.id||''};
           if(request.action==='throw'){
             if(!['pins','kranz','gosse','miss'].includes(request.kind))throw Error('Ungültiger Wurf');
-            const pins=request.kind==='kranz'?8:['gosse','miss'].includes(request.kind)?0:Number(request.pins);
-            if(!Number.isInteger(pins)||pins<0||pins>9||(request.kind==='pins'&&pins<1))throw Error('Bitte 1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');
+            const pins=request.kind==='kranz'?(s.kranzValue??8):['gosse','miss'].includes(request.kind)?0:Number(request.pins);
+            if(!Number.isInteger(pins)||pins<0||pins>(request.kind==='kranz'?12:9)||(request.kind==='pins'&&pins<1))throw Error('Bitte 1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');
             Object.assign(entry,{kind:request.kind,pins});
           }else if(request.action==='card'){entry.value=request.value;entry.corrected=Object.hasOwn(s.cardValues,entry.name);}
           else if(request.action!=='stand'||s.gameKey!=='blackjack')throw Error('Ungültige Spielaktion');

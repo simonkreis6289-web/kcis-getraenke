@@ -497,7 +497,7 @@ function archiveCurrentKegelabendForStats() {
   const day=KCPenaltyStats.date(currentEveningStartedAt)||KCBirthdays.today();
   const attendees=persons.filter(p=>!p.isDrinksOnly&&(p.present||p.left)).map(p=>p.name);
   if(!attendees.length)return;
-  const key=KCPenaltyStats.key(currentEveningStartedAt,day),data=penaltyStatsSource(),session=data.sessions.find(s=>s.key===key);
+  const key=KCPenaltyStats.key(currentEveningStartedAt,day),data=penaltyStatsSource(true),session=data.sessions.find(s=>s.key===key);
   if(!Array.isArray(kegelAbende))kegelAbende=[];
   const index=kegelAbende.findIndex(e=>KCPenaltyStats.key(e.eveningStartedAt,e.date)===key);
   const entry={id:'stats_evening_'+encodeURIComponent(key),date:day,eveningStartedAt:currentEveningStartedAt||null,attendees,statsPeople:session?.people||[],club:ACTIVE_CLUB||'',updatedAt:new Date().toISOString()};
@@ -2746,219 +2746,30 @@ async function archiveEvent(snapshot) {
 }
 
 async function startNewKegelabend() {
-  dashboardActiveGame = null;
-  fuchsjagdState = createFuchsjagdState();
-  sichernState = createSichernState();
-  sechstageState = createSechstageState();
-  if(typeof extraRestore==='function')extraRestore({extraGameSettings});
-  siebenerState=null;hindernisState=null;individualGameLedger=[];individualGameRevision=0;
-  blackjackState = createBlackjackState();
-  gluecksspiraleState = createGluecksspiraleState();
-  torState = createTorState();
-  archiveCurrentKegelabendForStats();
-  // Erst nach dem Archivieren beginnt der neue Kegelabend.
-  currentEveningStartedAt = new Date().toISOString();
-
-  persons.forEach(person => {
-    person.present = false;
-    person.attendanceStatus = 'unknown';
-    person.tisch = '';
-
-    person.left = false;
-    person.leftAt = '';
-    person.arrivalTime = '';
-    person.leftEarlyAt = '';
-
-    person.paid = 0;
-    person.boughtThrows = 0;
-
-    person.teamExtra = 0;
-    person.roundExtra = 0;
-
-    person.rounds = [];
-    person.freeStrafen = [];
-    person.tannenbaumCharges = [];
-
-    if (
-      !person.drinks ||
-      typeof person.drinks !== 'object'
-    ) {
-      person.drinks = {};
-    }
-
-    DRINKS.forEach(drink => {
-      person.drinks[drink.key] = 0;
-    });
-
-    if (
-      !person.strafen ||
-      typeof person.strafen !== 'object'
-    ) {
-      person.strafen = {};
-    }
-
-    STRAFEN.forEach(strafe => {
-      person.strafen[strafe.key] = 0;
-    });
-  });
-
-  if (
-    ACTIVE_CLUB &&
-    navigator.onLine &&
-    typeof window.firestoreApi
-      ?.saveLivePerson === 'function'
-  ) {
-    const clubId =
-      getClubFirestoreId(ACTIVE_CLUB);
-
-    try {
-        await Promise.all(
-          persons.map(person =>
-            window.firestoreApi
-              .saveLivePerson(
-                clubId,
-                person.name,
-                {
-                  ...getLivePersonStatusPayload(
-                    person
-                  ),
-                  forceCounterReset: true,
-
-                  drinks: {
-                    ...(person.drinks || {})
-                  },
-
-                  strafen: {
-                    ...(person.strafen || {})
-                  },
-
-                rounds:
-                  Array.isArray(
-                    person.rounds
-                  )
-                    ? person.rounds.map(
-                        round => ({
-                          ...round,
-
-                          drinks: {
-                            ...(round.drinks || {})
-                          }
-                        })
-                      )
-                    : [],
-
-                  freeStrafen:
-                    Array.isArray(
-                      person.freeStrafen
-                    )
-                      ? person.freeStrafen.map(
-                          entry => ({
-                            ...entry
-                          })
-                        )
-                      : []
-                }
-              )
-          )
-        );
-
-      persons.forEach(person => {
-        livePersonCounters.set(
-          person.name,
-          {
-            drinks: {
-              ...(person.drinks || {})
-            },
-
-            strafen: {
-              ...(person.strafen || {})
-            },
-        rounds: [],
-        freeStrafen: [],
-
-            ...getLivePersonStatusPayload(person)
-          }
-        );
-      });
-    } catch (error) {
-      console.error(
-        'Personendaten konnten beim neuen Kegelabend nicht vollständig zurückgesetzt werden:',
-        error
-      );
-
-      showToast(
-        '⚠️ Personen, Getränke oder Strafen wurden nicht vollständig synchronisiert',
-        'error'
-      );
-    }
-  } else if (!navigator.onLine) {
-    showToast(
-      '📴 Neuer Kegelabend wurde lokal gestartet. Live-Reset folgt erst bei Verbindung.',
-      'error'
-    );
-  }
-
-  spiele = [];
-  teamDrinks = {};
-  selectedLoser = null;
-  roundDraftDrinks = {};
-  strafenHistory = [];
-
-  bahnTimerStart = null;
-  bahnTimerRunning = false;
-
-  localStorage.removeItem(
-    getBahnStoppedKey()
-  );
-
-  teamStopwatchActive = false;
-  teamStopwatchRunning = false;
-  teamStopwatchStart = null;
-  teamCountdownDuration = 0;
-  teamCountdownRemainingBefore = 0;
-
-  tannenbaumState =
-    createTannenbaumState();
-
-  dartsState =
-    createDartsState();
-
-  lotterieState =
-    createLotterieState();
-
-  tiberiusState =
-    createTiberiusState();
-
-  seatingOrder = Array(16).fill('');
-
-  menschState =
-    createMenschState();
-
-  plusminusState =
-    createPlusminusState();
-
-  if (
-    typeof saveLiveLotterieState ===
-    'function'
-  ) {
-    const saved =
-      await saveLiveLotterieState();
-
-    if (!saved) {
-      showToast(
-        '⚠️ Lotterie-Livestand konnte nicht zurückgesetzt werden',
-        'error'
-      );
-    }
-  }
-
-  renderAll();
-  persistState();
-
-  showToast(
-    '🆕 Neuer Kegelabend gestartet',
-    'success'
-  );
+  if(!ACTIVE_CLUB||!navigator.onLine||!window.firestoreApi?.startNewEvening){showToast('Zum Starten eines neuen Kegelabends bitte verbinden.','error');return false;}
+  if(window.kcEveningResetBusy)return false;window.kcEveningResetBusy=true;
+  const club=ACTIVE_CLUB,previous=currentEveningStartedAt||'',backup=JSON.parse(JSON.stringify(getSerializableState())),opId='evening_'+crypto.randomUUID();
+  try{
+    // Vor allen Löschungen den abgeschlossenen Abend für die Statistik sichern.
+    archiveCurrentKegelabendForStats();
+    currentEveningStartedAt=new Date().toISOString();
+    dashboardActiveGame=null;window.kcDashboardDraw=null;
+    tannenbaumState=createTannenbaumState();dartsState=createDartsState();lotterieState=createLotterieState();tiberiusState=createTiberiusState();menschState=createMenschState();plusminusState=createPlusminusState();
+    haushochState=createHausState();haustiefState=createHausState();fuchsjagdState=createFuchsjagdState();sichernState=createSichernState();torState=createTorState();sechstageState=createSechstageState();blackjackState = createBlackjackState();gluecksspiraleState = createGluecksspiraleState();
+    if(typeof extraRestore==='function')extraRestore({extraGameSettings});siebenerState=null;hindernisState=null;individualGameLedger=[];individualGameRevision=0;
+    if(typeof indPending!=='undefined'){indPending={};indDrafts={};indBusy={};}if(typeof tablePending!=='undefined'){tablePending={};tableDrafts={};tableBusy={};}if(typeof sechsPending!=='undefined')sechsPending=null;
+    if(typeof extraCancelKranz==='function')extraCancelKranz();window.KCGameOptionsApp?.resetDrafts();
+    for(const p of persons){Object.assign(p,{present:false,attendanceStatus:'unknown',tisch:'',left:false,leftAt:'',arrivalTime:'',leftEarlyAt:'',paid:0,boughtThrows:0,teamExtra:0,roundExtra:0,rounds:[],freeStrafen:[],tannenbaumCharges:[],individualChargeCents:0,strafTotal:0,gameFineBase:{otherNormalCents:0,otherTopCents:0,kingCents:0},drinks:Object.fromEntries(DRINKS.map(d=>[d.key,0])),strafen:Object.fromEntries(STRAFEN.map(d=>[d.key,0]))});}
+    spiele=[];teamDrinks={};selectedLoser=null;roundDraftDrinks={};strafenHistory=[];seatingOrder=Array(16).fill('');
+    bahnTimerStart=null;bahnTimerRunning=false;teamStopwatchActive=false;teamStopwatchRunning=false;teamStopwatchStart=null;teamCountdownDuration=0;teamCountdownRemainingBefore=0;
+    const payload=JSON.parse(JSON.stringify(getFirestoreState()));
+    const result=await window.firestoreApi.startNewEvening(getClubFirestoreId(club),{expectedEvening:previous,opId,payload});
+    if(ACTIVE_CLUB===club&&result?.state)applyLoadedState(result.state);
+    if(ACTIVE_CLUB!==club)return true;
+    for(const p of persons)livePersonCounters.set(p.name,{drinks:{...p.drinks},strafen:{...p.strafen},rounds:[],freeStrafen:[],...getLivePersonStatusPayload(p)});
+    localStorage.removeItem(getBahnStoppedKey());renderAll();persistState();showToast('🆕 Neuer Kegelabend gestartet · alle Spiele geleert','success');return true;
+  }catch(error){if(ACTIVE_CLUB===club){try{const confirmed=await window.firestoreApi.loadClubState(getClubFirestoreId(club));if(confirmed?.eveningResetOp===opId){applyLoadedState(confirmed);renderAll();persistState();showToast('🆕 Neuer Kegelabend gestartet · alle Spiele geleert','success');return true;}}catch{}applyLoadedState(backup);renderAll();persistState();showToast('Kegelabend konnte nicht gestartet werden: '+error.message,'error');}return false;}
+  finally{window.kcEveningResetBusy=false;}
 }
 
 function openBuyThrowModal() {
@@ -5694,7 +5505,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'spiele-einstellungen'],
+  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info', 'notizen']
 };

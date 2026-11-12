@@ -857,7 +857,7 @@ function finishTiberiusGame() {
       id,
       reason: 'Tiberius',
       amount,
-      onTop: !!tiberiusState.onTop,
+      gameFineFrozen:true,onTop: !!tiberiusState.onTop,
       createdAt: new Date().toISOString()
     });
 
@@ -865,7 +865,7 @@ function finishTiberiusGame() {
       id,
       name: p.name,
       amount,
-      onTop: !!tiberiusState.onTop
+      gameFineFrozen:true,onTop: !!tiberiusState.onTop
     });
   });
 
@@ -875,7 +875,7 @@ function finishTiberiusGame() {
     id: historyId,
     type: 'tiberius',
     createdAt: new Date().toISOString(),
-    onTop: !!tiberiusState.onTop,
+    gameFineFrozen:true,onTop: !!tiberiusState.onTop,
     score: tiberiusState.score || 0,
     targets: JSON.parse(JSON.stringify(tiberiusState.targets || [])),
     throws: JSON.parse(JSON.stringify(tiberiusState.throws || [])),
@@ -884,7 +884,7 @@ function finishTiberiusGame() {
   };
 
   if (!Array.isArray(strafenHistory)) strafenHistory = [];
-  strafenHistory.unshift(entry);
+  Object.assign(entry,{gameFineFrozen:tiberiusState.gameFineFrozen===true,onTop:tiberiusState.onTop===true,gameFineOnTop:tiberiusState.onTop===true});strafenHistory.unshift(entry);
 
   if (!Array.isArray(tiberiusState.history)) tiberiusState.history = [];
   tiberiusState.history.unshift(entry);

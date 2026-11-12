@@ -209,6 +209,40 @@ window.firestoreApi = {
   },
 
 
+  async startNewEvening(clubId,request={}) {
+    if(!clubId||!/^evening_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!request.payload||!Number.isFinite(Date.parse(request.payload.currentEveningStartedAt)))throw Error('Ungültiger Kegelabend');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runTransaction(db,async tx=>{
+      const snap=await tx.get(ref),current=snap.exists()?snap.data():{};
+      if(current.eveningResetOp===request.opId)return {eveningStartedAt:current.currentEveningStartedAt,state:current};
+      if(String(current.currentEveningStartedAt||'')!==String(request.expectedEvening||''))throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
+      const payload=JSON.parse(JSON.stringify(request.payload)),evening=payload.currentEveningStartedAt,keys=Object.keys(window.KCGameFinePolicy.titles);
+      const next={...payload,...current};
+      for(const key of ['currentEveningStartedAt','seatingOrder','spiele','selectedLoser','teamDrinks','bahnTimerStart','bahnTimerRunning','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore'])if(payload[key]!==undefined)next[key]=payload[key];
+      const gameDocs=[];for(const key of keys){const target=doc(db,'clubs',clubId,'liveGames',key),old=await tx.get(target);gameDocs.push({key,target,revision:Number(old.exists()?old.data().revision:0)||0});}
+      const roster=new Map();for(const p of [...(payload.persons||[]),...(current.persons||[])])roster.set(String(p.name).trim().toLocaleLowerCase('de'),p);
+      const people=[];for(const p of roster.values()){
+        const target=doc(db,'clubs',clubId,'livePersons',this.getLivePersonId(p.name)),old=await tx.get(target),live=old.exists()?old.data():{};
+        const person={...p,present:false,attendanceStatus:'unknown',tisch:'',left:false,leftAt:'',arrivalTime:'',leftEarlyAt:'',paid:0,boughtThrows:0,teamExtra:0,roundExtra:0,rounds:[],freeStrafen:[],tannenbaumCharges:[],individualChargeCents:0,strafTotal:0,gameFineBase:{otherNormalCents:0,otherTopCents:0,kingCents:0},drinks:Object.fromEntries((next.DRINKS||[]).map(x=>[x.key,0])),strafen:Object.fromEntries((next.STRAFEN||[]).map(x=>[x.key,0]))};
+        people.push({target,person,previous:{...p,...live}});
+      }
+      // Archivieren vor dem Reset, aus den im selben Vorgang gelesenen Live-Zählern.
+      if(window.KCPenaltyStats){
+        const oldPeople=people.map(x=>x.previous),attendees=oldPeople.filter(p=>!p.isDrinksOnly&&(p.present||p.left)).map(p=>p.name),oldEvening=current.currentEveningStartedAt||request.expectedEvening;
+        const data=window.KCPenaltyStats.build({people:oldPeople,catalog:next.STRAFEN||[],logs:current.penaltyStatsLog||[],eveningStartedAt:oldEvening}),session=data.sessions.find(x=>x.key===data.currentKey);
+        const history=new Map();for(const entry of [...(payload.kegelAbende||[]),...(current.kegelAbende||[])])history.set(entry.id||entry.eveningStartedAt||entry.date,entry);
+        if(attendees.length){const entry={id:'stats_evening_'+encodeURIComponent(data.currentKey),date:window.KCPenaltyStats.date(oldEvening)||window.KCPenaltyStats.date(new Date().toISOString()),eveningStartedAt:oldEvening||null,attendees,statsPeople:session?.people||[],updatedAt:new Date().toISOString()};history.set(entry.id,entry);}
+        next.kegelAbende=[...history.values()];
+      }
+      Object.assign(next,{persons:people.map(x=>x.person),currentEveningStartedAt:evening,eveningResetOp:request.opId,eveningResetRevision:(Number(current.eveningResetRevision)||0)+1,dashboardActiveGame:null,dashboardDraw:null,dashboardRandomDraw:null,dashboardRules:null,dashboardGameOverview:{open:false,revision:(Number(current.dashboardGameOverview?.revision)||0)+1},dashboardCashView:null,dashboardClubContent:null,individualGameLedger:[],individualGameRevision:0,strafenHistory:[]});
+      for(const item of gameDocs){
+        const seed=window.KCExtraGames?.keys.includes(item.key)?window.KCExtraGames.empty(item.key):['siebener','hindernis'].includes(item.key)?window.KCIndividual.empty(item.key):['blackjack','gluecksspirale'].includes(item.key)?window.KCTableGames.empty(item.key):item.key==='sechstage'?window.KCSixDays.empty():payload[item.key+'State']||{};
+        const value={...seed,active:false,finished:false,id:'',eveningStartedAt:evening,revision:0};next[item.key+'State']=value;tx.set(item.target,{gameKey:item.key,state:value,eveningStartedAt:evening,revision:item.revision+1,updatedClientAt:Date.now(),updatedClientId:'evening-reset',updatedAt:serverTimestamp()});
+      }
+      for(const item of people)tx.set(item.target,{...item.person,eveningStartedAt:evening,updatedAt:serverTimestamp()});
+      tx.set(ref,next);return {eveningStartedAt:evening,state:next};
+    });
+  },
   async saveClubState(clubId, payload = {}) {
     const ref = doc(
       db,
@@ -220,11 +254,13 @@ window.firestoreApi = {
 
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
+      if(current.eveningResetRevision&&payload.currentEveningStartedAt!==current.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
-      for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent','dashboardGameOverview']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
+      for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent','dashboardGameOverview','dashboardRandomDraw']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
+      if(current.gameOptionsRevision){next.gameOptions=current.gameOptions;next.gameOptionsRevision=current.gameOptionsRevision;next.gameOptionsCommands=current.gameOptionsCommands||[];}
       if(current.gameFineSettingsRevision){next.gameFineSettings=current.gameFineSettings||{};next.gameFineSettingsRevision=current.gameFineSettingsRevision;next.gameFineSettingsCommands=current.gameFineSettingsCommands||[];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
-      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState'];
+      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState','guterschnittState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
       const requestedEvening=Date.parse(payload.currentEveningStartedAt||''),savedEvening=Date.parse(savedEveningId);
       if(gameFields.some(key=>current[key]?.revision)&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
@@ -302,6 +338,27 @@ window.firestoreApi = {
     });
   },
 
+  async updateGameOptions(clubId,request={}) {
+    if(!clubId||!window.KCGameOptions?.valid(request.options)||!/^options_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision))throw Error('Ungültige Spieleinstellungen.');
+    const ref=doc(db,'clubs',clubId,'state','current');return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};if((current.gameOptionsCommands||[]).includes(request.opId))return {options:current.gameOptions,revision:current.gameOptionsRevision};
+      if(Number(current.gameOptionsRevision||0)!==request.expectedRevision)throw Error('Spieleinstellungen wurden inzwischen geändert. Bitte erneut versuchen.');
+      const options=window.KCGameOptions.value(request.options),revision=Number(current.gameOptionsRevision||0)+1;transaction.set(ref,{gameOptions:options,gameOptionsRevision:revision,gameOptionsCommands:[...(current.gameOptionsCommands||[]),request.opId].slice(-128),updatedAt:serverTimestamp()},{merge:true});return {options,revision};
+    });
+  },
+  async drawRandomGame(clubId,request={}) {
+    if(!clubId||!window.KCGameOptions||!['draw','close'].includes(request.action)||!/^gamedraw_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige Spielauslosung.');
+    const ref=doc(db,'clubs',clubId,'state','current');return runTransaction(db,async transaction=>{
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},old=current.dashboardRandomDraw;
+      if(request.action==='close'){if(old?.id===request.drawId)transaction.set(ref,{dashboardRandomDraw:{...old,closed:true,revision:Number(old.revision||0)+1},updatedAt:serverTimestamp()},{merge:true});return null;}
+      if(old?.id===request.opId)return old;
+      if(Number(current.gameOptionsRevision||0)!==request.expectedRevision||String(current.currentEveningStartedAt||'')!==String(request.eveningStartedAt||''))throw Error('Einstellungen oder Kegelabend wurden inzwischen geändert. Bitte erneut versuchen.');
+      const pool=window.KCGameOptions.pool(current.gameOptions),winner=window.KCGameOptions.pick(current.gameOptions),label=g=>g.icon+' '+g.title;
+      const draw={id:request.opId,kind:'game',title:'🎲 Zufälliges Kegelspiel',frames:pool.map(label),winner:label(winner),winnerKey:winner.key,startedAt:Date.now(),steps:26,interval:110,revision:Number(old?.revision||0)+1,closed:false};
+      const update={dashboardRandomDraw:draw,updatedAt:serverTimestamp()};for(const key of ['dashboardCashView','dashboardRules','dashboardClubContent'])if(current[key]?.open)update[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};transaction.set(ref,update,{merge:true});return draw;
+    });
+  },
+
   async updateGameFineSettings(clubId,request={}) {
     const policy=window.KCGameFinePolicy;
     if(!clubId||!policy||!Object.hasOwn(policy.titles,request.gameKey)||typeof request.onTop!=='boolean'||!/^fine_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige OnTop-Einstellung.');
@@ -319,12 +376,12 @@ window.firestoreApi = {
   },
 
   subscribeClubContent(clubId,kind,onChange,onError) {
-    if(!clubId||!['notes','statutes'].includes(kind))throw Error('Ungültige Clubunterlage.');
+    if(!clubId||!['notes','statutes','penalties'].includes(kind))throw Error('Ungültige Clubunterlage.');
     return onSnapshot(doc(db,'clubs',clubId,'documents',kind),snap=>onChange(snap.exists()?snap.data():null),onError);
   },
 
   async updateClubContent(clubId,request={}) {
-    if(!clubId||!window.KCClubContent||!['notes','statutes'].includes(request.kind))throw Error('Clubunterlagen nicht verfügbar.');
+    if(!clubId||!window.KCClubContent||!['notes','statutes','penalties'].includes(request.kind))throw Error('Clubunterlagen nicht verfügbar.');
     const ref=doc(db,'clubs',clubId,'documents',request.kind);
     return runTransaction(db,async transaction=>{
       const snap=await transaction.get(ref),before=snap.exists()?snap.data():null;
@@ -383,7 +440,7 @@ window.firestoreApi = {
   },
 
   async setDashboardRules(clubId,request={}) {
-    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
+    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
     if(request.rulesConfig!==undefined&&!(request.gameKey==='hindernis'&&window.KCIndividual?.validSettings(request.rulesConfig)||request.gameKey==='siebener'&&window.KCIndividual?.validSevenSettings(request.rulesConfig)||window.KCExtraGames?.keys.includes(request.gameKey)&&window.KCExtraGames.validSettings(request.gameKey,request.rulesConfig)))throw new Error('Ungültige Spielregeln');
     const ref=doc(db,'clubs',clubId,'state','current');
     return runTransaction(db,async transaction=>{
@@ -391,7 +448,7 @@ window.firestoreApi = {
       if((before.commands||[]).includes(request.opId))return before;
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
-      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener','bergundtal','ballermann','lattenzaun'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       const updates={dashboardRules:value,updatedAt:serverTimestamp()};if(value.open)for(const key of ['dashboardClubContent','dashboardGameOverview', 'dashboardCashView'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
@@ -429,6 +486,7 @@ window.firestoreApi = {
       const now=new Date(request.now||Date.now()).toISOString(),evening=existingEvening||now;
       const before=current.sechstageState?.eveningStartedAt===existingEvening?current.sechstageState:window.KCSixDays.empty();
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
+      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,'sechstage')===true};
       const result=window.KCSixDays.command(before,request,context),next=result.state;
       const effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCSixDays.effects(before,next,request,context);
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
@@ -484,8 +542,9 @@ window.firestoreApi = {
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:window.KCTableGames.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId};
       let result,effect;
+      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,request.gameKey)===true};
       try{result=window.KCTableGames.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:window.KCTableGames.effects(before,result.state,request,context);}catch(error){error.code='table-game-rejected';throw error;}
-      const next=result.state;
+      const next=result.state;if(request.action==='start')Object.assign(next,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});if(next.gameFineFrozen)for(const row of effect.moneyAdded||[])Object.assign(row,{gameFineFrozen:true,onTop:next.onTop===true});
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
       const affected=result.repeat?(receipt?.changes||[]):effect.changes;
       const groups=new Map();
@@ -525,7 +584,7 @@ window.firestoreApi = {
     });
   },
   async transactIndividualGame(clubId,request={}) {
-    const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun'].includes(gameKey))throw new Error('Unbekanntes Spiel');
+    const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(gameKey))throw new Error('Unbekanntes Spiel');
     const stateKey=gameKey+'State',core=['siebener','hindernis'].includes(gameKey)?window.KCIndividual:window.KCExtraGames;
     if(!clubId||!core)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
@@ -538,8 +597,9 @@ window.firestoreApi = {
       const before=current[stateKey]?.eveningStartedAt===existingEvening?current[stateKey]:core.empty(gameKey);
       const context={people:Array.isArray(current.persons)?current.persons:[],catalog:current.STRAFEN||[],now,eveningStartedAt:evening,club:request.clubName||clubId,groups:current.groupSettings||{}};
       let result,effect;
+      if(request.action==='start')request={...request,onTop:request.onTop===true&&window.KCGameOptions?.eligible(current.gameOptions,gameKey)===true};
       try{result=core.command(before,request,context);effect=result.repeat?{changes:[],added:[],removed:[]}:core.effects(before,result.state,request,context);}catch(error){error.code='individual-game-rejected';throw error;}
-      const next=result.state;
+      const next=result.state;if(request.action==='start')Object.assign(next,{gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true});if(next.gameFineFrozen)for(const row of effect.moneyAdded||[])Object.assign(row,{gameFineFrozen:true,onTop:next.onTop===true});
       const receipt=result.repeat?(next.receipts||[]).find(item=>item.id===request.opId):null;
       const affected=result.repeat?(receipt?.changes||[]):effect.changes;
       const groups=new Map();
@@ -673,6 +733,8 @@ window.firestoreApi = {
     return runTransaction(
       db,
       async transaction => {
+        const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
+        if(root.eveningResetRevision&&metadata.eveningStartedAt!==root.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt');
         const snapshot =
           await transaction.get(
             gameRef
@@ -880,6 +942,8 @@ window.firestoreApi = {
     return runTransaction(
       db,
       async transaction => {
+        const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
+        if(root.eveningResetRevision&&metadata.eveningStartedAt!==root.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt');
         const snapshot =
           await transaction.get(
             gameRef
@@ -1046,16 +1110,18 @@ async loadLiveLotterie(clubId) {
     : null;
 },
 
-async saveLiveLotterie(clubId, state = {}) {
+async saveLiveLotterie(clubId, state = {}, eveningStartedAt = typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt) {
   // Lotterie uses the same canonical `state` envelope as every other live game.
   // Keep the revision monotonic so the app and dashboard see the same snapshot.
   const ref = doc(db, 'clubs', clubId, 'liveGames', 'lotterie');
   return runTransaction(db, async transaction => {
+    const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
+    if(root.eveningResetRevision&&eveningStartedAt!==root.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt');
     const snapshot = await transaction.get(ref);
     const previous = snapshot.exists() ? snapshot.data() : {};
     transaction.set(ref, {
       gameKey: 'lotterie',
-      state: cleanLiveGameValue(state),
+      state: cleanLiveGameValue({...state,eveningStartedAt}),
       revision: (Number(previous.revision) || 0) + 1,
       updatedClientId: typeof CLIENT_ID !== 'undefined' ? CLIENT_ID : 'lotterie',
       updatedClientAt: Date.now(),
@@ -1069,7 +1135,8 @@ async changeLiveLotterieThrow(
   personName,
   colIndex,
   value,
-  throwMeta = null
+  throwMeta = null,
+  eveningStartedAt = typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt
 ) {
   const ref = doc(
     db,
@@ -1082,6 +1149,8 @@ async changeLiveLotterieThrow(
   return runTransaction(
     db,
     async transaction => {
+      const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
+      if(root.eveningResetRevision&&eveningStartedAt!==root.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt');
       const snap =
         await transaction.get(ref);
 

@@ -801,7 +801,7 @@ function finishTannenbaumGame() {
       id: historyEntry.id,
       amount: teamTotals.T1,
       reason: 'Tannenbaum',
-        onTop: !!tannenbaumOnTop,
+        gameFineFrozen:true,onTop: !!tannenbaumState.onTop,
       createdAt: historyEntry.createdAt
     });
 
@@ -819,7 +819,7 @@ function finishTannenbaumGame() {
       id: historyEntry.id,
       amount: teamTotals.T2,
       reason: 'Tannenbaum',
-        onTop: !!tannenbaumOnTop,
+        gameFineFrozen:true,onTop: !!tannenbaumState.onTop,
       createdAt: historyEntry.createdAt
     });
 
@@ -831,7 +831,7 @@ function finishTannenbaumGame() {
   });
 
   if (!Array.isArray(strafenHistory)) strafenHistory = [];
-  strafenHistory.unshift(historyEntry);
+  Object.assign(historyEntry,{gameFineFrozen:tannenbaumState.gameFineFrozen===true,onTop:tannenbaumState.onTop===true,gameFineOnTop:tannenbaumState.onTop===true});strafenHistory.unshift(historyEntry);
 
   tannenbaumState = createTannenbaumState();
 

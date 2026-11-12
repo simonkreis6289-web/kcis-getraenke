@@ -20,7 +20,7 @@ async function indRun(key,action,fields={}){
  if(!IND_KEYS.includes(key)||indBusy[key]||!ACTIVE_CLUB)return;
  if(!navigator.onLine||!window.firestoreApi?.transactIndividualGame){showToast('Zum Spielen bitte verbinden','error');return;}
  const club=ACTIVE_CLUB;if(indPending[key]?.club!==club)indPending[key]=null;
- if(!indPending[key])indPending[key]={club,request:{gameKey:key,gameId:fields.gameId||indGet(key).id,expectedRevision:indGet(key).revision,opId:'ind_'+crypto.randomUUID(),now:new Date().toISOString(),eveningStartedAt:currentEveningStartedAt||'',clubName:club,action,...fields}};
+ if(!indPending[key])indPending[key]={club,request:{gameKey:key,gameId:fields.gameId||indGet(key).id,expectedRevision:indGet(key).revision,opId:'ind_'+crypto.randomUUID(),now:new Date().toISOString(),eveningStartedAt:currentEveningStartedAt||'',clubName:club,action,...fields,...(action==='start'?{onTop:window.KCGameOptionsApp?.selected(key)===true}:{})}};
  const pending=indPending[key];indBusy[key]=true;renderIndividualGame(key);let rejected=false;
  try{
   if(action==='start'&&typeof saveToFirestore==='function'&&!(await saveToFirestore(false)))throw Error('Teilnehmer konnten nicht synchronisiert werden');
