@@ -113,3 +113,10 @@ andere Abschnitte rechts. Tabellen fließen nicht über CSS-Textspalten ineinand
 Die Zeilen sind kompakter; bei Bedarf wird innerhalb einer begrenzten lesbaren
 Schriftgröße verkleinert, bevor weiterhin gemessene Seiten erzeugt werden.
 Auch auf Folgeseiten werden Geldstrafen ausschließlich links dargestellt.
+
+## V218: Spielübersicht statt leerem Dashboard-Platzhalter
+
+Ein gespeicherter geschlossener Spiele-Schalter darf bei fehlenden oder leeren
+Spieldaten keinen leeren Begrüßungsbildschirm erzwingen. Das Dashboard zeigt dann
+alle 20 Spiele in der Mitte. Laufende Spielstände und die ausdrücklich eingeblendete
+Übersicht während eines Spiels behalten ihre bisherigen Anzeigewege.

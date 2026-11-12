@@ -5879,7 +5879,7 @@ if ('serviceWorker' in navigator) {
     try {
       const reg =
         await navigator.serviceWorker.register(
-          './sw.js?v=20261112-v217',
+          './sw.js?v=20261112-v218',
           {
             updateViaCache: 'none'
           }
