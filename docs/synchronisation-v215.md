@@ -91,3 +91,25 @@ Die vollständigen Regeln liegen in `firestore.rules`. Die bisherigen offenen
 Regeln sind durch den Nutzer bestätigt; die Erweiterung muss nicht installiert
 werden. Die Regeln wurden lokal auf ihre Guard-Bedingungen geprüft, aber weder
 mit einem Firebase-Emulator noch gegen die produktive Datenbank ausgeführt.
+
+## V217: gleichzeitige Buchungen und Dashboard-Spalten
+
+Der Firestore-Transaktionsadapter verwendet zehn SDK-Versuche pro Transaktion.
+Vorübergehende Fehler `aborted`, `unavailable` und `deadline-exceeded` werden bei
+Bedarf zusätzlich begrenzt wiederholt. Die Buchungskennung bleibt gleich; ein
+bereits bestätigter Beleg wird zuerst gelesen. Bei `permission-denied` wird nur
+dann erneut versucht, wenn der Serverstand seit dem letzten Transaktions-Read
+nachweislich eine höhere Revision erhalten hat. Eine echte Berechtigungsablehnung
+bei unverändertem Stand bleibt bestehen. Spielkonflikte umgehen ihre Revisions-
+und Vergleichsprüfungen nicht. Fehlercodes erscheinen im Verbindungsstatus und
+bei fehlgeschlagenen Einzel-/Mehrfachbuchungen.
+
+Die Serverursache des auf dem Handy gemeldeten Fehlers konnte ohne konkreten
+Fehlercode und produktiven Zugriff noch nicht bestätigt werden. Die neuen Tests
+erzwingen diese Fehlerpfade im Transaktionsmodell; sie sind kein Live-Test.
+
+Die Dashboard-Strafentabelle hat feste Abschnittsspalten: Geldstrafen links,
+andere Abschnitte rechts. Tabellen fließen nicht über CSS-Textspalten ineinander.
+Die Zeilen sind kompakter; bei Bedarf wird innerhalb einer begrenzten lesbaren
+Schriftgröße verkleinert, bevor weiterhin gemessene Seiten erzeugt werden.
+Auch auf Folgeseiten werden Geldstrafen ausschließlich links dargestellt.

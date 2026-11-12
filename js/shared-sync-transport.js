@@ -1,7 +1,7 @@
 /* Firestore transaction adapter. Every confirmed command updates one canonical root. */
 (()=>{
   function create({
-    db,doc,runTransaction,serverTimestamp,core,policy
+    db,doc,runTransaction,getDocFromServer,serverTimestamp,core,policy,delay=ms=>new Promise(resolve=>setTimeout(resolve,ms))
   }){
     const ref=club=>doc(db,'clubs',club,'state','current'),personRef=(club,name)=>doc(db,'clubs',club,'livePersons',encodeURIComponent(core.norm(name))),receipt=(club,id)=>doc(db,'clubs',club,'syncCommands',id),path=r=>r.path||r;
     function stamp(value,revision,id){
@@ -9,8 +9,34 @@
         ...value,syncProtocol:1,syncRevision:revision,syncOperation:id,updatedAt:serverTimestamp()
       };
     }
+    const transact=handler=>runTransaction(db,handler,{maxAttempts:10});
+    async function confirmedCommand(club,context,handler){
+      for(let attempt=0;attempt<4;attempt++){
+        let observedRevision=null;
+        try{return await transact(async tx=>handler(tx,revision=>{observedRevision=revision;}));}
+        catch(error){
+          const code=String(error.code||'').replace(/^firestore\//,''),transient=['aborted','unavailable','deadline-exceeded'].includes(code);
+          if(!context||!transient&&code!=='permission-denied')throw error;
+          let advanced=false;
+          if(typeof getDocFromServer==='function'){
+            try{
+              const proof=await getDocFromServer(receipt(club,context.opId));
+              if(proof.exists())return proof.data().result;
+              if(code==='permission-denied'){
+                const latest=await getDocFromServer(ref(club));
+                advanced=observedRevision!==null&&latest.exists()&&Number(latest.data().syncRevision||0)>observedRevision;
+              }
+            }catch{/* Preserve the original SDK error when confirmation is unreachable. */}
+          }
+          // A permission failure with an unchanged root is a real denial, not
+          // evidence of a race. Never weaken rules or retry it indefinitely.
+          if(attempt===3||!transient&&!advanced)throw error;
+          await delay(60*Math.pow(2,attempt)+Math.floor(Math.random()*50));
+        }
+      }
+    }
     async function initialize(club,defaults,opId){
-      return runTransaction(db,async tx=>{
+      return transact(async tx=>{
         const target=ref(club),snap=await tx.get(target),saved=snap.exists()?snap.data():null;
         if(saved?.syncInitialized===true)return saved;
         let state=core.clone({
@@ -63,8 +89,9 @@
     }
     async function transaction(club,context,fn){
       if(context?.preview)return context.preview.run(fn);
-      return runTransaction(db,async raw=>{
+      return confirmedCommand(club,context,async(raw,observed)=>{
         const rootRef=ref(club),rootSnap=await raw.get(rootRef),root=rootSnap.exists()?rootSnap.data():{};
+        observed(Number(root.syncRevision)||0);
         if(!context){
           if(root.syncProtocol)throw Error('Diese App-Version ist veraltet. Bitte neu laden.');
           return fn(raw);

@@ -187,7 +187,7 @@ function normalizeLiveGameDocument(
   };
 }
 
-const sharedTransport=window.KCSharedTransport?.create({db,doc,runTransaction,serverTimestamp,core:window.KCSharedCore,policy:window.KCGameFinePolicy});
+const sharedTransport=window.KCSharedTransport?.create({db,doc,runTransaction,getDocFromServer,serverTimestamp,core:window.KCSharedCore,policy:window.KCGameFinePolicy});
 async function runSharedTransaction(clubId,context,_db,handler){return sharedTransport?sharedTransport.transaction(clubId,context,handler):runTransaction(_db,handler);}
 async function runSharedSet(clubId,context,ref,value,options){if(!sharedTransport)return setDoc(ref,value,options);return sharedTransport.transaction(clubId,context,async tx=>{await tx.get(ref);tx.set(ref,value,options);});}
 async function runSharedDelete(clubId,context,ref){if(!sharedTransport)return deleteDoc(ref);return sharedTransport.transaction(clubId,context,async tx=>{await tx.get(ref);tx.delete(ref);});}

@@ -2119,6 +2119,7 @@ function openLeftEarlyModalByName(
 // Nach bestätigtem Firestore-Schreibvorgang sofort den tatsächlichen Serverwert
 // anzeigen. Live-Snapshots bleiben für alle anderen Clients zuständig.
 function applyConfirmedLiveCounter(personName, category, key, value) {
+  if(typeof window!=='undefined'&&window.KCSharedSync&&!window.KCSharedSync.inUnit){const latest=window.KCSharedSync.server?.persons?.find(p=>p.name===personName)?.[category]?.[key];if(Number.isFinite(latest))value=latest;}
   const person = persons.find(p => p.name === personName);
   if (!person || !['drinks','strafen'].includes(category)) return;
   if (!person[category] || typeof person[category] !== 'object') person[category] = {};
@@ -2220,7 +2221,7 @@ async function changeSyncedPersonCounter(
     );
 
     showToast(
-      '❌ Änderung konnte nicht gespeichert werden',
+      '❌ Nicht gespeichert'+(error.code?' ['+error.code+']':': '+error.message),
       'error'
     );
 
@@ -2337,7 +2338,7 @@ async function changeMultipleSyncedPersonCounters(
     );
 
     showToast(
-      '❌ Mehrfachbuchung konnte nicht gespeichert werden',
+      '❌ Nicht gespeichert'+(error.code?' ['+error.code+']':': '+error.message),
       'error'
     );
 

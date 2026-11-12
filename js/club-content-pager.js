@@ -1,15 +1,18 @@
 /* Gemessene Seiten statt Scrollflächen; App und Dashboard verwenden dieselbe Aufteilung. */
 (() => {
  const model=window.KCClubContent;
- function create(root,{notes=false,penalties=false,controls=false,onPage}={}){
+ function create(root,{notes=false,penalties=false,penaltyDashboard=false,controls=false,onPage}={}){
   let source=notes?[]:penalties?{schema:1,groups:[]}:'' ,pages=[source],index=0,stamp='',frame=0,editing=false,disposed=false,laidOut=false,pendingTurn=0,targetNote='';
   const body=root.querySelector('[data-content-body]'),measure=root.querySelector('[data-content-measure]'),label=root.querySelector('[data-content-page]'),prev=root.querySelector('[data-content-prev]'),next=root.querySelector('[data-content-next]');
-  function paint(){body.innerHTML=penalties?window.KCPenaltyTable.markup(pages[index]):notes?pages[index].map(f=>model.noteMarkup(f.note,f.text,f.continued,controls)).join('')||'<p class="club-content-empty">Noch keine Notizen. Über „Neue Notiz“ einen Eintrag anlegen.</p>':model.statutesMarkup(pages[index],{before:source.slice(0,pages.slice(0,index).join('').length)});label.textContent='Seite '+(index+1)+' von '+pages.length;prev.disabled=index===0;next.disabled=index===pages.length-1;onPage?.(index,pages.length);}
+  const tableOptions=()=>({columns:penaltyDashboard,leftGroup:source?.groups?.find(g=>/geldstraf/i.test(g.title))?.id||source?.groups?.[0]?.id});
+  function paint(){body.innerHTML=penalties?window.KCPenaltyTable.markup(pages[index],tableOptions()):notes?pages[index].map(f=>model.noteMarkup(f.note,f.text,f.continued,controls)).join('')||'<p class="club-content-empty">Noch keine Notizen. Über „Neue Notiz“ einen Eintrag anlegen.</p>':model.statutesMarkup(pages[index],{before:source.slice(0,pages.slice(0,index).join('').length)});label.textContent='Seite '+(index+1)+' von '+pages.length;prev.disabled=index===0;next.disabled=index===pages.length-1;onPage?.(index,pages.length);}
   function fits(html){measure.innerHTML=html;return measure.scrollHeight<=measure.clientHeight+1&&measure.scrollWidth<=measure.clientWidth+1;}
   function layout(){
    frame=0;if(disposed||!body.clientWidth||!body.clientHeight||editing)return;
    measure.style.width=body.clientWidth+'px';measure.style.height=body.clientHeight+'px';
-   pages=penalties?window.KCPenaltyTable.pages(source,fits):notes?model.notePages(source,rows=>fits(rows.map(f=>model.noteMarkup(f.note,f.text,f.continued,controls)).join(''))):model.statutesPages(source,fits);
+   let allOnOnePage=false;
+   if(penalties&&penaltyDashboard){for(const scale of [1,.95,.9,.85,.8,.75,.7,.65]){body.style.setProperty('--pt-scale',String(scale));measure.style.setProperty('--pt-scale',String(scale));if(fits(window.KCPenaltyTable.markup(source,tableOptions()))){pages=[source];allOnOnePage=true;break;}}}
+   if(!allOnOnePage)pages=penalties?window.KCPenaltyTable.pages(source,fits,tableOptions()):notes?model.notePages(source,rows=>fits(rows.map(f=>model.noteMarkup(f.note,f.text,f.continued,controls)).join(''))):model.statutesPages(source,fits);
    if(targetNote&&notes){const found=pages.findIndex(page=>page.some(f=>f.note.id===targetNote));if(found>=0)index=found;targetNote='';}
    index=Math.max(0,Math.min(index+pendingTurn,pages.length-1));pendingTurn=0;laidOut=true;paint();
   }

@@ -34,3 +34,11 @@
 #club-content-dashboard[data-content-kind=penalties] .penalty-rules-table th,#club-content-dashboard[data-content-kind=penalties] .penalty-rules-table td{padding:7px 10px}
 @media(min-width:1400px){#club-content-dashboard[data-content-kind=penalties] .penalty-table-document{height:100%;column-count:2;column-fill:auto;column-gap:24px}}
 @media(max-width:700px){.penalty-editor-group{padding:9px}.penalty-editor-group-heading{align-items:flex-start;flex-wrap:wrap}.penalty-editor-table-wrap .penalty-rules-table{min-width:620px}.penalty-table-document{font-size:12px}.penalty-rules-table th,.penalty-rules-table td{padding:6px}.penalty-rules-table .pt-offence{width:38%}.penalty-rules-table .pt-amount{width:27%}.penalty-rules-table .pt-note{width:35%}}
+/* Fixed section columns: money penalties never flow into the right column. */
+#club-content-dashboard[data-content-kind=penalties] .penalty-dashboard-columns{display:grid;grid-template-columns:1fr 1fr;gap:22px;height:auto;column-count:1;column-fill:initial;font-size:clamp(12px,calc(.93vw * var(--pt-scale,1)),19px);line-height:1.28}
+.penalty-dashboard-columns .pt-column{min-width:0}
+#club-content-dashboard[data-content-kind=penalties] .penalty-dashboard-columns .penalty-table-section{break-inside:avoid;margin-bottom:16px}
+#club-content-dashboard[data-content-kind=penalties] .penalty-dashboard-columns .penalty-rules-table th,#club-content-dashboard[data-content-kind=penalties] .penalty-dashboard-columns .penalty-rules-table td{padding:5px 8px}
+.penalty-dashboard-columns .pt-money-column .pt-offence{width:56%}.penalty-dashboard-columns .pt-money-column .pt-amount{width:20%}.penalty-dashboard-columns .pt-money-column .pt-note{width:24%}
+.penalty-dashboard-columns .pt-other-column .pt-offence{width:32%}.penalty-dashboard-columns .pt-other-column .pt-amount{width:25%}.penalty-dashboard-columns .pt-other-column .pt-note{width:43%}
+@media(max-width:1000px){#club-content-dashboard[data-content-kind=penalties] .penalty-dashboard-columns{display:block} .penalty-dashboard-columns .pt-other-column{margin-top:16px}}
