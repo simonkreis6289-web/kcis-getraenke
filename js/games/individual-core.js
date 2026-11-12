@@ -81,9 +81,9 @@
   if(req.gameKey==='hindernis'&&!validSettings(req.config))throw Error('Ziel, Betrag und Hindernispunkte prüfen');
   const seven=req.sevenSettings??req.config?.seven;
   if(req.gameKey==='siebener'&&seven!==undefined&&!validSevenSettings(seven))throw Error('Preis pro Pin und Kranzwert prüfen');
-  const s=empty(req.gameKey);if(req.gameKey==='siebener')s.sevenVersion=legacy?1:2;s.id=req.gameId;s.active=true;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):{...defaults(),seven:sevenSettings(seven)};s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
+  const s=empty(req.gameKey);if(req.gameKey==='siebener')s.sevenVersion=legacy?1:2;s.id=req.gameId;s.active=true;s.gameFineFrozen=true;s.onTop=req.onTop===true;s.gameFineOnTop=s.onTop;s.players=names.slice();s.config=req.gameKey==='hindernis'?settings(req.config):{...defaults(),seven:sevenSettings(seven)};s.scores=Object.fromEntries(names.map(n=>[n,0]));s.sheet=Object.fromEntries(names.map(n=>[n,{}]));s.startedAt=ctx.now;s.eveningStartedAt=ctx.eveningStartedAt;return s;
  }
- function booking(s,e,name,cents,reason){if(cents>0)s.bookings.push({id:'indcharge_'+s.id+'_'+e.id+'_'+s.players.indexOf(name),personName:name,amountCents:cents,reason,gameKey:s.gameKey,onTop:false,eveningStartedAt:s.eveningStartedAt,gameId:s.id});}
+ function booking(s,e,name,cents,reason){if(cents>0)s.bookings.push({id:'indcharge_'+s.id+'_'+e.id+'_'+s.players.indexOf(name),personName:name,amountCents:cents,reason,gameKey:s.gameKey,gameFineFrozen:s.gameFineFrozen===true,onTop:s.onTop===true,eveningStartedAt:s.eveningStartedAt,gameId:s.id});}
  function next(s){
   s.index++;
   for(let i=0;i<=s.players.length;i++){
@@ -140,7 +140,7 @@
     if(req.action==='finish'){
      if(!s.readyToFinish&&!reachedTarget(s))throw Error(s.gameKey==='hindernis'?'Zuerst die Zielpunktzahl erreichen':'Zuerst die Runde zu Ende spielen');finish(s);
     }else if(req.action==='undo'){
-     if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');const history=s.history.slice(0,-1),rebuilt=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config},{...ctx,people:s.players.map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt},s.gameKey==='siebener'&&s.sevenVersion!==2);for(const e of history)play(rebuilt,e);s=rebuilt;
+     if(!s.history.length)throw Error('Noch keine Aktion zum Zurücknehmen');const history=s.history.slice(0,-1),rebuilt=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config,onTop:s.onTop},{...ctx,people:s.players.map(name=>({name,present:true})),now:s.startedAt,eveningStartedAt:s.eveningStartedAt},s.gameKey==='siebener'&&s.sevenVersion!==2);for(const e of history)play(rebuilt,e);s=rebuilt;
     }else{
      if(s.readyToFinish||reachedTarget(s))throw Error('Das Ziel oder Rundenende ist erreicht. Abschließen oder zurücknehmen');
      if(s.history.length>=2000)throw Error('Maximale Spiellänge erreicht');

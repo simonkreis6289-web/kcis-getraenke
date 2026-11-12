@@ -1,6 +1,6 @@
 /* Gemeinsamer Spielkatalog und Sichtbarkeit der Dashboard-Mitte. */
 (()=>{
- const catalog=[
+ const catalog=[{key:"guterschnitt",icon:"✂️",title:"Der gute Schnitt",description:"Zahlenfolge treffen · steigende Wurfzahl bei Fehlversuchen"},
  {
   "key": "tannenbaum",
   "icon": "🌲",

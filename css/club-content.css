@@ -4,7 +4,7 @@
 .club-content-reader,.club-content-editor{position:relative;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;min-width:0}.club-content-page-body,.club-content-measure{box-sizing:border-box;padding:14px;background:#f7f9fd;border:1px solid #d8e0ed;border-radius:12px;overflow:hidden;overflow-wrap:anywhere}.club-content-page-body{flex:1;min-height:0;min-width:0}.club-content-measure{position:fixed;left:-20000px;top:0;visibility:hidden;pointer-events:none}.club-content-pagination{display:flex;justify-content:center;align-items:center;gap:14px;flex:none;font:600 13px/1.3 'DM Sans',sans-serif}.club-content-pagination span{font-variant-numeric:tabular-nums;min-width:100px;text-align:center}
 .club-note{border:1px solid #cbd7e9;border-left:4px solid #e5a82b;border-radius:10px;background:#fff;padding:12px;margin:0 0 10px;break-inside:avoid;box-sizing:border-box}.club-note:last-child{margin-bottom:0}.club-note-heading{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:8px;font:600 12px/1.4 'DM Sans',sans-serif;color:#65758e}.club-note-heading time{margin-left:auto}.club-note-check{display:flex;align-items:center;gap:7px;cursor:pointer}.club-note-check input{width:20px;height:20px;accent-color:#23674a;flex:none}.club-note-text,.club-statutes-text{white-space:pre-wrap;overflow-wrap:anywhere;font:400 15px/1.6 'DM Sans',sans-serif}.club-note.is-done{border-left-color:#6d8b7d;background:#f0f4f2;color:#68746f}.club-note.is-done .club-note-text{text-decoration:line-through;text-decoration-color:#9aa7a0}.club-content-stage .club-note-delete{min-height:30px;padding:4px 9px;font-size:11px;color:#a2393c;background:#fff5f4}.club-content-empty{font-size:15px;line-height:1.6;color:#66758c;margin:0}.club-statutes-text{font-size:16px;line-height:1.7}
 .club-content-editor textarea,.club-editor-measure{box-sizing:border-box;padding:14px;border:1px solid #a7b9d5;border-radius:12px;font:400 16px/1.7 'DM Sans',sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;overflow:hidden}.club-content-editor textarea{display:block;flex:1;min-height:0;min-width:0;width:100%;resize:none;background:#f7f9fd;color:#20304d}.club-editor-measure{position:fixed;left:-20000px;top:0;visibility:hidden;pointer-events:none}.club-editor-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}.club-info-tabs{display:flex;gap:8px;margin:0 0 12px}.club-info-tabs button{padding:9px 18px;border:1px solid #b7c6df;border-radius:9px;background:#f2f6fc;color:#233c65;font-weight:700;cursor:pointer}.club-info-tabs button[aria-selected=true]{background:#253d6a;color:#fff}
-.club-content-stage [hidden],#club-content-dashboard[hidden],#club-content-dashboard [hidden],#club-info-dashboard[hidden],#club-info-statutes[hidden]{display:none!important}
+.club-content-stage [hidden],#club-content-dashboard[hidden],#club-content-dashboard [hidden],#club-info-dashboard[hidden],#club-info-statutes[hidden],#club-info-penalties[hidden]{display:none!important}
 #club-content-dashboard{position:fixed;inset:0;z-index:1500;display:flex;flex-direction:column;gap:14px;box-sizing:border-box;padding:28px;background:#f0f4fb;color:#20304d;overflow:hidden}#club-content-dashboard h2{margin:0;font:800 clamp(26px,3vw,44px)/1.2 'DM Sans',sans-serif}#club-content-dashboard-help{margin:5px 0 0;font:400 15px/1.4 'DM Sans',sans-serif;color:#536580}#club-content-dashboard .club-note-text,#club-content-dashboard .club-statutes-text{font-size:clamp(20px,1.65vw,32px);line-height:1.6}#club-content-dashboard .club-note-heading{font-size:16px}#club-content-dashboard .club-note{padding:16px;border-left-width:6px}#club-content-dashboard .club-content-pagination{font-size:18px}#club-content-dashboard button{font-size:17px;min-height:44px}
 @media(max-width:650px){.club-content-stage{padding:10px;gap:7px}.club-content-toolbar{gap:7px}.club-content-actions{gap:5px}.club-content-stage button{padding:7px 9px;font-size:12px;min-height:36px}.club-content-page-body,.club-content-measure{padding:9px}.club-note{padding:9px}.club-note-heading{gap:5px 8px}.club-note-heading time{font-size:11px}.club-note-text{font-size:14px}#club-content-dashboard{padding:14px;gap:9px}.club-content-pagination{gap:7px}.club-content-pagination span{min-width:90px}}
 
@@ -18,11 +18,11 @@
 .statutes-list li::marker{color:#294a79;font-weight:700}
 .statutes-list li.is-continuation{list-style:none}
 .statutes-gap{height:.55em}
-#club-statutes-reader .club-content-page-body,#club-statutes-reader .club-content-measure{background:#fff;padding:20px}
-#club-statutes-status:empty,#club-content-dashboard-status:empty{display:none}
-#club-statutes-stage{background:#f7f9fd}
+:is(#club-statutes-reader,#club-penalties-reader) .club-content-page-body,:is(#club-statutes-reader,#club-penalties-reader) .club-content-measure{background:#fff;padding:20px}
+:is(#club-statutes-status,#club-penalties-status):empty,#club-content-dashboard-status:empty{display:none}
+:is(#club-statutes-stage,#club-penalties-stage){background:#f7f9fd}
 body.club-statutes-is-editing{overflow:hidden}
-#club-statutes-stage.is-editing-statutes{position:fixed;inset:18px;z-index:2500;height:auto!important;min-height:0;box-shadow:0 0 0 100vmax #17263a99,0 20px 70px #17263a33}
+:is(#club-statutes-stage,#club-penalties-stage).is-editing-statutes{position:fixed;inset:18px;z-index:2500;height:auto!important;min-height:0;box-shadow:0 0 0 100vmax #17263a99,0 20px 70px #17263a33}
 .club-editor-formatbar{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:7px;border:1px solid #d3ddec;border-radius:11px;background:#edf2f9;flex:none}
 .club-content-stage .club-editor-formatbar button{min-height:34px;padding:6px 9px;background:#fff;border-color:#d0dbea;font-size:12px}
 .club-content-stage .club-editor-formatbar [data-editor-command=preview]{margin-left:auto;background:#263e63;color:#fff;border-color:#263e63}
@@ -35,25 +35,25 @@ body.club-statutes-is-editing{overflow:hidden}
 .club-editor-document{position:absolute;inset:0;box-sizing:border-box;padding:18px;border:1px solid #c7d3e5;border-radius:12px;background:#fff;overflow:hidden;overflow-wrap:anywhere}
 .club-editor-measure.is-document-preview{white-space:normal}
 .club-statutes-editor.is-previewing textarea{visibility:hidden;pointer-events:none}
-#club-content-dashboard[data-content-kind=statutes]{padding:20px;gap:10px;background:#edf2f8}
-#club-content-dashboard[data-content-kind=statutes] h2{font-size:28px;line-height:1.2}
-#club-content-dashboard[data-content-kind=statutes] #club-content-dashboard-help{font-size:12px;margin-top:3px}
-#club-content-dashboard[data-content-kind=statutes] .club-content-page-body,#club-content-dashboard[data-content-kind=statutes] .club-content-measure{padding:20px 24px;background:#fff}
-#club-content-dashboard[data-content-kind=statutes] .club-statutes-document{font-size:clamp(16px,1vw,20px);line-height:1.45}
-#club-content-dashboard[data-content-kind=statutes] .statutes-heading{font-size:1.15em;margin:10px 0 6px}
-#club-content-dashboard[data-content-kind=statutes] .statutes-heading:first-child{margin-top:0}
-#club-content-dashboard[data-content-kind=statutes] .club-content-pagination{font-size:14px;gap:10px}
-#club-content-dashboard[data-content-kind=statutes] button{min-height:36px;padding:6px 12px;font-size:13px}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]){padding:20px;gap:10px;background:#edf2f8}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) h2{font-size:28px;line-height:1.2}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) #club-content-dashboard-help{font-size:12px;margin-top:3px}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-content-page-body,#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-content-measure{padding:20px 24px;background:#fff}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-statutes-document{font-size:clamp(16px,1vw,20px);line-height:1.45}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .statutes-heading{font-size:1.15em;margin:10px 0 6px}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .statutes-heading:first-child{margin-top:0}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-content-pagination{font-size:14px;gap:10px}
+#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) button{min-height:36px;padding:6px 12px;font-size:13px}
 @media(min-width:1400px){
- #club-content-dashboard[data-content-kind=statutes] .club-statutes-document{height:100%;column-count:2;column-fill:auto;column-gap:40px;column-rule:1px solid #e0e7f1}
+ #club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-statutes-document{height:100%;column-count:2;column-fill:auto;column-gap:40px;column-rule:1px solid #e0e7f1}
 }
 @media(max-width:700px){
- #club-statutes-stage.is-editing-statutes{inset:8px;padding:12px}
+ :is(#club-statutes-stage,#club-penalties-stage).is-editing-statutes{inset:8px;padding:12px}
  .club-editor-tool-divider{display:none}
  .club-content-stage .club-editor-formatbar button{font-size:11px;padding:6px 7px;min-height:32px}
- #club-statutes-reader .club-content-page-body,#club-statutes-reader .club-content-measure{padding:12px}
+ :is(#club-statutes-reader,#club-penalties-reader) .club-content-page-body,:is(#club-statutes-reader,#club-penalties-reader) .club-content-measure{padding:12px}
  .club-statutes-editor textarea,.club-statutes-editor .club-editor-measure,.club-editor-document{padding:12px}
  .club-editor-hint{font-size:11px}
- #club-content-dashboard[data-content-kind=statutes]{padding:14px}
- #club-content-dashboard[data-content-kind=statutes] .club-content-page-body,#club-content-dashboard[data-content-kind=statutes] .club-content-measure{padding:14px}
+ #club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]){padding:14px}
+ #club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-content-page-body,#club-content-dashboard:is([data-content-kind=statutes],[data-content-kind=penalties]) .club-content-measure{padding:14px}
 }

@@ -1,8 +1,8 @@
 /* Abschlussdokumentation: liest Ergebnisse, bucht selbst keine Strafen. */
 (() => {
- const titles={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷',haushoch:'Hohe Hausnummer',haustief:'Niedrige Hausnummer',sichern:'Sichern',fuchsjagd:'Fuchsjagd',tor:'Tor',sechstage:'6-Tage-Rennen',blackjack:'17 + 4 / Blackjack',gluecksspirale:'Glücksspirale',siebener:'7er-Spiel',hindernis:'Hindernislauf',bergundtal:'Berg und Tal',ballermann:'Ballermann 6',lattenzaun:'Lattenzaun'};
+ const titles={tannenbaum:'Tannenbaum',darts:'Darts',lotterie:'Lotterie',tiberius:'Tiberius',mensch:'Mensch ärgere dich nicht',plusminus:'+ − × ÷',haushoch:'Hohe Hausnummer',haustief:'Niedrige Hausnummer',sichern:'Sichern',fuchsjagd:'Fuchsjagd',tor:'Tor',sechstage:'6-Tage-Rennen',blackjack:'17 + 4 / Blackjack',gluecksspirale:'Glücksspirale',siebener:'7er-Spiel',hindernis:'Hindernislauf',bergundtal:'Berg und Tal',ballermann:'Ballermann 6',lattenzaun:'Lattenzaun',guterschnitt:'Der gute Schnitt'};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const icons={tannenbaum:'🌲',darts:'🎯',lotterie:'🎰',tiberius:'🏛️',mensch:'🎲',plusminus:'➕',haushoch:'🔢',haustief:'🔽',sichern:'🔒',fuchsjagd:'🦊',tor:'⚽',sechstage:'🏁',blackjack:'🃏',gluecksspirale:'🌀',siebener:'🎲',hindernis:'🏃',bergundtal:'🏔️',ballermann:'🏖️',lattenzaun:'🪵',free:'💸'};
+ const icons={tannenbaum:'🌲',darts:'🎯',lotterie:'🎰',tiberius:'🏛️',mensch:'🎲',plusminus:'➕',haushoch:'🔢',haustief:'🔽',sichern:'🔒',fuchsjagd:'🦊',tor:'⚽',sechstage:'🏁',blackjack:'🃏',gluecksspirale:'🌀',siebener:'🎲',hindernis:'🏃',bergundtal:'🏔️',ballermann:'🏖️',lattenzaun:'🪵',guterschnitt:'✂️',free:'💸'};
  const cents=v=>Math.round((Number(v)||0)*100),money=n=>(n>=0?'+':'')+(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
  function ordered(history){return (Array.isArray(history)?history:[]).filter(e=>e.type==='game_result'||e.type==='free'||e.type==='teamspiel_strafe'||Object.hasOwn(titles,e.type)).slice().sort((a,b)=>(Date.parse(a.createdAt||a.date)||0)-(Date.parse(b.createdAt||b.date)||0));}
  function number(history,entry){const index=ordered(history).findIndex(e=>e===entry||entry?.id&&e.id===entry.id);return index<0?0:index+1;}
@@ -21,7 +21,7 @@
   return rows.map(row=>({...row,number:number(history,row.entry)||++fallback})).sort((a,b)=>a.number-b.number);
  }
  function moneyMarkup(person,items,ledger,history,evening){
-  const rows=freeItems(person,items,ledger,history,evening);return rows.length?'<ol class="penalty-free-list">'+rows.map(row=>'<li value="'+row.number+'" title="'+esc(row.reason)+'" aria-label="'+esc(row.number+'. '+row.reason+': '+money(row.amountCents))+'"><span class="penalty-free-item"><span aria-hidden="true">'+(icons[row.key]||icons.free)+'</span><strong>'+esc(money(row.amountCents))+'</strong>'+((typeof gameFineOnTop==='function'?gameFineOnTop({gameKey:row.key,reason:row.reason}):false)?'<span title="Zusätzlich zur Strafobergrenze">🔥</span>':'')+'</span></li>').join('')+'</ol>':'';
+  const rows=freeItems(person,items,ledger,history,evening);return rows.length?'<ol class="penalty-free-list">'+rows.map(row=>'<li value="'+row.number+'" title="'+esc(row.reason)+'" aria-label="'+esc(row.number+'. '+row.reason+': '+money(row.amountCents))+'"><span class="penalty-free-item"><span aria-hidden="true">'+(icons[row.key]||icons.free)+'</span><strong>'+esc(money(row.amountCents))+'</strong>'+((typeof gameFineOnTop==='function'?gameFineOnTop({...row.entry,gameKey:row.key,reason:row.reason}):false)?'<span title="Zusätzlich zur Strafobergrenze">🔥</span>':'')+'</span></li>').join('')+'</ol>':'';
  }
  function build(key,s,{now=new Date().toISOString(),groups={},server=false,catalog=[]}={}){
   if(!s||(!s.finished&&!s.winner))return null;
@@ -43,8 +43,8 @@
   const counterCharges=(s.finishPenalties||[]).map(x=>({...x}));
   if(key==='blackjack'){const penalty=catalog.find(x=>/^1\.?\s*verlierer/i.test(x.label))?.key||(s.history||[]).find(e=>e.action==='card'&&e.penalties?.length)?.penalties[0]?.key;for(const name of s.players||[]){const e=(s.history||[]).filter(e=>e.action==='card'&&e.name===name).at(-1);if(e?.bustPenalty&&penalty)counterCharges.push({personName:name,key:penalty,delta:1});}}
   const id=s.resultHistoryId||'game_result_'+key+'_'+(s.id||s.startedAt||now);
-  return {id,...(counterCharges.length?{counterCharges}:{}),type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,gameId:s.id||'',winners,ranking,
-   results:['bergundtal','ballermann','lattenzaun'].includes(key)?Object.entries(s.scores||{}).map(([name,result])=>({name:key==='ballermann'?(s.teamNames?.[name]||teamName(name)):name,result:result+(key==='lattenzaun'?' Latten':' Punkte')})):[],
+  return {id,gameFineFrozen:s.gameFineFrozen===true,gameFineOnTop:s.onTop===true,onTop:s.onTop===true,...(counterCharges.length?{counterCharges}:{}),type:'game_result',gameKey:key,title:titles[key]||key,createdAt:now,serverGameResult:server,gameId:s.id||'',winners,ranking,
+   results:['bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key)?Object.entries(s.scores||{}).map(([name,result])=>({name:key==='ballermann'?(s.teamNames?.[name]||teamName(name)):name,result:result+(key==='lattenzaun'?' Latten':' Punkte')})):[],
    scores:JSON.parse(JSON.stringify(s.scores||{})),amounts:['siebener','hindernis','lattenzaun'].includes(key)?(s.players||Object.keys(s.scores||{})).map(name=>({name,amountCents:(s.bookings||[]).filter(b=>b.personName===name).reduce((sum,b)=>sum+b.amountCents,0)})):(s.bookings||[]).map(b=>({name:b.personName,amountCents:b.amountCents,reason:b.reason}))};
  }
  function append(history,key,s,context){

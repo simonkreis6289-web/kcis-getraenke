@@ -1,12 +1,13 @@
 /* Dauerhafte Clubunterlagen; unabhängig von Abrechnung und Kegelabend. */
 (() => {
  const placeholder='Satzung des Kegelclubs\n\nPlatzhalter\n\nHier kann die Satzung des Clubs eingetragen werden. Über „Satzung bearbeiten“ lässt sich dieser Text jederzeit ersetzen und ergänzen.';
+ const penaltiesPlaceholder='Strafentabelle des Kegelclubs\n\nHier können die geltenden Strafen, Beträge und Erläuterungen eingetragen werden.';
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const validId=id=>typeof id==='string'&&/^note_[a-zA-Z0-9_-]{1,100}$/.test(id);
  const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(a.done)-Number(b.done)||Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id));
- function value(kind,data){return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:placeholder,revision:Number(data?.revision)||0};}
+ function value(kind,data){return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:kind==='penalties'?penaltiesPlaceholder:placeholder,revision:Number(data?.revision)||0};}
  function change(kind,before,request,now=new Date().toISOString()){
-  if(!['notes','statutes'].includes(kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Änderung.');
+  if(!['notes','statutes','penalties'].includes(kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Änderung.');
   if((before?.commands||[]).includes(request.opId))return before;
   const current=value(kind,before);if(current.revision!==request.expectedRevision)throw Error('Inzwischen geändert. Bitte den aktuellen Stand prüfen und erneut speichern.');
   let result;
@@ -29,7 +30,7 @@
   return {...result,revision:current.revision+1,commands:[...(before?.commands||[]),request.opId].slice(-128),changedAt:now};
  }
  function view(before,request){
-  if(!['open','close','turn'].includes(request.action)||!['notes','statutes'].includes(request.kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Dashboard-Ansicht.');
+  if(!['open','close','turn'].includes(request.action)||!['notes','statutes','penalties'].includes(request.kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Dashboard-Ansicht.');
   if((before?.commands||[]).includes(request.opId))return before;
   if(Number(before?.revision||0)!==request.expectedRevision)throw Error('Die Dashboard-Ansicht wurde inzwischen geändert. Bitte erneut versuchen.');
   if(request.action!=='open'&&(!before?.open||before.kind!==request.kind))throw Error('Diese Ansicht ist auf dem Dashboard bereits geschlossen.');
@@ -114,5 +115,5 @@
   return {text:value,start:a,end:a+replacement.length};
  }
 
- window.KCClubContent=Object.freeze({placeholder,esc,sort,value,change,view,noteMarkup,take,textPages,notePages,statuteLine,statutesMarkup,statutesPages,editStatutes});
+ window.KCClubContent=Object.freeze({placeholder,penaltiesPlaceholder,esc,sort,value,change,view,noteMarkup,take,textPages,notePages,statuteLine,statutesMarkup,statutesPages,editStatutes});
 })();

@@ -13,7 +13,7 @@ function getLiveLotteriePayload() {
     customOrder: !!lotterieState.customOrder,
     restoreCustomOrder: !!lotterieState.restoreCustomOrder,
     startedAt: lotterieState.startedAt || '',
-    onTop: !!lotterieState.onTop,
+    gameFineFrozen:true,onTop: !!lotterieState.onTop,
     amountsGenerated:
       !!lotterieState.amountsGenerated,
 
@@ -1286,8 +1286,7 @@ async function finishLotterieGame() {
       id: chargeId,
       reason: 'Lotterie',
       amount,
-      onTop:
-        !!lotterieState.onTop,
+      gameFineFrozen:true,onTop: !!lotterieState.onTop,
       createdAt
     });
 
@@ -1295,8 +1294,7 @@ async function finishLotterieGame() {
       id: chargeId,
       name: person.name,
       amount,
-      onTop:
-        !!lotterieState.onTop
+      gameFineFrozen:true,onTop: !!lotterieState.onTop
     });
   });
 
@@ -1320,8 +1318,7 @@ async function finishLotterieGame() {
     id: historyId,
     type: 'lotterie',
     createdAt,
-    onTop:
-      !!lotterieState.onTop,
+    gameFineFrozen:true,onTop: !!lotterieState.onTop,
 
     columns:
       JSON.parse(
@@ -1348,6 +1345,7 @@ async function finishLotterieGame() {
     strafenHistory = [];
   }
 
+  Object.assign(entry,{gameFineFrozen:lotterieState.gameFineFrozen===true,onTop:lotterieState.onTop===true,gameFineOnTop:lotterieState.onTop===true});
   strafenHistory.unshift(
     entry
   );

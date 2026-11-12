@@ -319,7 +319,9 @@ function getStrafenSnapshot() {
       0
     );
 
+  const statsPeople=typeof KCPenaltyStats!=='undefined'&&typeof currentEveningStartedAt!=='undefined'?(()=>{const data=KCPenaltyStats.build({people:persons,catalog:STRAFEN,logs:typeof penaltyStatsLog==='undefined'?[]:penaltyStatsLog,eveningStartedAt:currentEveningStartedAt});return data.sessions.find(x=>x.key===data.currentKey)?.people||[];})():[];
   return {
+    statsPeople,
     date:
       new Date().toISOString(),
 
