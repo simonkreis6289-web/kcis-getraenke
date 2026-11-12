@@ -219,6 +219,7 @@ function createEmptyClubData() {
     bahnPreisProStunde: 0,
     bahnTimerStart: null,
     bahnTimerRunning: false,
+    bahnElapsedSeconds: 0,
     teamStopwatchActive: false,
     teamStopwatchRunning: false,
     teamStopwatchStart: null,
@@ -292,6 +293,7 @@ function syncCurrentClubToStore() {
     bahnPreisProStunde,
     bahnTimerStart,
     bahnTimerRunning,
+    bahnElapsedSeconds,
     teamStopwatchActive,
     teamStopwatchRunning,
     teamStopwatchStart,
@@ -513,6 +515,7 @@ async function selectClub(clubName) {
   bahnPreisProStunde = parseFloat(localClub.bahnPreisProStunde || 0) || 0;
   bahnTimerStart = localClub.bahnTimerStart || null;
   bahnTimerRunning = !!localClub.bahnTimerRunning;
+  bahnElapsedSeconds = Math.max(0,Number(localClub.bahnElapsedSeconds)||0);
   STRAFEN_LIMIT = parseFloat(localClub.STRAFEN_LIMIT || 30) || 30;
 
   teamStopwatchActive = !!localClub.teamStopwatchActive;

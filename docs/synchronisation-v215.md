@@ -131,3 +131,30 @@ Die Vorgabe liegt pro Spiel und Club in `extraGameSettings.kranzRules`. Neue Par
 Wurfart und Spielwert bleiben getrennt. Ein mit 8 oder 9 gewerteter Kranz bleibt in Strafen und Statistik ein Kranz. Die gewählten Werte werden im Wurfverlauf gespeichert und bei Rückgängig wiederverwendet. Hausnummer und + − × ÷ berücksichtigen die gespeicherten Werte auch in der Dashboard-Berechnung. Die Lotterie ist jetzt ebenfalls Teil des gemeinsamen serialisierten Zustands; ihre früher ausschließlich für den Livepfad vorgesehene Auslassung würde sonst Spiel- und Kranzdaten verlieren.
 
 Validierung: 667 Tests bestanden, darunter bestehende Regressionen sowie neue Modell- und vollständige App-/Transaktionsprüfungen in `tests/v219-kranz.cjs` für alle Spiele, Wertwahl, Abbruch, Korrektur, Strafen, Rückgängig, Regelkopie, Zweitgerät und wiederholte Befehle. Kein echter Firebase-Emulator oder Browser-Sichttest.
+
+
+## V220: Kompakte TV-Spielübersicht
+
+Die zwanzig Spielkacheln bleiben in vier Spalten und fünf Reihen. Kleinere Symbole, geringere Innenabstände und höchstens zwei Zeilen Beschreibung sparen Höhe. Auf niedrigen Bildschirmen entfällt die Beschreibung. Das Raster füllt eine feste Fläche im mittleren Dashboard-Bereich und benötigt dafür keinen :has-Selektor. Eine explizite Ansichtsklasse wird beim Wechsel zum Spiel wieder entfernt. Ein 100vh-Fallback hält die Dashboard-Höhe auch in Browsern ohne dynamische Viewport-Einheiten ein.
+
+
+### V220: Gemeinsame Countdown-Zeit und Titelanzeige
+
+App und Dashboard gleichen ihre Zeit mit Firestores `batchGet`-Lesezeit ab. Drei kleine Leseabfragen (nur `syncRevision`) liefern Zeitproben; die schnellste Probe korrigiert die Geräteuhr um die halbe Laufzeit. Danach läuft die Zeit auf einer monotonen Uhr weiter. Ein erneuter Abgleich erfolgt nach fünf Minuten, beim Zurückkehren zur Seite und nach Wiederverbindung. Dafür werden keine Dokumente geschrieben und keine Firestore-Regeln geändert. Die Referenz ist die Lesezeit, nicht der möglicherweise alte Änderungszeitpunkt eines Spielstands.
+
+Der allgemeine Countdown und Ballermann verwenden diese gemeinsame Zeit. Neue Starts, Fortsetzen und Pause warten bei aktiver Zeitquelle auf den Abgleich. Die Sekundenanzeige verwendet eine gemeinsame Rundung; eine pausierte Restzeit 0 fällt nicht auf die ursprüngliche Dauer zurück. Der allgemeine Countdown bleibt im Titelkopf sichtbar, auch wenn parallel ein Ballermann-Spiel aktiv ist. Ballermann behält seine eigene Spieluhr.
+
+Referenz: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/batchGet
+
+
+### V220: Ein führendes Tablet und ein Anzeige-TV
+
+Standard ist jetzt der Tablet-Modus. Die App übernimmt Buchungen und Spielaktionen unmittelbar in ihren lokalen Zustand; der TV liest weiter die bestätigten Firestore-Stände. Eingehende Club-Snapshots schreiben den laufenden Tabletstand nicht zurück. Die frühere Sperre bis zur Cloud-Bestätigung entfällt.
+
+Die Spielmechaniken und vorhandenen API-Handler laufen zunächst gegen eine lokale Transaktionsvorschau. Mehrere Änderungen werden zusammengefasst und in der richtigen Reihenfolge im Hintergrund übertragen. Die dauerhafte Warteschlange enthält einen laufenden und einen folgenden Stand einschließlich zusätzlicher Dokumentänderungen. Stabile Befehlskennungen und steigende `tabletSequence` verhindern doppelte beziehungsweise veraltete Übertragungen. Ein Neuladen stellt noch offene Einträge wieder her. Eine fehlgeschlagene Übertragung bleibt sichtbar und wird erneut versucht; der Tabletstand bleibt erhalten. Vor einem neuen Kegelabend werden offene Übertragungen bestätigt.
+
+Hindernislauf und alle anderen Spiele schließen beim Start die Übersicht und wechseln auf das Dashboard. Der einheitliche Abbrechen-Button beendet eine laufende Partie ohne Abschluss-/Verliererbuchung. Bereits gebuchte Einzelstrafen bleiben bestehen.
+
+„Bahn starten“ fragt Datum und Uhrzeit ab. Laufzeit und Kosten je angefangener Stunde erscheinen auf dem Dashboard; die gestoppte Laufzeit wird gemeinsam gespeichert.
+
+Die klassischen Mehrgeräte-Prüfungen laufen weiterhin ausdrücklich mit `KC_TABLET_MODE=false`. Eigene vollständige App-Tests prüfen den neuen Standardmodus mit absichtlich angehaltener Übertragung, wiederholten Buchungen, Wiederherstellung nach Neuladen, verlorener Bestätigung, Spielwürfen, Hindernislauf, Bahnzeit und Abbruch aller zwanzig Spiele.

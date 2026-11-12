@@ -79,9 +79,16 @@ function normalizeGamePinpad(card){
  const selectors=['.gi-source-pinpad button','.six-pinpad button','.tg-pinpad button','.ind-pinpad button','.game-throw-toolbar .pinpad-btn','.sichern-buttons button[onclick^="sichernThrow("]','.fox-actions button[onclick^="applyFuchsjagdThrow("]'];
  const buttons=[...card.querySelectorAll(selectors.join(','))];if(!buttons.length)return;card.append(buildGameThrowKeypad(buttons));for(const node of card.querySelectorAll('.gi-source-pinpad,.six-pinpad,.tg-pinpad,.ind-pinpad'))if(!node.children.length)node.remove();
 }
+async function cancelCurrentGame(key){
+ const s=gameSetupState(key);if(!s?.active||!ACTIVE_CLUB)return;
+ if(!confirm('Spiel abbrechen? Es werden keine Abschluss- oder Verliererbeträge gebucht. Bereits gebuchte Einzelstrafen bleiben erhalten.'))return;
+ try{await window.firestoreApi.cancelGame(getClubFirestoreId(ACTIVE_CLUB),{gameKey:key});renderAll();persistState();showToast('Spiel abgebrochen · keine Abschlussbuchung.','success');}
+ catch(error){showToast('Abbruch nicht gespeichert: '+error.message,'error');}
+}
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
- const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);const old=panel.querySelector(':scope > .game-input-panel');
+ const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);
+ let abort=panel.querySelector('[data-abort-game]');if(s?.active){if(!abort){abort=document.createElement('button');abort.type='button';abort.className='secondary-btn game-abort-button';abort.dataset.abortGame=key;abort.textContent='✕ Spiel abbrechen';abort.onclick=()=>cancelCurrentGame(key);panel.append(abort);}}else abort?.remove();const old=panel.querySelector(':scope > .game-input-panel');
  if(['haushoch','haustief'].includes(key)){old?.remove();return;}
  if(!s?.active){if(key==='darts'){const finish=old?.querySelector('button[onclick="finishDartsRound()"]');if(finish)document.getElementById('darts-game-area')?.append(finish);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
  const card=document.createElement('section');card.className='game-input-panel';card.dataset.gameInput=key;card.setAttribute('aria-label','Wurfeingabe');

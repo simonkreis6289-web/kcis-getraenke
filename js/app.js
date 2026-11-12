@@ -92,6 +92,7 @@ function getSerializableState() {
       strafenHistory,
     bahnTimerStart,
     bahnTimerRunning,
+    bahnElapsedSeconds,
     teamStopwatchActive,
     teamStopwatchRunning,
     teamStopwatchStart,
@@ -163,6 +164,7 @@ function getFirestoreState() {
       monatsbeitrag,
     bahnTimerStart,
     bahnTimerRunning,
+    bahnElapsedSeconds,
       timePenaltySettings,
       penaltyStatsLog,
       kegelAbende,
@@ -293,6 +295,7 @@ function applyLoadedState(state) {
 
   bahnTimerRunning =
     !!state.bahnTimerRunning;
+  bahnElapsedSeconds = Math.max(0,Number(state.bahnElapsedSeconds)||0);
 
   window.kcDashboardDraw=state.dashboardDraw||null;
   if (state.dashboardAnnouncement && (!window.kcDashboardAnnouncement ||
@@ -568,7 +571,7 @@ async function saveToFirestore(
     return false;
   }
 
-  if(window.KCSharedSync){const success=await window.KCSharedSync.flush();if(showSuccessToast)showToast(success?'☁️ Alle Änderungen bestätigt':'Änderungen nicht bestätigt · Verbindung prüfen',success?'success':'error');return success;}
+  if(window.KCSharedSync){const success=await window.KCSharedSync.flush();if(showSuccessToast)showToast(success?(window.KCTabletSync?'Auf Tablet gespeichert · Übertragung im Hintergrund':'☁️ Alle Änderungen bestätigt'):'Änderungen nicht bestätigt · Verbindung prüfen',success?'success':'error');return success;}
   try {
     const clubId =
       getClubFirestoreId(ACTIVE_CLUB);
@@ -2752,7 +2755,7 @@ async function archiveEvent(snapshot) {
 
 async function startNewKegelabend() {
   if(!ACTIVE_CLUB||!navigator.onLine||!window.firestoreApi?.startNewEvening){showToast('Zum Starten eines neuen Kegelabends bitte verbinden.','error');return false;}
-  if(window.KCSharedSync&&!(await window.KCSharedSync.flush())){showToast('Bitte zuerst die Verbindung und offene Änderungen prüfen.','error');return false;}
+  if(window.KCSharedSync&&!(await (window.KCSharedSync.waitForUpload?window.KCSharedSync.waitForUpload():window.KCSharedSync.flush()))){showToast('Bitte zuerst die Verbindung und offene Änderungen prüfen.','error');return false;}
   if(window.kcEveningResetBusy)return false;window.kcEveningResetBusy=true;
   const club=ACTIVE_CLUB,previous=currentEveningStartedAt||'',backup=JSON.parse(JSON.stringify(getSerializableState())),opId='evening_'+crypto.randomUUID();
   try{
@@ -2767,7 +2770,7 @@ async function startNewKegelabend() {
     if(typeof extraCancelKranz==='function')extraCancelKranz();window.KCGameOptionsApp?.resetDrafts();
     for(const p of persons){Object.assign(p,{present:false,attendanceStatus:'unknown',tisch:'',left:false,leftAt:'',arrivalTime:'',leftEarlyAt:'',paid:0,boughtThrows:0,teamExtra:0,roundExtra:0,rounds:[],freeStrafen:[],tannenbaumCharges:[],individualChargeCents:0,strafTotal:0,gameFineBase:{otherNormalCents:0,otherTopCents:0,kingCents:0},drinks:Object.fromEntries(DRINKS.map(d=>[d.key,0])),strafen:Object.fromEntries(STRAFEN.map(d=>[d.key,0]))});}
     spiele=[];teamDrinks={};selectedLoser=null;roundDraftDrinks={};strafenHistory=[];seatingOrder=Array(16).fill('');
-    bahnTimerStart=null;bahnTimerRunning=false;teamStopwatchActive=false;teamStopwatchRunning=false;teamStopwatchStart=null;teamCountdownDuration=0;teamCountdownRemainingBefore=0;
+    bahnTimerStart=null;bahnTimerRunning=false;bahnElapsedSeconds=0;teamStopwatchActive=false;teamStopwatchRunning=false;teamStopwatchStart=null;teamCountdownDuration=0;teamCountdownRemainingBefore=0;
     const payload=JSON.parse(JSON.stringify(getFirestoreState()));
     const result=await window.firestoreApi.startNewEvening(getClubFirestoreId(club),{expectedEvening:previous,opId,payload});
     if(ACTIVE_CLUB===club&&result?.state)applyLoadedState(result.state);
@@ -3283,13 +3286,13 @@ function getBahnElapsedSeconds() {
   if (!bahnTimerStart) return 0;
 
   if (!bahnTimerRunning) {
-    return Math.max(0, parseInt(localStorage.getItem(getBahnStoppedKey()) || '0', 10) || 0);
+    return Math.max(0,typeof bahnElapsedSeconds!=='undefined'&&bahnElapsedSeconds>0?bahnElapsedSeconds:parseInt(localStorage.getItem(getBahnStoppedKey()) || '0',10)||0);
   }
 
   const start = new Date(bahnTimerStart).getTime();
   if (!start || isNaN(start)) return 0;
 
-  return Math.max(0, Math.floor((Date.now() - start) / 1000));
+  return Math.max(0, Math.floor(((window.KCSharedClock?.now()??Date.now()) - start) / 1000));
 }
 
 function getBahnStoppedKey() {
@@ -3347,21 +3350,25 @@ function updateBahnDisplay() {
   }
 }
 
+function openBahnStartModal(){
+ document.getElementById('bahn-start-modal')?.remove();
+ const overlay=document.createElement('div');overlay.id='bahn-start-modal';overlay.className='modal-overlay';
+ const card=document.createElement('section');card.className='modal';card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');card.setAttribute('aria-labelledby','bahn-start-title');
+ const date=new Date((window.KCSharedClock?.now()??Date.now())-(Number(bahnElapsedSeconds)||0)*1000),value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ card.innerHTML='<h3 id="bahn-start-title">🎳 Bahn starten</h3><label class="game-settings-field">Startzeitpunkt<input id="bahn-start-time" type="datetime-local" value="'+value+'" required></label><p>Abrechnung je angefangener Stunde · '+euros(bahnPreisProStunde)+' pro Stunde</p><div class="profile-actions"><button type="button" class="secondary-btn" onclick="closeBahnStartModal()">Abbrechen</button><button type="button" class="primary-btn" onclick="confirmBahnStart()">▶ Uhr starten</button></div>';
+ overlay.append(card);document.body.append(overlay);document.getElementById('bahn-start-time').focus();
+}
+function closeBahnStartModal(){document.getElementById('bahn-start-modal')?.remove();}
+async function confirmBahnStart(){
+ const selected=Date.parse(document.getElementById('bahn-start-time')?.value),clockClub=ACTIVE_CLUB;
+ if(window.KCSharedClock?.enabled&&!(await KCSharedClock.useClub(getClubFirestoreId(clockClub)))){showToast('Zeitabgleich nicht erreichbar. Bitte erneut versuchen.','error');return;}
+ if(ACTIVE_CLUB!==clockClub)return;
+ if(!Number.isFinite(selected)||selected>(window.KCSharedClock?.now()??Date.now())+1000){showToast('Gültigen Startzeitpunkt wählen, der nicht in der Zukunft liegt.','error');return;}
+ bahnTimerStart=new Date(selected).toISOString();bahnTimerRunning=true;bahnElapsedSeconds=0;localStorage.setItem(getBahnStoppedKey(),'0');closeBahnStartModal();updateBahnDisplay();persistState();showToast('Bahnzeit gestartet','success');
+}
 function toggleBahnTimer() {
-  if (!bahnTimerRunning) {
-    const stoppedSeconds = parseInt(localStorage.getItem(getBahnStoppedKey()) || '0', 10) || 0;
-    bahnTimerStart = new Date(Date.now() - stoppedSeconds * 1000).toISOString();
-    bahnTimerRunning = true;
-    showToast('▶ Bahnzeit gestartet', 'success');
-  } else {
-    const seconds = getBahnElapsedSeconds();
-    localStorage.setItem(getBahnStoppedKey(), String(seconds));
-    bahnTimerRunning = false;
-    showToast('⏸ Bahnzeit gestoppt', 'success');
-  }
-
-  updateBahnDisplay();
-  persistState();
+ if(!bahnTimerRunning){openBahnStartModal();return;}
+ const seconds=getBahnElapsedSeconds();bahnElapsedSeconds=seconds;localStorage.setItem(getBahnStoppedKey(),String(seconds));bahnTimerRunning=false;updateBahnDisplay();persistState();showToast('Bahnzeit gestoppt','success');
 }
 
 function saveBahnPreis() {
@@ -3380,18 +3387,10 @@ function previewBahnPreis() {
 }
                                          
 function getTeamCountdownRemainingSeconds() {
-  if (!teamStopwatchActive) return 0;
-
-  let remaining = teamCountdownRemainingBefore || teamCountdownDuration || 0;
-
-  if (teamStopwatchRunning && teamStopwatchStart) {
-    const start = new Date(teamStopwatchStart).getTime();
-    if (start && !isNaN(start)) {
-      remaining -= Math.floor((Date.now() - start) / 1000);
-    }
-  }
-
-  return Math.max(0, remaining);
+  if(window.KCSharedClock)return KCSharedClock.seconds({active:teamStopwatchActive,running:teamStopwatchRunning,start:teamStopwatchStart,remaining:teamCountdownRemainingBefore,duration:teamCountdownDuration});
+  if(!teamStopwatchActive)return 0;
+  const remaining=teamCountdownRemainingBefore??teamCountdownDuration??0,start=Date.parse(teamStopwatchStart);
+  return Math.max(0,Math.ceil(remaining-(teamStopwatchRunning&&Number.isFinite(start)?Math.max(0,Date.now()-start)/1000:0)));
 }
                                          
 function toggleTeamStopwatch() {
@@ -3436,7 +3435,7 @@ function updateTeamStopwatchDisplay() {
         : '';
   }
 
-  if (teamStopwatchRunning && remaining <= 0) {
+  if (teamStopwatchRunning && remaining <= 0 && (!window.KCSharedClock?.enabled||KCSharedClock.ready)) {
     teamStopwatchRunning = false;
     teamStopwatchStart = null;
     teamCountdownRemainingBefore = 0;
@@ -3502,7 +3501,10 @@ function previewTeamCountdownDuration() {
   updateTeamStopwatchDisplay();
 }
 
-function startTeamStopwatch() {
+async function startTeamStopwatch() {
+  const clockClub=ACTIVE_CLUB,clockEvening=currentEveningStartedAt;
+  if(window.KCSharedClock?.enabled&&!(await KCSharedClock.useClub(getClubFirestoreId(clockClub)))){showToast('Zeitabgleich nicht erreichbar. Bitte erneut versuchen.','error');return;}
+  if(ACTIVE_CLUB!==clockClub||currentEveningStartedAt!==clockEvening)return;
   if (!teamStopwatchActive) teamStopwatchActive = true;
 
   if (!teamCountdownDuration && !teamCountdownRemainingBefore) {
@@ -3517,13 +3519,16 @@ function startTeamStopwatch() {
   }
 
   teamStopwatchRunning = true;
-  teamStopwatchStart = new Date().toISOString();
+  teamStopwatchStart = new Date(window.KCSharedClock?.now()??Date.now()).toISOString();
 
   updateTeamStopwatchDisplay();
   persistState();
 }
 
-function pauseTeamStopwatch() {
+async function pauseTeamStopwatch() {
+  const clockClub=ACTIVE_CLUB,clockEvening=currentEveningStartedAt;
+  if(window.KCSharedClock?.enabled&&!(await KCSharedClock.useClub(getClubFirestoreId(clockClub)))){showToast('Zeitabgleich nicht erreichbar. Bitte erneut versuchen.','error');return;}
+  if(ACTIVE_CLUB!==clockClub||currentEveningStartedAt!==clockEvening)return;
   if (!teamStopwatchRunning) return;
 
   teamCountdownRemainingBefore = getTeamCountdownRemainingSeconds();
@@ -3543,14 +3548,17 @@ function stopTeamStopwatch() {
   persistState();
 }
 
-function restartTeamStopwatch() {
+async function restartTeamStopwatch() {
+  const clockClub=ACTIVE_CLUB,clockEvening=currentEveningStartedAt;
+  if(window.KCSharedClock?.enabled&&!(await KCSharedClock.useClub(getClubFirestoreId(clockClub)))){showToast('Zeitabgleich nicht erreichbar. Bitte erneut versuchen.','error');return;}
+  if(ACTIVE_CLUB!==clockClub||currentEveningStartedAt!==clockEvening)return;
   if (!teamCountdownDuration) {
     showToast('Bitte zuerst eine Countdown-Zeit einstellen', 'error');
     return;
   }
 
   teamCountdownRemainingBefore = teamCountdownDuration;
-  teamStopwatchStart = new Date().toISOString();
+  teamStopwatchStart = new Date(window.KCSharedClock?.now()??Date.now()).toISOString();
   teamStopwatchRunning = true;
   teamStopwatchActive = true;
 
@@ -5873,14 +5881,14 @@ window.addEventListener('resize', () => {
 updateHeaderDateTime();
 setInterval(updateHeaderDateTime, 1000);
 bahnTimerInterval = setInterval(updateBahnDisplay, 1000);
-teamStopwatchInterval = setInterval(updateTeamStopwatchDisplay, 1000);
+teamStopwatchInterval = setInterval(updateTeamStopwatchDisplay, 250);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const reg =
         await navigator.serviceWorker.register(
-          './sw.js?v=20261112-v219',
+          './sw.js?v=20261112-v220',
           {
             updateViaCache: 'none'
           }
