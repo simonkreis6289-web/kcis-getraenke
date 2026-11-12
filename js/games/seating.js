@@ -53,6 +53,7 @@ function renderSeatingOrder() {
 // Aenderungen unabhaengig vom gesamten Club-Spielstand publizieren.
 let seatingLiveWriteQueue = Promise.resolve();
 function publishSeatingLive() {
+  if(window.KCSharedSync){persistState();return;}
   if (!ACTIVE_CLUB || !navigator.onLine || !window.firestoreApi?.saveSeatingLive) return;
   const clubId = getClubFirestoreId(ACTIVE_CLUB);
   const payload = {

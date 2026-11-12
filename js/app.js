@@ -30,7 +30,7 @@ async function startApp() {
   }
 
   if (!navigator.onLine) {
-    showToast('📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', 'success');
+    showToast(window.KCSharedSync?'📴 Offline · Nur ansehen, bis der Serverstand bestätigt ist.':'📴 Offline-Modus aktiv. Änderungen werden lokal gespeichert.', window.KCSharedSync?'error':'success');
     return;
   }
 
@@ -509,6 +509,7 @@ async function loadFromFirestore() {
 
   try {
     const clubId = getClubFirestoreId(ACTIVE_CLUB);
+    if(window.KCSharedSync)return window.KCSharedSync.prepare(clubId,createEmptyClubData());
     const state = await window.firestoreApi.loadClubState(clubId);
     if (!state) return false;
 
@@ -566,6 +567,7 @@ async function saveToFirestore(
     return false;
   }
 
+  if(window.KCSharedSync){const success=await window.KCSharedSync.flush();if(showSuccessToast)showToast(success?'☁️ Alle Änderungen bestätigt':'Änderungen nicht bestätigt · Verbindung prüfen',success?'success':'error');return success;}
   try {
     const clubId =
       getClubFirestoreId(ACTIVE_CLUB);
@@ -972,6 +974,7 @@ function announceDashboardStarter(label) {
 function persistState() {
   if (!appReady || !ACTIVE_CLUB || isApplyingRemoteState) return;
 
+  if(window.KCSharedSync){window.KCSharedSync.persist();return;}
   lastLocalChangeAt = Date.now();
 
   syncCurrentClubToStore();
@@ -2310,6 +2313,7 @@ function deleteStrafe(key) {
 }
     
 function queueAutoSave() {
+  if(window.KCSharedSync){window.KCSharedSync.persist();return;}
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(async () => {
     saveClubSystem();
@@ -2747,6 +2751,7 @@ async function archiveEvent(snapshot) {
 
 async function startNewKegelabend() {
   if(!ACTIVE_CLUB||!navigator.onLine||!window.firestoreApi?.startNewEvening){showToast('Zum Starten eines neuen Kegelabends bitte verbinden.','error');return false;}
+  if(window.KCSharedSync&&!(await window.KCSharedSync.flush())){showToast('Bitte zuerst die Verbindung und offene Änderungen prüfen.','error');return false;}
   if(window.kcEveningResetBusy)return false;window.kcEveningResetBusy=true;
   const club=ACTIVE_CLUB,previous=currentEveningStartedAt||'',backup=JSON.parse(JSON.stringify(getSerializableState())),opId='evening_'+crypto.randomUUID();
   try{
@@ -5742,6 +5747,7 @@ function undoReset() {
 
 // ── NETWORK EVENTS ──
 window.addEventListener('online', async () => {
+  if(window.KCSharedSync)return;
   showToast(
     '🌐 Wieder online. Serverstand wird geladen…',
     'success'
@@ -5821,6 +5827,7 @@ window.addEventListener('online', async () => {
 });
 
 window.addEventListener('offline', () => {
+  if(window.KCSharedSync){showToast('Offline · Nur ansehen, bis der Serverstand wieder bestätigt ist.','error');return;}
   showToast('📴 Offline. Änderungen werden lokal gespeichert.', 'success');
 });
 
@@ -5872,7 +5879,7 @@ if ('serviceWorker' in navigator) {
     try {
       const reg =
         await navigator.serviceWorker.register(
-          './sw.js?v=20260714-v31',
+          './sw.js?v=20261112-v215',
           {
             updateViaCache: 'none'
           }

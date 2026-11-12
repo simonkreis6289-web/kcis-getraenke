@@ -99,7 +99,7 @@ async function deleteCashHistoryEntry(archiveId) {
   if (!confirm(`Den abgeschlossenen Kegelabend vom ${dateLabel} wirklich dauerhaft aus dem Archiv löschen?\n\nDie PDF auf deinem Gerät und die laufenden Strafzähler bleiben unverändert.`)) return;
   cashHistoryBusy = true;
   try {
-    await window.firestoreApi.deleteArchivedStrafenEvent(clubId, archiveId);
+    await window.firestoreApi.deleteArchivedStrafenEvent(clubId, archiveId, Number(entry.ledgerRevision)||0);
     if(getClubFirestoreId(ACTIVE_CLUB)===clubId){cashHistoryEntries = cashHistoryEntries.filter(item => item.id !== archiveId);renderCashHistory();}
     showToast('🗑️ Archivierter Kegelabend gelöscht', 'success');
   } catch (error) {
