@@ -186,7 +186,7 @@
     return work;
   }
   async function failed(error,command){
-    lastError=error.message||'Synchronisierung fehlgeschlagen';
+    lastError=(error.code?'['+error.code+'] ':'')+(error.message||'Synchronisierung fehlgeschlagen');
     if(error.code==='sync-conflict'||/inzwischen|entfernt|gewechselt|veraltet/.test(lastError)){
       pending=[];
       try{

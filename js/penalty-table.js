@@ -89,11 +89,15 @@
   function text(table){
     return table.groups.map(g=>g.title+'\n'+g.rows.map(r=>'• '+r.offence+(r.amount?': '+r.amount:'')+(r.note?'\n'+r.note.split('\n').map(n=>'\t→ '+n).join('\n'):'')).join('\n')).join('\n\n');
   }
-  function markup(table){
+  function markup(table,{columns=false,leftGroup}={}){
     if(!table?.groups?.some(g=>g.rows.length))return '<p class="club-content-empty">Noch keine Strafen eingetragen. Über „Strafentabelle bearbeiten“ Abschnitte und Einträge anlegen.</p>';
-    return '<div class="penalty-table-document">'+table.groups.filter(g=>g.rows.length).map(g=>'<section class="penalty-table-section"><h3>'+esc(g.title)+'</h3><table class="penalty-rules-table"><caption class="penalty-sr-only">'+esc(g.title)+'</caption><colgroup><col class="pt-offence"><col class="pt-amount"><col class="pt-note"></colgroup><thead><tr><th scope="col">Vergehen / Anlass</th><th scope="col">Betrag / Einsatz</th><th scope="col">Hinweise</th></tr></thead><tbody>'+g.rows.map(r=>'<tr'+(r.continued?' class="pt-continued"':'')+'><th scope="row">'+(r.continued?'<small>Fortsetzung</small>':'')+esc(r.offence)+'</th><td class="pt-value">'+esc(r.amount)+'</td><td class="pt-explanation">'+esc(r.note)+'</td></tr>').join('')+'</tbody></table></section>').join('')+'</div>';
+    const section=g=>'<section class="penalty-table-section"><h3>'+esc(g.title)+'</h3><table class="penalty-rules-table"><caption class="penalty-sr-only">'+esc(g.title)+'</caption><colgroup><col class="pt-offence"><col class="pt-amount"><col class="pt-note"></colgroup><thead><tr><th scope="col">Vergehen / Anlass</th><th scope="col">Betrag / Einsatz</th><th scope="col">Hinweise</th></tr></thead><tbody>'+g.rows.map(r=>'<tr'+(r.continued?' class="pt-continued"':'')+'><th scope="row">'+(r.continued?'<small>Fortsetzung</small>':'')+esc(r.offence)+'</th><td class="pt-value">'+esc(r.amount)+'</td><td class="pt-explanation">'+esc(r.note)+'</td></tr>').join('')+'</tbody></table></section>';
+    const groups=table.groups.filter(g=>g.rows.length);
+    if(!columns)return '<div class="penalty-table-document">'+groups.map(section).join('')+'</div>';
+    const left=leftGroup||table.groups.find(g=>/geldstraf/i.test(g.title))?.id||table.groups[0]?.id;
+    return '<div class="penalty-table-document penalty-dashboard-columns"><div class="pt-column pt-money-column">'+groups.filter(g=>g.id===left).map(section).join('')+'</div><div class="pt-column pt-other-column">'+groups.filter(g=>g.id!==left).map(section).join('')+'</div></div>';
   }
-  function pages(table,fits){
+  function pages(table,fits,options={}){
     const result=[];
     let page={
       schema:1,groups:[]
@@ -120,7 +124,7 @@
       let row=copy(original);
       while(row){
         const candidate=append(page,group,row);
-        if(fits(markup(candidate))){
+        if(fits(markup(candidate,options))){
           page=candidate;
           row=null;
           continue;
@@ -141,7 +145,7 @@
         });
         while(lo<hi){
           const mid=Math.ceil((lo+hi)/2);
-          if(fits(markup(append(page,group,fragment(mid)))))lo=mid;
+          if(fits(markup(append(page,group,fragment(mid)),options)))lo=mid;
           else hi=mid-1;
         }
         const part=fragment(lo);

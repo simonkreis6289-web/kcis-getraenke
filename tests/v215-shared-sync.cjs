@@ -144,3 +144,8 @@ test('an idempotent no-op API still commits pending independent changes atomical
  // commands may do. The pending member edit must still reach the root/mirror.
  const transport=a.KCSharedTransport.create({...db.sdk,db:{},core,policy:a.KCGameFinePolicy});await transport.transaction('club',ctx,async()=>({repeat:true}));assert.equal(db.root().persons[0].memberRole,'cashier');assert.equal(db.data.get(personPath('A')).memberRole,'cashier');
 });
+test('a delayed counter receipt cannot replace a newer confirmed value from another device',async()=>{
+ const db=database({[rootPath]:initial()}),other=apiClient(db),get=db.sdk.getDocFromServer;let inject=false;
+ db.sdk.getDocFromServer=async key=>{if(inject&&key===rootPath){inject=false;await other.firestoreApi.changeLivePersonCounter('club','A','drinks','beer',1,context(db,'changeLivePersonCounter'));}return get(key);};
+ const app=fullApp(db);await app.select();inject=true;assert(await app.c.changeSyncedPersonCounter('A','drinks','beer',1));assert.equal(db.root().persons[0].drinks.beer,2);assert.equal(app.run('persons[0].drinks.beer'),2);
+});
