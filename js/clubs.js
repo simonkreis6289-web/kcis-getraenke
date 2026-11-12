@@ -468,6 +468,7 @@ async function selectClub(clubName) {
   if(typeof stopCashHistorySync==='function')stopCashHistorySync();
   ACTIVE_CLUB = clubName;
   const clubId = getClubFirestoreId(clubName);
+  window.KCSharedSync?.begin(clubId);
 
   const localClub = CLUBS[clubName] || createEmptyClubData();
   if(typeof resetGameFineSettings==='function')resetGameFineSettings(localClub);
@@ -562,18 +563,18 @@ async function selectClub(clubName) {
   const firestoreLoaded = await loadFromFirestore();
 
   if (!firestoreLoaded) {
-    await saveToFirestore(false);
+    if(!window.KCSharedSync)await saveToFirestore(false);
   } else {
     renderAll();
     updateAppHeader();
-    if (typeof publishSeatingLive === 'function') publishSeatingLive();
+    if (!window.KCSharedSync&&typeof publishSeatingLive === 'function') publishSeatingLive();
   }
     
-if(ACTIVE_CLUB===clubName&&typeof kcEnsureKegelSeries==='function')await kcEnsureKegelSeries(true);
-await startLivePersonSync(clubId);
+if((!window.KCSharedSync||window.KCSharedSync.ready)&&ACTIVE_CLUB===clubName&&typeof kcEnsureKegelSeries==='function')await kcEnsureKegelSeries(true);
+if(!window.KCSharedSync)await startLivePersonSync(clubId);
 
 if (
-  typeof startLiveLotterieSync === 'function'
+  !window.KCSharedSync&&typeof startLiveLotterieSync === 'function'
 ) {
   await startLiveLotterieSync();
 }
@@ -581,7 +582,9 @@ if (
   if (window.firestoreApi && typeof window.firestoreApi.subscribeToClubState === 'function') {
     currentClubUnsubscribe = window.firestoreApi.subscribeToClubState(
       clubId,
-      (state) => {
+      (state,metadata) => {
+        if(ACTIVE_CLUB!==clubName)return;
+        if(window.KCSharedSync){window.KCSharedSync.receive(state,metadata);return;}
         if (!state) return;
         // Calendar revisions are independent of the game state's client clock.
         if(ACTIVE_CLUB===clubName&&typeof kcApplyCalendarState==='function')kcApplyCalendarState(state);

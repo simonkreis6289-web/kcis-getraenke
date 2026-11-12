@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocFromServer,
   deleteDoc,
   onSnapshot,
   serverTimestamp,
@@ -186,12 +187,20 @@ function normalizeLiveGameDocument(
   };
 }
 
+const sharedTransport=window.KCSharedTransport?.create({db,doc,runTransaction,serverTimestamp,core:window.KCSharedCore,policy:window.KCGameFinePolicy});
+async function runSharedTransaction(clubId,context,_db,handler){return sharedTransport?sharedTransport.transaction(clubId,context,handler):runTransaction(_db,handler);}
+async function runSharedSet(clubId,context,ref,value,options){if(!sharedTransport)return setDoc(ref,value,options);return sharedTransport.transaction(clubId,context,async tx=>{await tx.get(ref);tx.set(ref,value,options);});}
+async function runSharedDelete(clubId,context,ref){if(!sharedTransport)return deleteDoc(ref);return sharedTransport.transaction(clubId,context,async tx=>{await tx.get(ref);tx.delete(ref);});}
 window.firestoreApi = {
 
   // ─────────────────────────────────────────────
   // GESAMTZUSTAND
   // ─────────────────────────────────────────────
 
+  async initializeSharedState(clubId,defaults,opId){if(!sharedTransport)throw Error('Synchronisierung nicht geladen');return sharedTransport.initialize(clubId,defaults,opId);},
+  async commitSharedChanges(clubId,request,context){if(!sharedTransport)throw Error('Synchronisierung nicht geladen');return sharedTransport.changes(clubId,request,context);},
+  async getSharedReceipt(clubId,opId){const snap=await getDocFromServer(doc(db,'clubs',clubId,'syncCommands',opId));return snap.exists()?snap.data():null;},
+  subscribeClubList(onData,onError){return onSnapshot(collection(db,'clubs'),snap=>onData(snap.docs.map(item=>({id:item.id,...item.data()}))),onError);},
   async loadClubState(clubId) {
     const ref = doc(
       db,
@@ -201,7 +210,7 @@ window.firestoreApi = {
       "current"
     );
 
-    const snap = await getDoc(ref);
+    const snap = await (typeof getDocFromServer==='function'?getDocFromServer:getDoc)(ref);
 
     return snap.exists()
       ? snap.data()
@@ -209,10 +218,10 @@ window.firestoreApi = {
   },
 
 
-  async startNewEvening(clubId,request={}) {
+  async startNewEvening(clubId,request={}, syncContext = null) {
     if(!clubId||!/^evening_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!request.payload||!Number.isFinite(Date.parse(request.payload.currentEveningStartedAt)))throw Error('Ungültiger Kegelabend');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async tx=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async tx=>{
       const snap=await tx.get(ref),current=snap.exists()?snap.data():{};
       if(current.eveningResetOp===request.opId)return {eveningStartedAt:current.currentEveningStartedAt,state:current};
       if(String(current.currentEveningStartedAt||'')!==String(request.expectedEvening||''))throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
@@ -220,7 +229,8 @@ window.firestoreApi = {
       const next={...payload,...current};
       for(const key of ['currentEveningStartedAt','seatingOrder','spiele','selectedLoser','teamDrinks','bahnTimerStart','bahnTimerRunning','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore'])if(payload[key]!==undefined)next[key]=payload[key];
       const gameDocs=[];for(const key of keys){const target=doc(db,'clubs',clubId,'liveGames',key),old=await tx.get(target);gameDocs.push({key,target,revision:Number(old.exists()?old.data().revision:0)||0});}
-      const roster=new Map();for(const p of [...(payload.persons||[]),...(current.persons||[])])roster.set(String(p.name).trim().toLocaleLowerCase('de'),p);
+      const seatingRef=doc(db,'clubs',clubId,'live','seating');await tx.get(seatingRef);
+      const roster=new Map();for(const p of (current.syncProtocol?(current.persons||[]):[...(payload.persons||[]),...(current.persons||[])]))roster.set(String(p.name).trim().toLocaleLowerCase('de'),p);
       const people=[];for(const p of roster.values()){
         const target=doc(db,'clubs',clubId,'livePersons',this.getLivePersonId(p.name)),old=await tx.get(target),live=old.exists()?old.data():{};
         const person={...p,present:false,attendanceStatus:'unknown',tisch:'',left:false,leftAt:'',arrivalTime:'',leftEarlyAt:'',paid:0,boughtThrows:0,teamExtra:0,roundExtra:0,rounds:[],freeStrafen:[],tannenbaumCharges:[],individualChargeCents:0,strafTotal:0,gameFineBase:{otherNormalCents:0,otherTopCents:0,kingCents:0},drinks:Object.fromEntries((next.DRINKS||[]).map(x=>[x.key,0])),strafen:Object.fromEntries((next.STRAFEN||[]).map(x=>[x.key,0]))};
@@ -234,16 +244,17 @@ window.firestoreApi = {
         if(attendees.length){const entry={id:'stats_evening_'+encodeURIComponent(data.currentKey),date:window.KCPenaltyStats.date(oldEvening)||window.KCPenaltyStats.date(new Date().toISOString()),eveningStartedAt:oldEvening||null,attendees,statsPeople:session?.people||[],updatedAt:new Date().toISOString()};history.set(entry.id,entry);}
         next.kegelAbende=[...history.values()];
       }
-      Object.assign(next,{persons:people.map(x=>x.person),currentEveningStartedAt:evening,eveningResetOp:request.opId,eveningResetRevision:(Number(current.eveningResetRevision)||0)+1,dashboardActiveGame:null,dashboardDraw:null,dashboardRandomDraw:null,dashboardRules:null,dashboardGameOverview:{open:false,revision:(Number(current.dashboardGameOverview?.revision)||0)+1},dashboardCashView:null,dashboardClubContent:null,individualGameLedger:[],individualGameRevision:0,strafenHistory:[]});
+      Object.assign(next,{persons:people.map(x=>x.person),currentEveningStartedAt:evening,eveningResetOp:request.opId,eveningResetRevision:(Number(current.eveningResetRevision)||0)+1,dashboardActiveGame:null,dashboardDraw:null,dashboardRandomDraw:null,dashboardRules:null,seatingOrder:Array(16).fill(''),dashboardGameOverview:{open:true,revision:(Number(current.dashboardGameOverview?.revision)||0)+1},dashboardCashView:null,dashboardClubContent:null,individualGameLedger:[],individualGameRevision:0,strafenHistory:[]});
       for(const item of gameDocs){
         const seed=window.KCExtraGames?.keys.includes(item.key)?window.KCExtraGames.empty(item.key):['siebener','hindernis'].includes(item.key)?window.KCIndividual.empty(item.key):['blackjack','gluecksspirale'].includes(item.key)?window.KCTableGames.empty(item.key):item.key==='sechstage'?window.KCSixDays.empty():payload[item.key+'State']||{};
         const value={...seed,active:false,finished:false,id:'',eveningStartedAt:evening,revision:0};next[item.key+'State']=value;tx.set(item.target,{gameKey:item.key,state:value,eveningStartedAt:evening,revision:item.revision+1,updatedClientAt:Date.now(),updatedClientId:'evening-reset',updatedAt:serverTimestamp()});
       }
+      tx.set(seatingRef,{seatingOrder:Array(16).fill(''),groupSettings:next.groupSettings||{},eveningStartedAt:evening,updatedAt:serverTimestamp()});
       for(const item of people)tx.set(item.target,{...item.person,eveningStartedAt:evening,updatedAt:serverTimestamp()});
       tx.set(ref,next);return {eveningStartedAt:evening,state:next};
     });
   },
-  async saveClubState(clubId, payload = {}) {
+  async saveClubState(clubId, payload = {}, syncContext = null) {
     const ref = doc(
       db,
       "clubs",
@@ -252,8 +263,9 @@ window.firestoreApi = {
       "current"
     );
 
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},next={...payload};
+      if(current.syncProtocol)throw Error('Vollständige lokale Stände dürfen nicht mehr hochgeladen werden. Bitte neu laden.');
       if(current.eveningResetRevision&&payload.currentEveningStartedAt!==current.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
       if(current.dashboardRules?.revision)next.dashboardRules=current.dashboardRules;else delete next.dashboardRules;
       for(const key of ['dashboardCashView','cashStandingOrders','dashboardClubContent','dashboardGameOverview','dashboardRandomDraw']){if(current[key]?.revision)next[key]=current[key];else delete next[key];}
@@ -307,10 +319,10 @@ window.firestoreApi = {
     });
   },
 
-  async updateClubCalendar(clubId,request={}) {
+  async updateClubCalendar(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCKegelCalendar)throw new Error('Kalenderzugriff nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const managed=current.clubCalendarData?.calendarRevision?{...current,...current.clubCalendarData}:current;
       const base=!Array.isArray(managed.clubTermine)&&!managed.calendarRevision&&Array.isArray(request.bootstrapEvents)?{...managed,clubTermine:request.bootstrapEvents}:managed;
@@ -324,10 +336,10 @@ window.firestoreApi = {
     });
   },
 
-  async setDashboardGameOverview(clubId,request={}) {
+  async setDashboardGameOverview(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCGameOverview||typeof request.open!=='boolean'||!Number.isSafeInteger(request.expectedRevision)||!/^overview_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige Spielübersicht.');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardGameOverview||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Spielübersicht wurde inzwischen geändert. Bitte erneut versuchen.');
@@ -338,17 +350,17 @@ window.firestoreApi = {
     });
   },
 
-  async updateGameOptions(clubId,request={}) {
+  async updateGameOptions(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCGameOptions?.valid(request.options)||!/^options_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision))throw Error('Ungültige Spieleinstellungen.');
-    const ref=doc(db,'clubs',clubId,'state','current');return runTransaction(db,async transaction=>{
+    const ref=doc(db,'clubs',clubId,'state','current');return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};if((current.gameOptionsCommands||[]).includes(request.opId))return {options:current.gameOptions,revision:current.gameOptionsRevision};
       if(Number(current.gameOptionsRevision||0)!==request.expectedRevision)throw Error('Spieleinstellungen wurden inzwischen geändert. Bitte erneut versuchen.');
       const options=window.KCGameOptions.value(request.options),revision=Number(current.gameOptionsRevision||0)+1;transaction.set(ref,{gameOptions:options,gameOptionsRevision:revision,gameOptionsCommands:[...(current.gameOptionsCommands||[]),request.opId].slice(-128),updatedAt:serverTimestamp()},{merge:true});return {options,revision};
     });
   },
-  async drawRandomGame(clubId,request={}) {
+  async drawRandomGame(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCGameOptions||!['draw','close'].includes(request.action)||!/^gamedraw_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige Spielauslosung.');
-    const ref=doc(db,'clubs',clubId,'state','current');return runTransaction(db,async transaction=>{
+    const ref=doc(db,'clubs',clubId,'state','current');return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},old=current.dashboardRandomDraw;
       if(request.action==='close'){if(old?.id===request.drawId)transaction.set(ref,{dashboardRandomDraw:{...old,closed:true,revision:Number(old.revision||0)+1},updatedAt:serverTimestamp()},{merge:true});return null;}
       if(old?.id===request.opId)return old;
@@ -359,11 +371,11 @@ window.firestoreApi = {
     });
   },
 
-  async updateGameFineSettings(clubId,request={}) {
+  async updateGameFineSettings(clubId,request={}, syncContext = null) {
     const policy=window.KCGameFinePolicy;
     if(!clubId||!policy||!Object.hasOwn(policy.titles,request.gameKey)||typeof request.onTop!=='boolean'||!/^fine_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige OnTop-Einstellung.');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       if((current.gameFineSettingsCommands||[]).includes(request.opId))return {gameFineSettings:current.gameFineSettings||{},gameFineSettingsRevision:current.gameFineSettingsRevision||0};
       const settings={...(current.gameFineSettings||{}),[request.gameKey]:request.onTop},revision=Number(current.gameFineSettingsRevision||0)+1,people=[];
@@ -380,10 +392,10 @@ window.firestoreApi = {
     return onSnapshot(doc(db,'clubs',clubId,'documents',kind),snap=>onChange(snap.exists()?snap.data():null),onError);
   },
 
-  async updateClubContent(clubId,request={}) {
+  async updateClubContent(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCClubContent||!['notes','statutes','penalties'].includes(request.kind))throw Error('Clubunterlagen nicht verfügbar.');
     const ref=doc(db,'clubs',clubId,'documents',request.kind);
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),before=snap.exists()?snap.data():null;
       const value=window.KCClubContent.change(request.kind,before,request);
       if(value!==before)transaction.set(ref,{...value,updatedAt:serverTimestamp()});
@@ -391,10 +403,10 @@ window.firestoreApi = {
     });
   },
 
-  async setClubContentDashboard(clubId,request={}) {
+  async setClubContentDashboard(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCClubContent)throw Error('Dashboard-Steuerung nicht verfügbar.');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardClubContent||null;
       const value=window.KCClubContent.view(before,request);if(value===before)return value;
       const updates={dashboardClubContent:value,updatedAt:serverTimestamp()};
@@ -403,10 +415,10 @@ window.firestoreApi = {
     });
   },
 
-  async setCashDashboardView(clubId,request={}) {
+  async setCashDashboardView(clubId,request={}, syncContext = null) {
     if(!clubId||typeof request.open!=='boolean'||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId)||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Abrechnungsanzeige');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardCashView||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Dashboard-Ansicht wurde inzwischen geändert. Bitte erneut versuchen.');
@@ -416,12 +428,12 @@ window.firestoreApi = {
     });
   },
 
-  async updateCashStandingOrders(clubId,request={}) {
+  async updateCashStandingOrders(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCCashOverview||!['upsert','delete'].includes(request.action)||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId)||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültiger Dauerauftrag');
     if(request.action==='upsert'&&!window.KCCashOverview.validOrder(request.order))throw Error('Ungültiger Dauerauftrag');
     if(request.action==='delete'&&!/^standing_[a-zA-Z0-9_-]{1,100}$/.test(request.id))throw Error('Ungültiger Dauerauftrag');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.cashStandingOrders||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Daueraufträge wurden inzwischen geändert. Bitte erneut versuchen.');
@@ -439,11 +451,11 @@ window.firestoreApi = {
     });
   },
 
-  async setDashboardRules(clubId,request={}) {
+  async setDashboardRules(clubId,request={}, syncContext = null) {
     if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
     if(request.rulesConfig!==undefined&&!(request.gameKey==='hindernis'&&window.KCIndividual?.validSettings(request.rulesConfig)||request.gameKey==='siebener'&&window.KCIndividual?.validSevenSettings(request.rulesConfig)||window.KCExtraGames?.keys.includes(request.gameKey)&&window.KCExtraGames.validSettings(request.gameKey,request.rulesConfig)))throw new Error('Ungültige Spielregeln');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardRules||{};
       if((before.commands||[]).includes(request.opId))return before;
       // A close from an older popup must not dismiss a newer controller's rules.
@@ -454,10 +466,10 @@ window.firestoreApi = {
     });
   },
 
-  async updatePenaltyStatsSettings(clubId,request={}) {
+  async updatePenaltyStatsSettings(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCPenaltyStats)throw new Error('Statistikzugriff nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},previous=current.penaltyStatsSettings;
       if(typeof request.id!=='string'||!/^stats_[a-zA-Z0-9_-]{1,100}$/.test(request.id))throw new Error('Ungültige Statistikaktion');
       if(previous?.lastRequestId===request.id)return previous;
@@ -475,10 +487,10 @@ window.firestoreApi = {
     });
   },
 
-  async transactSechsGame(clubId,request={}) {
+  async transactSechsGame(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCSixDays)throw new Error('Rennspiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current.sechstageState?.eveningStartedAt||'');
       const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current.sechstageState?.eveningStartedAt===existingEvening&&current.sechstageState?.commands?.includes(request.opId);
@@ -528,12 +540,12 @@ window.firestoreApi = {
     });
   },
 
-  async transactTableGame(clubId,request={}) {
+  async transactTableGame(clubId,request={}, syncContext = null) {
     const gameKey=request.gameKey;if(!['blackjack','gluecksspirale'].includes(gameKey))throw new Error('Unbekanntes Spiel');
     const stateKey=gameKey+'State';
     if(!clubId||!window.KCTableGames)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
       const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current[stateKey]?.eveningStartedAt===existingEvening&&current[stateKey]?.commands?.includes(request.opId);
@@ -583,12 +595,12 @@ window.firestoreApi = {
       return {gameResultsHistory:resultHistory.filter(e=>e.serverGameResult),state:next,eveningStartedAt:existingEvening||next.eveningStartedAt,counters,added:effect.added,removed:effect.removed,gameStats:finalStats.filter(entry=>entry.tableGameId),repeat:result.repeat};
     });
   },
-  async transactIndividualGame(clubId,request={}) {
+  async transactIndividualGame(clubId,request={}, syncContext = null) {
     const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(gameKey))throw new Error('Unbekanntes Spiel');
     const stateKey=gameKey+'State',core=['siebener','hindernis'].includes(gameKey)?window.KCIndividual:window.KCExtraGames;
     if(!clubId||!core)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
       const repeatedInitialStart=request.action==='start'&&!request.eveningStartedAt&&current[stateKey]?.eveningStartedAt===existingEvening&&current[stateKey]?.commands?.includes(request.opId);
@@ -701,7 +713,7 @@ window.firestoreApi = {
     gameKey,
     state = {},
     metadata = {}
-  ) {
+  , syncContext = null) {
     const normalizedGameKey =
       normalizeLiveGameKey(
         gameKey
@@ -730,7 +742,7 @@ window.firestoreApi = {
         Date.now()
       ) || Date.now();
 
-    return runTransaction(
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
       db,
       async transaction => {
         const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
@@ -865,8 +877,8 @@ window.firestoreApi = {
     gameKey,
     initialState = {},
     metadata = {}
-  ) {
-    return this.saveLiveGameState(
+  , syncContext = null) {
+    return (window.KCSharedSync?.originalApi||this).saveLiveGameState.call(this,
       clubId,
       gameKey,
       initialState,
@@ -878,7 +890,8 @@ window.firestoreApi = {
             metadata.updatedClientAt ||
             Date.now()
           ) || Date.now()
-      }
+      },
+      syncContext
     );
   },
 
@@ -886,14 +899,14 @@ window.firestoreApi = {
   async deleteLiveGameState(
     clubId,
     gameKey
-  ) {
+  , syncContext = null) {
     const gameRef =
       this.getLiveGameRef(
         clubId,
         gameKey
       );
 
-    await deleteDoc(
+    await (typeof runSharedDelete==='function'?runSharedDelete.bind(null,clubId,syncContext):deleteDoc)(
       gameRef
     );
 
@@ -906,7 +919,7 @@ window.firestoreApi = {
     gameKey,
     transactionHandler,
     metadata = {}
-  ) {
+  , syncContext = null) {
     if (
       typeof transactionHandler !==
       'function'
@@ -939,7 +952,7 @@ window.firestoreApi = {
         Date.now()
       ) || Date.now();
 
-    return runTransaction(
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
       db,
       async transaction => {
         const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
@@ -1110,11 +1123,11 @@ async loadLiveLotterie(clubId) {
     : null;
 },
 
-async saveLiveLotterie(clubId, state = {}, eveningStartedAt = typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt) {
+async saveLiveLotterie(clubId, state = {}, eveningStartedAt = typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt, syncContext = null) {
   // Lotterie uses the same canonical `state` envelope as every other live game.
   // Keep the revision monotonic so the app and dashboard see the same snapshot.
   const ref = doc(db, 'clubs', clubId, 'liveGames', 'lotterie');
-  return runTransaction(db, async transaction => {
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db, async transaction => {
     const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
     if(root.eveningResetRevision&&eveningStartedAt!==root.currentEveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt');
     const snapshot = await transaction.get(ref);
@@ -1137,7 +1150,7 @@ async changeLiveLotterieThrow(
   value,
   throwMeta = null,
   eveningStartedAt = typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt
-) {
+, syncContext = null) {
   const ref = doc(
     db,
     'clubs',
@@ -1146,7 +1159,7 @@ async changeLiveLotterieThrow(
     'lotterie'
   );
 
-  return runTransaction(
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
     db,
     async transaction => {
       const rootSnap=await transaction.get(doc(db,'clubs',clubId,'state','current')),root=rootSnap.exists()?rootSnap.data():{};
@@ -1240,9 +1253,9 @@ subscribeToLiveLotterie(
     
 
   // Separate Live-Daten fuer Sitzordnung und Gruppeneinstellungen.
-  async saveSeatingLive(clubId, payload) {
+  async saveSeatingLive(clubId, payload, syncContext = null) {
     const ref = doc(db, 'clubs', clubId, 'live', 'seating');
-    await setDoc(ref, { ...payload, updatedAt: serverTimestamp() });
+    await (typeof runSharedSet==='function'?runSharedSet.bind(null,clubId,syncContext):setDoc)(ref, { ...payload, updatedAt: serverTimestamp() });
   },
   subscribeToSeatingLive(clubId, onData, onError) {
     const ref = doc(db, 'clubs', clubId, 'live', 'seating');
@@ -1258,19 +1271,8 @@ subscribeToLiveLotterie(
       "current"
     );
 
-    return onSnapshot(
-      ref,
-
-      snap => {
-        onData(
-          snap.exists()
-            ? snap.data()
-            : null
-        );
-      },
-
-      onError
-    );
+    const callback=snap=>onData(snap.exists()?snap.data():null,{fromCache:snap.metadata?.fromCache===true,pending:snap.metadata?.hasPendingWrites===true});
+    return (window.KCSharedSync||window.KCSharedTransport)?onSnapshot(ref,{includeMetadataChanges:true},callback,onError):onSnapshot(ref,callback,onError);
   },
 
 
@@ -1282,7 +1284,7 @@ subscribeToLiveLotterie(
     clubId,
     archiveId,
     payload = {}
-  ) {
+  , syncContext = null) {
     const ref = doc(
       db,
       "clubs",
@@ -1291,7 +1293,7 @@ subscribeToLiveLotterie(
       archiveId
     );
 
-    await setDoc(
+    await (typeof runSharedSet==='function'?runSharedSet.bind(null,clubId,syncContext):setDoc)(
       ref,
       {
         ...payload,
@@ -1317,11 +1319,11 @@ subscribeToLiveLotterie(
       .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')))),onError);
   },
 
-  async saveStrafenClosure(clubId,archiveId,payload,expectedRevision=null) {
+  async saveStrafenClosure(clubId,archiveId,payload,expectedRevision=null, syncContext = null) {
     if(!clubId||typeof archiveId!=='string'||!/^strafen_abend_[a-zA-Z0-9_-]+$/.test(archiveId))throw new Error('Ungültiger Kegelabend');
     if(payload.category!=='strafen'||!Number.isSafeInteger(payload.laneCostCents)||payload.laneCostCents<0)throw new Error('Ungültige Bahngebühr');
     const ref=doc(db,'clubs',clubId,'archive',archiveId);
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const current=await transaction.get(ref),previous=current.exists()?current.data():{};
       if(current.exists()&&(previous.category!=='strafen'||expectedRevision===null||(previous.ledgerRevision||0)!==expectedRevision))throw new Error('Abschluss wurde inzwischen geändert. Bitte erneut öffnen.');
       if(!current.exists()&&expectedRevision!==null)throw new Error('Abschluss wurde inzwischen gelöscht. Bitte erneut öffnen.');
@@ -1331,11 +1333,11 @@ subscribeToLiveLotterie(
     });
   },
 
-  async saveCashExpense(clubId,expenseId,payload,expectedRevision=null) {
+  async saveCashExpense(clubId,expenseId,payload,expectedRevision=null, syncContext = null) {
     if(!clubId||typeof expenseId!=='string'||!/^expense_manual_[a-zA-Z0-9_-]+$/.test(expenseId))throw new Error('Ungültige Ausgabe');
     if(!Number.isSafeInteger(payload.amountCents)||payload.amountCents<=0||!String(payload.description||'').trim()||String(payload.description).length>120||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)||!Number.isFinite(Date.parse(payload.date+'T12:00:00Z'))||new Date(payload.date+'T12:00:00Z').toISOString().slice(0,10)!==payload.date||!Number.isFinite(Date.parse(payload.incurredAt)))throw new Error('Ungültige Ausgabedaten');
     const ref=doc(db,'clubs',clubId,'archive',expenseId);
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const current=await transaction.get(ref),previous=current.exists()?current.data():{};
       if(current.exists()&&(previous.category!=='expense'||expectedRevision===null||(previous.ledgerRevision||0)!==expectedRevision))throw new Error('Ausgabe wurde inzwischen geändert. Bitte erneut öffnen.');
       if(!current.exists()&&expectedRevision!==null)throw new Error('Ausgabe wurde inzwischen gelöscht. Bitte erneut öffnen.');
@@ -1345,11 +1347,11 @@ subscribeToLiveLotterie(
     });
   },
 
-  async updateLaneExpense(clubId,archiveId,payload,expectedRevision) {
+  async updateLaneExpense(clubId,archiveId,payload,expectedRevision, syncContext = null) {
     if(!clubId||typeof archiveId!=='string'||!archiveId||archiveId.includes('/'))throw new Error('Ungültiger Kegelabend');
     if(!payload.remove&&(!Number.isSafeInteger(payload.amountCents)||payload.amountCents<0||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)||!Number.isFinite(Date.parse(payload.date+'T12:00:00Z'))||new Date(payload.date+'T12:00:00Z').toISOString().slice(0,10)!==payload.date||!Number.isFinite(Date.parse(payload.incurredAt))))throw new Error('Ungültige Bahngebühr');
     const ref=doc(db,'clubs',clubId,'archive',archiveId);
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const current=await transaction.get(ref);
       if(!current.exists())throw new Error('Kegelabend wurde inzwischen gelöscht');
       const previous=current.data();
@@ -1361,10 +1363,10 @@ subscribeToLiveLotterie(
     });
   },
 
-  async deleteCashExpense(clubId,expenseId,expectedRevision) {
+  async deleteCashExpense(clubId,expenseId,expectedRevision, syncContext = null) {
     if(!clubId||typeof expenseId!=='string'||!/^expense_manual_[a-zA-Z0-9_-]+$/.test(expenseId))throw new Error('Ungültige Ausgabe');
     const ref=doc(db,'clubs',clubId,'archive',expenseId);
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const current=await transaction.get(ref);
       if(!current.exists())throw new Error('Ausgabe wurde inzwischen gelöscht');
       const data=current.data();
@@ -1382,16 +1384,17 @@ subscribeToLiveLotterie(
       .sort((a, b) => String(b.closedAt || b.date || '').localeCompare(String(a.closedAt || a.date || '')));
   },
 
-  async deleteArchivedStrafenEvent(clubId, archiveId) {
+  async deleteArchivedStrafenEvent(clubId, archiveId, expectedRevision=null, syncContext = null) {
     // Accept legacy, per-evening and cancelled IDs. Verify the category before deleting.
     if (!clubId || typeof archiveId !== 'string' || !archiveId || archiveId.includes('/') || archiveId === '.' || archiveId === '..' || archiveId.length > 1500) {
       throw new Error('Ungültiger Archiv-Eintrag');
     }
     const ref = doc(db, 'clubs', clubId, 'archive', archiveId);
+    if(typeof runSharedTransaction==='function'&&syncContext)return runSharedTransaction(clubId,syncContext,db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Abschluss ist nicht mehr vorhanden');const data=snap.data();if(data.category!=='strafen')throw Error('Eintrag ist kein Strafenabschluss');if(expectedRevision===null||(Number(data.ledgerRevision)||0)!==expectedRevision)throw Error('Abschluss wurde inzwischen geändert. Bitte erneut prüfen.');tx.delete(ref);});
     const snapshot = await getDoc(ref);
     if (!snapshot.exists()) throw new Error('Abschluss ist nicht mehr vorhanden');
     if (snapshot.data().category !== 'strafen') throw new Error('Eintrag ist kein Strafenabschluss');
-    await deleteDoc(ref);
+    await (typeof runSharedDelete==='function'?runSharedDelete.bind(null,clubId,syncContext):deleteDoc)(ref);
   },
 
   subscribeArchivedStrafenEvents(clubId, onChange, onError) {
@@ -1408,14 +1411,14 @@ subscribeToLiveLotterie(
     return {...entry,id:snap.id};
   },
 
-  async saveHistoricalStrafenEvent(clubId, archiveId, payload, expectedRevision=null, previousArchiveId=archiveId) {
+  async saveHistoricalStrafenEvent(clubId, archiveId, payload, expectedRevision=null, previousArchiveId=archiveId, syncContext = null) {
     if(!clubId||typeof archiveId!=='string'||!/^cancelled_\d{4}-\d{2}-\d{2}$|^strafen_nachtrag_[a-zA-Z0-9_-]+$/.test(archiveId))throw new Error('Ungültiger Nachtrag');
     if(payload.category!=='strafen'||!['cancelled','backfill'].includes(payload.kind))throw new Error('Ungültige Abrechnung');
     if(payload.laneCostCents!=null&&(!Number.isSafeInteger(payload.laneCostCents)||payload.laneCostCents<0||payload.kind==='cancelled'))throw new Error('Ungültige Bahngebühr');
     if(previousArchiveId!==archiveId&&(payload.kind!=='cancelled'||!/^cancelled_\d{4}-\d{2}-\d{2}$/.test(previousArchiveId)))throw new Error('Ungültiger ursprünglicher Ausfalltermin');
     const ref=doc(db,'clubs',clubId,'archive',archiveId);
     const previousRef=previousArchiveId===archiveId?ref:doc(db,'clubs',clubId,'archive',previousArchiveId);
-    return runTransaction(db,async transaction=>{
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const current=await transaction.get(previousRef);
       if(current.exists()){
         const data=current.data();
@@ -1434,14 +1437,14 @@ subscribeToLiveLotterie(
   // CLUB-METADATEN
   // ─────────────────────────────────────────────
 
-  async saveClubMeta(clubId, payload = {}) {
+  async saveClubMeta(clubId, payload = {}, syncContext = null) {
     const ref = doc(
       db,
       "clubs",
       clubId
     );
 
-    await setDoc(
+    await (typeof runSharedSet==='function'?runSharedSet.bind(null,clubId,syncContext):setDoc)(
       ref,
       {
         ...payload,
@@ -1496,133 +1499,15 @@ subscribeToLiveLotterie(
     }));
   },
 
-async seedLivePersons(
-  clubId,
-  persons = []
-) {
-  await Promise.all(
-    persons.map(async person => {
-      if (!person || !person.name) {
-        return;
-      }
-
-      const personId =
-        this.getLivePersonId(
-          person.name
-        );
-
-      const personRef = doc(
-        db,
-        "clubs",
-        clubId,
-        "livePersons",
-        personId
-      );
-
-      const existing =
-        await getDoc(personRef);
-
-      if (existing.exists()) {
-        return;
-      }
-
-      await setDoc(personRef, {
-        name:
-          person.name,
-
-        isGuest:
-          !!person.isGuest,
-
-        present:
-          !!person.present,
-
-        attendanceStatus:
-          person.present
-            ? "present"
-            : (
-                person.attendanceStatus ||
-                "unknown"
-              ),
-
-        left:
-          !!person.left,
-
-        tisch:
-          person.tisch || "",
-
-        arrivalTime:
-          person.arrivalTime || "",
-
-        leftAt:
-          person.leftAt || "",
-
-        leftEarlyAt:
-          person.leftEarlyAt || "",
-
-        drinks: {
-          ...(person.drinks || {})
-        },
-
-        strafen: {
-          ...(person.strafen || {})
-        },
-          
-          freeStrafen:
-              Array.isArray(
-                person.freeStrafen
-              )
-                ? person.freeStrafen.map(
-                    entry => ({
-                      ...entry
-                    })
-                  )
-                : [],
-          
-          rounds:
-              Array.isArray(
-                person.rounds
-              )
-                ? person.rounds.map(
-                    round => ({
-                      ...round,
-                      drinks: {
-                        ...(round.drinks || {})
-                      }
-                    })
-                  )
-                : [],
-          
-        boughtThrows:
-          Math.max(
-            0,
-            parseInt(
-              person.boughtThrows || 0,
-              10
-            ) || 0
-          ),
-
-          paid:
-              Math.max(
-                0,
-                parseFloat(
-                  person.paid || 0
-                ) || 0
-              ),
-          
-        updatedAt:
-          serverTimestamp()
-      });
-    })
-  );
-
-  return true;
+async seedLivePersons(clubId,persons=[], syncContext = null){
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async tx=>{const missing=[];for(const person of persons){if(!person?.name)continue;const target=doc(db,'clubs',clubId,'livePersons',this.getLivePersonId(person.name)),snap=await tx.get(target);if(!snap.exists())missing.push({target,person});}for(const row of missing)tx.set(row.target,{...row.person,updatedAt:serverTimestamp()});return true;});
 },
     
 async saveLivePersonStatus(
   clubId,
   personName,
   payload = {}
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       "Personenname fehlt"
@@ -1660,7 +1545,7 @@ async saveLivePersonStatus(
             : "unknown"
         );
 
-  await setDoc(
+  await (typeof runSharedSet==='function'?runSharedSet.bind(null,clubId,syncContext):setDoc)(
     personRef,
     {
       name:
@@ -1721,7 +1606,7 @@ async saveLivePerson(
   clubId,
   personName,
   payload = {}
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       "Personenname fehlt"
@@ -1759,7 +1644,7 @@ async saveLivePerson(
             : "unknown"
         );
 
-  await runTransaction(db, async transaction => {
+  await (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db, async transaction => {
     const existingSnap = await transaction.get(personRef);
     const existing = existingSnap.exists() ? existingSnap.data() : null;
     const preserveCounters = !!existing && !payload.forceCounterReset;
@@ -1850,7 +1735,7 @@ async deleteLivePersonRound(
   clubId,
   personName,
   roundId
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       'Personenname fehlt'
@@ -1876,7 +1761,7 @@ async deleteLivePersonRound(
     personId
   );
 
-  return runTransaction(
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
     db,
     async transaction => {
       const snapshot =
@@ -1939,7 +1824,7 @@ async changeLivePersonBoughtThrows(
   personName,
   delta,
   maxBuys
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       'Personenname fehlt'
@@ -1974,7 +1859,7 @@ async changeLivePersonBoughtThrows(
     personId
   );
 
-  return runTransaction(
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
     db,
     async transaction => {
       const snap =
@@ -2049,7 +1934,7 @@ async saveLivePersonPayment(
   clubId,
   personName,
   paid
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       'Personenname fehlt'
@@ -2081,7 +1966,7 @@ async saveLivePersonPayment(
     personId
   );
 
-  await setDoc(
+  await (typeof runSharedSet==='function'?runSharedSet.bind(null,clubId,syncContext):setDoc)(
     personRef,
     {
       name:
@@ -2108,7 +1993,7 @@ async addLivePersonFreeStrafe(
   clubId,
   personName,
   entry
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       'Personenname fehlt'
@@ -2137,7 +2022,7 @@ async addLivePersonFreeStrafe(
     personId
   );
 
-  return runTransaction(
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
     db,
     async transaction => {
       const snapshot =
@@ -2199,7 +2084,7 @@ async addLivePersonRound(
   clubId,
   personName,
   roundEntry
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       'Personenname fehlt'
@@ -2228,7 +2113,7 @@ async addLivePersonRound(
     personId
   );
 
-  return runTransaction(
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
     db,
     async transaction => {
       const snapshot =
@@ -2301,7 +2186,7 @@ async deleteLivePersonFreeStrafe(
   clubId,
   personName,
   freeStrafeId
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       'Personenname fehlt'
@@ -2327,7 +2212,7 @@ async deleteLivePersonFreeStrafe(
     personId
   );
 
-  return runTransaction(
+  return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
     db,
     async transaction => {
       const snapshot =
@@ -2385,7 +2270,7 @@ async deleteLivePersonFreeStrafe(
 async deleteLivePerson(
   clubId,
   personName
-) {
+, syncContext = null) {
   if (!personName) {
     throw new Error(
       "Personenname fehlt"
@@ -2405,7 +2290,7 @@ async deleteLivePerson(
     personId
   );
 
-  await deleteDoc(
+  await (typeof runSharedDelete==='function'?runSharedDelete.bind(null,clubId,syncContext):deleteDoc)(
     personRef
   );
 
@@ -2422,7 +2307,7 @@ async deleteLivePerson(
     category,
     key,
     delta
-  ) {
+  , syncContext = null) {
     if (
       !["drinks", "strafen"].includes(category)
     ) {
@@ -2454,7 +2339,7 @@ async deleteLivePerson(
       personId
     );
 
-    return runTransaction(
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
       db,
 
       async transaction => {
@@ -2510,7 +2395,7 @@ async deleteLivePerson(
   async changeMultipleLivePersonCounters(
     clubId,
     changes = []
-  ) {
+  , syncContext = null) {
     const validChanges = changes.filter(
       change =>
         change &&
@@ -2526,7 +2411,7 @@ async deleteLivePerson(
       return [];
     }
 
-    return runTransaction(
+    return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(
       db,
 
       async transaction => {
@@ -2678,6 +2563,8 @@ async deleteLivePerson(
 };
 
 
+window.firestoreApi.__syncArity={"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
+window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 
 

@@ -1,0 +1,44 @@
+#shared-sync-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 5px 16px;
+  background: #eaf5ef;
+  color: #246441;
+  border-bottom: 1px solid #c9e3d3;
+  font-size: 12px;
+  font-weight: 650;
+}
+#shared-sync-status span::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+#shared-sync-status[data-mode='saving'],
+#shared-sync-status[data-mode='pending'] {
+  background: #fff6dc;
+  border-color: #ead496;
+  color: #825c13;
+}
+#shared-sync-status[data-mode='offline'],
+#shared-sync-status[data-mode='blocked'] {
+  background: #fff0ef;
+  border-color: #ecc9c5;
+  color: #943d36;
+}
+#shared-sync-status button {
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+#shared-sync-status button[hidden] { display: none; }
