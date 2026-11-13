@@ -1,6 +1,6 @@
 /* Gemeinsamer Spielkatalog und Sichtbarkeit der Dashboard-Mitte. */
 (()=>{
- const catalog=[{key:"guterschnitt",icon:"✂️",title:"Der gute Schnitt",description:"Zahlenfolge treffen · steigende Wurfzahl bei Fehlversuchen"},
+ const catalog=[{"key": "parteienspiel", "icon": "⚖️", "title": "Parteienspiel", "description": "Zwei Parteien · Rundendifferenz sammeln · feste Runden oder Vorsprung"}, {"key": "dreieuro", "icon": "💶", "title": "3-Euro-Spiel", "description": "Startbetrag herunterkegeln · Preise und Wurfzahl einstellbar"}, {"key": "ebbeflut", "icon": "🌊", "title": "Ebbe und Flut", "description": "3: Ebbe · 5: Normal · 7: Flut · die Wasserlage zählt mit"}, {"key": "hochsprung", "icon": "🏅", "title": "Hochsprung", "description": "Bis zu sieben Hürden · drei Versuche · fehlende Pins werden abgerechnet"},{key:"guterschnitt",icon:"✂️",title:"Der gute Schnitt",description:"Zahlenfolge treffen · steigende Wurfzahl bei Fehlversuchen"},
  {
   "key": "tannenbaum",
   "icon": "🌲",
@@ -123,6 +123,6 @@
  // Der manuelle Schalter hat Vorrang vor jedem Spielstand, auch bei getrennten Live-Spielkanälen.
  function requested(state={}){return !!(state.dashboardGameOverview?.revision&&state.dashboardGameOverview.open);}
  function visible(state={}){const view=state.dashboardGameOverview;return view?.revision?!!view.open:!context(state).running;}
- function markup(state={}){const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));return '<section class="tv-game-overview" aria-label="Spielübersicht">'+catalog.map(g=>{const description=g.key==='gluecksspirale'?'Zweierteams: Ab 13 Holz folgen zwei Zusatzwürfe. Ziel: '+(Number(state.gluecksspiraleSettings?.target)||50)+' Holz.':g.description;return '<article class="tv-game-choice" data-overview-game="'+g.key+'"><span class="tv-game-icon" aria-hidden="true">'+g.icon+'</span><h2>'+esc(g.title)+'</h2><p>'+esc(description)+'</p></article>';}).join('')+'</section>';}
+ function markup(state={}){const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));return '<section class="tv-game-overview" style="--game-overview-rows:'+Math.ceil(catalog.length/4)+'" aria-label="Spielübersicht">'+catalog.map(g=>{const description=g.key==='gluecksspirale'?'Zweierteams: Ab 13 Holz folgen zwei Zusatzwürfe. Ziel: '+(Number(state.gluecksspiraleSettings?.target)||50)+' Holz.':g.description;return '<article class="tv-game-choice" data-overview-game="'+g.key+'"><span class="tv-game-icon" aria-hidden="true">'+g.icon+'</span><h2>'+esc(g.title)+'</h2><p>'+esc(description)+'</p></article>';}).join('')+'</section>';}
  window.KCGameOverview=Object.freeze({catalog,context,requested,visible,markup});
 })();

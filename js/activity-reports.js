@@ -3,7 +3,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const norm=v=>String(v||'').trim().normalize('NFKC').toLocaleLowerCase('de');
  const money=v=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(v/100);
- const resultTypes=new Set(['game_result','tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt']);
+ const resultTypes=new Set(['game_result','tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung']);
  const count=v=>Math.max(0,Math.floor(Number(v)||0));
  function drinkSession(snapshot){
   const day=window.KCPenaltyStats.date(snapshot.eveningStartedAt)||window.KCPenaltyStats.date(snapshot.date),key=window.KCPenaltyStats.key(snapshot.eveningStartedAt,day);

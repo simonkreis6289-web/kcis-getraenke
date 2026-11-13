@@ -1,6 +1,6 @@
 /* Kranz bleibt eine Wurfart; sein Spielwert wird separat gespeichert. */
 (() => {
-  const keys=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'];
+  const keys=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'];
   const choices=[1,2,3,4,5,6,7,8,9,12];
   function valid(rule,key){return !!rule&&(rule.mode==='choose'||rule.mode==='target'&&key==='guterschnitt'||rule.mode==='fixed'&&Number.isInteger(rule.value)&&rule.value>=0&&rule.value<=100);}
   function fromConfig(config,fallback=8){return config?.kranzMode==='choose'?{mode:'choose'}:config?.kranzMode==='target'?{mode:'target'}:{mode:'fixed',value:Number.isInteger(config?.kranzValue)?config.kranzValue:fallback};}
@@ -8,7 +8,7 @@
     if(!keys.includes(key))throw Error('Unbekanntes Spiel');
     const saved=root?.extraGameSettings?.kranzRules?.[key];if(valid(saved,key))return {...saved};
     if(key==='siebener')return fromConfig(root?.siebenerSettings);
-    if(['sechstage','gluecksspirale','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key))return fromConfig(root?.extraGameSettings?.[key]);
+    if(['sechstage','gluecksspirale','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(key))return fromConfig(root?.extraGameSettings?.[key]);
     if(key==='blackjack')return {mode:'fixed',value:8};
     if(key==='tannenbaum')return {mode:'choose'};
     if(key==='darts')return {mode:'fixed',value:root?.dartsState?.valueMap?.kranz??root?.dartsSettings?.kranz??50};
