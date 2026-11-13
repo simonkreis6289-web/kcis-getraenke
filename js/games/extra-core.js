@@ -13,7 +13,7 @@
  }
  const classicKeys=['poker','pfaelzer','tausend'];
  function classicDefaults(key){return {kranzMode:'fixed',kranzValue:8,...(key==='poker'?{maxExchange:5,tieThrows:3}:key==='pfaelzer'?{rounds:10,strichCents:0,tieThrows:3}:{rounds:3,target:1000,gutterValue:9})};}
- function classicValid(key,c){return c&&['fixed','choose'].includes(c.kranzMode)&&int(c.kranzValue,key==='tausend'?0:1,key==='tausend'?9:12)&&(key==='poker'?int(c.maxExchange,0,5)&&int(c.tieThrows,1,9):key==='pfaelzer'?int(c.rounds,1,50)&&int(c.strichCents,0,10000)&&int(c.tieThrows,1,9):int(c.rounds,1,9)&&int(c.target,1,9999)&&int(c.gutterValue,0,9));}
+ function classicValid(key,c){return c&&['fixed','choose'].includes(c.kranzMode)&&int(c.kranzValue,key==='tausend'?0:1,key==='tausend'?9:12)&&(key==='poker'?int(c.maxExchange,0,5):key==='pfaelzer'?int(c.rounds,1,50)&&int(c.strichCents,0,10000)&&int(c.tieThrows,1,9):int(c.rounds,1,9)&&int(c.target,1,9999)&&int(c.gutterValue,0,9));}
  function pokerHand(cards){
   const numbers=cards.map(c=>c.pins).filter(n=>n>0),counts=new Map();for(const n of numbers)counts.set(n,(counts.get(n)||0)+1);
   const groups=[...counts].sort((a,b)=>b[1]-a[1]||b[0]-a[0]),five=groups[0]?.[1]===5,four=groups[0]?.[1]===4,three=groups[0]?.[1]===3,pairs=groups.filter(g=>g[1]===2),sorted=[...counts.keys()].sort((a,b)=>a-b),straight=sorted.length===5&&sorted[4]-sorted[0]===4;
@@ -22,24 +22,25 @@
  }
  function classicSetup(s){
   s.phase=s.gameKey==='poker'?'deal':s.gameKey==='pfaelzer'?'numbers':'throws';s.rankingGroups=[];s.tieRound=0;s.tiePlayers=[];s.tieScores={};s.tieHistory=[];
-  if(s.gameKey==='poker'){s.hands=Object.fromEntries(s.players.map(n=>[n,[]]));s.exchanges={};s.handRanks={};}
+  if(s.gameKey==='poker'){s.pokerSharedRanks=true;s.pokerSequential=true;s.hands=Object.fromEntries(s.players.map(n=>[n,[]]));s.exchanges={};s.handRanks={};}
   if(s.gameKey==='pfaelzer')s.ownNumbers={};
   if(s.gameKey==='tausend'){s.results=Object.fromEntries(s.players.map(n=>[n,[]]));s.pendingArrange=false;}
  }
  function groupsBy(names,value,ascending=false){const values=[...new Set(names.map(value))].sort((a,b)=>ascending?a-b:b-a);return values.map(v=>names.filter(n=>value(n)===v));}
  function classicFinish(s){
-  s.winners=s.rankingGroups[0]||[];s.loserGroups=s.rankingGroups.slice(1).reverse().slice(0,3).map((names,i)=>({rank:i+1,names}));s.phase='finished';
+  const noPokerHand=s.gameKey==='poker'&&s.pokerSharedRanks&&s.players.every(n=>s.handRanks[n].level===0);s.winners=noPokerHand?[]:s.rankingGroups[0]||[];s.loserGroups=s.rankingGroups.slice(noPokerHand?0:1).reverse().slice(0,3).map((names,i)=>({rank:i+1,names}));s.phase='finished';
   if(s.gameKey==='pfaelzer')s.bookings=s.players.filter(n=>s.scores[n]*s.config.strichCents>0).map(n=>book(s,n,s.scores[n]*s.config.strichCents,s.scores[n]+' Striche × '+s.config.strichCents+' Cent'));
  }
  function checkClassicTies(s){
-  if(s.gameKey==='tausend'||s.rankingGroups.every(g=>g.length===1)){finish(s);return;}
+  if(s.gameKey==='tausend'||s.gameKey==='poker'&&s.pokerSharedRanks||s.rankingGroups.every(g=>g.length===1)){finish(s);return;}
   s.phase='tiebreak';s.tieRound++;s.tiePlayers=s.rankingGroups.filter(g=>g.length>1).flat();s.tieScores=Object.fromEntries(s.tiePlayers.map(n=>[n,0]));s.index=0;s.turn=[];
  }
  function evaluateClassic(s){
-  if(s.gameKey==='poker'){s.handRanks=Object.fromEntries(s.players.map(n=>[n,pokerHand(s.hands[n])]));s.scores=Object.fromEntries(s.players.map(n=>[n,s.handRanks[n].level*100+s.handRanks[n].value]));s.rankingGroups=groupsBy(s.players,n=>s.scores[n]);}
+  if(s.gameKey==='poker'){s.handRanks=Object.fromEntries(s.players.map(n=>[n,pokerHand(s.hands[n])]));s.scores=Object.fromEntries(s.players.map(n=>[n,s.handRanks[n].level*100+(s.pokerSharedRanks&&s.handRanks[n].level===0?0:s.handRanks[n].value)]));s.rankingGroups=groupsBy(s.players,n=>s.scores[n]);}
   else s.rankingGroups=groupsBy(s.players,n=>s.gameKey==='tausend'?Math.abs(s.config.target-s.scores[n]):s.scores[n],true);
   checkClassicTies(s);
  }
+
  function nextPokerRedraw(s){while(s.index<s.players.length&&!s.exchanges[s.players[s.index]].length)s.index++;if(s.index===s.players.length)evaluateClassic(s);}
  function finishThousandTurn(s,order){
   const value=order.reduce((sum,index,i)=>sum+s.turn[index].pins*10**(2-i),0),name=s.players[s.index];s.results[name].push({round:s.round,value,throws:clone(s.turn),order:order.slice()});s.scores[name]+=value;s.turn=[];s.pendingArrange=false;s.index++;
@@ -49,7 +50,7 @@
   const key=s.gameKey,name=e.name;
   if(e.action==='exchange'){
    if(key!=='poker'||s.phase!=='select'||!Array.isArray(e.indices)||e.indices.length>s.config.maxExchange||e.indices.some(n=>!int(n,0,4))||new Set(e.indices).size!==e.indices.length)throw Error('Gültige Tauschpositionen wählen.');
-   s.exchanges[name]=e.indices.slice().sort((a,b)=>a-b);s.index++;if(s.index===s.players.length){s.phase='redraw';s.index=0;nextPokerRedraw(s);}return;
+   s.exchanges[name]=e.indices.slice().sort((a,b)=>a-b);if(!s.pokerSequential){s.index++;if(s.index===s.players.length){s.phase='redraw';s.index=0;nextPokerRedraw(s);}}else if(s.exchanges[name].length)s.phase='redraw';else{s.index++;if(s.index===s.players.length)evaluateClassic(s);}return;
   }
   if(e.action==='arrange'){
    if(key!=='tausend'||!s.pendingArrange||!Array.isArray(e.order)||e.order.length!==3||new Set(e.order).size!==3||e.order.some(n=>!int(n,0,2)))throw Error('Alle drei Würfe einmal anordnen.');finishThousandTurn(s,e.order);return;
@@ -62,7 +63,7 @@
   }
   if(key==='poker'){
    if(s.phase==='deal'){s.hands[name].push({pins:e.pins,kind:e.kind});if(s.hands[name].length===5){s.index++;if(s.index===s.players.length){s.phase='select';s.index=0;}}}
-   else{const index=s.exchanges[name][s.turn.length];s.hands[name][index]={pins:e.pins,kind:e.kind};s.turn.push(e.pins);if(s.turn.length===s.exchanges[name].length){s.turn=[];s.index++;nextPokerRedraw(s);}}return;
+   else{const index=s.exchanges[name][s.turn.length];s.hands[name][index]={pins:e.pins,kind:e.kind};s.turn.push(e.pins);if(s.turn.length===s.exchanges[name].length){s.turn=[];s.index++;if(!s.pokerSequential)nextPokerRedraw(s);else if(s.index===s.players.length)evaluateClassic(s);else s.phase='select';}}return;
   }
   if(key==='pfaelzer'){
    if(s.phase==='numbers'){if(e.pins===0){s.scores[name]++;return;}s.ownNumbers[name]=e.pins;s.index++;if(s.index===s.players.length){s.index=0;s.phase='rounds';}return;}
@@ -140,7 +141,7 @@
   }
   s.history.push(e);
  }
- function summary(key,c){if(key==='poker')return '5 Würfe · bis zu '+c.maxExchange+' tauschen · Stechen mit '+c.tieThrows+' Würfen';if(key==='pfaelzer')return c.rounds+' Runden · '+(c.strichCents/100).toFixed(2)+' € pro Strich · Stechen mit '+c.tieThrows+' Würfen';if(key==='tausend')return c.rounds+' Runden à 3 Würfe · Ziel '+c.target+' · Gosse '+c.gutterValue+' · frei / rechts nach links / links nach rechts';return key==='parteienspiel'?(c.mode==='lead'?'Mindestens '+c.rounds+' Runden · '+c.lead+' Punkte Vorsprung':c.rounds+' Runden')+' · Differenzpunkte je Runde':key==='dreieuro'?c.throws+' Würfe · Start '+(c.startCents/100).toFixed(2)+' € · '+(c.pinCents/100).toFixed(2)+' € pro Pin · +'+(c.penaltyCents/100).toFixed(2)+' € bei 5/Gosse':key==='ebbeflut'?c.rounds+' Runden · Ebbe ×½ · Normal ×1 · Flut ×2':c.targets.length+' Hürden: '+(c.targets.join(' → ')||'keine')+' · je höchstens 3 Würfe · '+(c.missingPinCents/100).toFixed(2)+' € je fehlendem Pin × verbleibende Hürden';}
+ function summary(key,c){if(key==='poker')return '5 Würfe · bis zu '+c.maxExchange+' tauschen · Blattwertung ohne Stechen · Gleichstand teilt den Verliererrang';if(key==='pfaelzer')return c.rounds+' Runden · '+(c.strichCents/100).toFixed(2)+' € pro Strich · Stechen mit '+c.tieThrows+' Würfen';if(key==='tausend')return c.rounds+' Runden à 3 Würfe · Ziel '+c.target+' · Gosse '+c.gutterValue+' · frei / rechts nach links / links nach rechts';return key==='parteienspiel'?(c.mode==='lead'?'Mindestens '+c.rounds+' Runden · '+c.lead+' Punkte Vorsprung':c.rounds+' Runden')+' · Differenzpunkte je Runde':key==='dreieuro'?c.throws+' Würfe · Start '+(c.startCents/100).toFixed(2)+' € · '+(c.pinCents/100).toFixed(2)+' € pro Pin · +'+(c.penaltyCents/100).toFixed(2)+' € bei 5/Gosse':key==='ebbeflut'?c.rounds+' Runden · Ebbe ×½ · Normal ×1 · Flut ×2':c.targets.length+' Hürden: '+(c.targets.join(' → ')||'keine')+' · je höchstens 3 Würfe · '+(c.missingPinCents/100).toFixed(2)+' € je fehlendem Pin × verbleibende Hürden';}
  window.KCRoundGames=Object.freeze({keys,titles,icons,defaults,validSettings,setup,play,summary,pokerHand});
 })();
 
@@ -212,6 +213,7 @@
     if(!s.history.length||s.finished&&!['lattenzaun','guterschnitt',...KCRoundGames.keys].includes(s.gameKey))throw Error('Keine Aktion zum Zurücknehmen.');
     const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0]},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
     // Vor V225 gestartete Parteien behalten ihre Wurfreihenfolge auch bei Rückgängig.
+    if(s.gameKey==='poker'){if(!s.pokerSequential)delete base.pokerSequential;if(!s.pokerSharedRanks)delete base.pokerSharedRanks;}
     if(s.gameKey==='parteienspiel'&&!s.partyAlternating){delete base.partyAlternating;base.teamOrder=[];}
     for(const e of events)play(base,e);s=base;
    }else{
@@ -241,7 +243,7 @@
     }
    }
   }
-  s.revision=before.revision+1;s.commands=[...before.commands,req.opId].slice(-2048);s.receipts=(before.receipts||[]).slice(-63);return {state:s,repeat:false};
+  s.lastActionAt=ctx.now;s.revision=before.revision+1;s.commands=[...before.commands,req.opId].slice(-2048);s.receipts=(before.receipts||[]).slice(-63);return {state:s,repeat:false};
  }
  function effects(before,s,req,ctx){
   const changes=[],added=[],removed=[];
