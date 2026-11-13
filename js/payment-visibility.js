@@ -1,4 +1,4 @@
-/* Gemeinsame Anzeigevorgabe für Zahlungsstände; Berechnungen bleiben unverändert. */
+/* Anzeigevorgabe ausschließlich für Zahlungsstände der Strafenkasse; Berechnungen bleiben unverändert. */
 (() => {
  const key=v=>String(v||'').trim().normalize('NFKC').toLocaleLowerCase('de');
  function visible(person,people=[]){const name=typeof person==='string'?person:person?.name,stored=people.find(p=>key(p.name)===key(name));return (stored||person)?.showPaymentStatus!==false;}
