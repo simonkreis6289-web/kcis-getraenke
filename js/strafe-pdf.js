@@ -1,3 +1,65 @@
+/* Gemeinsame Nummern für die Geldspalte und die ungeteilten PDF-Spielkacheln. */
+(() => {
+ const cents=value=>Math.round((Number(value)||0)*100),norm=value=>String(value||'').trim().toLocaleLowerCase('de'),plain=value=>String(value??'').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu,'').trim();
+ function build(snapshot){
+  const titles=window.KCGameResults?.titles||{},eligible=e=>e.type==='game_result'||e.type==='free'||e.type==='teamspiel_strafe'||Object.hasOwn(titles,e.type),seen=new Set(),history=(window.KCGameResults?.ordered(snapshot.history)||(snapshot.history||[]).filter(eligible).slice().sort((a,b)=>(Date.parse(a.createdAt||a.date)||0)-(Date.parse(b.createdAt||b.date)||0))).filter(e=>{if(e.id&&seen.has(e.id))return false;if(e.id)seen.add(e.id);return true;}),cards=history.map((entry,i)=>({number:window.KCGameResults?.number(snapshot.history,entry)||i+1,entry,title:entry.title||titles[entry.gameKey||entry.type]||(entry.type==='free'?entry.reason||'Freier Betrag':entry.spieltyp||'Spiel'),date:entry.createdAt||entry.date,onTop:entry.gameFineOnTop===true||entry.onTop===true,amounts:new Map()}));
+  let nextNumber=Math.max(0,...cards.map(card=>card.number))+1;
+  const add=(card,name,amount)=>{if(!name||!Number.isFinite(amount))return;const old=card.amounts.get(name)||0;card.amounts.set(name,old+amount);};
+  for(const card of cards){const e=card.entry;
+   if(e.type==='free')add(card,e.person||e.personName,e.amountCents??cents(e.amount));
+   else if(e.amounts?.length)for(const row of window.KCGameResults?.amounts(e)||e.amounts)add(card,row.name,Number(row.amountCents)||0);
+   else if(e.assignedTo?.length)for(const row of e.assignedTo)add(card,row.name,cents(row.amount));
+   else{const counters=e.type==='teamspiel_strafe'?(e.members||[]).map(name=>({personName:name,key:(snapshot.strafen||[]).find(p=>/^1\.?\s*verlierer/i.test(p.label))?.key,delta:1})):Array.isArray(e.counterCharges)?e.counterCharges:(e.ranking||[]).flatMap((g,i)=>{const rank=g.rank||i+1,key=(snapshot.strafen||[]).find(p=>new RegExp('^'+rank+'\\.?\\s*verlierer','i').test(p.label))?.key;return key?(g.names||[]).map(name=>({personName:name,key,delta:1})):[];});for(const charge of counters){const price=(snapshot.strafen||[]).find(p=>p.key===charge.key)?.price||0;add(card,charge.personName||charge.name,cents(price)*(Number(charge.delta??charge.count)||0));}}
+  }
+  const entryGameId=e=>e.gameId||(e.id?.startsWith('game_result_'+e.gameKey+'_')?e.id.slice(('game_result_'+e.gameKey+'_').length):''),ledger=(snapshot.pdfGameLedger||[]).filter(row=>!snapshot.pdfEveningStartedAt||row.eveningStartedAt===snapshot.pdfEveningStartedAt),items=new Map();
+  for(const person of [...(snapshot.members||[]),...(snapshot.guests||[])]){
+   const rows=[],taken=new Set(),source=[...(person.freeStrafen||[]),...(person.tannenbaumCharges||[]).map(item=>({...item,gameKey:'tannenbaum',reason:'Tannenbaum'}))],ownLedger=ledger.filter(row=>norm(row.personName)===norm(person.name)),grouped=new Map();
+   for(const row of ownLedger){const id=row.gameId||row.id;if(!grouped.has(id))grouped.set(id,{...row,amountCents:0});grouped.get(id).amountCents+=Number(row.amountCents)||0;}
+   const resolve=(row,amount)=>{
+    const key=row.gameKey||Object.keys(titles).find(k=>norm(row.reason).startsWith(norm(titles[k]))),gameId=row.gameId;
+    return cards.find(c=>c.entry.id&&c.entry.id===row.id)||cards.find(c=>gameId&&entryGameId(c.entry)===gameId)||cards.find(c=>row.individualChargeId&&entryGameId(c.entry)&&row.individualChargeId.startsWith('indcharge_'+entryGameId(c.entry)+'_'))||cards.find(c=>!taken.has(c.number)&&(c.entry.gameKey||c.entry.type)===key&&Math.abs((c.amounts.get(person.name)||0)-amount)<1);
+   };
+   const put=(row,amount)=>{
+    if(!amount)return;const king=/gossen(könig|koenig)/i.test(row.reason||'')&&!cards.some(c=>c.entry.id&&c.entry.id===row.id);
+    let card=king?cards.find(c=>c.gosseKing):resolve(row,amount);if(!card){card={number:nextNumber++,gosseKing:king,entry:{id:row.id,gameId:row.gameId,gameKey:row.gameKey},title:king?'Gossenkönig':titles[row.gameKey]||row.reason||'Freier Betrag',date:row.createdAt,onTop:row.onTop===true,amounts:new Map()};cards.push(card);}
+    taken.add(card.number);const existing=rows.find(r=>r.number===card.number);if(existing)existing.amountCents+=amount;else rows.push({number:card.number,amountCents:amount});
+    // Die Tabelle ist die Quelle für den Geldposten; niemals eine bereits dokumentierte Gebühr verdoppeln.
+    card.amounts.set(person.name,rows.find(r=>r.number===card.number).amountCents);
+   };
+   for(const row of source){if(row.individualChargeId&&(ownLedger.some(l=>l.id===row.individualChargeId)||row.individualChargeId==='hindernis-summary'&&ownLedger.some(l=>l.gameKey==='hindernis')))continue;put(row,cents(row.amount));}
+   for(const row of grouped.values())put(row,Number(row.amountCents)||0);
+   if(person.isGosseKing&&!rows.some(r=>/gossenkönig/i.test(r.reason||''))&&!source.some(r=>/gossen(könig|koenig)/i.test(r.reason||'')))put({reason:'Gossenkönig',onTop:true},300);
+   items.set(norm(person.name),rows.sort((a,b)=>(a.number??Infinity)-(b.number??Infinity)));
+  }
+  return {cards:cards.map(card=>({...card,title:plain(card.title),amounts:[...card.amounts].sort(([a],[b])=>a.localeCompare(b,'de')).map(([name,amountCents])=>({name,amountCents}))})),itemsFor:person=>items.get(norm(person.name))||[]};
+ }
+ function drawCards(doc,cards,{pageWidth,pageHeight,margin=12,startY,date=value=>value?new Date(value).toLocaleString('de-DE'):'',money=value=>(value/100).toFixed(2).replace('.',',')+' EUR',clean=plain}={}){
+  const gap=7,width=(pageWidth-margin*2-gap)/2,maxHeight=pageHeight-margin*2-20,boxes=[];let y=startY,column=0,rowHeight=0;
+  const setFont=(size,bold=false)=>{doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);};
+  function measure(card,w,font=9){
+   setFont(font+1,true);const title=doc.splitTextToSize(clean(card.number+'. '+card.title+(card.onTop?' (OnTop)':'')),w-10);setFont(font-1);const stamp=card.date?doc.splitTextToSize(clean(date(card.date)),w-10):[];setFont(font);const rows=card.amounts.map(row=>({name:doc.splitTextToSize(clean(row.name),w-40),amount:money(row.amountCents),height:Math.max(font*.6,doc.splitTextToSize(clean(row.name),w-40).length*font*.43+font*.2)}));const header=title.length*(font+1)*.42+stamp.length*(font-1)*.42+10,height=header+rows.reduce((n,r)=>n+r.height,0)+(rows.length?8:12);return {title,stamp,rows,header,height,font,w};
+  }
+  function page(){doc.addPage();y=margin+6;setFont(12,true);doc.setTextColor(35,57,88);doc.text('Spiele und Buchungen (Fortsetzung)',margin,y);y+=8;doc.setTextColor(0,0,0);}
+  function paint(card,x,top,m){
+   doc.setDrawColor(184,198,218);doc.setFillColor(248,250,254);doc.setLineWidth(.35);doc.roundedRect(x,top,m.w,m.height,2.5,2.5,'FD');doc.setTextColor(31,54,86);setFont(m.font+1,true);let baseline=top+6;doc.text(m.title,x+5,baseline);baseline+=m.title.length*(m.font+1)*.42+1;
+   if(m.stamp.length){setFont(m.font-1);doc.setTextColor(90,105,126);doc.text(m.stamp,x+5,baseline);}
+   doc.setDrawColor(207,217,232);doc.line(x+5,top+m.header-2,x+m.w-5,top+m.header-2);let rowY=top+m.header+3;setFont(m.font);doc.setTextColor(0,0,0);
+   if(!m.rows.length)doc.text('Keine zusätzliche Geldbuchung.',x+5,rowY);
+   for(const row of m.rows){doc.text(row.name,x+5,rowY);setFont(m.font,true);doc.text(row.amount,x+m.w-5,rowY,{align:'right'});setFont(m.font);rowY+=row.height;}
+   boxes.push({number:card.number,page:doc.internal.getNumberOfPages(),x,y:top,width:m.w,height:m.height});doc.setTextColor(0,0,0);
+  }
+  const first=cards[0];if(first){let m=measure(first,width);if(m.height>maxHeight)m=measure(first,pageWidth-margin*2);if(y+Math.min(m.height,maxHeight)+14>pageHeight-margin){doc.addPage();y=margin+6;}setFont(13,true);doc.setTextColor(31,54,86);doc.text('Abgeschlossene Spiele und weitere Buchungen',margin,y);y+=9;doc.setTextColor(0,0,0);}
+  for(const card of cards){let m=measure(card,width),wide=m.height>maxHeight;if(wide){if(column){y+=rowHeight+gap;column=0;rowHeight=0;}m=measure(card,pageWidth-margin*2);for(let i=0;m.height>maxHeight&&i<30;i++)m=measure(card,m.w,m.font*.88);}
+   if(column&&y+m.height>pageHeight-margin){y+=rowHeight+gap;column=0;rowHeight=0;}
+   if(!column&&y+m.height>pageHeight-margin)page();
+   paint(card,margin+(column?width+gap:0),y,m);rowHeight=Math.max(rowHeight,m.height);
+   if(wide||column){y+=rowHeight+gap;column=0;rowHeight=0;}else column=1;
+  }
+  return {y:y+(column?rowHeight+gap:0),boxes};
+ }
+ window.KCStrafenPdf=Object.freeze({build,drawCards});
+})();
+
 
 function getPdfAttendanceStatus(person) {
   const status =
@@ -322,6 +384,8 @@ function getStrafenSnapshot() {
   const statsPeople=typeof KCPenaltyStats!=='undefined'&&typeof currentEveningStartedAt!=='undefined'?(()=>{const data=KCPenaltyStats.build({people:persons,catalog:STRAFEN,logs:typeof penaltyStatsLog==='undefined'?[]:penaltyStatsLog,eveningStartedAt:currentEveningStartedAt});return data.sessions.find(x=>x.key===data.currentKey)?.people||[];})():[];
   return {
     statsPeople,
+    pdfEveningStartedAt:typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt,
+    pdfGameLedger:typeof individualGameLedger==='undefined'?[]:JSON.parse(JSON.stringify(individualGameLedger.filter(row=>row.eveningStartedAt===currentEveningStartedAt))),
     date:
       new Date().toISOString(),
 
@@ -551,6 +615,8 @@ async function generateStrafenPDF(snapshot) {
 
     return false;
   }
+
+  const pdfModel=window.KCStrafenPdf.build(snapshot);
 
   const visibleStrafen =
     (
@@ -1240,12 +1306,8 @@ async function generateStrafenPDF(snapshot) {
     drawHeader();
 
     rows.forEach(person => {
-      const extraLines = [
-        ...(person.freeStrafen || []).filter(item => Number(item.amount) !== 0).map(item => `${Number(item.amount) >= 0 ? '+' : ''}${formatEuro(Number(item.amount))} ${item.reason || 'Freier Betrag'}`),
-        ...(person.isGosseKing && !(person.freeStrafen || []).some(item => /gossen(könig|koenig)/i.test(String(item.reason || ''))) ? ['Gossenkönig +3,00 EUR'] : []),
-        ...(person.tannenbaumCharges || []).filter(item => Number(item.amount) !== 0).map(item => `+${formatEuro(Number(item.amount))} Tannenbaum`)
-      ];
-      doc.setFont('helvetica','normal');doc.setFontSize(5.5);
+      const extraLines = pdfModel.itemsFor(person).map(item=>(item.number?item.number+'. ':item.reason+' ')+(item.amountCents>=0?'+':'')+formatEuro(item.amountCents/100));
+      doc.setFont('helvetica','normal');doc.setFontSize(6.8);
       const extraWrapped=doc.splitTextToSize(getPlainText(extraLines.join('\n')),extrasWidth-2);
       const extraHeight=extraLines.length?extraWrapped.length*3.2+4:18;
       if(extraHeight>150){overflowExtras.push({name:person.name,lines:extraLines.slice()});extraLines.splice(0,extraLines.length,'Einzelposten siehe Anhang: '+person.name);}
@@ -1400,7 +1462,7 @@ async function generateStrafenPDF(snapshot) {
           person
         );
 
-      drawCenteredText(extraLines.length ? extraLines.join('\n') : '-', x, y, extrasWidth, rowHeight, {fontSize: 5.5});
+      drawCenteredText(extraLines.length ? extraLines.join('\n') : '-', x, y, extrasWidth, rowHeight, {fontSize: 6.8});
 
       x +=
         extrasWidth;
@@ -1935,282 +1997,8 @@ async function generateStrafenPDF(snapshot) {
   }
 
   currentY += 8;
-
-  if (
-    currentY >
-    pageHeight -
-    margin -
-    20
-  ) {
-    doc.addPage();
-    currentY = margin;
-  }
-
-  doc.setFont(
-    'helvetica',
-    'bold'
-  );
-
-  doc.setFontSize(13);
-
-  doc.text(
-    'Teamspiele',
-    margin,
-    currentY
-  );
-
-  currentY += 7;
-
-  // Nur Geldstrafen-Teamspiele dokumentieren; Getränke gehören ausschließlich in die Getränke-PDF.
-  const bookedTeamGames = (snapshot.history || []).filter(entry => entry.type === 'teamspiel_strafe');
-  if (!bookedTeamGames.length) {
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-    doc.text('Keine Teamspiel-Strafen gebucht.', margin, currentY); currentY += 8;
-  } else {
-    bookedTeamGames.slice().reverse().forEach((game, index) => {
-      if (currentY > pageHeight - margin - 27) { doc.addPage(); currentY = margin; }
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-      doc.text(`${index + 1}. Teamspiel`, margin, currentY); currentY += 5;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-      const details = [
-        getPlainText(game.spieltyp || 'Teamspiel'),
-        `${getPlainTeamName(game.loser)} verloren`,
-        `Spieler: ${(game.members || []).map(getPlainText).join(', ') || '-'}`
-      ];
-      details.forEach(detail => {
-        const lines = doc.splitTextToSize(detail, pageWidth - margin * 2 - 10);
-        doc.text(lines, margin + 5, currentY); currentY += Math.max(5, lines.length * 4);
-      });
-      currentY += 4;
-    });
-  }
-
-  /*
-   * Abgeschlossene Spiele und
-   * weitere Buchungen
-   */
-
-  currentY += 5;
-
-  if (
-    currentY >
-    pageHeight -
-    margin -
-    20
-  ) {
-    doc.addPage();
-    currentY = margin;
-  }
-
-  doc.setFont(
-    'helvetica',
-    'bold'
-  );
-
-  doc.setFontSize(13);
-
-  doc.text(
-    'Abgeschlossene Spiele und weitere Buchungen',
-    margin,
-    currentY
-  );
-
-  currentY += 7;
-
-  const history =
-    (
-      snapshot.history ||
-      []
-    ).filter(entry =>
-      [
-        'tannenbaum',
-        'lotterie',
-        'tiberius','game_result','mensch','haushoch','haustief','plusminus'
-      ].includes(
-        entry.type
-      )
-    );
-
-  if (
-    !history.length
-  ) {
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
-
-    doc.setFontSize(9);
-
-    doc.text(
-      'Keine abgeschlossenen Spiele vorhanden.',
-      margin,
-      currentY
-    );
-  } else {
-    history.forEach(
-      (
-        entry,
-        index
-      ) => {
-        if (
-          currentY >
-          pageHeight -
-          margin -
-          28
-        ) {
-          doc.addPage();
-          currentY = margin;
-        }
-
-        let gameTitle =entry.title||window.KCGameResults?.titles?.[entry.gameKey||entry.type]||'Spiel';
-
-        if (
-          entry.type ===
-          'tannenbaum'
-        ) {
-          gameTitle =
-            'Tannenbaum';
-        }
-
-        if (
-          entry.type ===
-          'lotterie'
-        ) {
-          gameTitle =
-            'Lotterie';
-        }
-
-        if (
-          entry.type ===
-          'tiberius'
-        ) {
-          gameTitle =
-            'Tiberius';
-        }
-
-        doc.setFont(
-          'helvetica',
-          'bold'
-        );
-
-        doc.setFontSize(10);
-
-        doc.text(
-          `${index + 1}. ${gameTitle}${entry.gameFineOnTop?' (OnTop)':''} | ${formatDateTimeSafe(
-            entry.createdAt
-          )}`,
-          margin,
-          currentY
-        );
-
-        currentY += 5;
-
-        doc.setFont(
-          'helvetica',
-          'normal'
-        );
-
-        doc.setFontSize(8.5);
-        if(['game_result','mensch','haushoch','haustief','plusminus'].includes(entry.type)){
-          const winners=entry.winners||(entry.winner?[entry.winner]:[]);
-          const priceRows=window.KCGameResults?.amounts(entry)||entry.amounts||[];
-          const details=[...priceRows.map(row=>row.name+': '+formatEuro(row.amountCents/100)),...(winners.length?['Gewinner: '+winners.join(' · ')]:[]),...(entry.ranking||[]).slice(0,3).map((g,i)=>(g.rank||i+1)+'. Verlierer: '+(g.team?g.team+' · ':'')+(g.names||[]).join(', ')),...(entry.results||[]).map(r=>r.name+': '+(r.number??r.result??'-'))];
-          if(!details.length)details.push('Abschluss dokumentiert; Beträge nach den Spielregeln.');
-          for(const detail of details){for(const line of doc.splitTextToSize(getPlainText(detail),pageWidth-margin*2)){ensurePageSpace(5);doc.text(line,margin,currentY);currentY+=5;}}
-          currentY+=6;return;
-        }
-
-
-        if (
-          entry.type ===
-          'tannenbaum'
-        ) {
-          const team1 =
-            getPlainTeamName(
-              'T1'
-            );
-
-          const team2 =
-            getPlainTeamName(
-              'T2'
-            );
-
-          doc.text(
-            `${team1}: ${formatEuro(
-              entry.totals?.T1 ||
-              0
-            )} | ${team2}: ${formatEuro(
-              entry.totals?.T2 ||
-              0
-            )}`,
-            margin + 5,
-            currentY
-          );
-
-          currentY += 5;
-        }
-
-        if (
-          entry.type ===
-          'tiberius'
-        ) {
-          doc.text(
-            `Endstand: ${
-              entry.score || 0
-            }`,
-            margin + 5,
-            currentY
-          );
-
-          currentY += 5;
-        }
-
-        const assignments =
-          (
-            entry.assignedTo ||
-            []
-          ).map(item =>
-            `${getPlainText(
-              item.name
-            )}: ${formatEuro(
-              item.amount
-            )}${
-              item.onTop
-                ? ' On Top'
-                : ''
-            }`
-          );
-
-        const assignmentText =
-          assignments.length
-            ? `Belastet: ${assignments.join(
-                ', '
-              )}`
-            : 'Keine Zuordnung';
-
-        const assignmentLines =
-          doc.splitTextToSize(
-            getPlainText(
-              assignmentText
-            ),
-            pageWidth -
-            margin * 2 -
-            10
-          );
-
-        doc.text(
-          assignmentLines,
-          margin + 5,
-          currentY
-        );
-
-        currentY +=
-          assignmentLines.length *
-          4 +
-          6;
-      }
-    );
-  }
+  if(!pdfModel.cards.length){ensurePageSpace(20);doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text('Abgeschlossene Spiele und weitere Buchungen',margin,currentY);currentY+=7;doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Keine abgeschlossenen Spiele vorhanden.',margin,currentY);currentY+=7;}
+  else currentY=window.KCStrafenPdf.drawCards(doc,pdfModel.cards,{pageWidth,pageHeight,margin,startY:currentY,date:formatDateTimeSafe,money:value=>formatEuro(value/100),clean:getPlainText}).y;
 
   if(snapshot.manualEntry && snapshot.note){
     const lines=doc.splitTextToSize(getPlainText(snapshot.note),pageWidth-margin*2);
