@@ -48,7 +48,7 @@
     if(current?.club!==club)begin(club);const s=current;
     try{
       const saved=await raw.initializeSharedState(club,defaults,id());if(current!==s)return false;s.cloudEvening=saved.currentEveningStartedAt||'';
-      let outbox;try{outbox=JSON.parse(localStorage.getItem(key(club))||'null');}catch{}
+      let outbox;try{outbox=C.normalizeGameData(JSON.parse(localStorage.getItem(key(club))||'null'));}catch{}
       s.seq=Math.max(Number(saved.tabletSequence)||0,Number(outbox?.seq)||0);
       s.inflight=outbox?.inflight&&outbox.inflight.sequence>Number(saved.tabletSequence||0)?outbox.inflight:null;
       s.pending=outbox?.pending&&outbox.pending.sequence>Number(saved.tabletSequence||0)?outbox.pending:null;

@@ -211,8 +211,8 @@ window.firestoreApi = {
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       await Promise.all(docs.map(row=>tx.get(row.ref)));
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
-      tx.set(target,{...current,...timestamps(batch.state),tabletSequence:batch.sequence});
-      for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(row.value));}
+      tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence});
+      for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(window.KCSharedCore.normalizeGameData(row.value)));}
       return {sequence:batch.sequence};
     });
   },
