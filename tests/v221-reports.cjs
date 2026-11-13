@@ -5,12 +5,12 @@ const {database,initial,apiClient,context,fullApp}=new Function('read','copy','a
 function core(){const c={console,Intl,Date,document:{addEventListener(){}},window:{}};c.window=c;vm.createContext(c);for(const p of ['birthdays','cash-book','cash-overview','penalty-statistics','activity-reports'])vm.runInContext(read('js/'+p+'.js'),c);return c;}
 const c=core(),R=c.KCActivityReports,O=c.KCCashOverview,stats=c.KCPenaltyStats;
 const payment=(more={})=>({id:'income_one',personName:'A',amountCents:7000,date:'2026-11-12',description:'Einzahlung',kind:'single',...more});
-test('actual receipts produce signed balances while standing plans do not count as paid',()=>{
+test('actual receipts and automatic monthly payments produce signed balances',()=>{
  const entries=[{id:'a',category:'strafen',date:'2026-11-12',members:[{name:'A',total:50},{name:'B',total:20}]}];
- const orders={orders:[{id:'standing_b',personName:'B',amountCents:3000,interval:'monthly',startDate:'2026-11-01'}],payments:[payment()]};
+ const orders={orders:[{id:'standing_b',personName:'B',amountCents:1000,interval:'monthly',startDate:'2026-11-01'}],payments:[payment()]};
  const m=O.model(entries,null,[],[{name:'A'},{name:'B'}],orders,'2026-11-13');
- assert.equal(m.rows.find(r=>r.name==='A').saldo,2000);assert.equal(m.rows.find(r=>r.name==='B').saldo,-2000);assert.equal(m.summary.balance,7000);assert.equal(m.summary.actualBalance,7000);
- const doc=parseHTML(O.table(m)).document;assert(doc.querySelector('.cash-negative').textContent.includes('-20,00'));assert(doc.querySelector('.cash-positive').textContent.includes('20,00'));assert(!doc.querySelector('tbody small'));assert(doc.querySelector('thead').textContent.includes('Bisher bezahlt'));
+ assert.equal(m.rows.find(r=>r.name==='A').saldo,2000);assert.equal(m.rows.find(r=>r.name==='B').saldo,-1000);assert.equal(m.summary.balance,7000);assert.equal(m.summary.actualBalance,8000);
+ const doc=parseHTML(O.table(m)).document;assert(doc.querySelector('.cash-negative').textContent.includes('-10,00'));assert(doc.querySelector('.cash-positive').textContent.includes('20,00'));assert(!doc.querySelector('tbody small'));assert(doc.querySelector('thead').textContent.includes('Bisher bezahlt'));
 });
 test('income and debt use the same cash-year boundary and keep general receipts out of member balances',()=>{
  const orders={payments:[payment({date:'2026-10-01'}),payment({id:'income_new',date:'2026-11-12',amountCents:500,personName:''})]};
@@ -19,7 +19,7 @@ test('income and debt use the same cash-year boundary and keep general receipts 
 test('income mutations preserve plans, retry exactly once, reject duplicates and stale updates',async()=>{
  const db=database({[rootPath]:initial()}),api=apiClient(db);api.KCCashOverview=O;
  await api.firestoreApi.initializeSharedState('club',{},'sync_init_income');
- const order={id:'standing_a',personName:'A',amountCents:3000,interval:'monthly',startDate:'2026-01-01'};
+ const order={id:'standing_a',personName:'A',amountCents:3000,interval:'weekly',startDate:'2026-01-01'};
  await api.firestoreApi.updateCashStandingOrders('club',{action:'upsert',order,expectedRevision:0,opId:'cash_standing'},context(db,'updateCashStandingOrders'));
  const request={action:'upsert',payment:payment({kind:'standing',orderId:'standing_a'}),expectedRevision:1,opId:'cash_income'},ctx=context(db,'updateCashIncome');
  await api.firestoreApi.updateCashIncome('club',request,ctx);await api.firestoreApi.updateCashIncome('club',request,ctx);assert.equal(db.root().cashStandingOrders.payments.length,1);assert.equal(db.root().cashStandingOrders.orders.length,1);

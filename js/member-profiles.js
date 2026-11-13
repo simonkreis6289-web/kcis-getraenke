@@ -22,6 +22,7 @@ function openMemberProfile(name) {
   const role = document.getElementById('member-profile-role');
   role.innerHTML = MEMBER_ROLES.map(item => '<option value="'+item.key+'">'+item.label+' · '+item.purpose+'</option>').join('');
   role.value = getMemberRole(person).key;
+  document.getElementById('member-profile-show-payment').checked=person.showPaymentStatus!==false;
   document.getElementById('member-profile-modal').classList.remove('hidden');
   input.focus();
 }
@@ -44,7 +45,7 @@ async function saveMemberProfile(event) {
   const role = document.getElementById('member-profile-role').value;
   if (!MEMBER_ROLES.some(item => item.key === role)) {showToast('Bitte eine Rolle auswählen.','error');return;}
   if (!navigator.onLine || !window.firestoreApi) {showToast('Für persönliche Daten bitte eine Verbindung herstellen.','error');return;}
-  const previousProfile={birthDate:person.birthDate, memberSince:person.memberSince, memberRole:person.memberRole}, previousEvents=clubTermine, previousChange=lastLocalChangeAt;
+  const previousProfile={birthDate:person.birthDate, memberSince:person.memberSince, memberRole:person.memberRole,showPaymentStatus:person.showPaymentStatus}, previousEvents=clubTermine, previousChange=lastLocalChangeAt;
   let saved=false;
   memberProfileBusy = true;
   const controls = [...document.querySelectorAll('#member-profile-modal button, #member-profile-modal input, #member-profile-modal select')];
@@ -53,13 +54,14 @@ async function saveMemberProfile(event) {
     person.birthDate = value;
     person.memberSince = since;
     person.memberRole = role;
+    person.showPaymentStatus=document.getElementById('member-profile-show-payment').checked;
     // Keep legacy records, but let the member profile own this person's birthday.
     if (value) clubTermine = clubTermine.map(entry => entry.type === 'geburtstag' && KCBirthdays.nameKey(entry.note) === KCBirthdays.nameKey(person.name)
       ? {...entry, memberBirthdayName:person.name} : entry);
     lastLocalChangeAt=Date.now();
     if (!(await saveToFirestore(false))) throw new Error('Persönliche Daten konnten nicht synchronisiert werden');
     saved=true;persistState();
-    renderMemberManagement(); kcRenderTermine();
+    if(typeof renderAll==='function')renderAll();else renderMemberManagement();kcRenderTermine();
     showToast('Persönliche Daten gespeichert','success');
   } catch(error) {
     if(ACTIVE_CLUB===memberProfileClub){

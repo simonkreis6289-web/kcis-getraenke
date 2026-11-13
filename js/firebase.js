@@ -476,6 +476,7 @@ window.firestoreApi = {
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.cashStandingOrders||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Daueraufträge wurden inzwischen geändert. Bitte erneut versuchen.');
+      const settled=window.KCCashOverview.settleOrders(before);
       let orders=(before.orders||[]).slice();
       if(request.action==='delete')orders=orders.filter(o=>o.id!==request.id);
       else{
@@ -485,7 +486,7 @@ window.firestoreApi = {
         orders=orders.filter(o=>o.id!==id);orders.push({id,personName,amountCents,interval,startDate,endDate});
       }
       if(orders.length>200)throw Error('Zu viele Daueraufträge.');
-      const value={...before,orders,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={...window.KCCashOverview.settleOrders({...settled,orders}),revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       transaction.set(ref,{cashStandingOrders:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
@@ -498,18 +499,32 @@ window.firestoreApi = {
       const snap=await tx.get(ref),current=snap.exists()?snap.data():{},before=current.cashStandingOrders||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Einnahmen wurden inzwischen geändert. Bitte erneut öffnen.');
-      let payments=(before.payments||[]).slice();
-      if(request.action==='delete'){if(!payments.some(p=>p.id===request.id))throw Error('Einnahme nicht gefunden.');payments=payments.filter(p=>p.id!==request.id);}
+      const settled=window.KCCashOverview.settleOrders(before),suppressed=new Set(before.suppressedDues||[]);
+      let payments=(settled.payments||[]).slice();
+      if(request.action==='delete'){const removed=payments.find(p=>p.id===request.id);if(!removed)throw Error('Einnahme nicht gefunden.');if(removed.kind==='standing'&&removed.orderId)suppressed.add(window.KCCashOverview.dueKey(removed.orderId,removed.date));payments=payments.filter(p=>p.id!==request.id);}
       else{const {id,personName,amountCents,date,description,kind,orderId=''}=request.payment;
         if(date>window.KCCashOverview.today())throw Error('Zahlungseingänge können erst am Zahlungstag gebucht werden.');
         if(personName&&!(current.persons||[]).some(p=>p.name===personName&&!p.isDrinksOnly&&!p.isGuest))throw Error('Mitglied nicht gefunden.');
         if(kind==='standing'&&!(before.orders||[]).some(o=>o.id===orderId&&o.personName===personName))throw Error('Bitte einen passenden Dauerauftrag wählen.');
-        if(kind==='standing'&&payments.some(p=>p.id!==id&&p.orderId===orderId&&p.date===date))throw Error('Dieser Dauerauftrag ist für diesen Zahlungstag bereits gebucht.');
+        if(kind==='standing'&&payments.some(p=>p.id!==id&&p.orderId===orderId&&p.date.slice(0,7)===date.slice(0,7)))throw Error('Dieser Dauerauftrag ist für diesen Zahlungstag bereits gebucht.');
         const previous=payments.find(p=>p.id===id),incurredAt=previous?.date===date?previous.incurredAt||date+'T12:00:00Z':date===window.KCCashOverview.today()?new Date().toISOString():date+'T12:00:00Z';
-        payments=payments.filter(p=>p.id!==id);payments.push({id,personName,amountCents,date,incurredAt,description,kind,orderId});
+        if(previous?.orderId&&(previous.orderId!==orderId||previous.date.slice(0,7)!==date.slice(0,7)||kind!=='standing'))suppressed.add(window.KCCashOverview.dueKey(previous.orderId,previous.date));
+        payments=payments.filter(p=>p.id!==id);payments.push({id,personName,amountCents,date,incurredAt,description,kind,orderId,...(previous?.automatic?{automatic:true}:{})});
       }
       if(payments.length>3000)throw Error('Zu viele Einnahmen im Zahlungsbuch.');
-      const value={...before,payments,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={...settled,payments,suppressedDues:[...suppressed],revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      tx.set(ref,{cashStandingOrders:value,updatedAt:serverTimestamp()},{merge:true});return value;
+    });
+  },
+
+  async ensureCashStandingIncome(clubId,request={},syncContext=null){
+    if(!clubId||!window.KCCashOverview||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw Error('Ungültige Monatsbuchung');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const snap=await tx.get(ref),current=snap.exists()?snap.data():{},before=current.cashStandingOrders||{},settled=window.KCCashOverview.settleOrders(before);
+      if(settled===before)return before;
+      if((settled.payments||[]).length>3000)throw Error('Zu viele Einnahmen im Zahlungsbuch.');
+      const value={...settled,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       tx.set(ref,{cashStandingOrders:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
@@ -2606,7 +2621,7 @@ async deleteLivePerson(
 };
 
 
-window.firestoreApi.__syncArity={"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
+window.firestoreApi.__syncArity={"ensureCashStandingIncome":2,"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
 window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 
