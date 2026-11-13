@@ -123,12 +123,12 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261113-v227">
-<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261113-v227">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261113-v227">
-<link rel="stylesheet" href="css/club-content.css?v=20261113-v227">
-<link rel="stylesheet" href="css/extra-games.css?v=20261113-v227">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261113-v227">
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261113-v228">
+<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261113-v228">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261113-v228">
+<link rel="stylesheet" href="css/club-content.css?v=20261113-v228">
+<link rel="stylesheet" href="css/extra-games.css?v=20261113-v228">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261113-v228">
 </head>
 <body>
 <section id="club-content-dashboard" role="dialog" aria-modal="true" aria-labelledby="club-content-dashboard-title" hidden><div><h2 id="club-content-dashboard-title">Clubunterlagen</h2><p id="club-content-dashboard-help"></p></div><p id="club-content-dashboard-status" class="club-content-status" role="status"></p><div id="club-content-dashboard-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div></section>
@@ -145,7 +145,7 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <header class="dashboard-header" aria-label="Dashboard-Kopfzeile">
  <div class="header-identity"><div class="club" id="dashboard-club-title">🎳 KC Invaliden Schwadron</div><div class="header-status"><span id="indicator" class="dot" aria-hidden="true"></span><span id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</span></div></div>
  <div class="kc-next-events" aria-label="Nächste Termine"><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span><span id="kc-next-tour">🚌 Nächste Kegeltour: –</span><span id="kc-next-birthdays"></span> <div id="tv-countdown" aria-live="off"><div class="timer-label">Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div></div>
- <div class="header-tools"><div class="clock" id="clock" aria-label="Aktuelle Uhrzeit">--:--:--</div><div id="dashboard-lane" class="dashboard-lane" hidden></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="version">Dashboard V227 · Update 13.11.2026, 13:18 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></div>
+ <div class="header-tools"><div class="clock" id="clock" aria-label="Aktuelle Uhrzeit">--:--:--</div><div id="dashboard-lane" class="dashboard-lane" hidden></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="version">Dashboard V228 · Update 13.11.2026, 18:12 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></div>
 </header>
 <div id="tv-starter-draw" hidden aria-live="off"><div class="tv-draw-card"><div id="tv-draw-title"></div><div id="tv-draw-value"></div><div id="tv-draw-status"></div></div></div>
 <div id="tv-announcement" role="status" aria-live="polite"></div>
@@ -153,35 +153,35 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="siebener">🎲 7er-Spiel</option><option value="hindernis">🏃 Hindernislauf</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option><option value="bergundtal">🏔️ Berg und Tal</option><option value="ballermann">🏖️ Ballermann 6</option><option value="lattenzaun">🪵 Lattenzaun</option><option value="guterschnitt">✂️ Der gute Schnitt</option><option value="parteienspiel">⚖️ Parteienspiel</option><option value="dreieuro">💶 3-Euro-Spiel</option><option value="ebbeflut">🌊 Ebbe und Flut</option><option value="poker">Poker</option><option value="pfaelzer">Pfälzerspiel</option><option value="tausend">1000 in 9 Würfen</option><option value="hochsprung">🏅 Hochsprung</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div></section>
 <section class="side right"><article class="panel"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261113-v227">
-<link rel="stylesheet" href="css/table-games.css?v=20261113-v227">
-<link rel="stylesheet" href="css/individual-games.css?v=20261113-v227">
-<link rel="stylesheet" href="css/game-rules.css?v=20261113-v227">
-<script src="js/shared-clock.js?v=20261113-v227"></script>
-<script src="js/kranz-policy.js?v=20261113-v227"></script>
-<script src="js/games/extra-core.js?v=20261113-v227"></script><script src="js/games/extra-view.js?v=20261113-v227"></script>
-<script src="js/games/individual-core.js?v=20261113-v227"></script><script src="js/games/individual-view.js?v=20261113-v227"></script>
-<script src="js/game-rules.js?v=20261113-v227"></script>
-<link rel="stylesheet" href="css/starter-draw.css?v=20261113-v227"><script src="js/starter-draw.js?v=20261113-v227"></script>
-<script src="js/birthdays.js?v=20261113-v227"></script>
-<script src="js/games/sechstage-core.js?v=20261113-v227"></script>
-<script src="js/games/table-games-core.js?v=20261113-v227"></script>
-<script src="js/dashboard-sounds.js?v=20261113-v227"></script>
-<script src="js/cash-book.js?v=20261113-v227"></script>
-<script src="js/payment-visibility.js?v=20261113-v227"></script><script src="js/cash-overview.js?v=20261113-v227"></script>
-<script src="js/penalty-table.js?v=20261113-v227"></script>
-<script src="js/club-content.js?v=20261113-v227"></script><script src="js/club-content-pager.js?v=20261113-v227"></script><script src="js/club-content-dashboard.js?v=20261113-v227"></script>
-<script src="js/penalty-statistics.js?v=20261113-v227"></script><script src="js/activity-reports.js?v=20261113-v227"></script>
-<script src="js/cash-dashboard.js?v=20261113-v227"></script>
-<link rel="stylesheet" href="css/game-overview.css?v=20261113-v227"><script src="js/game-overview.js?v=20261113-v227"></script>
-<script src="js/table-alignment.js?v=20261113-v227"></script>
-<script src="js/shared-sync-core.js?v=20261113-v227"></script>
-<script src="js/shared-sync-transport.js?v=20261113-v227"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261113-v228">
+<link rel="stylesheet" href="css/table-games.css?v=20261113-v228">
+<link rel="stylesheet" href="css/individual-games.css?v=20261113-v228">
+<link rel="stylesheet" href="css/game-rules.css?v=20261113-v228">
+<script src="js/shared-clock.js?v=20261113-v228"></script>
+<script src="js/kranz-policy.js?v=20261113-v228"></script>
+<script src="js/games/extra-core.js?v=20261113-v228"></script><script src="js/games/extra-view.js?v=20261113-v228"></script>
+<script src="js/games/individual-core.js?v=20261113-v228"></script><script src="js/games/individual-view.js?v=20261113-v228"></script>
+<script src="js/game-rules.js?v=20261113-v228"></script>
+<link rel="stylesheet" href="css/starter-draw.css?v=20261113-v228"><script src="js/starter-draw.js?v=20261113-v228"></script>
+<script src="js/birthdays.js?v=20261113-v228"></script>
+<script src="js/games/sechstage-core.js?v=20261113-v228"></script>
+<script src="js/games/table-games-core.js?v=20261113-v228"></script>
+<script src="js/dashboard-sounds.js?v=20261113-v228"></script>
+<script src="js/cash-book.js?v=20261113-v228"></script>
+<script src="js/payment-visibility.js?v=20261113-v228"></script><script src="js/cash-overview.js?v=20261113-v228"></script>
+<script src="js/penalty-table.js?v=20261113-v228"></script>
+<script src="js/club-content.js?v=20261113-v228"></script><script src="js/club-content-pager.js?v=20261113-v228"></script><script src="js/club-content-dashboard.js?v=20261113-v228"></script>
+<script src="js/penalty-statistics.js?v=20261113-v228"></script><script src="js/activity-reports.js?v=20261113-v228"></script>
+<script src="js/cash-dashboard.js?v=20261113-v228"></script>
+<link rel="stylesheet" href="css/game-overview.css?v=20261113-v228"><script src="js/game-overview.js?v=20261113-v228"></script>
+<script src="js/table-alignment.js?v=20261113-v228"></script>
+<script src="js/shared-sync-core.js?v=20261113-v228"></script>
+<script src="js/shared-sync-transport.js?v=20261113-v228"></script>
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V227";
-const DASH_RELEASE="13.11.2026, 13:18 Uhr";
+const DASH_VERSION="V228";
+const DASH_RELEASE="13.11.2026, 18:12 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});

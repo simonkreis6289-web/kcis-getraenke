@@ -21,6 +21,17 @@
     for(const [k,v] of Object.entries(x))if(v!==undefined&&!['busy','closing','syncProtocol','syncRevision','syncOperation','updatedAt','updatedClientId','updatedClientAt'].includes(k))out[k]=clean(v);
     return out;
   }
+  // Alte lokale Abschlusswertungen enthalten direkte Unterlisten; Firestore erlaubt sie nur in Objekten.
+  // Rekursiv auch Verlauf/Spiegel reparieren, ohne Revisionen, Buchungen oder Belege zu verändern.
+  function normalizeGameData(x){
+    if(Array.isArray(x))return x.map(normalizeGameData);
+    if(!object(x))return x;
+    const out={};
+    for(const [k,v] of Object.entries(x))out[k]=k==='rankingGroups'&&Array.isArray(v)
+      ?v.map(group=>Array.isArray(group)?{names:normalizeGameData(group)}:normalizeGameData(group))
+      :normalizeGameData(v);
+    return out;
+  }
   function identity(list,path){
     if(!list.length)return null;
     const choices=path.length===1&&path[0]==='persons'?['name']:['id','key','name'];
@@ -202,6 +213,6 @@
     };
   }
   window.KCSharedCore=Object.freeze({
-    clone,clean,equal,norm,managed,modern,legacy,games,derived,liveOwned,identity,locate,write,diff,apply,conflict,totals,preview
+    clone,clean,normalizeGameData,equal,norm,managed,modern,legacy,games,derived,liveOwned,identity,locate,write,diff,apply,conflict,totals,preview
   });
 })();

@@ -26,14 +26,14 @@
   if(s.gameKey==='pfaelzer')s.ownNumbers={};
   if(s.gameKey==='tausend'){s.results=Object.fromEntries(s.players.map(n=>[n,[]]));s.pendingArrange=false;}
  }
- function groupsBy(names,value,ascending=false){const values=[...new Set(names.map(value))].sort((a,b)=>ascending?a-b:b-a);return values.map(v=>names.filter(n=>value(n)===v));}
+ function groupsBy(names,value,ascending=false){const values=[...new Set(names.map(value))].sort((a,b)=>ascending?a-b:b-a);return values.map(v=>({names:names.filter(n=>value(n)===v)}));}
  function classicFinish(s){
-  const noPokerHand=s.gameKey==='poker'&&s.pokerSharedRanks&&s.players.every(n=>s.handRanks[n].level===0);s.winners=noPokerHand?[]:s.rankingGroups[0]||[];s.loserGroups=s.rankingGroups.slice(noPokerHand?0:1).reverse().slice(0,3).map((names,i)=>({rank:i+1,names}));s.phase='finished';
+  const noPokerHand=s.gameKey==='poker'&&s.pokerSharedRanks&&s.players.every(n=>s.handRanks[n].level===0);s.winners=noPokerHand?[]:s.rankingGroups[0]?.names||[];s.loserGroups=s.rankingGroups.slice(noPokerHand?0:1).reverse().slice(0,3).map((group,i)=>({rank:i+1,names:group.names}));s.phase='finished';
   if(s.gameKey==='pfaelzer')s.bookings=s.players.filter(n=>s.scores[n]*s.config.strichCents>0).map(n=>book(s,n,s.scores[n]*s.config.strichCents,s.scores[n]+' Striche × '+s.config.strichCents+' Cent'));
  }
  function checkClassicTies(s){
-  if(s.gameKey==='tausend'||s.gameKey==='poker'&&s.pokerSharedRanks||s.rankingGroups.every(g=>g.length===1)){finish(s);return;}
-  s.phase='tiebreak';s.tieRound++;s.tiePlayers=s.rankingGroups.filter(g=>g.length>1).flat();s.tieScores=Object.fromEntries(s.tiePlayers.map(n=>[n,0]));s.index=0;s.turn=[];
+  if(s.gameKey==='tausend'||s.gameKey==='poker'&&s.pokerSharedRanks||s.rankingGroups.every(g=>g.names.length===1)){finish(s);return;}
+  s.phase='tiebreak';s.tieRound++;s.tiePlayers=s.rankingGroups.filter(g=>g.names.length>1).flatMap(g=>g.names);s.tieScores=Object.fromEntries(s.tiePlayers.map(n=>[n,0]));s.index=0;s.turn=[];
  }
  function evaluateClassic(s){
   if(s.gameKey==='poker'){s.handRanks=Object.fromEntries(s.players.map(n=>[n,pokerHand(s.hands[n])]));s.scores=Object.fromEntries(s.players.map(n=>[n,s.handRanks[n].level*100+(s.pokerSharedRanks&&s.handRanks[n].level===0?0:s.handRanks[n].value)]));s.rankingGroups=groupsBy(s.players,n=>s.scores[n]);}
@@ -59,7 +59,7 @@
   s.rows[name].push({phase:s.phase,pins:e.pins,kind:e.kind});
   if(s.phase==='tiebreak'){
    s.tieScores[name]+=e.pins;s.turn.push(e.pins);e.tieRound=s.tieRound;
-   if(s.turn.length===s.config.tieThrows){s.turn=[];s.index++;if(s.index===s.tiePlayers.length){s.tieHistory.push({round:s.tieRound,scores:clone(s.tieScores)});s.rankingGroups=s.rankingGroups.flatMap(group=>group.length===1?[group]:groupsBy(group,n=>s.tieScores[n]));checkClassicTies(s);}}return;
+   if(s.turn.length===s.config.tieThrows){s.turn=[];s.index++;if(s.index===s.tiePlayers.length){s.tieHistory.push({round:s.tieRound,scores:clone(s.tieScores)});s.rankingGroups=s.rankingGroups.flatMap(group=>group.names.length===1?[group]:groupsBy(group.names,n=>s.tieScores[n]));checkClassicTies(s);}}return;
   }
   if(key==='poker'){
    if(s.phase==='deal'){s.hands[name].push({pins:e.pins,kind:e.kind});if(s.hands[name].length===5){s.index++;if(s.index===s.players.length){s.phase='select';s.index=0;}}}
@@ -204,7 +204,7 @@
   if(!keys.includes(req.gameKey)||!/^ind_[a-zA-Z0-9_-]{1,100}$/.test(req.opId||''))throw Error('Ungültige Spielaktion.');
   const before=previous||empty(req.gameKey);if(before.commands.includes(req.opId))return {state:clone(before),repeat:true};
   if(before.revision!==req.expectedRevision)throw Error('Spielstand wurde inzwischen geändert. Bitte Serverstand laden.');
-  let s=clone(before);const atMs=Date.parse(ctx.now);if(!Number.isFinite(atMs))throw Error('Ungültiger Zeitpunkt.');
+  let s=clone(before);if(Array.isArray(s.rankingGroups))s.rankingGroups=s.rankingGroups.map(g=>Array.isArray(g)?{names:g}:g);const atMs=Date.parse(ctx.now);if(!Number.isFinite(atMs))throw Error('Ungültiger Zeitpunkt.');
   if(req.action==='start'){if(s.active)throw Error('Laufendes Spiel zuerst abschließen oder abbrechen.');s=start(req,ctx);}
   else{
    if(!s.id||req.gameId!==s.id)throw Error('Das Spiel wurde inzwischen gewechselt.');

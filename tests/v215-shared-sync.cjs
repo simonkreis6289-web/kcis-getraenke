@@ -10,13 +10,14 @@ const evening='2026-11-12T19:00:00Z';
 const rootPath='clubs/club/state/current';
 const personPath=name=>'clubs/club/livePersons/'+encodeURIComponent(name.toLocaleLowerCase('de'));
 function database(initial={}){
+ function firestoreValue(value,path='$',insideArray=false){assert.notEqual(value,undefined,'Firestore: undefined at '+path);if(Array.isArray(value)){assert(!insideArray,'Firestore: nested array at '+path);value.forEach((item,i)=>firestoreValue(item,path+'['+i+']',true));}else if(value&&typeof value==='object')for(const [key,item] of Object.entries(value))firestoreValue(item,path+'.'+key,false);}
  const data=new Map(Object.entries(initial));let version=0,fail=false,lost=false,commits=0;
  const watches=new Set();
  const snap=key=>({exists:()=>data.has(key),data:()=>copy(data.get(key))});
  const sdk={initializeApp:()=>({}),getFirestore:()=>({}),doc:(_, ...p)=>p.join('/'),collection:(_, ...p)=>p.join('/'),serverTimestamp:()=>({serverTime:true}),
   getDoc:async key=>snap(key),getDocFromServer:async key=>{if(fail)throw Error('Network');return snap(key);},getDocs:async key=>({docs:[...data.keys()].filter(k=>k.startsWith(key+'/')&&k.slice(key.length+1).indexOf('/')<0).map(k=>({id:k.split('/').at(-1),data:()=>copy(data.get(k))}))}),
   onSnapshot:(key,...rest)=>{const callback=rest.find(x=>typeof x==='function');watches.add({key,callback});return ()=>{};},
-  runTransaction:async(_,fn)=>{for(let n=0;n<50;n++){if(fail)throw Error('Network');const rev=version,pending=[];let writing=false;const out=await fn({get:async key=>{assert(!writing,'all Firestore reads must precede writes');await Promise.resolve();return snap(key);},set:(key,value,options)=>{writing=true;pending.push(()=>data.set(key,options?.merge?{...data.get(key),...copy(value)}:copy(value)));},delete:key=>{writing=true;pending.push(()=>data.delete(key));}});if(rev!==version)continue;pending.forEach(fn=>fn());if(pending.length){version++;commits++;}if(lost){lost=false;throw Error('Response lost');}return out;}throw Error('retry limit');},
+  runTransaction:async(_,fn)=>{for(let n=0;n<50;n++){if(fail)throw Error('Network');const rev=version,pending=[];let writing=false;const out=await fn({get:async key=>{assert(!writing,'all Firestore reads must precede writes');await Promise.resolve();return snap(key);},set:(key,value,options)=>{firestoreValue(value,String(key));writing=true;pending.push(()=>data.set(key,options?.merge?{...data.get(key),...copy(value)}:copy(value)));},delete:key=>{writing=true;pending.push(()=>data.delete(key));}});if(rev!==version)continue;pending.forEach(fn=>fn());if(pending.length){version++;commits++;}if(lost){lost=false;throw Error('Response lost');}return out;}throw Error('retry limit');},
   setDoc:()=>{throw Error('unguarded write');},deleteDoc:()=>{throw Error('unguarded delete');}};
  return {data,sdk,root:()=>copy(data.get(rootPath)),fail:x=>fail=x,lose:()=>lost=true,commits:()=>commits,deliver(){for(const {key,callback} of watches){if(key.endsWith('/current'))callback({...snap(key),metadata:{fromCache:false,hasPendingWrites:false}});}}};
 }
