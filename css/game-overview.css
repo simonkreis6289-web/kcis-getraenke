@@ -9,3 +9,15 @@
 .tv-game-choice p{margin:0;color:#52637e;font:500 clamp(10px,.72vw,13px)/1.2 'DM Sans',sans-serif;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;flex-shrink:0}
 @media(max-width:1100px),(max-height:680px){.tv-game-choice p{display:none}}
 @media(max-height:800px){.tv-game-overview{gap:5px;padding:6px}.tv-game-choice{padding:4px 6px;gap:2px}.tv-game-choice .tv-game-icon{font-size:22px}.tv-game-choice h2{font-size:clamp(12px,1vw,17px)}}
+/* Alle Kategorien bleiben auf dem TV gleichzeitig sichtbar. */
+.tv-game-overview{display:flex;flex-direction:column;gap:7px}
+.tv-game-category{display:flex;flex:var(--category-rows) 1 0;min-height:0;flex-direction:column;gap:4px}
+.tv-game-category>h3{margin:0;color:#233b60;font:800 clamp(11px,.95vw,16px)/1.2 'DM Sans',sans-serif;border-bottom:1px solid #c6d4e6;padding:1px 4px 3px;flex:0 0 auto}
+.tv-category-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(var(--category-rows),minmax(0,1fr));min-height:0;flex:1;gap:5px}
+.tv-category-grid .tv-game-choice{padding:3px 5px;gap:2px}.tv-category-grid .tv-game-icon{font-size:clamp(16px,1.25vw,24px)}.tv-category-grid .tv-game-choice h2{font-size:clamp(11px,1vw,18px)}
+.game-hub-category{grid-column:1/-1;min-width:0}.game-hub-category[hidden]{display:none!important}.game-hub-category>h3{font-family:inherit;font-size:17px;color:#233b60;margin:10px 0 12px}.game-category-grid{margin:0}
+.game-category-tabs{margin:10px 0 14px!important}.game-category-tabs button{white-space:nowrap}
+#game-settings-categories{display:flex;flex-wrap:wrap;gap:4px;grid-column:1/-1;width:100%;border-bottom:1px solid #33496c;padding:0}
+.game-properties-tabs #game-settings-categories button{display:block;width:auto;min-height:36px;padding:8px 12px;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:#33496c;box-shadow:none;font-size:13px;white-space:nowrap}
+.game-properties-tabs #game-settings-categories button.active{border-bottom-color:#e7a721;background:#f1f5fc;color:#20395d}.game-settings-select[hidden]{display:none!important}
+@media(max-height:700px){.tv-game-category>h3{font-size:11px}.tv-category-grid .tv-game-choice p{display:none}.tv-category-grid .tv-game-icon{font-size:16px}.tv-category-grid{gap:3px}.tv-game-overview{gap:5px}.tv-category-grid .tv-game-choice h2{font-size:12px}}

@@ -1,5 +1,5 @@
 /* Gemeinsame kompakte Startansicht: alle aktiven Kegler, optionales Umordnen, Teams pro Spiel. */
-const GAME_SETUP_KEYS=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'];
+const GAME_SETUP_KEYS=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'];
 const gameSetupDrafts=new Map();
 function gsEscape(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function gameSetupPeople(){return getActivePlayersForSoloGame().filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly);}
@@ -15,7 +15,7 @@ function gameSetupDraft(key){
 function gameSetupNames(key){return gameSetupDraft(key).names.slice();}
 function gameSetupState(key){
  if(typeof tableGameGet==='function'&&['blackjack','gluecksspirale'].includes(key))return tableGameGet(key);
- if(typeof indGet==='function'&&['bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(key))return indGet(key);
+ if(typeof indGet==='function'&&['bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'].includes(key))return indGet(key);
  if(typeof indGet==='function'&&['siebener','hindernis'].includes(key))return indGet(key);
  const state={tannenbaum:typeof tannenbaumState==='undefined'?null:tannenbaumState,darts:typeof dartsState==='undefined'?null:dartsState,lotterie:typeof lotterieState==='undefined'?null:lotterieState,tiberius:typeof tiberiusState==='undefined'?null:tiberiusState,mensch:typeof menschState==='undefined'?null:menschState,plusminus:typeof plusminusState==='undefined'?null:plusminusState,haushoch:typeof haushochState==='undefined'?null:haushochState,haustief:typeof haustiefState==='undefined'?null:haustiefState,sichern:typeof sichernState==='undefined'?null:sichernState,fuchsjagd:typeof fuchsjagdState==='undefined'?null:fuchsjagdState,tor:typeof torState==='undefined'?null:torState,sechstage:typeof sechstageState==='undefined'?null:sechstageState};return state[key];
 }
@@ -43,7 +43,7 @@ function gameTeamNames(key,team){const s=gameSetupState(key),frozen=s?.participa
 function gameSetupRefresh(key){
  if(key==='sechstage'&&typeof renderSechsGame==='function')renderSechsGame();
  else if(['blackjack','gluecksspirale'].includes(key)&&typeof renderTableGame==='function')renderTableGame(key);
- else if(['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(key)&&typeof renderIndividualGame==='function')renderIndividualGame(key);
+ else if(['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'].includes(key)&&typeof renderIndividualGame==='function')renderIndividualGame(key);
  else{if(typeof renderAll==='function')renderAll();else renderCommonGameSetups();}
 }
 function gameSetupToggle(key,checked){if(gameSetupLocked(key))return;const d=gameSetupDraft(key);d.editing=!!checked;if(!checked){d.names=gameSetupBaseOrder();d.teams=null;}gameSetupRefresh(key);}
@@ -85,16 +85,21 @@ function renderCommonGameSetups(){
 }
 function startTannenbaumSetup(){if(!gameSetupCheckGroups('tannenbaum'))return;if(tannenbaumState?.history?.length&&!confirm('Neuen Tannenbaum starten? Bisherige Würfe werden zurückgesetzt.'))return;tannenbaumState=createTannenbaumState();tannenbaumState.participantTeams=gameSetupTeamMap('tannenbaum');tannenbaumState.active=true;tannenbaumState.startedAt=new Date().toISOString();dashboardActiveGame='tannenbaum';renderAll();persistState();}
 let gamePropertySelected='hindernis';
+function showGamePropertyCategory(kind){
+ const model=window.KCGameOverview;if(kind==='general')return showGameProperty('general');const first=model?.gamesIn(kind).find(g=>document.querySelector('[data-game-property="'+g.key+'"]'));if(first)showGameProperty(first.key);
+}
 function renderGamePropertyTabs(){
  const tabs=document.getElementById('game-properties-tabs');if(!tabs)return;
  const panels=[...document.querySelectorAll('[data-game-property]')];if(!panels.some(p=>p.dataset.gameProperty===gamePropertySelected))gamePropertySelected=panels[0]?.dataset.gameProperty||'';
- for(const panel of panels){const selected=panel.dataset.gameProperty===gamePropertySelected;panel.hidden=!selected;panel.setAttribute('tabindex','0');}
+ const model=window.KCGameOverview,kind=gamePropertySelected==='general'?'general':model?.category(gamePropertySelected)||'solo';
+ for(const panel of panels){const selected=panel.dataset.gameProperty===gamePropertySelected;panel.hidden=!selected;panel.setAttribute('tabindex','0');panel.setAttribute('aria-labelledby','game-property-select');}
  for(const button of tabs.querySelectorAll('[data-game-property-tab]')){const selected=button.dataset.gamePropertyTab===gamePropertySelected;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}
- let label=tabs.querySelector('.game-settings-select');if(!label){label=document.createElement('label');label.className='game-settings-select';label.textContent='Einstellungen für';const select=document.createElement('select');select.id='game-property-select';select.setAttribute('aria-label','Spiel für Einstellungen auswählen');select.onchange=()=>showGameProperty(select.value);label.append(select);tabs.prepend(label);tabs.removeAttribute('role');}
- const select=label.querySelector('select');select.innerHTML=[...tabs.querySelectorAll('[data-game-property-tab]')].map(button=>'<option value="'+gsEscape(button.dataset.gamePropertyTab)+'">'+gsEscape(button.textContent.trim())+'</option>').join('');select.value=gamePropertySelected;
- for(const panel of panels)panel.setAttribute('aria-labelledby','game-property-select');
+ let nav=document.getElementById('game-settings-categories');if(!nav){nav=document.createElement('nav');nav.id='game-settings-categories';nav.className='kc-admin-tabs game-category-tabs';nav.setAttribute('aria-label','Kategorie der Spieleinstellungen');tabs.prepend(nav);}
+ nav.replaceChildren();for(const cat of [{key:'general',icon:'⚙️',title:'Allgemein'},...(model?.categories||[])]){const button=document.createElement('button');button.type='button';button.className='kc-admin-tab'+(kind===cat.key?' active':'');button.setAttribute('aria-pressed',String(kind===cat.key));button.textContent=cat.icon+' '+cat.title;button.onclick=()=>showGamePropertyCategory(cat.key);nav.append(button);}
+ let label=tabs.querySelector('.game-settings-select');if(!label){label=document.createElement('label');label.className='game-settings-select';label.textContent='Einstellungen für';const select=document.createElement('select');select.id='game-property-select';select.setAttribute('aria-label','Spiel für Einstellungen auswählen');select.onchange=()=>showGameProperty(select.value);label.append(select);tabs.append(label);tabs.removeAttribute('role');}
+ label.hidden=kind==='general';const select=label.querySelector('select');select.innerHTML=[...tabs.querySelectorAll('[data-game-property-tab]')].filter(button=>button.dataset.gamePropertyTab!=='general'&&(!model||model.category(button.dataset.gamePropertyTab)===kind)).map(button=>'<option value="'+gsEscape(button.dataset.gamePropertyTab)+'">'+gsEscape(button.textContent.trim())+'</option>').join('');select.value=gamePropertySelected;
 }
-function showGameProperty(key,focus=false){if(!document.querySelector('[data-game-property="'+key+'"]'))return;gamePropertySelected=key;renderGamePropertyTabs();if(focus){const button=document.querySelector('[data-game-property-tab="'+key+'"]');button?.focus();button?.scrollIntoView?.({block:'nearest',inline:'nearest'});}}
+function showGameProperty(key,focus=false){if(!document.querySelector('[data-game-property="'+key+'"]'))return;gamePropertySelected=key;renderGamePropertyTabs();if(focus){const target=window.KCGameOverview?document.getElementById('game-property-select'):document.querySelector('[data-game-property-tab="'+key+'"]');target?.focus();target?.scrollIntoView?.({block:'nearest',inline:'nearest'});}}
 function gamePropertyKeydown(event){
  const buttons=[...document.querySelectorAll('#game-properties-tabs [data-game-property-tab]')],index=buttons.indexOf(document.activeElement);if(index<0)return;
  const next=event.key==='ArrowRight'?(index+1)%buttons.length:event.key==='ArrowLeft'?(index-1+buttons.length)%buttons.length:event.key==='Home'?0:event.key==='End'?buttons.length-1:null;if(next===null)return;event.preventDefault();showGameProperty(buttons[next].dataset.gamePropertyTab,true);

@@ -3,7 +3,7 @@
  const numeric=/^[\s\d.,+−–\-:;/%€×x()=*·]+$/u;
  const pending=new Set();let frame=0;
  function classify(table){for(const cell of table.querySelectorAll('td,th')){
-  const text=cell.textContent.trim(),isNumber=!!text&&numeric.test(text)||!!cell.querySelector('.counter,.counter-val,.penalty-counter');
+  const text=cell.textContent.trim(),primary=cell.querySelector('strong')?.textContent.trim(),isNumber=!!text&&numeric.test(text)||!!primary&&numeric.test(primary)||!!cell.querySelector('.counter,.counter-val,.penalty-counter');
   cell.classList.toggle('kc-numeric-cell',isNumber);
   cell.classList.toggle('kc-text-cell',!isNumber&&cell.tagName==='TD'&&!cell.querySelector('input,button,select'));
  }}
