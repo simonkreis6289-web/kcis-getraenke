@@ -21,6 +21,7 @@ function openSoloStartDraw(config = {}) {
     open: true,
     players,
     title: config.title || '🎲 Startspieler',
+    kind: config.kind==='team'?'team':'player',
     subtitle: config.subtitle || 'Wer beginnt?',
     selected: '',
     onConfirm: typeof config.onConfirm === 'function' ? config.onConfirm : null
@@ -56,7 +57,7 @@ function runSoloStartDraw() {
   let ticks = 0;
   const frames = soloStartDrawState.players;
   const winner = frames[Math.floor(Math.random() * frames.length)];
-  const draw=typeof beginDashboardDraw==='function'?beginDashboardDraw({kind:'player',title:soloStartDrawState.title,frames,steps:18,interval:110,winner}):null;
+  const draw=typeof beginDashboardDraw==='function'?beginDashboardDraw({kind:soloStartDrawState.kind||'player',title:soloStartDrawState.title,frames,steps:18,interval:110,winner}):null;
   soloStartDrawState.drawId=draw?.id;
   const timer = setInterval(() => {
     ticks=draw?Math.floor((Date.now()-draw.startedAt)/110):ticks+1;

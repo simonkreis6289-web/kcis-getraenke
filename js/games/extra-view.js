@@ -4,7 +4,7 @@ function renderRoundGameBoard(s,{controls=''}={}){
  const winners=(s.winners||[]).map(name).join(' · '),heading=s.finished?'🏆 '+winners:g.icons[key]+' '+g.titles[key];
  let top='',body='',turn=esc(current);
  if(party){
-  top='<div class="extra-team-grid">'+['T1','T2'].map(t=>'<article class="extra-team-card"><small>'+esc(s.teamNames[t])+'</small><strong>'+s.scores[t]+' Punkte</strong><span>Holz in dieser Runde: '+s.roundTotals[t]+'</span><span>'+s.participantTeams[t].map(esc).join(' · ')+'</span></article>').join('')+'</div>';
+  top='<div class="extra-team-grid">'+['T1','T2'].map(t=>'<article class="extra-team-card '+(s.active&&s.participantTeams[t].includes(current)?'extra-current':'')+'"><small>'+esc(s.teamNames[t])+'</small><strong>'+s.scores[t]+' Punkte</strong><span>Holz in dieser Runde: '+s.roundTotals[t]+'</span><span>'+s.participantTeams[t].map(esc).join(' · ')+'</span></article>').join('')+'</div>';
   body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Runde</th><th>'+esc(s.teamNames.T1)+'</th><th>'+esc(s.teamNames.T2)+'</th><th>Differenzpunkte</th></tr></thead><tbody>'+s.roundResults.slice(-6).map(r=>'<tr><th>'+r.round+'</th><td>'+r.totals.T1+'</td><td>'+r.totals.T2+'</td><td>'+(r.winner?esc(s.teamNames[r.winner])+' +'+r.points:'Gleichstand · 0')+'</td></tr>').join('')+'</tbody></table></div>';
   turn+=' · '+esc(s.teamNames[s.participantTeams.T1.includes(current)?'T1':'T2'])+' · Runde '+s.round;
  }else if(jump){
