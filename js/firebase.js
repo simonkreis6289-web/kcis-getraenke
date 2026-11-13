@@ -309,7 +309,7 @@ window.firestoreApi = {
       if(current.gameOptionsRevision){next.gameOptions=current.gameOptions;next.gameOptionsRevision=current.gameOptionsRevision;next.gameOptionsCommands=current.gameOptionsCommands||[];}
       if(current.gameFineSettingsRevision){next.gameFineSettings=current.gameFineSettings||{};next.gameFineSettingsRevision=current.gameFineSettingsRevision;next.gameFineSettingsCommands=current.gameFineSettingsCommands||[];}
       if(current.penaltyStatsSettings?.revision)next.penaltyStatsSettings=current.penaltyStatsSettings;
-      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState','guterschnittState','parteienspielState','dreieuroState','ebbeflutState','hochsprungState'];
+      const gameFields=['sechstageState','blackjackState','gluecksspiraleState','siebenerState','hindernisState','bergundtalState','ballermannState','lattenzaunState','guterschnittState','parteienspielState','dreieuroState','ebbeflutState','hochsprungState','pokerState','pfaelzerState','tausendState'];
       const savedEveningId=current.currentEveningStartedAt||gameFields.map(key=>current[key]?.eveningStartedAt).find(Boolean)||'';
       const requestedEvening=Date.parse(payload.currentEveningStartedAt||''),savedEvening=Date.parse(savedEveningId);
       if(gameFields.some(key=>current[key]?.revision)&&(!Number.isFinite(requestedEvening)||requestedEvening<=savedEvening)){
@@ -530,7 +530,7 @@ window.firestoreApi = {
   },
 
   async setDashboardRules(clubId,request={}, syncContext = null) {
-    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
+    if(!clubId||!['open','close'].includes(request.action)||!['sechstage','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'].includes(request.gameKey)||typeof request.token!=='string'||!/^rules_session_[a-zA-Z0-9_-]{1,100}$/.test(request.token)||typeof request.opId!=='string'||!/^rules_[a-zA-Z0-9_-]{1,100}$/.test(request.opId))throw new Error('Ungültige Regelanzeige');
     if(request.rulesConfig!==undefined&&!(request.gameKey==='hindernis'&&window.KCIndividual?.validSettings(request.rulesConfig)||request.gameKey==='siebener'&&window.KCIndividual?.validSevenSettings(request.rulesConfig)||window.KCExtraGames?.keys.includes(request.gameKey)&&window.KCExtraGames.validSettings(request.gameKey,request.rulesConfig)))throw new Error('Ungültige Spielregeln');
     const ref=doc(db,'clubs',clubId,'state','current');
     return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
@@ -538,7 +538,7 @@ window.firestoreApi = {
       if((before.commands||[]).includes(request.opId))return before;
       // A close from an older popup must not dismiss a newer controller's rules.
       if(request.action==='close'&&(!before.open||before.token!==request.token||before.gameKey!==request.gameKey))return before;
-      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={schema:1,open:request.action==='open',gameKey:request.gameKey,...(['hindernis','siebener','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'].includes(request.gameKey)&&request.rulesConfig?{rulesConfig:JSON.parse(JSON.stringify(request.rulesConfig))}:{}),token:request.token,revision:(Number(before.revision)||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       const updates={dashboardRules:value,updatedAt:serverTimestamp()};if(value.open)for(const key of ['dashboardClubContent','dashboardGameOverview', 'dashboardCashView'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
@@ -674,7 +674,7 @@ window.firestoreApi = {
   },
   async transactIndividualGame(clubId,request={}, syncContext = null) {
     if(request.gameKey==='ballermann'&&window.KCSharedClock?.enabled&&!(await KCSharedClock.useClub(clubId)))throw Error('Zeitabgleich nicht erreichbar. Bitte erneut versuchen.');
-    const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(gameKey))throw new Error('Unbekanntes Spiel');
+    const gameKey=request.gameKey;if(!['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'].includes(gameKey))throw new Error('Unbekanntes Spiel');
     const stateKey=gameKey+'State',core=['siebener','hindernis'].includes(gameKey)?window.KCIndividual:window.KCExtraGames;
     if(!clubId||!core)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');

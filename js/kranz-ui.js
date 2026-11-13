@@ -17,7 +17,7 @@
   }
   function cancel(){if(pending)pending.done(null);}
   async function select(key,s=state(key)){
-    const r=rule(key,s);if(r.mode!=='choose')return P.resolve(r,undefined,s?.config?.targets?.[s.scores?.[KCExtraGames.current(s)]]);
+    const r=rule(key,s);if(r.mode!=='choose')return P.resolve(r,undefined,s?.config?.targets?.[s.scores?.[KCExtraGames.current(s)]],key);
     if(pending)return null;
     const stamp=JSON.stringify(s),club=ACTIVE_CLUB,evening=currentEveningStartedAt,focus=document.activeElement;
     return new Promise(resolve=>{
@@ -31,7 +31,7 @@
         if(value!==null&&(ACTIVE_CLUB!==club||currentEveningStartedAt!==evening||JSON.stringify(state(key))!==stamp)){showToast('Spielstand geändert. Kranz bitte erneut eingeben.','error');resolve(null);return;}
         resolve(value);
       };
-      for(const n of P.choices){const b=document.createElement('button');b.type='button';b.className='kranz-value-btn';b.setAttribute('aria-label',n+' zählen');b.innerHTML='<strong>'+n+'</strong>';b.onclick=()=>done(n);grid.append(b);}
+      for(const n of P.values(key)){const b=document.createElement('button');b.type='button';b.className='kranz-value-btn';b.setAttribute('aria-label',n+' zählen');b.innerHTML='<strong>'+n+'</strong>';b.onclick=()=>done(n);grid.append(b);}
       modal.append(grid);const stop=document.createElement('button');stop.type='button';stop.className='secondary-btn';stop.textContent='Abbrechen';stop.onclick=cancel;modal.append(stop);backdrop.append(modal);document.body.append(backdrop);
       pending={done};backdrop.onclick=e=>{if(e.target===backdrop)cancel();};backdrop.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();cancel();}if(e.key==='Tab'){const buttons=[...modal.querySelectorAll('button')],first=buttons[0],last=buttons[buttons.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};grid.firstElementChild?.focus();
     });
@@ -53,7 +53,7 @@
       let select=document.getElementById('kranz-rule-'+key);
       if(!select){const box=document.createElement('div');box.className='kc-kranz-setting';const label=document.createElement('label');label.className='game-settings-field';label.textContent='👑 Kranzwertung';select=document.createElement('select');select.id='kranz-rule-'+key;select.onchange=()=>save(key);label.append(select);const note=document.createElement('small');note.textContent=key==='tor'?'Gilt für die Wurfanzeige. Abräumen zählt weiterhin ein Tor.':'Gilt ab dem nächsten Spielstart. Frei wählbar öffnet beim Kranz die Wertauswahl.';box.append(label,note);const header=panel.querySelector(':scope > header,:scope > h3');if(header)header.after(box);else panel.prepend(box);}
       const r=P.configured(data,key),value=r.mode==='fixed'?String(r.value):r.mode;
-      if(document.activeElement!==select){select.replaceChildren();for(const [v,text] of [['8','8'],['12','12'],['choose','Frei wählbar · bei jedem Kranz auswählen'],...(key==='guterschnitt'?[['target','Automatisch aktuelle Zielzahl treffen']]:[]),...(!['8','12'].includes(value)&&r.mode==='fixed'?[[value,'Bisheriger fester Wert: '+value]]:[])]){const opt=document.createElement('option');opt.value=v;opt.textContent=text;opt.selected=v===value;select.append(opt);}select.value=value;}
+      if(document.activeElement!==select){select.replaceChildren();for(const [v,text] of [...(key==='tausend'?Array.from({length:10},(_,i)=>[String(i),String(i)]):[['8','8'],['12','12']]),['choose','Frei wählbar · bei jedem Kranz auswählen'],...(key==='guterschnitt'?[['target','Automatisch aktuelle Zielzahl treffen']]:[]),...(key!=='tausend'&&!['8','12'].includes(value)&&r.mode==='fixed'?[[value,'Bisheriger fester Wert: '+value]]:[])]){const opt=document.createElement('option');opt.value=v;opt.textContent=text;opt.selected=v===value;select.append(opt);}select.value=value;}
       select.disabled=saving;
     }
     hideOldEditors();

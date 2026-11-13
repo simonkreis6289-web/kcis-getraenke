@@ -1,3 +1,10 @@
+function classicGameControls(key,s,disabled){
+ if(key==='poker'&&s.phase==='select')return '<div class="poker-exchange"><strong>Bis zu '+s.config.maxExchange+' Positionen zum Tauschen markieren</strong><div class="poker-cards">'+s.hands[KCExtraGames.current(s)].map((c,i)=>'<label><input type="checkbox" '+disabled+' data-poker-exchange="'+i+'"><span>'+c.pins+'</span></label>').join('')+'</div><button type="button" '+disabled+' class="primary-btn" onclick="confirmPokerExchange()">✓ Auswahl bestätigen / alle behalten</button></div>';
+ if(key==='tausend'&&s.pendingArrange){const seen=new Set();return '<div class="thousand-arrange"><strong>Hunderter · Zehner · Einer wählen</strong><div>'+[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]].map(order=>{const value=order.map(i=>s.turn[i].pins).join('');if(seen.has(value))return '';seen.add(value);return '<button type="button" '+disabled+' onclick="indAction(\'tausend\',\'arrange\',{order:['+order.join(',')+']})">'+value+'</button>';}).join('')+'</div></div>';}
+ return '';
+}
+function confirmPokerExchange(){const indices=[...document.querySelectorAll('#tab-poker [data-poker-exchange]:checked')].map(el=>Number(el.dataset.pokerExchange));return indAction('poker','exchange',{indices});}
+
 let extraGameStates={},extraGameSettings={},extraSetup={},extraKranzPending=null,extraSettingsStamp='',extraSettingsBusy=false;
 function extraGet(key){return extraGameStates[key]||null;}
 function extraSet(key,state){extraGameStates[key]=state;}
@@ -36,8 +43,8 @@ function renderExtraGame(key){
  if(!s.id){setup.innerHTML=(typeof gameSetupMarkup==='function'?gameSetupMarkup(key,{busy}):'<p>'+indDraft(key).names.map(indEscape).join(' · ')+'</p>')+(key==='ballermann'?'<div class="ind-actions">'+['T1','T2'].map(t=>'<button type="button" '+disabled+' aria-pressed="'+(d.startTeam===t)+'" onclick="extraChooseTeam(\''+t+'\')">'+indEscape(label(t))+' beginnt</button>').join('')+'</div>':'')+'<div class="ind-actions"><button type="button" '+disabled+' onclick="extraDraw(\''+key+'\')">🎲 '+(key==='parteienspiel'?'Startseite':key==='ballermann'?'Startmannschaft':'Startspieler')+' auslosen</button></div><p>'+(window.KCRoundGames?.keys.includes(key)?window.KCRoundGames.summary(key,config):key==='bergundtal'?config.rounds+' Durchgänge · je zwei Würfe · negative Differenzen zählen':key==='ballermann'?extraClockText(config.seconds*1000)+' je Mannschaft · Gruppe 1 gegen Gruppe 2':key==='guterschnitt'?config.targets.length+' Ziele · '+config.targets.join(' → '):config.slats+' Latten · '+indEuro(config.slatCents)+' je Latte · sofortiges Ende beim ersten vollen Zaun')+(d.starter?' · Start: '+indEscape(d.starter):'')+'</p><button type="button" class="primary-btn" '+(busy||indDraft(key).names.length<2||key==='hochsprung'&&!config.targets.length?'disabled':'')+' onclick="indStart(\''+key+'\')">🎳 Spiel starten</button>';}
  let controls='';
  if(s.active){
-  let mayThrow=!s.readyToFinish;if(key==='ballermann')mayThrow=s.timer.running&&(g.remaining(s)>0||!s.timer.lastThrowUsed);
-  controls='<div class="extra-controls">';
+  let mayThrow=!s.readyToFinish&&!(key==='poker'&&s.phase==='select'||key==='tausend'&&s.pendingArrange);if(key==='ballermann')mayThrow=s.timer.running&&(g.remaining(s)>0||!s.timer.lastThrowUsed);
+  controls='<div class="extra-controls">'+classicGameControls(key,s,disabled);
   if(key==='ballermann'){
    const expired=s.timer.running&&g.remaining(s)===0;
    if(expired)controls+='<p class="ind-help" data-extra-last-throw>'+(!s.timer.lastThrowUsed?'⏱ Zeit abgelaufen · Jetzt noch den letzten Wurf eingeben.':'Letzter Wurf gebucht · Mannschaft wird abgeschlossen.')+'</p><div class="ind-actions"><button type="button" '+disabled+' onclick="indAction(\'ballermann\',\'expire\')">'+(s.phase===0?'Ohne weiteren Wurf zur nächsten Mannschaft':'Ohne weiteren Wurf abschließen')+'</button></div>';

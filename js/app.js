@@ -3712,6 +3712,7 @@ function updateStrafenLimitInput() {
                                     
 // ── RENDER ──
 function renderAll() {
+  window.KCGameOverview?.renderHub();
   ensureSechstageState();
   ensureTableGames();
   recalcTeamExtras();
@@ -5522,7 +5523,7 @@ function deleteSpielFromKatalog(name) {
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
   getraenke: ['getraenke-statistik', 'getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-statistik', 'spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'parteienspiel', 'dreieuro', 'ebbeflut', 'hochsprung', 'spiele-einstellungen'],
+  spiele: ['spiele-statistik', 'spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'parteienspiel', 'dreieuro', 'ebbeflut', 'hochsprung', 'poker', 'pfaelzer', 'tausend', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info', 'notizen']
 };

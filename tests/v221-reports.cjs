@@ -53,8 +53,8 @@ test('all twenty panels retain exactly one common abort button after repeated la
  a.c.applyGameInputLayout(key);a.c.applyGameInputLayout(key);const buttons=[...panel.querySelectorAll('button')].filter(b=>/Spiel abbrechen/i.test(b.textContent));assert.equal(buttons.length,1,key);assert(buttons[0].hasAttribute('data-abort-game'),key);a.c.gameSetupState=old;
  }
 });
-test('game settings dropdown covers every game and navigation removes only administration sidebar children',async()=>{
- const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();a.c.renderGamePropertyTabs();const select=a.document.getElementById('game-property-select');assert(select);for(const key of a.c.KCSharedCore.games)assert(select.querySelector('option[value="'+key+'"]'),key);
+test('category dropdowns cover every game and navigation removes only administration sidebar children',async()=>{
+ const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();a.c.renderGamePropertyTabs();const select=a.document.getElementById('game-property-select');assert(select);const listed=new Set();for(const category of a.c.KCGameOverview.categories){a.c.showGamePropertyCategory(category.key);for(const option of select.querySelectorAll('option')){assert.equal(a.c.KCGameOverview.category(option.value),category.key);listed.add(option.value);}}for(const key of a.c.KCSharedCore.games)assert(listed.has(key),key);
  assert.equal(a.document.querySelector('[data-main="verwaltung"] .side-submenu'),null);a.c.toggleSideMenu('verwaltung');assert(!a.document.getElementById('main-verwaltung').classList.contains('hidden'));
  assert.equal(a.document.querySelectorAll('.quick-penalty-bar button[onclick="openFreeStrafeModal()"]' ).length,1);assert.equal(a.document.querySelectorAll('#tab-strafen-uebersicht button[onclick="openFreeStrafeModal()"]' ).length,0);
  assert(a.document.querySelector('#billing-panel-income #cash-standing-form'));
