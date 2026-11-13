@@ -17,10 +17,10 @@ test('plans respect first/last due dates, cash-year resets, Berlin date boundari
  assert.equal(overview.planned(order({interval:'weekly',startDate:'2026-01-01'}),{mode:'now',startAt:'2026-01-07T23:30:00Z'},'2026-01-15'),2000);
  for(const change of [{amountCents:0},{amountCents:1.5},{amountCents:10000001},{interval:'daily'},{startDate:'2026-02-30'},{endDate:'2026-01-01'},{id:'bad'}])assert(!overview.validOrder(order(change)));
 });
-test('planned contributions stay separate from confirmed payments and do not change the Soll cash balance or archives',()=>{
+test('monthly contributions book automatically without changing the Soll cash balance or archives',()=>{
  const entries=[{id:'a',category:'strafen',date:'2026-02-01',members:[{name:'A',total:50},{name:'B',total:10}],totals:{grandTotal:60},laneCostCents:500}],settings={startDate:'2026-01-01',openingCents:1000},orders={orders:[order(),order({id:'standing_b',personName:'B',amountCents:1500})]},before=JSON.stringify(entries);
- const m=overview.model(entries,settings,[],[{name:'A'},{name:'B'},{name:'Gast',isGuest:true}],orders,'2026-02-28');assert.equal(m.summary.balance,6500);assert.equal(m.open,6000);assert.equal(m.credit,0);assert.equal(m.planned,7000);assert.equal(m.rows.find(r=>r.name==='A').open,5000);assert.equal(m.rows.find(r=>r.name==='B').credit,0);assert.equal(JSON.stringify(entries),before);
- const doc=parseHTML(overview.table(m)).document;assert(doc.querySelector('caption'));assert(doc.querySelector('.cash-plan-open').textContent.includes('-50,00'));assert(overview.table(m).includes('Bisher bezahlt'));
+ const m=overview.model(entries,settings,[],[{name:'A'},{name:'B'},{name:'Gast',isGuest:true}],orders,'2026-02-28');assert.equal(m.summary.balance,6500);assert.equal(m.open,1000);assert.equal(m.credit,2000);assert.equal(m.planned,7000);assert.equal(m.rows.find(r=>r.name==='A').open,1000);assert.equal(m.rows.find(r=>r.name==='B').credit,2000);assert.equal(JSON.stringify(entries),before);
+ const doc=parseHTML(overview.table(m)).document;assert(doc.querySelector('caption'));assert(doc.querySelector('.cash-plan-open').textContent.includes('-10,00'));assert(overview.table(m).includes('Bisher bezahlt'));
  const evil=overview.model([],null,[],[{name:'<img onerror=x>'}],null,'2026-01-01');assert(!parseHTML(overview.table(evil)).document.querySelector('img'));
 });
 test('dashboard toggle is atomic, idempotent, conflict-safe and protected from generic state saves',async()=>{

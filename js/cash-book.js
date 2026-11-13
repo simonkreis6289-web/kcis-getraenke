@@ -90,7 +90,7 @@ function renderCashBook(){
   const start=!config?'Alle gespeicherten Abschlüsse':config.mode==='now'?'Seit '+new Date(config.startAt).toLocaleString('de-DE'):'Seit '+String(config.startDate).split('-').reverse().join('.');
   const actual=window.KCCashOverview?.model(ready?cashHistoryEntries:[],cashBookSettings,ready?cashExpenseEntries:[],persons,typeof cashAccountingOrders==='undefined'?null:cashAccountingOrders);
   box.replaceChildren();
-  for(const [label,value] of [['Kassenstand (Soll)',ready?cashBookCurrency(totals.balance):'Archiv wird benötigt'],['Startbetrag',cashBookCurrency(totals.opening)],['Abschlüsse seit Neustart',ready?cashBookCurrency(totals.income):'–'],['Ausgaben seit Neustart',ready?cashBookCurrency(totals.spending):'–'],['Gebuchte Einnahmen',ready?cashBookCurrency(actual?.paid||0):'–'],['Kassenstand (Ist)',ready?cashBookCurrency(actual?.summary.actualBalance||0):'–']]){
+  for(const [label,value] of [['Kassenstand (Soll)',ready?cashBookCurrency(totals.balance):'Archiv wird benötigt'],['Startbetrag',cashBookCurrency(totals.opening)],['Abschlüsse seit Neustart',ready?cashBookCurrency(totals.income):'–'],['Ausgaben seit Neustart',ready?cashBookCurrency(totals.spending):'–'],['Gebuchte Einnahmen',ready?(actual?.paymentHidden?'*':cashBookCurrency(actual?.paid||0)):'–'],['Kassenstand (Ist)',ready?(actual?.paymentHidden?'*':cashBookCurrency(actual?.summary.actualBalance||0)):'–']]){
     const item=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');
     small.textContent=label;strong.textContent=value;item.append(small,strong);box.append(item);
   }
@@ -113,7 +113,7 @@ function renderCashYearOverview(ready,start){
   const headings=matrix.columns.map(column=>{
     const number=(counters.get(column.date)||0)+1;counters.set(column.date,number);
     const day=/^\d{4}-\d{2}-\d{2}$/.test(column.date)?column.date.split('-').reverse().join('.'):'Datum unbekannt';
-    return '<th scope="col">'+esc(day)+(dates.get(column.date)>1?'<small>Abschluss '+number+'</small>':'')+(column.kind==='cancelled'?'<small>Ausgefallen</small>':'')+'</th>';
+    return '<th scope="col">'+esc(day)+(dates.get(column.date)>1?'<small>Abschluss '+number+'</small>':'')+(column.kind==='cancelled'?'<span class="cash-cancelled" title="Ausgefallen" aria-label="Ausgefallen">✕</span>':'')+'</th>';
   }).join('');
   const rows=matrix.rows.map(row=>'<tr'+(row.unassigned?' class="cash-year-unassigned"':'')+'><th scope="row">'+esc(row.name)+(row.isGuest?'<small>Gastkegler</small>':'')+'</th>'+row.values.map(value=>'<td>'+(value===null?'—':cashBookCurrency(value))+'</td>').join('')+'<td class="cash-year-sum">'+cashBookCurrency(row.total)+'</td></tr>').join('');
   box.innerHTML='<table class="cash-year-table"><caption class="cash-help">Abgerechnete Strafen und Monatsbeiträge je Person und Termin</caption><thead><tr><th scope="col">Name</th>'+headings+'<th scope="col">Gesamt</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th scope="row">Gesamt je Termin</th>'+matrix.columns.map(column=>'<td>'+cashBookCurrency(column.total)+'</td>').join('')+'<td>'+cashBookCurrency(matrix.income)+'</td></tr></tfoot></table>'+(matrix.rows.some(row=>row.unassigned)?'<p class="cash-help">„Nicht zugeordnet“ zeigt Beträge älterer Abschlüsse, für die keine passenden Einzelbeträge gespeichert sind.</p>':'');

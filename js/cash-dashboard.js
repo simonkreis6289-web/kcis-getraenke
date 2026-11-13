@@ -43,7 +43,7 @@
   }catch(e){html='<p>'+window.KCActivityReports.esc(e.message)+'</p>';}
   const stamp=JSON.stringify({html,summary,period});if(signature===stamp)return;signature=stamp;
   document.getElementById('cash-dashboard-summary').innerHTML=summary;area.innerHTML=html;document.getElementById('cash-dashboard-period').textContent=period;
-  const note=overlay.querySelector('.cash-dashboard-note');if(note)note.textContent=mode==='cash'?'Bisher bezahlt = gebuchte Eingänge. Rotes Minus = offen, positiver Saldo = Guthaben. Daueraufträge sind bis zur Buchung eine Planung.':mode==='summary'?'Vorschau des laufenden Kegelabends. Diese Anzeige löst keinen Abschluss und keine Buchung aus.':'Die Statistik berücksichtigt ausschließlich abgerechnete und nachgetragene Abende. Testabende zählen nicht.';
+  const note=overlay.querySelector('.cash-dashboard-note');if(note)note.textContent=mode==='cash'?'Bisher bezahlt = gebuchte Eingänge. Rotes Minus = offen, positiver Saldo = Guthaben. Daueraufträge werden automatisch zum Monatsersten gebucht.':mode==='summary'?'Vorschau des laufenden Kegelabends. Diese Anzeige löst keinen Abschluss und keine Buchung aus.':'Die Statistik berücksichtigt ausschließlich abgerechnete und nachgetragene Abende. Testabende zählen nicht.';
   schedule();
  }
  function update(state,club){

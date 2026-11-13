@@ -1,0 +1,59 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{parseHTML}=require('linkedom');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),copy=x=>x===undefined?undefined:JSON.parse(JSON.stringify(x)),evening='2026-11-12T19:00:00Z',rootPath='clubs/club/state/current',personPath=name=>'clubs/club/livePersons/'+encodeURIComponent(name.toLocaleLowerCase('de'));
+const src=read('tests/v215-shared-sync.cjs'),factory=src.slice(src.indexOf('function database('),src.indexOf("test('two devices increment"))+src.slice(src.indexOf('function fullApp('),src.indexOf("test('the complete app boots")).replace('KC_TABLET_MODE:false','KC_TABLET_MODE:true');
+const {database,initial,apiClient,context,fullApp}=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath',factory+';return {database,initial,apiClient,context,fullApp};')(read,copy,assert,vm,parseHTML,require,evening,rootPath,personPath);
+function core(){const c={Intl,Date,console,document:{addEventListener(){}},window:{}};c.window=c;vm.createContext(c);for(const p of ['birthdays','cash-book','payment-visibility','cash-overview'])vm.runInContext(read('js/'+p+'.js'),c);return c;}
+const c=core(),O=c.KCCashOverview,order=(extra={})=>({id:'standing_a',personName:'A',amountCents:6000,interval:'monthly',startDate:'2026-10-01',endDate:'',...extra});
+async function server(orders=[order()],payments=[]){const root=initial();root.cashStandingOrders={orders,payments,revision:1};const db=database({[rootPath]:root}),api=apiClient(db);api.KCCashOverview={...O,today:()=> '2026-11-13',settleOrders:s=>O.settleOrders(s,'2026-11-13')};await api.firestoreApi.initializeSharedState('club',{},'sync_auto_init');return {db,api};}
+test('monthly contributions post on the first, catch up missing months, and settle only once',()=>{
+ const source={orders:[order()],payments:[]},one=O.settleOrders(source,'2026-11-13');assert.deepEqual(copy(one.payments.map(p=>p.date)),['2026-10-01','2026-11-01']);assert.equal(one.payments.reduce((s,p)=>s+p.amountCents,0),12000);assert.equal(source.payments.length,0);assert.equal(O.settleOrders(one,'2026-11-30'),one);
+ const december=O.settleOrders(one,'2026-12-01');assert.equal(december.payments.length,3);assert.equal(december.payments.at(-1).date,'2026-12-01');assert.equal(december.payments.at(-1).incurredAt,'2026-11-30T23:00:00.000Z');
+ const stopped=O.settleOrders({orders:[order({startDate:'2026-02-17',endDate:'2026-03-15'})]},'2026-12-01');assert.deepEqual(copy(stopped.payments.map(p=>p.date)),['2026-02-01','2026-03-01']);assert.equal(O.midnight('2026-07-01'),'2026-06-30T22:00:00.000Z');
+});
+test('manual standing receipts cover their calendar month and avoid duplicate automatic contributions',()=>{
+ const source={orders:[order()],payments:[{id:'income_manual',personName:'A',amountCents:6000,date:'2026-10-19',description:'Dauerauftrag',kind:'standing',orderId:'standing_a'}]},one=O.settleOrders(source,'2026-11-13');assert.equal(one.payments.length,2);assert.equal(one.payments.filter(p=>p.date.startsWith('2026-10')).length,1);
+ const replaced=O.settleOrders({...one,orders:[order({id:'standing_recreated'})]},'2026-11-13');assert.equal(replaced.payments.length,2);
+});
+test('automatic income persists idempotently through retries and leaves drink and fine counters intact',async()=>{
+ const {db,api}=await server(),before=db.root().persons,ctx=context(db,'ensureCashStandingIncome'),request={opId:'cash_ensure'};
+ await api.firestoreApi.ensureCashStandingIncome('club',request,ctx);await api.firestoreApi.ensureCashStandingIncome('club',request,ctx);assert.equal(db.root().cashStandingOrders.payments.length,2);assert.equal(db.root().cashStandingOrders.revision,2);assert.deepEqual(db.root().persons,before);
+ const count=db.commits();await api.firestoreApi.ensureCashStandingIncome('club',{opId:'cash_again'},context(db,'ensureCashStandingIncome'));assert.equal(db.commits(),count);assert.equal(db.root().cashStandingOrders.payments.length,2);
+});
+test('changing a monthly amount freezes previously due months, while deleting an order keeps past payments',async()=>{
+ const {db,api}=await server();await api.firestoreApi.updateCashStandingOrders('club',{action:'upsert',order:order({amountCents:7000}),expectedRevision:1,opId:'cash_change'},context(db,'updateCashStandingOrders'));
+ const saved=db.root().cashStandingOrders;assert.deepEqual(saved.payments.map(p=>p.amountCents),[6000,6000]);const next=O.settleOrders(saved,'2026-12-01');assert.equal(next.payments.at(-1).amountCents,7000);
+ await api.firestoreApi.updateCashStandingOrders('club',{action:'delete',id:'standing_a',expectedRevision:2,opId:'cash_stop'},context(db,'updateCashStandingOrders'));assert.equal(db.root().cashStandingOrders.orders.length,0);assert.equal(db.root().cashStandingOrders.payments.length,2);
+});
+test('deleting an automatic payment records an exception and repeated reconciliation does not restore it',async()=>{
+ const {db,api}=await server();await api.firestoreApi.ensureCashStandingIncome('club',{opId:'cash_fill'},context(db,'ensureCashStandingIncome'));const p=db.root().cashStandingOrders.payments[0];
+ await api.firestoreApi.updateCashIncome('club',{action:'delete',id:p.id,expectedRevision:2,opId:'cash_skip'},context(db,'updateCashIncome'));
+ await api.firestoreApi.ensureCashStandingIncome('club',{opId:'cash_reload'},context(db,'ensureCashStandingIncome'));assert.equal(db.root().cashStandingOrders.payments.length,1);assert(db.root().cashStandingOrders.suppressedDues.includes('standing_a|2026-10'));
+ await assert.rejects(api.firestoreApi.updateCashIncome('club',{action:'upsert',payment:{...p,id:'income_duplicate',date:'2026-11-12'},expectedRevision:3,opId:'cash_duplicate'},context(db,'updateCashIncome')),/bereits/);
+});
+test('cash-year resets filter automatic receipts using Berlin midnight without reposting old dues',()=>{
+ const settled=O.settleOrders({orders:[order()]},'2026-11-13'),m=O.model([], {mode:'now',startAt:'2026-11-01T00:30:00Z',openingCents:0},[],[{name:'A'}],settled,'2026-11-13');assert.equal(m.paid,0);
+ const next=O.model([], {startDate:'2026-11-01'},[],[{name:'A'}],settled,'2026-11-13');assert.equal(next.paid,6000);assert.equal(settled.payments.length,2);
+});
+test('hidden payment status masks individual balances, receipts and aggregate cash status without changing totals',()=>{
+ const paid={id:'income_private',personName:'A',amountCents:12345,date:'2026-11-12',description:'Einzahlung',kind:'single'},people=[{name:'A',showPaymentStatus:false}],entries=[{id:'fine',category:'strafen',date:'2026-11-12',members:[{name:'A',total:88.88}]}];
+ const m=O.model(entries,null,[],people,{payments:[paid]},'2026-11-13'),html=O.table(m),doc=parseHTML(html).document;assert.equal(m.rows[0].paid,12345);assert.equal(m.rows[0].saldo,3457);assert.equal(m.summary.actualBalance,12345);assert.equal(doc.querySelector('.cash-year-paid').textContent,'*');assert.equal(doc.querySelector('.cash-plan-open').textContent,'*');assert(!doc.querySelector('.cash-negative,.cash-positive'));assert(!html.includes('123,45'));assert(!O.summary(m).includes('123,45'));assert.equal(c.KCPaymentVisibility.text('A','123,45 €',people),'*');
+});
+test('member checkbox persists through upload and reload and masks app payment views and the TV',async()=>{
+ const root=initial();root.persons[0].paid=7.89;const db=database({[rootPath]:root}),a=fullApp(db);await a.select();a.c.openMemberProfile('A');const check=a.document.getElementById('member-profile-show-payment');assert.equal(check.checked,true);check.checked=false;await a.c.saveMemberProfile();assert.equal(a.run('persons[0].showPaymentStatus'),false);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().persons[0].showPaymentStatus,false);
+ const b=fullApp(db);await b.select();b.c.openMemberProfile('A');assert.equal(b.document.getElementById('member-profile-show-payment').checked,false);b.c.closeMemberProfile();const p=b.run('persons[0]');b.c.openPaymentModal(p);assert.equal(b.document.getElementById('modal-paid-display').textContent,'*');assert.equal(b.document.getElementById('modal-open-display').textContent,'*');assert.equal(b.document.getElementById('modal-rest-display').textContent,'*');assert.equal(b.document.getElementById('modal-paid-input').value,'');
+ const grid=b.c.createAbrechGrid([p]);assert(!grid.textContent.includes('7,89'));assert(grid.textContent.includes('*'));await b.c.confirmPayment();assert.equal(b.run('persons[0].paid'),7.89);
+});
+test('cancelled dates have one inline cross and numeric classification preserves descriptive table text',()=>{
+ const m=O.model([{id:'x',date:'2026-10-02',kind:'cancelled',members:[{name:'A',total:50}]}],null,[],[{name:'A'}],{},'2026-11-13'),doc=parseHTML(O.table(m)).document;assert.equal(doc.querySelector('.cash-cancelled').textContent,'✕');assert(!doc.querySelector('thead').textContent.includes('Ausgefallen'));assert(doc.querySelector('.cash-cancelled').parentElement.textContent.includes('02.10.2026'));
+ const {document}=parseHTML('<html><body><table><tr><th>Name</th><th>Wert</th></tr><tr><td>Simon</td><td>-45,30 €</td></tr><tr><td>01.11.2026</td><td>Runde Bier</td></tr></table></body></html>'),f={window:{},document,MutationObserver:class{observe(){}},requestAnimationFrame:()=>1};vm.createContext(f);vm.runInContext(read('js/table-alignment.js'),f);const cells=document.querySelectorAll('td');assert(cells[0].classList.contains('kc-text-cell'));assert(cells[1].classList.contains('kc-numeric-cell'));assert(cells[2].classList.contains('kc-numeric-cell'));assert(cells[3].classList.contains('kc-text-cell'));
+});
+test('the TV masks hidden paid status and its aggregate while keeping the drink charges visible',()=>{
+ const s=read('tests/v185-regression.cjs'),a=s.indexOf('function context(html){'),b=s.indexOf('async function settle(',a),dashboard=new Function('read','vm','parseHTML','assert','require','let sequence=0;'+s.slice(a,b)+';return dashboard;')(read,vm,parseHTML,assert,require);
+ const root={persons:[{name:'A',present:true,left:true,paid:123.45,showPaymentStatus:false,drinks:{beer:2},strafen:{}}],DRINKS:[{key:'beer',label:'Bier'}],prices:{beer:2}};
+ const f=dashboard({root:()=>root,subscribe:(_club,fn)=>{fn(root);return ()=>{};}});f.c.window.KCPaymentVisibility=c.KCPaymentVisibility;f.c.window.dashboardTest.connect('club','Club');const text=f.document.getElementById('drinks').textContent;assert(text.includes('*'));assert(!text.includes('123,45'));assert(!text.includes('✓'));assert.equal(f.document.getElementById('drinks-paid-total').textContent,'*');assert(f.document.getElementById('drinks-total').textContent.includes('4,00'));
+});
+test('opening the real app automatically catches up monthly dues and reload keeps a single receipt',async()=>{
+ const root=initial();root.cashStandingOrders={orders:[order({startDate:'2026-11-01'})],payments:[],revision:1};const db=database({[rootPath]:root}),a=fullApp(db);await a.select();db.deliver();
+ for(let i=0;i<30;i++)await new Promise(r=>setImmediate(r));assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().cashStandingOrders.payments.length,1);assert.equal(db.root().cashStandingOrders.payments[0].date,'2026-11-01');
+ const b=fullApp(db);await b.select();db.deliver();for(let i=0;i<10;i++)await new Promise(r=>setImmediate(r));assert(await b.c.KCSharedSync.waitForUpload());assert.equal(db.root().cashStandingOrders.payments.length,1);
+});

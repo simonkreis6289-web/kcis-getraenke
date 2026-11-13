@@ -27,10 +27,27 @@
 #cash-dashboard-scroll{overflow:auto}#cash-dashboard-scroll table caption{padding:5px}
 .cash-dashboard-summary:empty{display:none}.evening-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}.evening-results article{border:1px solid #c1cee1;border-radius:10px;padding:12px;background:#f2f6fc}.evening-results article>*{display:block;margin-bottom:5px}
 #evening-summary-preview .cash-dashboard-summary{margin-bottom:16px}
-.billing-tabs.club-info-tabs{border:0;padding:0;gap:8px;flex-wrap:wrap}.billing-tabs.club-info-tabs button{padding:9px 18px;min-height:40px;border:1px solid #b7c6df;border-radius:9px;background:#f2f6fc;color:#233c65;font-weight:700}.billing-tabs.club-info-tabs button[aria-selected=true]{background:#253d6a;color:white}
+
 .round-btn{min-width:250px;padding-inline:32px!important}
 .game-properties-tabs>button{display:none!important}.game-properties-tabs{display:block!important}.game-settings-select{display:grid;gap:6px;max-width:420px;font-weight:700}.game-settings-select select{width:100%;padding:12px;border:1px solid #afc2df;border-radius:10px;background:#f2f6fc;color:#223b63;font:700 15px 'DM Sans',sans-serif}
 .start-review-list{display:grid;gap:8px;margin:12px 0}.start-review-list>div{display:flex;justify-content:space-between;gap:20px;padding:9px 12px;background:#f1f5fb;border-radius:8px}.start-review-list dt{color:#52647f}.start-review-list dd{margin:0;font-weight:800;text-align:right}.start-review-return{position:fixed;bottom:20px;right:25px;z-index:25000;box-shadow:0 5px 25px #142c5250;padding:14px 22px!important}
 @media(max-width:700px){.cash-year-table{font-size:12px}.cash-year-table th,.cash-year-table td{padding:5px!important}.cash-year-table tr>:first-child{width:20%}.activity-table{min-width:650px}.cash-year-scroller{overflow:auto}.round-btn{min-width:180px}}
 
-.kc-admin-tabs{gap:8px!important;border:0!important;max-width:none!important;padding:0!important;margin-bottom:14px!important}.kc-admin-tab{border:1px solid #b7c6df!important;border-radius:9px!important;background:#f2f6fc!important;color:#233c65!important;padding:9px 18px!important;min-height:40px;font-weight:700!important}.kc-admin-tab.active{background:#253d6a!important;color:#fff!important;border-color:#253d6a!important}
+/* V222: schlankes Menüband statt großer Karten-Buttons. */
+.kc-admin-tabs,.billing-tabs.club-info-tabs{display:flex;flex-wrap:nowrap;gap:3px;border:0;border-bottom:2px solid var(--kc-line,#293d60);border-radius:0;padding:0 0 4px;margin:0 0 16px;max-width:none;overflow-x:auto}
+.kc-admin-tabs .kc-admin-tab,.billing-tabs.club-info-tabs button{flex:0 0 auto;min-width:0;min-height:36px;appearance:none;border:1px solid transparent;border-radius:7px 7px 0 0;padding:8px 12px;background:transparent;color:var(--text,#203655);font:700 12px 'DM Sans',sans-serif;white-space:nowrap;cursor:pointer}
+.kc-admin-tabs .kc-admin-tab:hover,.billing-tabs.club-info-tabs button:hover{background:#eaf0f8}
+.kc-admin-tabs .kc-admin-tab.active,.billing-tabs.club-info-tabs button[aria-selected=true]{border-color:#b7c6df;border-bottom:3px solid #efa91d;background:var(--surface,#fff);color:var(--text,#203655)}
+.quick-penalty-bar button{padding:7px 5px;font-size:clamp(10px,.85vw,13px);white-space:nowrap;hyphens:none;overflow-wrap:normal}
+.cash-cancelled{display:inline;margin-left:6px;color:#c8203b;font-size:.9em;font-weight:900;vertical-align:baseline}.cash-auto-badge{padding:7px 10px;border-radius:8px;background:#e6f4ed;color:#206345;font-size:12px;white-space:nowrap}
+.profile-payment-choice{display:flex!important;align-items:center;gap:10px}.profile-payment-choice input{width:20px!important;min-height:20px!important;height:20px}
+#tab-spiele-statistik .cash-year-heading{justify-content:flex-start;gap:10px}
+#tab-spiele-statistik .cash-year-heading button,#tab-getraenke-statistik button,#tab-strafen-statistik>button{min-height:38px;padding:8px 14px;border:1px solid #b7c6df;border-radius:8px;font:700 13px 'DM Sans',sans-serif;cursor:pointer}
+/* Zahlenwerte zentrieren; Textzellen kennzeichnet der gemeinsame Tabellenhelfer. */
+table td:not(.kc-text-cell),table th:not(:first-child){text-align:center!important}table td.kc-numeric-cell,table th.kc-numeric-cell{text-align:center!important}
+table td.kc-text-cell,table th.kc-text-cell{text-align:left!important}
+.cash-year-table tr>:first-child,.cash-year-table caption{text-align:left!important}.cash-masked{color:#203655!important}
+
+:root table td.kc-numeric-cell,:root table th.kc-numeric-cell{text-align:center!important}:root table td.kc-text-cell{text-align:left!important}
+
+table input[type="number"]{text-align:center}

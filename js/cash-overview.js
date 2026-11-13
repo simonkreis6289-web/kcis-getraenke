@@ -7,6 +7,30 @@
  function day(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s)))return null;const d=new Date(s+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===s&&d.getUTCFullYear()>=1900&&d.getUTCFullYear()<=2200?d:null;}
  function today(now=new Date()){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now),v=t=>p.find(x=>x.type===t).value;return v('year')+'-'+v('month')+'-'+v('day');}
  function validOrder(o){return !!(o&&/^standing_[a-zA-Z0-9_-]{1,100}$/.test(o.id)&&typeof o.personName==='string'&&o.personName.trim()&&o.personName.length<=150&&Number.isSafeInteger(o.amountCents)&&o.amountCents>0&&o.amountCents<=10000000&&Object.hasOwn(intervals,o.interval)&&day(o.startDate)&&(!o.endDate||day(o.endDate)&&o.endDate>=o.startDate));}
+ function dueKey(orderId,date){return orderId+'|'+date.slice(0,7);}
+ function midnight(date){
+  const utc=Date.parse(date+'T00:00:00Z'),parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(utc)),v=t=>Number(parts.find(p=>p.type===t).value);
+  const shown=Date.UTC(v('year'),v('month')-1,v('day'),v('hour'),v('minute'),v('second'));return new Date(utc-(shown-utc)).toISOString();
+ }
+ function settleOrders(source={},until=today()){
+  if(!day(until))throw Error('Ungültiger Buchungstag');
+  const payments=(source.payments||[]).slice(),blocked=new Set(source.suppressedDues||[]),covered=new Set(payments.filter(p=>p.kind==='standing').map(p=>key(p.personName)+'|'+String(p.date).slice(0,7)));let changed=false;
+  for(const o of (source.orders||[]).filter(validOrder)){
+   // Monatsbeiträge haben stets den Ersten als Buchungstag. Andere Alt-Rhythmen
+   // bleiben gespeichert und werden beim nächsten Bearbeiten auf monatlich umgestellt.
+   if(o.interval!=='monthly')continue;
+   const start=day(o.startDate),last=o.endDate&&o.endDate<until?o.endDate:until;
+   for(let i=0;i<3612;i++){
+    const date=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+i,1)).toISOString().slice(0,10);if(date>last)break;
+    const monthKey=key(o.personName)+'|'+date.slice(0,7);
+    if(blocked.has(dueKey(o.id,date))||covered.has(monthKey))continue;
+    const id='income_auto_'+o.id.slice(9)+'_'+date;
+    if(payments.some(p=>p.id===id))continue;
+    payments.push({id,personName:o.personName,amountCents:o.amountCents,date,incurredAt:midnight(date),description:'Dauerauftrag · '+date.slice(0,7).split('-').reverse().join('.'),kind:'standing',orderId:o.id,automatic:true});covered.add(monthKey);changed=true;
+   }
+  }
+  return changed?{...source,payments}:source;
+ }
  function planned(o,settings,until=today()){
   if(!validOrder(o)||!day(until))return 0;
   const start=day(o.startDate),rule=intervals[o.interval],lower=settings?.mode==='now'&&Number.isFinite(Date.parse(settings.startAt))?today(new Date(settings.startAt)):settings?.startDate||'',upper=o.endDate&&o.endDate<until?o.endDate:until;let count=0;
@@ -18,18 +42,19 @@
   return count*o.amountCents;
  }
  function model(entries,settings,expenses,people,orders,until=today()){
+  orders=settleOrders(orders||{},until);
   const book=window.KCCashBook,list=(orders?.orders||[]).filter(validOrder),payments=(orders?.payments||[]).filter(p=>validPayment(p)&&p.date<=until),selected=book.periodEntries(payments,settings),m=book.matrix(entries,settings,[...people,...list.map(o=>({name:o.personName})),...selected.filter(p=>p.personName).map(p=>({name:p.personName}))]),s=book.statement(entries,settings,expenses);
-  const rows=m.rows.map(r=>{const plan=r.isGuest||r.unassigned?0:list.filter(o=>key(o.personName)===key(r.name)).reduce((sum,o)=>sum+planned(o,settings,until),0),paid=r.isGuest||r.unassigned?0:selected.filter(p=>p.personName&&key(p.personName)===key(r.name)).reduce((sum,p)=>sum+p.amountCents,0);return {...r,plan,paid,saldo:paid-r.total,open:Math.max(0,r.total-paid),credit:Math.max(0,paid-r.total)};});
+  const rows=m.rows.map(r=>{const plan=r.isGuest||r.unassigned?0:list.filter(o=>key(o.personName)===key(r.name)).reduce((sum,o)=>sum+planned(o,settings,until),0),paid=r.isGuest||r.unassigned?0:selected.filter(p=>p.personName&&key(p.personName)===key(r.name)).reduce((sum,p)=>sum+p.amountCents,0);return {...r,paymentVisible:!people.some(p=>key(p.name)===key(r.name)&&p.showPaymentStatus===false),plan,paid,saldo:paid-r.total,open:Math.max(0,r.total-paid),credit:Math.max(0,paid-r.total)};});
   const paid=selected.reduce((sum,p)=>sum+p.amountCents,0);
-  return {...m,rows,summary:{...s,received:paid,actualBalance:s.opening+paid-s.spending},paid,saldo:rows.reduce((sum,r)=>sum+r.saldo,0),planned:rows.reduce((a,r)=>a+r.plan,0),open:rows.reduce((a,r)=>a+r.open,0),credit:rows.reduce((a,r)=>a+r.credit,0),until,period:!settings?'Alle gespeicherten Abschlüsse':settings.mode==='now'?'Seit '+new Date(settings.startAt).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'Seit '+settings.startDate.split('-').reverse().join('.')};
+  return {...m,rows,paymentHidden:rows.some(r=>r.paymentVisible===false),summary:{...s,received:paid,actualBalance:s.opening+paid-s.spending},paid,saldo:rows.reduce((sum,r)=>sum+r.saldo,0),planned:rows.reduce((a,r)=>a+r.plan,0),open:rows.reduce((a,r)=>a+r.open,0),credit:rows.reduce((a,r)=>a+r.credit,0),until,period:!settings?'Alle gespeicherten Abschlüsse':settings.mode==='now'?'Seit '+new Date(settings.startAt).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'Seit '+settings.startDate.split('-').reverse().join('.')};
  }
  function table(m){
   const seen=new Map(),counts=new Map();for(const c of m.columns)seen.set(c.date,(seen.get(c.date)||0)+1);
-  const heads=m.columns.map(c=>{const n=(counts.get(c.date)||0)+1;counts.set(c.date,n);return '<th scope="col">'+esc(c.date.split('-').reverse().join('.'))+(seen.get(c.date)>1?'<small>Abschluss '+n+'</small>':'')+(c.kind==='cancelled'?'<small>Ausgefallen</small>':'')+'</th>';}).join('');
-  const rows=m.rows.map(r=>'<tr'+(r.unassigned?' class="cash-year-unassigned"':'')+'><th scope="row">'+esc(r.name)+(r.isGuest?'<small>Gastkegler</small>':'')+'</th>'+r.values.map(v=>'<td>'+(v===null?'—':euro(v))+'</td>').join('')+'<td class="cash-year-sum">'+euro(r.total)+'</td><td class="cash-year-paid">'+euro(r.paid)+'</td><td class="cash-plan-open '+(r.saldo<0?'cash-negative':'cash-positive')+'">'+euro(r.saldo)+'</td></tr>').join('');
-  return '<table class="cash-year-table"><caption>Abgerechnete Strafen und Monatsbeiträge je Person und Termin</caption><thead><tr><th scope="col">Name</th>'+heads+'<th scope="col">Gesamt</th><th scope="col">Bisher bezahlt</th><th scope="col">Bezahlstatus<small>− offen / + Guthaben</small></th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th scope="row">Gesamt je Termin</th>'+m.columns.map(c=>'<td>'+euro(c.total)+'</td>').join('')+'<td>'+euro(m.income)+'</td><td>'+euro(m.rows.reduce((s,r)=>s+r.paid,0))+'</td><td>'+euro(m.saldo)+'</td></tr></tfoot></table>';
+  const heads=m.columns.map(c=>{const n=(counts.get(c.date)||0)+1;counts.set(c.date,n);return '<th scope="col">'+esc(c.date.split('-').reverse().join('.'))+(seen.get(c.date)>1?'<small>Abschluss '+n+'</small>':'')+(c.kind==='cancelled'?'<span class="cash-cancelled" title="Ausgefallen" aria-label="Ausgefallen">✕</span>':'')+'</th>';}).join('');
+  const rows=m.rows.map(r=>'<tr'+(r.unassigned?' class="cash-year-unassigned"':'')+'><th scope="row">'+esc(r.name)+(r.isGuest?'<small>Gastkegler</small>':'')+'</th>'+r.values.map(v=>'<td>'+(v===null?'—':euro(v))+'</td>').join('')+'<td class="cash-year-sum">'+euro(r.total)+'</td><td class="cash-year-paid">'+(r.paymentVisible===false?'*':euro(r.paid))+'</td><td class="cash-plan-open '+(r.paymentVisible===false?'cash-masked':r.saldo<0?'cash-negative':'cash-positive')+'">'+(r.paymentVisible===false?'*':euro(r.saldo))+'</td></tr>').join('');
+  return '<table class="cash-year-table"><caption>Abgerechnete Strafen und Monatsbeiträge je Person und Termin</caption><thead><tr><th scope="col">Name</th>'+heads+'<th scope="col">Gesamt</th><th scope="col">Bisher bezahlt</th><th scope="col">Bezahlstatus<small>− offen / + Guthaben</small></th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><th scope="row">Gesamt je Termin</th>'+m.columns.map(c=>'<td>'+euro(c.total)+'</td>').join('')+'<td>'+euro(m.income)+'</td><td>'+(m.paymentHidden?'*':euro(m.rows.reduce((s,r)=>s+r.paid,0)))+'</td><td>'+(m.paymentHidden?'*':euro(m.saldo))+'</td></tr></tfoot></table>';
  }
- function summary(m){return [['Kassenstand (Soll)',m.summary.balance],['Startbetrag',m.summary.opening],['Strafen & Beiträge',m.summary.income],['Ausgaben',m.summary.spending],['Bisher eingegangen',m.paid],['Kassenstand (Ist)',m.summary.actualBalance]].map(([label,value])=>'<div><span>'+esc(label)+'</span><strong>'+euro(value)+'</strong></div>').join('');}
+ function summary(m){return [['Kassenstand (Soll)',m.summary.balance],['Startbetrag',m.summary.opening],['Strafen & Beiträge',m.summary.income],['Ausgaben',m.summary.spending],['Bisher eingegangen',m.paid],['Kassenstand (Ist)',m.summary.actualBalance]].map(([label,value])=>'<div><span>'+esc(label)+'</span><strong>'+((label==='Bisher eingegangen'||label==='Kassenstand (Ist)')&&m.paymentHidden?'*':euro(value))+'</strong></div>').join('');}
  function validPayment(p){return !!(p&&/^income_[a-zA-Z0-9_-]{1,120}$/.test(p.id)&&typeof p.personName==='string'&&p.personName.length<=150&&Number.isSafeInteger(p.amountCents)&&p.amountCents>0&&p.amountCents<=10000000&&day(p.date)&&typeof p.description==='string'&&p.description.trim()&&p.description.length<=300&&['single','standing'].includes(p.kind)&&(!p.orderId||/^standing_[a-zA-Z0-9_-]{1,100}$/.test(p.orderId)));}
- window.KCCashOverview=Object.freeze({intervals,validOrder,validPayment,planned,model,table,summary,today,esc,euro,key});
+ window.KCCashOverview=Object.freeze({intervals,validOrder,validPayment,planned,settleOrders,dueKey,midnight,model,table,summary,today,esc,euro,key});
 })();

@@ -3537,7 +3537,7 @@ body.view-only #clubBackBtn {
 /* ── QUICK BAR EINHEITLICH ── */
 .quick-penalty-bar {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 8px;
   align-items: stretch;
   justify-content: start;
@@ -3583,7 +3583,7 @@ body.view-only #clubBackBtn {
 }
 
 @media (max-width: 760px) {
-  .quick-penalty-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .quick-penalty-bar { grid-template-columns: repeat(8, minmax(96px, 1fr)); overflow-x:auto; padding:8px; gap:5px; }
 }
 
 .game-hub-grid {
