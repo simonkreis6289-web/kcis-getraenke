@@ -2356,7 +2356,6 @@ function getDrinksSnapshot() {
       roundExtra: p.roundExtra || 0,
       total: calcTotal(p),
       paid: p.paid || 0,
-      showPaymentStatus:p.showPaymentStatus!==false,
       left: !!p.left,
       leftAt: p.leftAt || '',
       rounds: Array.isArray(p.rounds) ? [...p.rounds] : []
@@ -2591,7 +2590,7 @@ async function generateDrinksPDF(snapshot) {
       formatEuro(p.teamExtra),
       formatEuro(p.roundExtra),
       formatEuro(p.total),
-      p.showPaymentStatus===false?'*':formatEuro(p.paid)
+      formatEuro(p.paid)
     ].forEach((value, idx) => {
       drawCell(x, top, sumWidth, rowHeight, {
         bottom: true,
@@ -2621,7 +2620,7 @@ async function generateDrinksPDF(snapshot) {
   doc.text(`Strafen gesamt: ${formatEuro(totalStrafen)}`, margin, y); y += 6;
   doc.text(`Runden gesamt: ${formatEuro(totalRunden)}`, margin, y); y += 6;
   doc.text(`Abrechnung gesamt: ${formatEuro(totalGesamt)}`, margin, y); y += 6;
-  doc.text(`Bezahlt gesamt: ${(snapshot.persons||[]).some(p=>p.showPaymentStatus===false)?'*':formatEuro(totalBezahlt)}`, margin, y);
+  doc.text(`Bezahlt gesamt: ${formatEuro(totalBezahlt)}`, margin, y);
 
   y += 10;
 
@@ -3791,9 +3790,9 @@ function updateStats() {
 
     if (statT1Label) statT1Label.textContent = groupSettings.T1?.name || 'Wand';
     if (statT2Label) statT2Label.textContent = groupSettings.T2?.name || 'TV';
-  document.getElementById('stat-offen').textContent = window.KCPaymentVisibility?.hidden(present)?'*':euros(offen);
-  document.getElementById('stat-bezahlt').textContent = window.KCPaymentVisibility?.hidden(present)?'*':euros(bezahlt);
-  document.getElementById('stat-ueberschuss').textContent = window.KCPaymentVisibility?.hidden(present)?'*':euros(ueberschuss);
+  document.getElementById('stat-offen').textContent = euros(offen);
+  document.getElementById('stat-bezahlt').textContent = euros(bezahlt);
+  document.getElementById('stat-ueberschuss').textContent = euros(ueberschuss);
   document.getElementById('stat-gesamt').textContent = euros(gesamt);
 
     const gosseKingEl = document.getElementById('stat-gosseking');
@@ -4001,8 +4000,8 @@ function renderDrinkRows(list, body, startIndex = 0) {
       <td class="total-cell">
         ${calcTotal(p).toFixed(2).replace('.', ',')}€
       </td>
-      <td class="paid-cell ${window.KCPaymentVisibility?.visible(p)===false?'':paid > 0 ? '' : 'zero'}">
-        ${window.KCPaymentVisibility?.visible(p)===false?'*':paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}
+      <td class="paid-cell ${paid > 0 ? '' : 'zero'}">
+        ${paid > 0 ? paid.toFixed(2).replace('.', ',') + '€' : '—'}
       </td>
     `;
 
@@ -4880,7 +4879,6 @@ function createAbrechGrid(list) {
     const rest = getPersonOpenAmount(p);
     const over = getPersonOverpayAmount(p);
     const fullyPaid = isFullyPaid(p);
-    const paymentVisible=window.KCPaymentVisibility?.visible(p)!==false;
     const left = !!p.left;
 
 const c = document.createElement('div');
@@ -4890,7 +4888,6 @@ const abrechAvatarHtml = getAvatarHtml(p.name)
 let statusClass = ' open';
 if (fullyPaid) statusClass = ' paid';
 if (left) statusClass = ' left';
-if(!paymentVisible&&!left)statusClass='';
 
 c.className = 'abrech-card '
   + (p.tisch || '').toLowerCase()
@@ -4923,10 +4920,10 @@ c.className = 'abrech-card '
 </div>
       <div class="abrech-tisch">${p.tisch === 'T1' ? getGroupLabel('T1') : p.tisch === 'T2' ? getGroupLabel('T2') : 'Kein Team'}</div>
       <div class="abrech-total">${total.toFixed(2).replace('.', ',')}€</div>
-      ${paymentVisible?`${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
+      ${pd > 0 ? `<div class="abrech-paid-info">✓ Bezahlt: ${pd.toFixed(2).replace('.', ',')}€</div>` : ''}
       ${rest > 0.01 ? `<div class="abrech-rest">Noch offen: ${rest.toFixed(2).replace('.', ',')}€</div>` : ''}
       ${over > 0.01 ? `<div class="abrech-ueberschuss">Überschuss: ${over.toFixed(2).replace('.', ',')}€</div>` : ''}
-      ${fullyPaid ? '<div class="abrech-paid-info">✅ Komplett bezahlt</div>' : ''}`:'<div class="abrech-paid-info">*</div>'}
+      ${fullyPaid ? '<div class="abrech-paid-info">✅ Komplett bezahlt</div>' : ''}
       ${left ? `<div class="abrech-left-info">🚪 Weg seit ${formatTime(p.leftAt)}</div>` : ''}
       <div class="abrech-items">${items}${teamLine}${roundLines}${!items && !teamLine && !roundLines ? '<span style="color:var(--muted);font-size:0.7rem">Nichts bestellt</span>' : ''}</div>
       <div class="tap-hint">${left && p.leftAt ? `Weg markiert: ${formatDateTime(p.leftAt)}` : 'Antippen → Zahlung eintragen'}</div>
@@ -4988,9 +4985,9 @@ function renderAbrechnung() {
   const ueberschuss = present.reduce((s, p) => s + getPersonOverpayAmount(p), 0);
   const gesamt = present.reduce((s, p) => s + calcTotal(p), 0);
 
-  document.getElementById('sum-offen').textContent = window.KCPaymentVisibility?.hidden(present)?'*':euros(offen);
-  document.getElementById('sum-bezahlt').textContent = window.KCPaymentVisibility?.hidden(present)?'*':euros(bezahlt);
-  document.getElementById('sum-ueberschuss').textContent = window.KCPaymentVisibility?.hidden(present)?'*':euros(ueberschuss);
+  document.getElementById('sum-offen').textContent = euros(offen);
+  document.getElementById('sum-bezahlt').textContent = euros(bezahlt);
+  document.getElementById('sum-ueberschuss').textContent = euros(ueberschuss);
   document.getElementById('sum-gesamt').textContent = euros(gesamt);
 
   const members = getPresentMembers().sort((a, b) => {
@@ -5089,11 +5086,10 @@ function openPaymentModal(p) {
   document.getElementById('modal-name').textContent = p.name;
   document.getElementById('modal-due').textContent = total.toFixed(2).replace('.', ',') + ' €';
   document.getElementById('modal-total-display').textContent = euros(total);
-  document.getElementById('modal-paid-display').textContent = window.KCPaymentVisibility?.text(p,euros(paid))||euros(paid);
-  document.getElementById('modal-open-display').textContent = window.KCPaymentVisibility?.text(p,euros(open))||euros(open);
+  document.getElementById('modal-paid-display').textContent = euros(paid);
+  document.getElementById('modal-open-display').textContent = euros(open);
   document.getElementById('modal-leftat-display').textContent = p.leftAt ? formatDateTime(p.leftAt) : '—';
-  document.getElementById('modal-paid-input').value = window.KCPaymentVisibility?.visible(p)===false?'':paid > 0 ? paid.toFixed(2) : '';
-  document.getElementById('modal-paid-input').placeholder=window.KCPaymentVisibility?.visible(p)===false?'*':'0,00';
+  document.getElementById('modal-paid-input').value = paid > 0 ? paid.toFixed(2) : '';
   document.getElementById('modal-left-check').checked = !!p.left;
 
   renderModalTeamspielBreakdown(p);
@@ -5111,7 +5107,6 @@ function closeModal() {
 
 function updateModalRest() {
   if (!modalPerson) return;
-  if(window.KCPaymentVisibility?.visible(modalPerson)===false){const box=document.getElementById('modal-rest-display');box.textContent='*';box.className='modal-rest';return;}
   const total = calcTotal(modalPerson);
   const paid = parseFloat(document.getElementById('modal-paid-input').value) || 0;
   const diff = total - paid;
@@ -5199,7 +5194,7 @@ async function confirmPayment() {
         (
           parseFloat(
             String(
-              paidInput?.value || (window.KCPaymentVisibility?.visible(person)===false?String(oldPaid):'0')
+              paidInput?.value || '0'
             ).replace(',', '.')
           ) || 0
         ) * 100

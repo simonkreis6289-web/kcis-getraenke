@@ -51,3 +51,14 @@ table td.kc-text-cell,table th.kc-text-cell{text-align:left!important}
 :root table td.kc-numeric-cell,:root table th.kc-numeric-cell{text-align:center!important}:root table td.kc-text-cell{text-align:left!important}
 
 table input[type="number"]{text-align:center}
+
+/* Kompakte Aktionen für gespeicherte Einnahmen. */
+.cash-income-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+#cash-income-list .cash-income-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;min-width:96px;padding:7px 12px;border:1px solid #b0c2dc;border-radius:9px;background:#eef4fc;color:#24466f;font:700 12px 'DM Sans',sans-serif;box-shadow:0 2px 3px #1734570a;cursor:pointer;transition:background .15s,border-color .15s}
+#cash-income-list .cash-income-delete{border-color:#e4b5bd;background:#fff0f2;color:#aa263d}
+#cash-income-list .cash-income-edit:hover{background:#dceafa;border-color:#779ac6}
+#cash-income-list .cash-income-delete:hover{background:#fce0e5;border-color:#ce7f8e}
+#cash-income-list .cash-income-action:focus-visible{outline:3px solid #efa91d;outline-offset:2px}
+#cash-income-list .cash-income-action:disabled{opacity:.5;cursor:default}
+#cash-income-list .cash-income-action-cell{height:auto;white-space:normal!important;padding:6px 8px!important}
+@media(max-width:700px){#cash-income-list .cash-income-action{min-width:80px;min-height:38px;padding:7px 8px;font-size:11px}.cash-income-actions{gap:5px}}
