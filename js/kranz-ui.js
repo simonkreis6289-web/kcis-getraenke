@@ -6,7 +6,7 @@
   function state(key){
     if(['haushoch','haustief'].includes(key))return hausState(key==='haushoch'?'hoch':'tief');
     if(['sechstage','blackjack','gluecksspirale'].includes(key))return key==='sechstage'?sechstageState:key==='blackjack'?blackjackState:gluecksspiraleState;
-    if(['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key))return indGet(key);
+    if(['siebener','hindernis',...(window.KCExtraGames?.keys||[])].includes(key))return indGet(key);
     // Klassische Skripte deklarieren die Zustände mit let, nicht als window-Feld.
     return ({tannenbaum:()=>tannenbaumState,darts:()=>dartsState,lotterie:()=>lotterieState,tiberius:()=>tiberiusState,mensch:()=>menschState,plusminus:()=>plusminusState,sichern:()=>sichernState,fuchsjagd:()=>fuchsjagdState,tor:()=>torState})[key]?.();
   }

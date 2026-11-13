@@ -14,7 +14,7 @@
   if(s.gameKey==='parteienspiel'){
    const groups={T1:s.players.filter(n=>ctx.people.find(p=>p.name===n)?.tisch==='T1'),T2:s.players.filter(n=>ctx.people.find(p=>p.name===n)?.tisch==='T2')};
    if(groups.T1.length+groups.T2.length!==s.players.length||!groups.T1.length||!groups.T2.length)throw Error('Bitte alle Kegler beiden Gruppen zuordnen.');
-   s.participantTeams=groups;s.teamNames={T1:ctx.groups?.T1?.name||'Wand',T2:ctx.groups?.T2?.name||'TV'};s.teams=['T1','T2'].map(id=>({id,name:s.teamNames[id],players:groups[id]}));s.scores={T1:0,T2:0};s.roundTotals={T1:0,T2:0};s.roundResults=[];
+   s.participantTeams=groups;s.teamNames={T1:ctx.groups?.T1?.name||'Wand',T2:ctx.groups?.T2?.name||'TV'};s.teams=['T1','T2'].map(id=>({id,name:s.teamNames[id],players:groups[id]}));s.scores={T1:0,T2:0};s.roundTotals={T1:0,T2:0};s.roundResults=[];s.partyAlternating=true;s.teamOrder=[s.startTeam,s.startTeam==='T1'?'T2':'T1'];
   }else if(s.gameKey==='dreieuro')s.scores=Object.fromEntries(s.players.map(n=>[n,s.config.startCents]));
   else if(s.gameKey==='ebbeflut')s.tide='normal';
   else if(s.gameKey==='hochsprung'){
@@ -65,7 +65,7 @@
     s.scores[e.name]+=result;if(physical&&e.pins===3)s.tide='ebbe';else if(physical&&e.pins===5)s.tide='normal';e.tideAfter=s.tide;s.rows[e.name].push({pins:e.pins,kind:e.kind,result,factor});
    }
    s.index++;
-   if(s.index===s.players.length){
+   if(s.index===(key==='parteienspiel'&&s.partyAlternating?2*Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length):s.players.length)){
     s.index=0;
     if(key==='parteienspiel'){
      const difference=s.roundTotals.T1-s.roundTotals.T2,winner=difference>0?'T1':difference<0?'T2':'';if(winner)s.scores[winner]+=Math.abs(difference);
@@ -90,7 +90,7 @@
  function settings(key,c){return clone(validSettings(key,c)?{...defaults(key),...c}:defaults(key));}
  function empty(gameKey){return {gameKey,id:'',revision:0,active:false,finished:false,readyToFinish:false,players:[],index:0,round:1,turn:[],scores:{},rows:{},history:[],bookings:[],commands:[],receipts:[],winners:[],loserGroups:[],finishPenalties:[],config:defaults(gameKey),startedAt:'',eveningStartedAt:'',previous:null,participantTeams:null,teamNames:null,teamOrder:[],phase:0,teamIndexes:{T1:0,T2:0},timer:{running:false,endsAt:0,remainingMs:0}};}
  function team(s){return s.teamOrder[s.phase]||'';}
- function current(s){if(s.gameKey==='ballermann'){const t=team(s),names=s.participantTeams?.[t]||[];return names[(s.teamIndexes[t]||0)%names.length]||'';}return s.players[s.index]||'';}
+ function current(s){if(s.gameKey==='parteienspiel'&&s.partyAlternating){const side=s.teamOrder[s.index%2],names=s.participantTeams[side],slots=Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length);return names[((s.round-1)*slots+Math.floor(s.index/2))%names.length]||'';}if(s.gameKey==='ballermann'){const t=team(s),names=s.participantTeams?.[t]||[];return names[(s.teamIndexes[t]||0)%names.length]||'';}return s.players[s.index]||'';}
  function remaining(s,now=window.KCSharedClock?.now()??Date.now()){return Math.max(0,s.timer.running?s.timer.endsAt-now:s.timer.remainingMs);}
  function start(req,ctx){
   const names=req.players,active=p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly;
@@ -103,7 +103,8 @@
    if(groups.T1.length+groups.T2.length!==names.length||!groups.T1.length||!groups.T2.length)throw Error('Bitte alle Kegler unter Gruppen zuordnen und beide Seiten besetzen.');
    if(!['T1','T2'].includes(req.startTeam))throw Error('Startmannschaft wählen.');
    s.participantTeams=groups;s.teamNames={T1:ctx.groups?.T1?.name||'Wand',T2:ctx.groups?.T2?.name||'TV'};s.scores={T1:0,T2:0};s.teamOrder=[req.startTeam,req.startTeam==='T1'?'T2':'T1'];s.timer.remainingMs=s.config.seconds*1000;
-  }else if(req.starter){const i=names.indexOf(req.starter);if(i<0)throw Error('Startspieler fehlt.');s.players=[...names.slice(i),...names.slice(0,i)];}
+  }else if(req.starter&&req.gameKey!=='parteienspiel'){const i=names.indexOf(req.starter);if(i<0)throw Error('Startspieler fehlt.');s.players=[...names.slice(i),...names.slice(0,i)];}
+  if(req.gameKey==='parteienspiel'){if(req.startTeam!==undefined&&!['T1','T2'].includes(req.startTeam))throw Error('Gültige Startseite wählen.');s.startTeam=req.startTeam||'T1';}
   if(KCRoundGames.keys.includes(req.gameKey))KCRoundGames.setup(s,ctx);
   if(req.gameKey==='guterschnitt')s.attempts=Object.fromEntries(names.map(n=>[n,1]));
   return s;
@@ -147,6 +148,8 @@
    else if(req.action==='undo'){
     if(!s.history.length||s.finished&&!['lattenzaun','guterschnitt',...KCRoundGames.keys].includes(s.gameKey))throw Error('Keine Aktion zum Zurücknehmen.');
     const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0]},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
+    // Vor V225 gestartete Parteien behalten ihre Wurfreihenfolge auch bei Rückgängig.
+    if(s.gameKey==='parteienspiel'&&!s.partyAlternating){delete base.partyAlternating;base.teamOrder=[];}
     for(const e of events)play(base,e);s=base;
    }else{
     if(!s.active||s.finished)throw Error('Spiel bereits beendet.');

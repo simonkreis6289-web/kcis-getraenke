@@ -5567,6 +5567,16 @@ function toggleSideMenu(mainKey) {
   });
 }
 
+function openActiveGame(el) {
+  const keys=typeof GAME_SETUP_KEYS==='undefined'?(window.KCGameOverview?.catalog||[]).map(g=>g.key):GAME_SETUP_KEYS;
+  const active=keys.filter(key=>{const s=typeof gameSetupState==='function'?gameSetupState(key):null;return s&&!s.finished&&(s.active||key==='tannenbaum'&&s.history?.length)&&(!s.eveningStartedAt||!currentEveningStartedAt||s.eveningStartedAt===currentEveningStartedAt);});
+  const selected=active.includes(dashboardActiveGame)?dashboardActiveGame:active.sort((a,b)=>(Date.parse(gameSetupState(b)?.startedAt)||0)-(Date.parse(gameSetupState(a)?.startedAt)||0))[0];
+  showSideTab('spiele',selected||'spiele-hub',el);
+  if(selected)document.getElementById('tab-'+selected)?.scrollIntoView?.({block:'start',behavior:'auto'});
+  else showToast('Zurzeit ist kein Spiel aktiv.','info');
+  return selected||null;
+}
+
 function showSideTab(mainKey, subKey, el) {
   document.querySelectorAll('.main-panel').forEach(panel => {
     panel.classList.add('hidden');
