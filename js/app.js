@@ -1374,7 +1374,7 @@ function addPenaltyStatsEntry(type, throwerName, punishedNames) {
 
   const now = new Date();
 
-  penaltyStatsLog.unshift({
+  const entry={
     id: 'penalty_' + Date.now() + '_' + Math.random().toString(36).slice(2),
     type,
     thrower: throwerName,
@@ -1385,7 +1385,8 @@ function addPenaltyStatsEntry(type, throwerName, punishedNames) {
     club: ACTIVE_CLUB || '',
     createdAt: now.toISOString(),
     eventDate: now.toISOString().slice(0, 10)
-  });
+  };
+  penaltyStatsLog.unshift(entry);return entry;
 }
     
 async function deleteFreeStrafe(
@@ -2338,6 +2339,7 @@ function getDrinksSnapshot() {
   );
 
   return {
+    eveningStartedAt: currentEveningStartedAt||'',
     date: new Date().toISOString(),
     drinks: DRINKS.map(d => ({
       key: d.key,
@@ -3723,6 +3725,7 @@ applyGroupTheme();
   renderAnwesenheit();
   renderSeatingOrder();
   if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
+  window.KCKranzUI?.render();
   if(typeof renderGamePropertyTabs==='function')renderGamePropertyTabs();
   renderGruppen();
   renderGetraenke();
@@ -5518,8 +5521,8 @@ function deleteSpielFromKatalog(name) {
 // ── SIDEBAR / TABS ──
 const subTabMap = {
   organisation: ['anwesenheit', 'mitglieder', 'sitzordnung', 'gruppen', 'gruppen-einstellungen'],
-  getraenke: ['getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
-  spiele: ['spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'spiele-einstellungen'],
+  getraenke: ['getraenke-statistik', 'getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
+  spiele: ['spiele-statistik', 'spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
   verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info', 'notizen']
 };
@@ -5548,6 +5551,7 @@ function toggleOverlayMenu() {
 }
 
 function toggleSideMenu(mainKey) {
+  if(mainKey==='verwaltung'){showSideTab('verwaltung','kataloge');return;}
   const nav = document.querySelector('.side-nav');
   if (!nav) return;
 
@@ -5589,6 +5593,7 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
+  if(['getraenke-statistik','spiele-statistik'].includes(subKey)){refreshCashHistory();window.KCReportApp?.render();}
   if (subKey === 'termine') {kcRenderTermine();kcEnsureKegelSeries();}
   if (subKey === 'termingruende') kcRenderTerminGruende();
   if (subKey === 'info') kcShowInfo();

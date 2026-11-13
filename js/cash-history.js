@@ -1,6 +1,7 @@
 /* Kassenhistorie V103 – zeigt archivierte Strafenabschlüsse an und erlaubt gezieltes Löschen. */
 let cashHistoryEntries = [];
 let cashExpenseEntries = [];
+let drinkHistoryEntries = [];
 let cashHistoryBusy = false;
 let cashHistoryClub = '';
 let cashHistoryUnsubscribe = null, cashHistorySubscriptionClub = '', cashHistoryGeneration = 0;
@@ -8,7 +9,7 @@ function stopCashHistorySync() {
   if(typeof stopCashAccountingSync==='function')stopCashAccountingSync();
   cashHistoryGeneration++;
   cashHistoryUnsubscribe?.();cashHistoryUnsubscribe=null;cashHistorySubscriptionClub='';
-  cashHistoryEntries=[];cashExpenseEntries=[];cashHistoryClub='';
+  cashHistoryEntries=[];cashExpenseEntries=[];drinkHistoryEntries=[];cashHistoryClub='';
   cashHistoryBusy=false;
 }
 
@@ -37,6 +38,7 @@ async function refreshCashHistory() {
     if (getClubFirestoreId(ACTIVE_CLUB) !== clubId || generation!==cashHistoryGeneration) return;
     cashHistoryEntries = entries.filter(entry=>entry.category==='strafen');
     cashExpenseEntries = entries.filter(entry=>entry.category==='expense');
+    drinkHistoryEntries=entries.filter(entry=>entry.category==='getraenke');
     cashHistoryClub = clubId;
     status.textContent = '';
     renderCashHistory();
@@ -44,7 +46,7 @@ async function refreshCashHistory() {
       cashHistoryUnsubscribe?.();cashHistorySubscriptionClub=clubId;
       cashHistoryUnsubscribe=window.firestoreApi.subscribeCashBookEntries(clubId,entries=>{
         if(cashHistorySubscriptionClub!==clubId||getClubFirestoreId(ACTIVE_CLUB)!==clubId)return;
-        cashHistoryEntries=entries.filter(entry=>entry.category==='strafen');cashExpenseEntries=entries.filter(entry=>entry.category==='expense');cashHistoryClub=clubId;renderCashHistory();
+        cashHistoryEntries=entries.filter(entry=>entry.category==='strafen');cashExpenseEntries=entries.filter(entry=>entry.category==='expense');drinkHistoryEntries=entries.filter(entry=>entry.category==='getraenke');cashHistoryClub=clubId;renderCashHistory();
       },error=>{console.error('Kassenarchiv-Live-Sync',error);if(cashHistorySubscriptionClub===clubId){cashHistorySubscriptionClub='';cashHistoryUnsubscribe=null;status.textContent='Archiv-Live-Verbindung unterbrochen. Bitte aktualisieren.';}});
     }
   } catch (error) {
@@ -58,6 +60,7 @@ async function refreshCashHistory() {
 }
 
 function renderCashHistory() {
+  window.KCReportApp?.render();
   if(typeof renderCashBook==='function')renderCashBook();
   if(typeof renderPenaltyStats==='function')renderPenaltyStats();
   const container = document.getElementById('cash-history-list');

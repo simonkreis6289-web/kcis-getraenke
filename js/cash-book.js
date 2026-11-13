@@ -88,8 +88,9 @@ function renderCashBook(){
   const ready=cashHistoryClub===getClubFirestoreId(ACTIVE_CLUB);
   const totals=KCCashBook.statement(ready?cashHistoryEntries:[],cashBookSettings,ready?cashExpenseEntries:[]),config=cashBookSettings;
   const start=!config?'Alle gespeicherten Abschlüsse':config.mode==='now'?'Seit '+new Date(config.startAt).toLocaleString('de-DE'):'Seit '+String(config.startDate).split('-').reverse().join('.');
+  const actual=window.KCCashOverview?.model(ready?cashHistoryEntries:[],cashBookSettings,ready?cashExpenseEntries:[],persons,typeof cashAccountingOrders==='undefined'?null:cashAccountingOrders);
   box.replaceChildren();
-  for(const [label,value] of [['Kassenstand (Soll)',ready?cashBookCurrency(totals.balance):'Archiv wird benötigt'],['Startbetrag',cashBookCurrency(totals.opening)],['Abschlüsse seit Neustart',ready?cashBookCurrency(totals.income):'–'],['Ausgaben seit Neustart',ready?cashBookCurrency(totals.spending):'–']]){
+  for(const [label,value] of [['Kassenstand (Soll)',ready?cashBookCurrency(totals.balance):'Archiv wird benötigt'],['Startbetrag',cashBookCurrency(totals.opening)],['Abschlüsse seit Neustart',ready?cashBookCurrency(totals.income):'–'],['Ausgaben seit Neustart',ready?cashBookCurrency(totals.spending):'–'],['Gebuchte Einnahmen',ready?cashBookCurrency(actual?.paid||0):'–'],['Kassenstand (Ist)',ready?cashBookCurrency(actual?.summary.actualBalance||0):'–']]){
     const item=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');
     small.textContent=label;strong.textContent=value;item.append(small,strong);box.append(item);
   }

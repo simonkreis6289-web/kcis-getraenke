@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261112-v220">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261112-v220">
-  <link rel="stylesheet" href="css/table-games.css?v=20261112-v220">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261112-v220">
-<link rel="stylesheet" href="css/game-rules.css?v=20261112-v220">
+  <link rel="stylesheet" href="css/styles.css?v=20261113-v221">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261113-v221">
+  <link rel="stylesheet" href="css/table-games.css?v=20261113-v221">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261113-v221">
+<link rel="stylesheet" href="css/game-rules.css?v=20261113-v221">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -128,19 +128,19 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261112-v220">
-<link rel="stylesheet" href="css/game-starts.css?v=20261112-v220">
-<link rel="stylesheet" href="css/game-settings.css?v=20261112-v220">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261112-v220">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261112-v220">
-<link rel="stylesheet" href="css/historical-evenings.css?v=20261112-v220">
-<link rel="stylesheet" href="css/club-content.css?v=20261112-v220">
-<link rel="stylesheet" href="css/extra-games.css?v=20261112-v220">
-<link rel="stylesheet" href="css/game-fine-policy.css?v=20261112-v220">
-<link rel="stylesheet" href="css/game-overview.css?v=20261112-v220">
-<link rel="stylesheet" href="css/kranz.css?v=20261112-v220">
-<link rel="stylesheet" href="css/shared-sync.css?v=20261112-v220">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261112-v220">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261113-v221">
+<link rel="stylesheet" href="css/game-starts.css?v=20261113-v221">
+<link rel="stylesheet" href="css/game-settings.css?v=20261113-v221">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261113-v221">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261113-v221">
+<link rel="stylesheet" href="css/historical-evenings.css?v=20261113-v221">
+<link rel="stylesheet" href="css/club-content.css?v=20261113-v221">
+<link rel="stylesheet" href="css/extra-games.css?v=20261113-v221">
+<link rel="stylesheet" href="css/game-fine-policy.css?v=20261113-v221">
+<link rel="stylesheet" href="css/game-overview.css?v=20261113-v221">
+<link rel="stylesheet" href="css/kranz.css?v=20261113-v221">
+<link rel="stylesheet" href="css/shared-sync.css?v=20261113-v221">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261113-v221">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -309,6 +309,7 @@
       <button onclick="openPenaltyQuick('kranz')">👑 Kranz</button>
       <button onclick="openPenaltyQuick('durchgeworfen')">🎳 Durchgeworfen</button>
       <button onclick="openPenaltyQuick('gosse')">💀 Gosse</button>
+      <button class="quick-btn" onclick="openFreeStrafeModal()">💸 Freie Beträge</button>
       <button class="quick-btn" onclick="openBuyThrowModal()">🍺 Würfe kaufen</button>
       <button class="quick-btn team-loss-btn" onclick="openTeamLossQuickModal()">🏆 Teamspiel verloren</button>  
     </div>
@@ -357,6 +358,7 @@
         <button onclick="showSideTab('getraenke','getraenke-uebersicht',this)">🍺 Übersicht</button>
         <button onclick="showSideTab('getraenke','teamspiele',this)">⚽ Teamspiele</button>
         <button onclick="showSideTab('getraenke','runden',this)">🍻 Runden</button>
+        <button onclick="showSideTab('getraenke','getraenke-statistik',this)">📊 Statistik</button>
         <button onclick="showSideTab('getraenke','getraenke-abrechnung',this)">💰 Abrechnung</button>
       </div>
     </div>
@@ -370,7 +372,7 @@
         <button onclick="showSideTab('spiele','spiele-hub',this)">🎮 Spielauswahl</button>
 
 
-        <button onclick="showSideTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</button>
+        <button onclick="showSideTab('spiele','spiele-statistik',this)">📊 Spielstatistik</button><button onclick="showSideTab('spiele','spiele-einstellungen',this)">⚙️ Einstellungen</button>
       </div>
     </div>
 
@@ -392,12 +394,7 @@
         <span>⚙️</span>
         <strong>Verwaltung</strong>
       </button>
-      <div class="side-submenu hidden">
-        <button onclick="showSideTab('verwaltung','kataloge',this)">📚 Kataloge & Preise</button>
-        <button onclick="showSideTab('verwaltung','termine',this)">📅 Termine</button>
-        <button onclick="showSideTab('verwaltung','notizen',this)">📝 Notizen</button>
-        <button onclick="showSideTab('verwaltung','einstellungen',this)">⚙️ Einstellungen</button><button onclick="showSideTab('verwaltung','info',this)">ℹ️ Info</button>
-      </div>
+
     </div>
 
   </aside>
@@ -584,7 +581,8 @@
       
     <!-- GETRÄNKE -->
     <div id="main-getraenke" class="main-panel hidden">
-      <div id="tab-getraenke-uebersicht">
+      <div id="tab-getraenke-statistik" class="hidden"><div class="section-title">📊 Getränkestatistik</div><div class="stats-cycle-panel"><p id="drink-stats-period"></p><div class="stats-cycle-controls"><label>Zählbeginn<input type="date" id="drink-stats-start"></label><button type="button" class="primary-btn" onclick="KCReportApp.reset('date')">💾 Starttermin übernehmen</button><button type="button" class="secondary-btn" onclick="KCReportApp.reset('now')">↻ Jetzt auf 0 setzen</button></div></div><div class="stats-filter-card stats-range-controls"><button type="button" onclick="KCReportApp.selectRange('cycle')">Seit Zählbeginn</button><label>Von<input id="drink-stats-from" type="date" onchange="KCReportApp.selectRange('custom')"></label><label>Bis<input id="drink-stats-to" type="date" onchange="KCReportApp.selectRange('custom')"></label><button type="button" onclick="KCReportApp.selectRange('today')">Heute</button><button type="button" onclick="KCReportApp.selectRange('month')">Dieser Monat</button><button type="button" onclick="KCReportApp.selectRange('all')">Gesamte Historie</button><button type="button" class="primary-btn" onclick="KCReportApp.show('drinks')">📺 Auf Dashboard anzeigen / schließen</button></div><div id="drink-stats-table" class="cash-year-scroller"></div><p class="stats-help">Nur archivierte Getränke-PDF-Abschlüsse zählen. Erneute Abschlüsse desselben Abends ersetzen dessen bisherigen Statistikstand. Frühere Preise bleiben erhalten. Teamspiele und Runden sind im Betrag enthalten; die Getränkemengen zeigen die einzeln gebuchten Getränke.</p></div>
+<div id="tab-getraenke-uebersicht">
         <div class="section-title">Getränke erfassen</div>
         <div class="getraenke-toolbar">
           <button class="round-btn" onclick="openRoundModal()">🍻 Runde geben</button>
@@ -672,11 +670,7 @@
       <div id="tab-strafen-uebersicht">
         <div class="section-title">Strafen Übersicht</div>
           
-            <div class="getraenke-toolbar">
-                <button class="add-btn strafen-action-btn" onclick="openPenaltyQuick('kranz')">🎯 9er/Kranz geworfen</button>
-                <button class="add-btn strafen-action-btn" onclick="openFreeStrafeModal()">💸 Freie Beträge</button>
-                <button class="add-btn strafen-action-btn" onclick="openBuyThrowModal()">🎳 Würfe kaufen</button>
-            </div>
+
 
              <div class="drinks-table-wrap">
           <table class="drinks-table">
@@ -694,7 +688,7 @@
         </div>
         
         <div id="tab-strafen-statistik" class="hidden">
-          <div class="section-title">📊 Statistik</div>
+          <div class="section-title">📊 Strafen- und Wurfstatistik</div><button type="button" class="primary-btn" onclick="KCReportApp.show('penalties')">📺 Statistik anzeigen / schließen</button>
           <section class="stats-cycle-panel" aria-labelledby="stats-cycle-title">
             <h3 id="stats-cycle-title">Zählbeginn</h3><p id="penalty-stats-period"></p>
             <div id="penalty-stats-cycle-controls" class="stats-cycle-controls">
@@ -717,14 +711,16 @@
           <div class="drinks-table-wrap"><table class="drinks-table"><thead><tr>
             <th class="sticky-col name-col" scope="col">Name</th><th scope="col">Anwesend</th><th scope="col">Gossen</th><th scope="col">9er</th><th scope="col">Kränze</th>
           </tr></thead><tbody id="penalty-stats-body"></tbody></table></div>
-          <p class="stats-help">Es zählen nur gespeicherte PDF-Abschlüsse und nachgetragene Kegelabende. Testabende ohne Abrechnung zählen nicht. Anwesenheit zählt einmal pro Kegelabend. 9er und Kränze zählen beim Werfer aus dem gespeicherten Wurfprotokoll; „Durchgeworfen“ zählt zu den 9ern. Gossen stammen aus der gespeicherten Strafentabelle der jeweiligen Abrechnung.</p>
+          <p class="stats-help">9er und Kränze werden unabhängig von den Strafbuchungen beim tatsächlichen Werfer gezählt. 1./2./3. Verlierer zählen die gebuchten Verliererwertungen. Es zählen nur gespeicherte PDF-Abschlüsse und nachgetragene Kegelabende. Testabende ohne Abrechnung zählen nicht. Anwesenheit zählt einmal pro Kegelabend. 9er und Kränze zählen beim Werfer aus dem gespeicherten Wurfprotokoll; „Durchgeworfen“ zählt zu den 9ern. Gossen stammen aus der gespeicherten Strafentabelle der jeweiligen Abrechnung.</p>
         </div>
 
       <div id="tab-strafen-abrechnung" class="hidden">
         <div class="section-title">Strafen Abrechnung</div>
-        <div class="billing-tabs" role="tablist" aria-label="Abrechnung" onkeydown="billingTabKeydown(event)">
+        <div class="billing-tabs club-info-tabs" role="tablist" aria-label="Abrechnung" onkeydown="billingTabKeydown(event)">
           <button type="button" role="tab" id="billing-tab-balance" data-billing-tab="balance" aria-controls="billing-panel-balance" aria-selected="true" onclick="showBillingTab('balance')">💰 Kassenstand</button>
           <button type="button" role="tab" id="billing-tab-year" data-billing-tab="year" aria-controls="billing-panel-year" aria-selected="false" tabindex="-1" onclick="showBillingTab('year')">📊 Jahresübersicht</button>
+          <button type="button" role="tab" id="billing-tab-income" data-billing-tab="income" aria-controls="billing-panel-income" aria-selected="false" tabindex="-1" onclick="showBillingTab('income')">💶 Einnahmen</button>
+          <button type="button" role="tab" id="billing-tab-evening" data-billing-tab="evening" aria-controls="billing-panel-evening" aria-selected="false" tabindex="-1" onclick="showBillingTab('evening');KCReportApp.render()">🎳 Abendzusammenfassung</button>
           <button type="button" role="tab" id="billing-tab-expenses" data-billing-tab="expenses" aria-controls="billing-panel-expenses" aria-selected="false" tabindex="-1" onclick="showBillingTab('expenses')">💸 Ausgaben</button>
           <button type="button" role="tab" id="billing-tab-record" data-billing-tab="record" aria-controls="billing-panel-record" aria-selected="false" tabindex="-1" onclick="showBillingTab('record')">📝 Abend erfassen</button>
           <button type="button" role="tab" id="billing-tab-archive" data-billing-tab="archive" aria-controls="billing-panel-archive" aria-selected="false" tabindex="-1" onclick="showBillingTab('archive')">📒 Archiv</button>
@@ -752,7 +748,17 @@
             <p id="cash-year-period" class="cash-help"></p>
             <p class="cash-help">Beträge inklusive Monatsbeitrag. „—“ bedeutet: In diesem Abschluss wurde kein Betrag für diese Person erfasst. Startbetrag und Ausgaben werden separat beim Kassenstand berücksichtigt. Beim Neustart des Kegeljahres beginnt diese Übersicht neu; frühere Abschlüsse bleiben im Archiv.</p>
             <div id="cash-year-table" class="cash-year-scroller" role="region" aria-label="Beträge pro Mitglied und Termin" tabindex="0"></div>
-            <p class="cash-help">„Dauerauftrag (Plan)“ summiert die vorgesehenen Zahlungen vom Beginn des Kegeljahres bis heute. „Offen nach Plan“ ist der Jahresbetrag abzüglich dieser Planung. Ein Guthaben wird separat ausgewiesen. Zahlungseingänge sind damit nicht bestätigt; der Soll-Kassenstand bleibt unverändert.</p>
+            <p class="cash-help">„Bisher bezahlt“ umfasst die unter Einnahmen gebuchten Zahlungseingänge. Der Bezahlstatus zeigt bezahlt minus Gesamt: rote Minuswerte sind offen, positive Werte sind Guthaben. Geplante Daueraufträge zählen erst nach Bestätigung als Zahlungseingang.</p>
+          </section>
+
+        </div>
+        <div id="billing-panel-income" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-income" hidden>
+          <section class="cash-book-panel"><h3>💶 Zahlungseingang erfassen</h3>
+            <p class="cash-help">Einmalzahlungen, bestätigte Dauerauftragseingänge und allgemeine Einnahmen. Nur gebuchte Eingänge zählen als „Bisher bezahlt“. Geplante Daueraufträge werden nicht automatisch als bezahlt verbucht.</p>
+            <form id="cash-income-form" class="cash-standing-form" onsubmit="saveCashIncome(event)">
+              <label>Mitglied<select id="cash-income-person"></select></label><label>Betrag (€)<input id="cash-income-amount" type="number" min="0.01" max="100000" step="0.01" required></label><label>Zahlungstag<input id="cash-income-date" type="date" required></label>
+              <label>Verwendungszweck<input id="cash-income-description" maxlength="300" required placeholder="z. B. Einzahlung Kegelkasse"></label><button type="submit" class="primary-btn">💾 Zahlung buchen</button><button type="button" class="secondary-btn" onclick="cancelCashIncome()">Neue Zahlung / Abbrechen</button>
+            </form><div id="cash-income-list" class="cash-year-scroller"></div>
           </section>
           <section class="cash-book-panel" aria-labelledby="cash-standing-title">
             <h3 id="cash-standing-title">🔁 Daueraufträge planen</h3>
@@ -768,6 +774,7 @@
             <div id="cash-standing-list"></div>
           </section>
         </div>
+        <div id="billing-panel-evening" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-evening" hidden><section class="cash-book-panel"><div class="cash-year-heading"><h3>🎳 Abendzusammenfassung</h3><button type="button" class="primary-btn" onclick="KCReportApp.show('summary')">📺 Auf Dashboard anzeigen / schließen</button><button type="button" class="secondary-btn" onclick="KCReportApp.render()">Aktualisieren</button></div><p class="cash-help">Laufende Vorschau des aktuellen Abends. Die Anzeige löst keine Buchung und keinen Abschluss aus.</p><div id="evening-summary-preview"></div></section></div>
         <div id="billing-panel-expenses" data-billing-panel role="tabpanel" aria-labelledby="billing-tab-expenses" tabindex="0" hidden>
           <section class="cash-book-panel" aria-labelledby="cash-expenses-title">
             <div class="cash-year-heading"><h3 id="cash-expenses-title">💸 Ausgaben</h3><button type="button" class="primary-btn" onclick="openCashExpense()">+ Ausgabe erfassen</button></div>
@@ -795,6 +802,7 @@
     <!-- SPIELE -->
     <div id="main-spiele" class="main-panel hidden">
         
+<div id="tab-spiele-statistik" class="hidden"><div class="section-title">📊 Spielstatistik</div><div class="cash-year-heading"><button type="button" class="primary-btn" onclick="KCReportApp.show('games')">📺 Auf Dashboard anzeigen / schließen</button><button type="button" onclick="showSideTab('strafen','strafen-statistik')">Zeitraum / Zählbeginn ändern</button></div><p class="stats-help">Es gilt der Zeitraum der Strafenstatistik. Treffer zählen beim Werfer, unabhängig von den Strafbuchungen bei den anderen. Spiele und Siege werden für ab diesem Update vollständig dokumentierte, abgerechnete Spiele erfasst.</p><div id="game-stats-table" class="cash-year-scroller"></div></div>
 <div id="tab-spiele-hub">
   <div class="section-title">Spielauswahl</div>
   <div class="game-random-launch"><button type="button" class="primary-btn" id="random-game-button" onclick="KCGameOptionsApp.draw()" disabled>🎲 Zufälliges Spiel auslosen</button><span>Nur auslosen – kein Spielstart</span></div><div class="game-hub-grid"><div class="game-hub-card" onclick="showSideTab('spiele','guterschnitt')"><div class="icon">✂️</div><div class="title">Der gute Schnitt</div><div class="desc">Zahlenfolge treffen · steigende Versuche</div></div>
@@ -2332,74 +2340,78 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261112-v220"></script>
-<script src="js/kegel-calendar.js?v=20261112-v220"></script>
-<script src="js/helpers.js?v=20261112-v220"></script>
-<script src="js/state.js?v=20261112-v220"></script>
-<script src="js/shared-clock.js?v=20261112-v220"></script>
-<script src="js/kranz-policy.js?v=20261112-v220"></script>
-<script src="js/games/extra-core.js?v=20261112-v220"></script><script src="js/games/extra-view.js?v=20261112-v220"></script>
-<script src="js/games/individual-core.js?v=20261112-v220"></script>
-<script src="js/game-rules.js?v=20261112-v220"></script>
-<script src="js/persons.js?v=20261112-v220"></script>
-<script src="js/member-profiles.js?v=20261112-v220"></script>
-<script src="js/clubs.js?v=20261112-v220"></script>
+<script src="js/birthdays.js?v=20261113-v221"></script>
+<script src="js/kegel-calendar.js?v=20261113-v221"></script>
+<script src="js/helpers.js?v=20261113-v221"></script>
+<script src="js/state.js?v=20261113-v221"></script>
+<script src="js/shared-clock.js?v=20261113-v221"></script>
+<script src="js/kranz-policy.js?v=20261113-v221"></script>
+<script src="js/games/extra-core.js?v=20261113-v221"></script><script src="js/games/extra-view.js?v=20261113-v221"></script>
+<script src="js/games/individual-core.js?v=20261113-v221"></script>
+<script src="js/game-rules.js?v=20261113-v221"></script>
+<script src="js/persons.js?v=20261113-v221"></script>
+<script src="js/member-profiles.js?v=20261113-v221"></script>
+<script src="js/clubs.js?v=20261113-v221"></script>
 
-<script src="js/games/avatar-select.js?v=20261112-v220"></script>
-<script src="js/games/tannenbaum.js?v=20261112-v220"></script>
-<script src="js/games/darts.js?v=20261112-v220"></script>
-<script src="js/games/tiberius.js?v=20261112-v220"></script>
-<script src="js/games/lotterie.js?v=20261112-v220"></script>
-<script src="js/game-fine-policy.js?v=20261112-v220"></script><script src="js/game-options.js?v=20261112-v220"></script><script src="js/game-fine-settings.js?v=20261112-v220"></script>
-<script src="js/game-results.js?v=20261112-v220"></script>
-<script src="js/starter-draw.js?v=20261112-v220"></script>
-<script src="js/games/solo-start-draw.js?v=20261112-v220"></script>
-<script src="js/games/start-setup.js?v=20261112-v220"></script>
-<script src="js/games/seating.js?v=20261112-v220"></script>
-<script src="js/games/mensch.js?v=20261112-v220"></script>
-<script src="js/games/plusminus.js?v=20261112-v220"></script>
-<script src="js/games/hausnummer-core.js?v=20261112-v220"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261112-v220"></script>
-<script src="js/games/hausnummer-tief.js?v=20261112-v220"></script>
-<script src="js/games/fuchsjagd.js?v=20261112-v220"></script>
-<script src="js/games/sichern.js?v=20261112-v220"></script>
-<script src="js/games/sechstage-core.js?v=20261112-v220"></script>
-<script src="js/games/sechstage.js?v=20261112-v220"></script>
-<script src="js/games/table-games-core.js?v=20261112-v220"></script>
-<script src="js/games/table-games-ui.js?v=20261112-v220"></script>
-<script src="js/games/individual-view.js?v=20261112-v220"></script><script src="js/games/individual-ui.js?v=20261112-v220"></script><script src="js/games/extra-ui.js?v=20261112-v220"></script><script src="js/games/guterschnitt.js?v=20261112-v220"></script><script src="js/games/kranz-settings.js?v=20261112-v220"></script><script src="js/games/bergundtal.js?v=20261112-v220"></script><script src="js/games/ballermann.js?v=20261112-v220"></script><script src="js/games/lattenzaun.js?v=20261112-v220"></script><script src="js/games/siebener.js?v=20261112-v220"></script><script src="js/games/hindernis.js?v=20261112-v220"></script>
-<script src="js/games/blackjack.js?v=20261112-v220"></script>
-<script src="js/games/gluecksspirale.js?v=20261112-v220"></script>
-<script src="js/games/tor.js?v=20261112-v220"></script>
-<script src="js/games/coinflip.js?v=20261112-v220"></script>
+<script src="js/games/avatar-select.js?v=20261113-v221"></script>
+<script src="js/games/tannenbaum.js?v=20261113-v221"></script>
+<script src="js/games/darts.js?v=20261113-v221"></script>
+<script src="js/games/tiberius.js?v=20261113-v221"></script>
+<script src="js/games/lotterie.js?v=20261113-v221"></script>
+<script src="js/game-fine-policy.js?v=20261113-v221"></script><script src="js/game-options.js?v=20261113-v221"></script><script src="js/game-fine-settings.js?v=20261113-v221"></script>
+<script src="js/game-results.js?v=20261113-v221"></script>
+<script src="js/starter-draw.js?v=20261113-v221"></script>
+<script src="js/games/solo-start-draw.js?v=20261113-v221"></script>
+<script src="js/games/start-setup.js?v=20261113-v221"></script>
+<script src="js/games/seating.js?v=20261113-v221"></script>
+<script src="js/games/mensch.js?v=20261113-v221"></script>
+<script src="js/games/plusminus.js?v=20261113-v221"></script>
+<script src="js/games/hausnummer-core.js?v=20261113-v221"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261113-v221"></script>
+<script src="js/games/hausnummer-tief.js?v=20261113-v221"></script>
+<script src="js/games/fuchsjagd.js?v=20261113-v221"></script>
+<script src="js/games/sichern.js?v=20261113-v221"></script>
+<script src="js/games/sechstage-core.js?v=20261113-v221"></script>
+<script src="js/games/sechstage.js?v=20261113-v221"></script>
+<script src="js/games/table-games-core.js?v=20261113-v221"></script>
+<script src="js/games/table-games-ui.js?v=20261113-v221"></script>
+<script src="js/games/individual-view.js?v=20261113-v221"></script><script src="js/games/individual-ui.js?v=20261113-v221"></script><script src="js/games/extra-ui.js?v=20261113-v221"></script><script src="js/games/guterschnitt.js?v=20261113-v221"></script><script src="js/games/kranz-settings.js?v=20261113-v221"></script><script src="js/games/bergundtal.js?v=20261113-v221"></script><script src="js/games/ballermann.js?v=20261113-v221"></script><script src="js/games/lattenzaun.js?v=20261113-v221"></script><script src="js/games/siebener.js?v=20261113-v221"></script><script src="js/games/hindernis.js?v=20261113-v221"></script>
+<script src="js/games/blackjack.js?v=20261113-v221"></script>
+<script src="js/games/gluecksspirale.js?v=20261113-v221"></script>
+<script src="js/games/tor.js?v=20261113-v221"></script>
+<script src="js/games/coinflip.js?v=20261113-v221"></script>
 
-<script src="js/groups.js?v=20261112-v220"></script>
+<script src="js/groups.js?v=20261113-v221"></script>
 
-<script src="js/penalty-table.js?v=20261112-v220"></script>
-<script src="js/club-content.js?v=20261112-v220"></script><script src="js/club-content-pager.js?v=20261112-v220"></script><script src="js/club-content-app.js?v=20261112-v220"></script>
-<script src="js/game-overview.js?v=20261112-v220"></script><script src="js/game-overview-app.js?v=20261112-v220"></script>
-<script src="js/app.js?v=20261112-v220"></script><script src="js/club-termine.js?v=20261112-v220"></script>
+<script src="js/penalty-table.js?v=20261113-v221"></script>
+<script src="js/club-content.js?v=20261113-v221"></script><script src="js/club-content-pager.js?v=20261113-v221"></script><script src="js/club-content-app.js?v=20261113-v221"></script>
+<script src="js/game-overview.js?v=20261113-v221"></script><script src="js/game-overview-app.js?v=20261113-v221"></script>
+<script src="js/app.js?v=20261113-v221"></script><script src="js/club-termine.js?v=20261113-v221"></script>
     
-<script src="js/live-games.js?v=20261112-v220"></script>
-<script src="js/strafe-pdf.js?v=20261112-v220"></script>
-<script src="js/cash-history.js?v=20261112-v220"></script>
-<script src="js/cash-overview.js?v=20261112-v220"></script>
-<script src="js/cash-accounting.js?v=20261112-v220"></script>
-<script src="js/cash-book.js?v=20261112-v220"></script>
-<script src="js/penalty-statistics.js?v=20261112-v220"></script>
-<script src="js/cash-expenses.js?v=20261112-v220"></script>
-<script src="js/historical-evenings.js?v=20261112-v220"></script>
-<script src="js/game-inputs.js?v=20261112-v220"></script>
-<script src="js/table-headers.js?v=20261112-v220"></script>
+<script src="js/live-games.js?v=20261113-v221"></script>
+<script src="js/strafe-pdf.js?v=20261113-v221"></script>
+<script src="js/cash-history.js?v=20261113-v221"></script>
+<script src="js/cash-overview.js?v=20261113-v221"></script>
+<script src="js/cash-income.js?v=20261113-v221"></script>
+<script src="js/cash-accounting.js?v=20261113-v221"></script>
+<script src="js/cash-book.js?v=20261113-v221"></script>
+<script src="js/penalty-statistics.js?v=20261113-v221"></script>
+<script src="js/activity-reports.js?v=20261113-v221"></script>
+<script src="js/reports-app.js?v=20261113-v221"></script>
+<script src="js/start-review.js?v=20261113-v221"></script>
+<script src="js/cash-expenses.js?v=20261113-v221"></script>
+<script src="js/historical-evenings.js?v=20261113-v221"></script>
+<script src="js/game-inputs.js?v=20261113-v221"></script>
+<script src="js/table-headers.js?v=20261113-v221"></script>
 
-<script src="js/shared-sync-core.js?v=20261112-v220"></script>
-<script src="js/shared-sync-transport.js?v=20261112-v220"></script>
-<script src="js/kranz-ui.js?v=20261112-v220"></script>
-<script src="js/tablet-sync.js?v=20261112-v220"></script>
-<script src="js/shared-sync-app.js?v=20261112-v220"></script>
+<script src="js/shared-sync-core.js?v=20261113-v221"></script>
+<script src="js/shared-sync-transport.js?v=20261113-v221"></script>
+<script src="js/kranz-ui.js?v=20261113-v221"></script>
+<script src="js/tablet-sync.js?v=20261113-v221"></script>
+<script src="js/shared-sync-app.js?v=20261113-v221"></script>
 <script
   type="module"
-  src="js/firebase.js?v=20261112-v220"
+  src="js/firebase.js?v=20261113-v221"
 ></script>
 
 </body>

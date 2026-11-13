@@ -459,7 +459,9 @@ window.firestoreApi = {
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardCashView||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Dashboard-Ansicht wurde inzwischen geändert. Bitte erneut versuchen.');
-      const value={open:request.open,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      if(request.mode!==undefined&&!['cash','summary','penalties','drinks','games'].includes(request.mode))throw Error('Ungültige Dashboard-Ansicht');
+      if(request.from&&!window.KCBirthdays?.parse(request.from)||request.to&&!window.KCBirthdays?.parse(request.to)||request.from&&request.to&&request.from>request.to)throw Error('Ungültiger Zeitraum');
+      const value={open:request.open,mode:request.mode||'cash',custom:request.custom===true,from:request.from||'',to:request.to||'',revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       const updates={dashboardCashView:value,updatedAt:serverTimestamp()};if(value.open)for(const key of ['dashboardClubContent','dashboardGameOverview', 'dashboardRules'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
@@ -483,8 +485,32 @@ window.firestoreApi = {
         orders=orders.filter(o=>o.id!==id);orders.push({id,personName,amountCents,interval,startDate,endDate});
       }
       if(orders.length>200)throw Error('Zu viele Daueraufträge.');
-      const value={orders,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      const value={...before,orders,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       transaction.set(ref,{cashStandingOrders:value,updatedAt:serverTimestamp()},{merge:true});return value;
+    });
+  },
+
+  async updateCashIncome(clubId,request={},syncContext=null){
+    if(!clubId||!window.KCCashOverview||!['upsert','delete'].includes(request.action)||!/^cash_[a-zA-Z0-9_-]{1,100}$/.test(request.opId)||!Number.isSafeInteger(request.expectedRevision))throw Error('Ungültige Einnahme');
+    if(request.action==='upsert'&&!window.KCCashOverview.validPayment(request.payment))throw Error('Bitte gültigen Betrag, Datum und Beschreibung eingeben.');
+    const ref=doc(db,'clubs',clubId,'state','current');
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const snap=await tx.get(ref),current=snap.exists()?snap.data():{},before=current.cashStandingOrders||{};
+      if((before.commands||[]).includes(request.opId))return before;
+      if(Number(before.revision||0)!==request.expectedRevision)throw Error('Einnahmen wurden inzwischen geändert. Bitte erneut öffnen.');
+      let payments=(before.payments||[]).slice();
+      if(request.action==='delete'){if(!payments.some(p=>p.id===request.id))throw Error('Einnahme nicht gefunden.');payments=payments.filter(p=>p.id!==request.id);}
+      else{const {id,personName,amountCents,date,description,kind,orderId=''}=request.payment;
+        if(date>window.KCCashOverview.today())throw Error('Zahlungseingänge können erst am Zahlungstag gebucht werden.');
+        if(personName&&!(current.persons||[]).some(p=>p.name===personName&&!p.isDrinksOnly&&!p.isGuest))throw Error('Mitglied nicht gefunden.');
+        if(kind==='standing'&&!(before.orders||[]).some(o=>o.id===orderId&&o.personName===personName))throw Error('Bitte einen passenden Dauerauftrag wählen.');
+        if(kind==='standing'&&payments.some(p=>p.id!==id&&p.orderId===orderId&&p.date===date))throw Error('Dieser Dauerauftrag ist für diesen Zahlungstag bereits gebucht.');
+        const previous=payments.find(p=>p.id===id),incurredAt=previous?.date===date?previous.incurredAt||date+'T12:00:00Z':date===window.KCCashOverview.today()?new Date().toISOString():date+'T12:00:00Z';
+        payments=payments.filter(p=>p.id!==id);payments.push({id,personName,amountCents,date,incurredAt,description,kind,orderId});
+      }
+      if(payments.length>3000)throw Error('Zu viele Einnahmen im Zahlungsbuch.');
+      const value={...before,payments,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
+      tx.set(ref,{cashStandingOrders:value,updatedAt:serverTimestamp()},{merge:true});return value;
     });
   },
 
@@ -507,7 +533,7 @@ window.firestoreApi = {
     if(!clubId||!window.KCPenaltyStats)throw new Error('Statistikzugriff nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
     return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
-      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},previous=current.penaltyStatsSettings;
+      const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},container=current.penaltyStatsSettings||{},previous=request.scope==='drinks'?container.drinks:container;
       if(typeof request.id!=='string'||!/^stats_[a-zA-Z0-9_-]{1,100}$/.test(request.id))throw new Error('Ungültige Statistikaktion');
       if(previous?.lastRequestId===request.id)return previous;
       if((Number(previous?.revision)||0)!==request.expectedRevision)throw new Error('Statistikstart wurde inzwischen geändert. Bitte die aktuellen Daten laden.');
@@ -518,9 +544,10 @@ window.firestoreApi = {
         people.push(live.exists()?{...person,...live.data(),name:person.name}:person);
       }
       const data=window.KCPenaltyStats.build({people,catalog:current.STRAFEN||[],evenings:current.kegelAbende||[],logs:current.penaltyStatsLog||[],eveningStartedAt:current.currentEveningStartedAt||''});
-      const settings={schema:1,mode:request.mode,startDate:request.mode==='date'?request.startDate:window.KCPenaltyStats.date(now),startAt:request.mode==='now'?now:null,baseline:request.mode==='now'?window.KCPenaltyStats.baseline(data):null,revision:(Number(previous?.revision)||0)+1,lastRequestId:request.id};
+      const settings={...(request.scope==='drinks'?{}:container),schema:1,mode:request.mode,startDate:request.mode==='date'?request.startDate:window.KCPenaltyStats.date(now),startAt:request.mode==='now'?now:null,baseline:request.mode==='now'?window.KCPenaltyStats.baseline(data):null,revision:(Number(previous?.revision)||0)+1,lastRequestId:request.id};
       if(request.mode==='date'&&window.KCPenaltyStats.date(request.startDate)!==request.startDate)throw new Error('Gültigen Starttermin wählen');
-      transaction.set(ref,{penaltyStatsSettings:settings,updatedAt:serverTimestamp()},{merge:true});return settings;
+      if(request.scope==='drinks'){if(!window.KCActivityReports)throw Error('Getränkestatistik nicht geladen');settings.baseline=request.mode==='now'?window.KCActivityReports.drinkSession({persons:current.persons||[],drinks:(current.DRINKS||[]).map(d=>({...d,price:current.prices?.[d.key]||0})),date:now,eveningStartedAt:current.currentEveningStartedAt||''}):null;}
+      transaction.set(ref,{penaltyStatsSettings:request.scope==='drinks'?{...container,drinks:settings}:settings,updatedAt:serverTimestamp()},{merge:true});return settings;
     });
   },
 
@@ -1345,13 +1372,13 @@ subscribeToLiveLotterie(
   // Geschlossene Kegelabende für die Kassenhistorie laden und löschen.
   async listCashBookEntries(clubId) {
     const snapshot=await getDocs(collection(db,'clubs',clubId,'archive'));
-    return snapshot.docs.map(item=>({...item.data(),id:item.id})).filter(item=>['strafen','expense'].includes(item.category))
+    return snapshot.docs.map(item=>({...item.data(),id:item.id})).filter(item=>['strafen','expense','getraenke'].includes(item.category))
       .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')));
   },
 
   subscribeCashBookEntries(clubId,onChange,onError) {
     return onSnapshot(collection(db,'clubs',clubId,'archive'),snapshot=>onChange(snapshot.docs
-      .map(item=>({...item.data(),id:item.id})).filter(item=>['strafen','expense'].includes(item.category))
+      .map(item=>({...item.data(),id:item.id})).filter(item=>['strafen','expense','getraenke'].includes(item.category))
       .sort((a,b)=>String(b.closedAt||b.date||'').localeCompare(String(a.closedAt||a.date||'')))),onError);
   },
 
@@ -2579,7 +2606,7 @@ async deleteLivePerson(
 };
 
 
-window.firestoreApi.__syncArity={"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
+window.firestoreApi.__syncArity={"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
 window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 

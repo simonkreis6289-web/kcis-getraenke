@@ -232,7 +232,7 @@ async function confirmDartsPenaltyPlayer() {
   if (
     typeof addPenaltyStatsEntry === 'function'
   ) {
-    addPenaltyStatsEntry(
+    var stat=addPenaltyStatsEntry(
       type,
       personName,
       punishedNames
@@ -244,7 +244,7 @@ async function confirmDartsPenaltyPlayer() {
   }
 
   dartsState.roundThrows[team].push({
-    hit: type,
+    hit: type,statId:stat?.id,
     value: points,
     thrower: personName,
 
@@ -713,6 +713,7 @@ async function deleteDartsThrow(
     }
   }
 
+  if(entry.thrower&&typeof removeOneSoloStatsEntry==='function')removeOneSoloStatsEntry(entry.thrower,entry.hit,entry.statId);
   dartsState.roundThrows[team].splice(
     index,
     1

@@ -228,6 +228,7 @@ function finishPlusminusGame() {
   const entry = {
     id: 'plusminus_' + Date.now(),
     type: 'plusminus',
+      participants: players.map(p=>p.name),winnerNames: results.length&&results[0].result!=null?results.filter(r=>r.result===results[0].result).map(r=>r.name):[],
     createdAt: new Date().toISOString(),
     smartGosse: !!plusminusState.smartGosse,
     rows: JSON.parse(JSON.stringify(plusminusState.rows)),

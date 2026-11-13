@@ -1,0 +1,22 @@
+/* Gebuchte Eingänge; ein geplanter Dauerauftrag ist noch kein Zahlungseingang. */
+let cashIncomeEdit='',cashIncomeOrder='',cashIncomeBusy=false;
+function renderCashIncome(){
+ const form=document.getElementById('cash-income-form');if(!form||!ACTIVE_CLUB)return;
+ const esc=KCCashOverview.esc,select=document.getElementById('cash-income-person'),name=select.value;
+ select.innerHTML='<option value="">Allgemeine Einnahme (z. B. Spende)</option>'+persons.filter(p=>!p.isGuest&&!p.isDrinksOnly).map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');select.value=name;
+ const date=document.getElementById('cash-income-date');if(!date.value)date.value=KCCashOverview.today();date.max=KCCashOverview.today();
+ const payments=(cashAccountingOrders?.payments||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+ document.getElementById('cash-income-list').innerHTML=payments.length?'<table class="cash-year-table"><thead><tr><th>Datum</th><th>Mitglied / Zweck</th><th>Betrag</th><th>Aktionen</th></tr></thead><tbody>'+payments.map(p=>'<tr><th>'+esc(p.date.split('-').reverse().join('.'))+'</th><td>'+esc(p.personName||'Allgemeine Einnahme')+' · '+esc(p.description)+'</td><td>'+KCCashOverview.euro(p.amountCents)+'</td><td><button type="button" data-income-edit="'+esc(p.id)+'">Bearbeiten</button> <button type="button" data-income-delete="'+esc(p.id)+'">Löschen</button></td></tr>').join('')+'</tbody></table>':'<p class="cash-help">Noch keine Zahlungseingänge gebucht.</p>';
+ for(const b of document.querySelectorAll('[data-income-edit]'))b.onclick=()=>editCashIncome(b.dataset.incomeEdit);
+ for(const b of document.querySelectorAll('[data-income-delete]'))b.onclick=()=>deleteCashIncome(b.dataset.incomeDelete);
+ for(const el of form.querySelectorAll('input,select,button'))el.disabled=cashIncomeBusy||!cashAccountingReady;
+}
+function cancelCashIncome(){cashIncomeEdit='';cashIncomeOrder='';document.getElementById('cash-income-form')?.reset();renderCashIncome();}
+function editCashIncome(id){const p=cashAccountingOrders?.payments?.find(p=>p.id===id);if(!p)return;cashIncomeEdit=p.id;cashIncomeOrder=p.orderId||'';document.getElementById('cash-income-person').value=p.personName;document.getElementById('cash-income-amount').value=(p.amountCents/100).toFixed(2);document.getElementById('cash-income-date').value=p.date;document.getElementById('cash-income-description').value=p.description;document.getElementById('cash-income-form').scrollIntoView?.({block:'nearest'});}
+function bookStandingIncome(id){const p=cashAccountingOrders?.orders?.find(p=>p.id===id);if(!p)return;cancelCashIncome();cashIncomeOrder=id;document.getElementById('cash-income-person').value=p.personName;document.getElementById('cash-income-amount').value=(p.amountCents/100).toFixed(2);document.getElementById('cash-income-description').value='Dauerauftrag';document.getElementById('cash-income-date').focus();}
+async function cashIncomeRequest(request){
+ if(cashIncomeBusy||!cashAccountingReady||!ACTIVE_CLUB)return false;cashIncomeBusy=true;const target=ACTIVE_CLUB;renderCashIncome();
+ try{const value=await firestoreApi.updateCashIncome(getClubFirestoreId(target),{...request,expectedRevision:Number(cashAccountingOrders?.revision)||0,opId:cashAccountingId('cash_')});if(ACTIVE_CLUB!==target)return false;cashAccountingOrders=value;cancelCashIncome();renderCashBook();showToast('Zahlungseingang gespeichert.','success');return true;}catch(e){showToast(e.message,'error');return false;}finally{cashIncomeBusy=false;renderCashIncome();}
+}
+function saveCashIncome(event){event?.preventDefault();const payment={id:cashIncomeEdit||cashAccountingId('income_'),personName:document.getElementById('cash-income-person').value,amountCents:KCCashBook.money(document.getElementById('cash-income-amount').value),date:document.getElementById('cash-income-date').value,description:document.getElementById('cash-income-description').value.trim(),kind:cashIncomeOrder?'standing':'single',orderId:cashIncomeOrder};if(!KCCashOverview.validPayment(payment)){showToast('Bitte Betrag, Datum und Verwendungszweck ausfüllen.','error');return false;}return cashIncomeRequest({action:'upsert',payment});}
+function deleteCashIncome(id){if(!confirm('Diesen Zahlungseingang löschen? Der Bezahlstatus wird neu berechnet.'))return false;return cashIncomeRequest({action:'delete',id});}

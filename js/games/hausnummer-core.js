@@ -151,6 +151,7 @@ async function finishHausGame(mode) {
       if(!ok){showToast('❌ Verlierer-Strafen konnten nicht gebucht werden','error');return false;}
     }
     const entry={id:hausId(mode)+'_'+Date.now(),type:hausId(mode),
+      participants:results.map(r=>r.name),winnerNames:results.filter(r=>r.number===winnerNumber).map(r=>r.name),
       createdAt:new Date().toISOString(),winner:results.filter(x=>x.number===winnerNumber).map(x=>x.name).join(', '),
       results,ranking:groups.map((g,i)=>({...g,rank:i+1})),assigned,
       rows:JSON.parse(JSON.stringify(s.rows)),

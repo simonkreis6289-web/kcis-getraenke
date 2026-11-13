@@ -90,6 +90,9 @@ function renderGamePropertyTabs(){
  const panels=[...document.querySelectorAll('[data-game-property]')];if(!panels.some(p=>p.dataset.gameProperty===gamePropertySelected))gamePropertySelected=panels[0]?.dataset.gameProperty||'';
  for(const panel of panels){const selected=panel.dataset.gameProperty===gamePropertySelected;panel.hidden=!selected;panel.setAttribute('tabindex','0');}
  for(const button of tabs.querySelectorAll('[data-game-property-tab]')){const selected=button.dataset.gamePropertyTab===gamePropertySelected;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}
+ let label=tabs.querySelector('.game-settings-select');if(!label){label=document.createElement('label');label.className='game-settings-select';label.textContent='Einstellungen für';const select=document.createElement('select');select.id='game-property-select';select.setAttribute('aria-label','Spiel für Einstellungen auswählen');select.onchange=()=>showGameProperty(select.value);label.append(select);tabs.prepend(label);tabs.removeAttribute('role');}
+ const select=label.querySelector('select');select.innerHTML=[...tabs.querySelectorAll('[data-game-property-tab]')].map(button=>'<option value="'+gsEscape(button.dataset.gamePropertyTab)+'">'+gsEscape(button.textContent.trim())+'</option>').join('');select.value=gamePropertySelected;
+ for(const panel of panels)panel.setAttribute('aria-labelledby','game-property-select');
 }
 function showGameProperty(key,focus=false){if(!document.querySelector('[data-game-property="'+key+'"]'))return;gamePropertySelected=key;renderGamePropertyTabs();if(focus){const button=document.querySelector('[data-game-property-tab="'+key+'"]');button?.focus();button?.scrollIntoView?.({block:'nearest',inline:'nearest'});}}
 function gamePropertyKeydown(event){

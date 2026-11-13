@@ -224,7 +224,7 @@ async function bookTannenbaumPenalty(
   if (
     typeof addPenaltyStatsEntry === 'function'
   ) {
-    addPenaltyStatsEntry(
+    var stat=addPenaltyStatsEntry(
       type,
       personName,
       punishedNames
@@ -233,7 +233,7 @@ async function bookTannenbaumPenalty(
 
   return {
     penaltyKey,
-    punishedNames
+    punishedNames,statId:stat?.id
   };
 }
   
@@ -305,6 +305,7 @@ const booking = await bookTannenbaumPenalty(
     if (latestEntry) {
       latestEntry.specialType = '9er';
       latestEntry.thrower = personName;
+      latestEntry.statId=booking.statId;
       latestEntry.penaltyKey = booking.penaltyKey;
       latestEntry.punishedNames = booking.punishedNames;
     }
@@ -326,7 +327,7 @@ refreshTannenbaumPenaltyUI();
     number: 'gosse',
     action:
       `${getTannenbaumTeamDisplay(team)}: Gosse durch ${personName}`,
-    type: 'penalty-gosse',
+    type: 'penalty-gosse',statId:booking.statId,
     thrower: personName,
     penaltyKey: booking.penaltyKey,
     punishedNames: booking.punishedNames,
@@ -670,7 +671,8 @@ const booking = await bookTannenbaumPenalty(
   if (latestEntry) {
     latestEntry.specialType = 'kranz';
     latestEntry.thrower = thrower;
-    latestEntry.penaltyKey = booking.penaltyKey;
+    latestEntry.statId=booking.statId;
+      latestEntry.penaltyKey = booking.penaltyKey;
     latestEntry.punishedNames = booking.punishedNames;
     latestEntry.action =
       `👑 Kranz von ${thrower}: Zahl ${number} · ` +
@@ -774,7 +776,7 @@ function finishTannenbaumGame() {
 
   const historyEntry = {
     id: 'tannenbaum_' + Date.now(),
-    type: 'tannenbaum',
+    type: 'tannenbaum',participants:[...membersT1,...membersT2].map(p=>p.name),winnerNames:[],
     createdAt: new Date().toISOString(),
     totals: {
       T1: teamTotals.T1,
@@ -924,7 +926,7 @@ function handleTannenbaumThrow(number) {
       showToast(action, 'success');
     }
 
-function undoLastTannenbaumThrow() {
+async function undoLastTannenbaumThrow() {
   ensureTannenbaumState();
 
   const last = tannenbaumState.history?.[0];
@@ -934,6 +936,8 @@ function undoLastTannenbaumThrow() {
     return;
   }
 
+  if(last.penaltyKey&&last.punishedNames?.length){const ok=await changeMultipleSyncedPersonCounters(last.punishedNames.map(personName=>({personName,category:'strafen',key:last.penaltyKey,delta:-1})));if(!ok)return;}
+  if(last.thrower&&typeof removeOneSoloStatsEntry==='function')removeOneSoloStatsEntry(last.thrower,last.specialType||'gosse',last.statId);
   const team = last.team;
   const otherTeam = getOtherTeam(team);
   const n = String(last.number);

@@ -849,21 +849,24 @@ try {
   return;
 }
 
+  if(previousMeta?.penaltyType&&typeof removeOneSoloStatsEntry==='function')removeOneSoloStatsEntry(personName,previousMeta.penaltyType,previousMeta.statId);
   // Sofort lokal anzeigen; der Firestore-Listener gleicht danach alle Geräte ab.
   lotterieState.throws[personName][colIndex] = value;
   lotterieState.throwMeta[personName][colIndex] = nextMeta;
   renderLotterie();
+  persistState();
 
   if (
     nextMeta &&
     typeof addPenaltyStatsEntry ===
       'function'
   ) {
-    addPenaltyStatsEntry(
+    const log=addPenaltyStatsEntry(
       nextMeta.penaltyType,
       personName,
       nextMeta.punishedNames
     );
+    if(log)nextMeta.statId=log.id;
 
     /*
      * Nur die Statistik kommt noch in
@@ -1320,6 +1323,7 @@ async function finishLotterieGame() {
   const entry = {
     id: historyId,
     type: 'lotterie',
+      participants: players.map(p=>p.name),winnerNames: [],
     createdAt,
     gameFineFrozen:true,onTop: !!lotterieState.onTop,
 
