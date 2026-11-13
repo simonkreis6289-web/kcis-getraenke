@@ -6,8 +6,8 @@ const state=(extra={})=>({STRAFEN:catalog,strafPrices:{normal:1,loser1:1,loser2:
 const person=(normal=28,extra={})=>({name:'A',present:true,strafen:{normal},gameFineBase:{otherNormalCents:0,otherTopCents:0,kingCents:0},...extra});
 const fee=(key='siebener',amountCents=650)=>({id:'fee_'+key,personName:'A',gameKey:key,reason:policy.titles[key],amountCents,onTop:true,eveningStartedAt:evening});
 const total=(p,s)=>policy.applyTotals([p],s)[0].strafTotal;
-test('all 20 games default to capped, including old forcibly OnTop ledger entries',()=>{
- assert.equal(Object.keys(policy.titles).length,20);
+test('all 24 games default to capped, including old forcibly OnTop ledger entries',()=>{
+ assert.equal(Object.keys(policy.titles).length,24);
  for(const key of Object.keys(policy.titles)){assert(!policy.enabled({},key));const s=state({individualGameLedger:[fee(key)]});assert.equal(total(person(),s),30,key);s.gameFineSettings={[key]:true};assert.equal(total(person(),s),['haushoch','haustief'].includes(key)?30:34.5,key);}
 });
 test('cap and Gossenkönig stay separate; below the cap OnTop never duplicates a charge',()=>{
@@ -50,7 +50,7 @@ test('actual hurdle money booking and undo honor the cap with and without OnTop'
 });
 function ui(){const {document}=parseHTML(read('getraenke-abrechnung.html')),st=server(),c={document,navigator:{onLine:true},ACTIVE_CLUB:'Club',getClubFirestoreId:()=> 'club',crypto:require('node:crypto').webcrypto,window:{addEventListener(){},firestoreApi:{...st.api,subscribeToClubState:(_,cb)=>{cb(st.root());return ()=>{};}}},KCGameFinePolicy:policy,strafenHistory:[],STRAFEN:catalog,strafPrices:state().strafPrices,STRAFEN_LIMIT:30,currentEveningStartedAt:evening,persistState(){},showToast(){},saveToFirestore:async()=>true,renderAll:()=>c.renderGameFineSettings()};vm.createContext(c);vm.runInContext(read('js/game-fine-settings.js'),c);c.renderGameFineSettings();return {c,document,st};}
 test('actual UI exposes all eligible default-off settings and syncs the legacy and inline controls',async()=>{
- const {c,document:d}=ui();assert.equal(d.querySelectorAll('#game-fine-settings-grid input').length,18);for(const i of d.querySelectorAll('[data-game-fine]')){assert(!i.checked);assert(!i.disabled);}assert.equal(d.querySelectorAll('[data-game-fine-panel]').length,18);assert(await c.setGameFineOnTop('tannenbaum',true));assert(d.getElementById('tannenbaum-ontop-check').checked);for(const i of d.querySelectorAll('[data-game-fine="tannenbaum"]'))assert(i.checked);assert(!d.querySelector('[data-game-fine="siebener"]').checked);
+ const {c,document:d}=ui();assert.equal(d.querySelectorAll('#game-fine-settings-grid input').length,22);for(const i of d.querySelectorAll('[data-game-fine]')){assert(!i.checked);assert(!i.disabled);}assert.equal(d.querySelectorAll('[data-game-fine-panel]').length,22);assert(await c.setGameFineOnTop('tannenbaum',true));assert(d.getElementById('tannenbaum-ontop-check').checked);for(const i of d.querySelectorAll('[data-game-fine="tannenbaum"]'))assert(i.checked);assert(!d.querySelector('[data-game-fine="siebener"]').checked);
 });
 test('a failed or offline setting restores the displayed value and a delayed result cannot cross clubs',async()=>{
  const {c,document:d,st}=ui();st.fail(true);assert.equal(await c.setGameFineOnTop('siebener',true),false);assert(!d.querySelector('[data-game-fine="siebener"]').checked);c.navigator.onLine=false;assert.equal(await c.setGameFineOnTop('siebener',true),false);c.navigator.onLine=true;st.fail(false);let release;c.window.firestoreApi.updateGameFineSettings=async()=>{await new Promise(r=>release=r);return {gameFineSettings:{siebener:true},gameFineSettingsRevision:1};};const pending=c.setGameFineOnTop('siebener',true);await new Promise(r=>setImmediate(r));c.ACTIVE_CLUB='Other';c.resetGameFineSettings();release();assert.equal(await pending,false);assert.deepEqual(plain(vm.runInContext('gameFineSettings',c)),{});

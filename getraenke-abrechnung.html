@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261113-v223">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261113-v223">
-  <link rel="stylesheet" href="css/table-games.css?v=20261113-v223">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261113-v223">
-<link rel="stylesheet" href="css/game-rules.css?v=20261113-v223">
+  <link rel="stylesheet" href="css/styles.css?v=20261113-v224">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261113-v224">
+  <link rel="stylesheet" href="css/table-games.css?v=20261113-v224">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261113-v224">
+<link rel="stylesheet" href="css/game-rules.css?v=20261113-v224">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -128,19 +128,19 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261113-v223">
-<link rel="stylesheet" href="css/game-starts.css?v=20261113-v223">
-<link rel="stylesheet" href="css/game-settings.css?v=20261113-v223">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261113-v223">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261113-v223">
-<link rel="stylesheet" href="css/historical-evenings.css?v=20261113-v223">
-<link rel="stylesheet" href="css/club-content.css?v=20261113-v223">
-<link rel="stylesheet" href="css/extra-games.css?v=20261113-v223">
-<link rel="stylesheet" href="css/game-fine-policy.css?v=20261113-v223">
-<link rel="stylesheet" href="css/game-overview.css?v=20261113-v223">
-<link rel="stylesheet" href="css/kranz.css?v=20261113-v223">
-<link rel="stylesheet" href="css/shared-sync.css?v=20261113-v223">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261113-v223">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261113-v224">
+<link rel="stylesheet" href="css/game-starts.css?v=20261113-v224">
+<link rel="stylesheet" href="css/game-settings.css?v=20261113-v224">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261113-v224">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261113-v224">
+<link rel="stylesheet" href="css/historical-evenings.css?v=20261113-v224">
+<link rel="stylesheet" href="css/club-content.css?v=20261113-v224">
+<link rel="stylesheet" href="css/extra-games.css?v=20261113-v224">
+<link rel="stylesheet" href="css/game-fine-policy.css?v=20261113-v224">
+<link rel="stylesheet" href="css/game-overview.css?v=20261113-v224">
+<link rel="stylesheet" href="css/kranz.css?v=20261113-v224">
+<link rel="stylesheet" href="css/shared-sync.css?v=20261113-v224">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261113-v224">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -805,7 +805,11 @@
 <div id="tab-spiele-statistik" class="hidden"><div class="section-title">📊 Spielstatistik</div><div class="cash-year-heading"><button type="button" class="primary-btn" onclick="KCReportApp.show('games')">📺 Auf Dashboard anzeigen / schließen</button><button type="button" class="secondary-btn" onclick="showSideTab('strafen','strafen-statistik')">Zeitraum / Zählbeginn ändern</button></div><p class="stats-help">Es gilt der Zeitraum der Strafenstatistik. Treffer zählen beim Werfer, unabhängig von den Strafbuchungen bei den anderen. Spiele und Siege werden für ab diesem Update vollständig dokumentierte, abgerechnete Spiele erfasst.</p><div id="game-stats-table" class="cash-year-scroller"></div></div>
 <div id="tab-spiele-hub">
   <div class="section-title">Spielauswahl</div>
-  <div class="game-random-launch"><button type="button" class="primary-btn" id="random-game-button" onclick="KCGameOptionsApp.draw()" disabled>🎲 Zufälliges Spiel auslosen</button><span>Nur auslosen – kein Spielstart</span></div><div class="game-hub-grid"><div class="game-hub-card" onclick="showSideTab('spiele','guterschnitt')"><div class="icon">✂️</div><div class="title">Der gute Schnitt</div><div class="desc">Zahlenfolge treffen · steigende Versuche</div></div>
+  <div class="game-random-launch"><button type="button" class="primary-btn" id="random-game-button" onclick="KCGameOptionsApp.draw()" disabled>🎲 Zufälliges Spiel auslosen</button><span>Nur auslosen – kein Spielstart</span></div><div class="game-hub-grid"><div class="game-hub-card" onclick="showSideTab('spiele','parteienspiel')"><div class="icon">⚖️</div><div class="title">Parteienspiel</div><div class="desc">Zwei Parteien sammeln Rundendifferenzen. Feste Runden oder Mindestrunden mit Vorsprung.</div></div>
+<div class="game-hub-card" onclick="showSideTab('spiele','dreieuro')"><div class="icon">💶</div><div class="title">3-Euro-Spiel</div><div class="desc">Startbetrag herunterkegeln. Preise, Würfe und Kranzwertung sind einstellbar.</div></div>
+<div class="game-hub-card" onclick="showSideTab('spiele','ebbeflut')"><div class="icon">🌊</div><div class="title">Ebbe und Flut</div><div class="desc">3: Ebbe · 5: normal · 7: Flut. Wasserstand und halbe Punkte zählen mit.</div></div>
+<div class="game-hub-card" onclick="showSideTab('spiele','hochsprung')"><div class="icon">🏅</div><div class="title">Hochsprung</div><div class="desc">0–7 frei belegbare Hürden, je höchstens drei Würfe und einstellbarer Fehlbetrag.</div></div>
+<div class="game-hub-card" onclick="showSideTab('spiele','guterschnitt')"><div class="icon">✂️</div><div class="title">Der gute Schnitt</div><div class="desc">Zahlenfolge treffen · steigende Versuche</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','tannenbaum')"><div class="icon">🌲</div><div class="title">Tannenbaum</div><div class="desc">Teamspiel mit Strafboxen, Strikes und Live-Übersicht.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','darts')"><div class="icon">🎯</div><div class="title">Darts</div><div class="desc">Klassisches Countdown-Spiel für zwei Teams.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','lotterie')"><div class="icon">🎰</div><div class="title">Lotterie</div><div class="desc">Mit Startspieler-Auslosung, Sitzreihenfolge und Spaltenbeträgen.</div></div>
@@ -1327,6 +1331,10 @@
   <div id="fuchs-board"></div>
 </div>
 
+<div id="tab-parteienspiel" class="hidden"><div class="section-title">⚖️ Parteienspiel</div><div class="round-page-tools"><button type="button" class="secondary-btn" onclick="openRoundRules('parteienspiel')">ℹ️ Regeln</button><button type="button" class="secondary-btn" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('parteienspiel')">⚙️ Einstellungen</button></div><div id="parteienspiel-setup" class="ind-setup gs-start-card"></div><div id="parteienspiel-board"></div></div>
+<div id="tab-dreieuro" class="hidden"><div class="section-title">💶 3-Euro-Spiel</div><div class="round-page-tools"><button type="button" class="secondary-btn" onclick="openRoundRules('dreieuro')">ℹ️ Regeln</button><button type="button" class="secondary-btn" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('dreieuro')">⚙️ Einstellungen</button></div><div id="dreieuro-setup" class="ind-setup gs-start-card"></div><div id="dreieuro-board"></div></div>
+<div id="tab-ebbeflut" class="hidden"><div class="section-title">🌊 Ebbe und Flut</div><div class="round-page-tools"><button type="button" class="secondary-btn" onclick="openRoundRules('ebbeflut')">ℹ️ Regeln</button><button type="button" class="secondary-btn" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('ebbeflut')">⚙️ Einstellungen</button></div><div id="ebbeflut-setup" class="ind-setup gs-start-card"></div><div id="ebbeflut-board"></div></div>
+<div id="tab-hochsprung" class="hidden"><div class="section-title">🏅 Hochsprung</div><div class="round-page-tools"><button type="button" class="secondary-btn" onclick="openRoundRules('hochsprung')">ℹ️ Regeln</button><button type="button" class="secondary-btn" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('hochsprung')">⚙️ Einstellungen</button></div><div id="hochsprung-setup" class="ind-setup gs-start-card"></div><div id="hochsprung-board"></div></div>
 <div id="tab-spiele-einstellungen" class="hidden">
  <h2 class="section-title">⚙️ Spiel-Einstellungen</h2>
  <p class="game-settings-intro">Vorgaben für diesen Club. Spielregeln gelten ab dem nächsten Spielstart; OnTop gilt für den aktuellen Kegelabend.</p>
@@ -2341,80 +2349,80 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261113-v223"></script>
-<script src="js/kegel-calendar.js?v=20261113-v223"></script>
-<script src="js/helpers.js?v=20261113-v223"></script>
-<script src="js/state.js?v=20261113-v223"></script>
-<script src="js/shared-clock.js?v=20261113-v223"></script>
-<script src="js/kranz-policy.js?v=20261113-v223"></script>
-<script src="js/games/extra-core.js?v=20261113-v223"></script><script src="js/games/extra-view.js?v=20261113-v223"></script>
-<script src="js/games/individual-core.js?v=20261113-v223"></script>
-<script src="js/game-rules.js?v=20261113-v223"></script>
-<script src="js/payment-visibility.js?v=20261113-v223"></script>
-<script src="js/persons.js?v=20261113-v223"></script>
-<script src="js/member-profiles.js?v=20261113-v223"></script>
-<script src="js/clubs.js?v=20261113-v223"></script>
+<script src="js/birthdays.js?v=20261113-v224"></script>
+<script src="js/kegel-calendar.js?v=20261113-v224"></script>
+<script src="js/helpers.js?v=20261113-v224"></script>
+<script src="js/state.js?v=20261113-v224"></script>
+<script src="js/shared-clock.js?v=20261113-v224"></script>
+<script src="js/kranz-policy.js?v=20261113-v224"></script>
+<script src="js/games/extra-core.js?v=20261113-v224"></script><script src="js/games/extra-view.js?v=20261113-v224"></script>
+<script src="js/games/individual-core.js?v=20261113-v224"></script>
+<script src="js/game-rules.js?v=20261113-v224"></script>
+<script src="js/payment-visibility.js?v=20261113-v224"></script>
+<script src="js/persons.js?v=20261113-v224"></script>
+<script src="js/member-profiles.js?v=20261113-v224"></script>
+<script src="js/clubs.js?v=20261113-v224"></script>
 
-<script src="js/games/avatar-select.js?v=20261113-v223"></script>
-<script src="js/games/tannenbaum.js?v=20261113-v223"></script>
-<script src="js/games/darts.js?v=20261113-v223"></script>
-<script src="js/games/tiberius.js?v=20261113-v223"></script>
-<script src="js/games/lotterie.js?v=20261113-v223"></script>
-<script src="js/game-fine-policy.js?v=20261113-v223"></script><script src="js/game-options.js?v=20261113-v223"></script><script src="js/game-fine-settings.js?v=20261113-v223"></script>
-<script src="js/game-results.js?v=20261113-v223"></script>
-<script src="js/starter-draw.js?v=20261113-v223"></script>
-<script src="js/games/solo-start-draw.js?v=20261113-v223"></script>
-<script src="js/games/start-setup.js?v=20261113-v223"></script>
-<script src="js/games/seating.js?v=20261113-v223"></script>
-<script src="js/games/mensch.js?v=20261113-v223"></script>
-<script src="js/games/plusminus.js?v=20261113-v223"></script>
-<script src="js/games/hausnummer-core.js?v=20261113-v223"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261113-v223"></script>
-<script src="js/games/hausnummer-tief.js?v=20261113-v223"></script>
-<script src="js/games/fuchsjagd.js?v=20261113-v223"></script>
-<script src="js/games/sichern.js?v=20261113-v223"></script>
-<script src="js/games/sechstage-core.js?v=20261113-v223"></script>
-<script src="js/games/sechstage.js?v=20261113-v223"></script>
-<script src="js/games/table-games-core.js?v=20261113-v223"></script>
-<script src="js/games/table-games-ui.js?v=20261113-v223"></script>
-<script src="js/games/individual-view.js?v=20261113-v223"></script><script src="js/games/individual-ui.js?v=20261113-v223"></script><script src="js/games/extra-ui.js?v=20261113-v223"></script><script src="js/games/guterschnitt.js?v=20261113-v223"></script><script src="js/games/kranz-settings.js?v=20261113-v223"></script><script src="js/games/bergundtal.js?v=20261113-v223"></script><script src="js/games/ballermann.js?v=20261113-v223"></script><script src="js/games/lattenzaun.js?v=20261113-v223"></script><script src="js/games/siebener.js?v=20261113-v223"></script><script src="js/games/hindernis.js?v=20261113-v223"></script>
-<script src="js/games/blackjack.js?v=20261113-v223"></script>
-<script src="js/games/gluecksspirale.js?v=20261113-v223"></script>
-<script src="js/games/tor.js?v=20261113-v223"></script>
-<script src="js/games/coinflip.js?v=20261113-v223"></script>
+<script src="js/games/avatar-select.js?v=20261113-v224"></script>
+<script src="js/games/tannenbaum.js?v=20261113-v224"></script>
+<script src="js/games/darts.js?v=20261113-v224"></script>
+<script src="js/games/tiberius.js?v=20261113-v224"></script>
+<script src="js/games/lotterie.js?v=20261113-v224"></script>
+<script src="js/game-fine-policy.js?v=20261113-v224"></script><script src="js/game-options.js?v=20261113-v224"></script><script src="js/game-fine-settings.js?v=20261113-v224"></script>
+<script src="js/game-results.js?v=20261113-v224"></script>
+<script src="js/starter-draw.js?v=20261113-v224"></script>
+<script src="js/games/solo-start-draw.js?v=20261113-v224"></script>
+<script src="js/games/start-setup.js?v=20261113-v224"></script>
+<script src="js/games/seating.js?v=20261113-v224"></script>
+<script src="js/games/mensch.js?v=20261113-v224"></script>
+<script src="js/games/plusminus.js?v=20261113-v224"></script>
+<script src="js/games/hausnummer-core.js?v=20261113-v224"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261113-v224"></script>
+<script src="js/games/hausnummer-tief.js?v=20261113-v224"></script>
+<script src="js/games/fuchsjagd.js?v=20261113-v224"></script>
+<script src="js/games/sichern.js?v=20261113-v224"></script>
+<script src="js/games/sechstage-core.js?v=20261113-v224"></script>
+<script src="js/games/sechstage.js?v=20261113-v224"></script>
+<script src="js/games/table-games-core.js?v=20261113-v224"></script>
+<script src="js/games/table-games-ui.js?v=20261113-v224"></script>
+<script src="js/games/individual-view.js?v=20261113-v224"></script><script src="js/games/individual-ui.js?v=20261113-v224"></script><script src="js/games/extra-ui.js?v=20261113-v224"></script><script src="js/games/round-games-ui.js?v=20261113-v224"></script><script src="js/games/parteienspiel.js?v=20261113-v224"></script><script src="js/games/dreieuro.js?v=20261113-v224"></script><script src="js/games/ebbeflut.js?v=20261113-v224"></script><script src="js/games/hochsprung.js?v=20261113-v224"></script><script src="js/games/guterschnitt.js?v=20261113-v224"></script><script src="js/games/kranz-settings.js?v=20261113-v224"></script><script src="js/games/bergundtal.js?v=20261113-v224"></script><script src="js/games/ballermann.js?v=20261113-v224"></script><script src="js/games/lattenzaun.js?v=20261113-v224"></script><script src="js/games/siebener.js?v=20261113-v224"></script><script src="js/games/hindernis.js?v=20261113-v224"></script>
+<script src="js/games/blackjack.js?v=20261113-v224"></script>
+<script src="js/games/gluecksspirale.js?v=20261113-v224"></script>
+<script src="js/games/tor.js?v=20261113-v224"></script>
+<script src="js/games/coinflip.js?v=20261113-v224"></script>
 
-<script src="js/groups.js?v=20261113-v223"></script>
+<script src="js/groups.js?v=20261113-v224"></script>
 
-<script src="js/penalty-table.js?v=20261113-v223"></script>
-<script src="js/club-content.js?v=20261113-v223"></script><script src="js/club-content-pager.js?v=20261113-v223"></script><script src="js/club-content-app.js?v=20261113-v223"></script>
-<script src="js/game-overview.js?v=20261113-v223"></script><script src="js/game-overview-app.js?v=20261113-v223"></script>
-<script src="js/app.js?v=20261113-v223"></script><script src="js/club-termine.js?v=20261113-v223"></script>
+<script src="js/penalty-table.js?v=20261113-v224"></script>
+<script src="js/club-content.js?v=20261113-v224"></script><script src="js/club-content-pager.js?v=20261113-v224"></script><script src="js/club-content-app.js?v=20261113-v224"></script>
+<script src="js/game-overview.js?v=20261113-v224"></script><script src="js/game-overview-app.js?v=20261113-v224"></script>
+<script src="js/app.js?v=20261113-v224"></script><script src="js/club-termine.js?v=20261113-v224"></script>
     
-<script src="js/live-games.js?v=20261113-v223"></script>
-<script src="js/strafe-pdf.js?v=20261113-v223"></script>
-<script src="js/cash-history.js?v=20261113-v223"></script>
-<script src="js/cash-overview.js?v=20261113-v223"></script>
-<script src="js/cash-income.js?v=20261113-v223"></script>
-<script src="js/cash-accounting.js?v=20261113-v223"></script>
-<script src="js/cash-book.js?v=20261113-v223"></script>
-<script src="js/penalty-statistics.js?v=20261113-v223"></script>
-<script src="js/activity-reports.js?v=20261113-v223"></script>
-<script src="js/reports-app.js?v=20261113-v223"></script>
-<script src="js/start-review.js?v=20261113-v223"></script>
-<script src="js/cash-expenses.js?v=20261113-v223"></script>
-<script src="js/historical-evenings.js?v=20261113-v223"></script>
-<script src="js/game-inputs.js?v=20261113-v223"></script>
-<script src="js/table-alignment.js?v=20261113-v223"></script>
-<script src="js/table-headers.js?v=20261113-v223"></script>
+<script src="js/live-games.js?v=20261113-v224"></script>
+<script src="js/strafe-pdf.js?v=20261113-v224"></script>
+<script src="js/cash-history.js?v=20261113-v224"></script>
+<script src="js/cash-overview.js?v=20261113-v224"></script>
+<script src="js/cash-income.js?v=20261113-v224"></script>
+<script src="js/cash-accounting.js?v=20261113-v224"></script>
+<script src="js/cash-book.js?v=20261113-v224"></script>
+<script src="js/penalty-statistics.js?v=20261113-v224"></script>
+<script src="js/activity-reports.js?v=20261113-v224"></script>
+<script src="js/reports-app.js?v=20261113-v224"></script>
+<script src="js/start-review.js?v=20261113-v224"></script>
+<script src="js/cash-expenses.js?v=20261113-v224"></script>
+<script src="js/historical-evenings.js?v=20261113-v224"></script>
+<script src="js/game-inputs.js?v=20261113-v224"></script>
+<script src="js/table-alignment.js?v=20261113-v224"></script>
+<script src="js/table-headers.js?v=20261113-v224"></script>
 
-<script src="js/shared-sync-core.js?v=20261113-v223"></script>
-<script src="js/shared-sync-transport.js?v=20261113-v223"></script>
-<script src="js/kranz-ui.js?v=20261113-v223"></script>
-<script src="js/tablet-sync.js?v=20261113-v223"></script>
-<script src="js/shared-sync-app.js?v=20261113-v223"></script>
+<script src="js/shared-sync-core.js?v=20261113-v224"></script>
+<script src="js/shared-sync-transport.js?v=20261113-v224"></script>
+<script src="js/kranz-ui.js?v=20261113-v224"></script>
+<script src="js/tablet-sync.js?v=20261113-v224"></script>
+<script src="js/shared-sync-app.js?v=20261113-v224"></script>
 <script
   type="module"
-  src="js/firebase.js?v=20261113-v223"
+  src="js/firebase.js?v=20261113-v224"
 ></script>
 
 </body>

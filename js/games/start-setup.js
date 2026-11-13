@@ -1,5 +1,5 @@
 /* Gemeinsame kompakte Startansicht: alle aktiven Kegler, optionales Umordnen, Teams pro Spiel. */
-const GAME_SETUP_KEYS=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'];
+const GAME_SETUP_KEYS=['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','haushoch','haustief','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'];
 const gameSetupDrafts=new Map();
 function gsEscape(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function gameSetupPeople(){return getActivePlayersForSoloGame().filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly);}
@@ -15,11 +15,11 @@ function gameSetupDraft(key){
 function gameSetupNames(key){return gameSetupDraft(key).names.slice();}
 function gameSetupState(key){
  if(typeof tableGameGet==='function'&&['blackjack','gluecksspirale'].includes(key))return tableGameGet(key);
- if(typeof indGet==='function'&&['bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key))return indGet(key);
+ if(typeof indGet==='function'&&['bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(key))return indGet(key);
  if(typeof indGet==='function'&&['siebener','hindernis'].includes(key))return indGet(key);
  const state={tannenbaum:typeof tannenbaumState==='undefined'?null:tannenbaumState,darts:typeof dartsState==='undefined'?null:dartsState,lotterie:typeof lotterieState==='undefined'?null:lotterieState,tiberius:typeof tiberiusState==='undefined'?null:tiberiusState,mensch:typeof menschState==='undefined'?null:menschState,plusminus:typeof plusminusState==='undefined'?null:plusminusState,haushoch:typeof haushochState==='undefined'?null:haushochState,haustief:typeof haustiefState==='undefined'?null:haustiefState,sichern:typeof sichernState==='undefined'?null:sichernState,fuchsjagd:typeof fuchsjagdState==='undefined'?null:fuchsjagdState,tor:typeof torState==='undefined'?null:torState,sechstage:typeof sechstageState==='undefined'?null:sechstageState};return state[key];
 }
-function gameSetupMode(key){return ['sechstage','gluecksspirale'].includes(key)?'pairs':['tannenbaum','darts','tor','ballermann'].includes(key)||key==='sichern'&&document.getElementById('sichern-mode')?.value==='team'?'teams':'solo';}
+function gameSetupMode(key){return ['sechstage','gluecksspirale'].includes(key)?'pairs':['tannenbaum','darts','tor','ballermann','parteienspiel'].includes(key)||key==='sichern'&&document.getElementById('sichern-mode')?.value==='team'?'teams':'solo';}
 function gameSetupLocked(key){const s=gameSetupState(key);return !!(s?.active||s?.id||key==='tannenbaum'&&s?.history?.length);}
 function gameSetupTeams(key){
  const d=gameSetupDraft(key),names=d.names,mode=gameSetupMode(key);
@@ -43,7 +43,7 @@ function gameTeamNames(key,team){const s=gameSetupState(key),frozen=s?.participa
 function gameSetupRefresh(key){
  if(key==='sechstage'&&typeof renderSechsGame==='function')renderSechsGame();
  else if(['blackjack','gluecksspirale'].includes(key)&&typeof renderTableGame==='function')renderTableGame(key);
- else if(['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt'].includes(key)&&typeof renderIndividualGame==='function')renderIndividualGame(key);
+ else if(['siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung'].includes(key)&&typeof renderIndividualGame==='function')renderIndividualGame(key);
  else{if(typeof renderAll==='function')renderAll();else renderCommonGameSetups();}
 }
 function gameSetupToggle(key,checked){if(gameSetupLocked(key))return;const d=gameSetupDraft(key);d.editing=!!checked;if(!checked){d.names=gameSetupBaseOrder();d.teams=null;}gameSetupRefresh(key);}

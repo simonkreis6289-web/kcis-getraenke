@@ -14,8 +14,8 @@ function game(c,key,rule){
  if(key==='ballermann')run('timerStart');
  return {run,get state(){return state;},core};
 }
-test('all twenty games support the common rule; previous special values and good-cut target survive migration',()=>{
- const c=engines(),p=c.KCKranzPolicy;assert.equal(p.keys.length,20);
+test('all twenty-four games support the common rule; previous special values and good-cut target survive migration',()=>{
+ const c=engines(),p=c.KCKranzPolicy;assert.equal(p.keys.length,24);
  for(const key of p.keys)for(const rule of [{mode:'fixed',value:8},{mode:'fixed',value:12},{mode:'choose'}]){const root={extraGameSettings:{kranzRules:{[key]:rule}}};assert.deepEqual(copy(p.configured(root,key)),rule);assert.equal(p.resolve(rule,6),rule.mode==='choose'?6:rule.value);}
  assert.equal(p.configured({dartsState:{valueMap:{kranz:50}}},'darts').value,50);assert.equal(p.configured({},'haustief').value,0);assert.equal(p.configured({extraGameSettings:{guterschnitt:{kranzMode:'target'}}},'guterschnitt').mode,'target');assert.throws(()=>p.resolve({mode:'choose'},10),/Kranzwert/);assert.throws(()=>p.resolve({mode:'choose'}),/Kranzwert/);
 });
@@ -33,8 +33,8 @@ async function app(settings={}){const value=initial();value.extraGameSettings={k
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function selectValue(el,value){for(const o of el.querySelectorAll('option')){if(o.value===String(value))o.setAttribute('selected','');else o.removeAttribute('selected');}}
 async function answer(a,number){for(let i=0;i<10&&!a.document.querySelector('.kc-kranz-backdrop');i++)await flush();const b=[...a.document.querySelectorAll('.kc-kranz-choices button')].find(b=>Number(b.textContent)===number);assert(b,'Kranz dialog is visible');b.click();}
-test('actual app exposes one per-game control for all twenty games and persists a choice across devices',async()=>{
- const a=await app();assert.equal(a.document.querySelectorAll('[id^="kranz-rule-"]').length,20);for(const el of a.document.querySelectorAll('[id^="kranz-rule-"]'))assert(['8','12','choose'].every(v=>[...el.options].some(o=>o.value===v)));
+test('actual app exposes one per-game control for all twenty-four games and persists a choice across devices',async()=>{
+ const a=await app();assert.equal(a.document.querySelectorAll('[id^="kranz-rule-"]').length,24);for(const el of a.document.querySelectorAll('[id^="kranz-rule-"]'))assert(['8','12','choose'].every(v=>[...el.options].some(o=>o.value===v)));
  const el=a.document.getElementById('kranz-rule-sechstage');selectValue(el,'choose');await a.c.KCKranzUI.save('sechstage');assert.equal(a.db.root().extraGameSettings.kranzRules.sechstage.mode,'choose');
  const b=fullApp(a.db);await b.select();assert.equal(b.document.getElementById('kranz-rule-sechstage').value,'choose');
 });
