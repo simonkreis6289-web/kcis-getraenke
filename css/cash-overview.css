@@ -9,3 +9,28 @@
 .cash-dashboard-note{margin:0;font-size:12px;line-height:1.4;color:#52637c}
 @media(max-width:800px){.cash-standing-form{grid-template-columns:repeat(2,minmax(0,1fr))}.cash-dashboard-summary{grid-template-columns:repeat(3,minmax(0,1fr))}#cash-dashboard-overlay{padding:10px;gap:8px}.cash-dashboard-heading{align-items:start}.cash-dashboard-heading p{font-size:11px}}
 @media(max-width:500px){.cash-standing-form{grid-template-columns:1fr}.cash-standing-row{align-items:start}.cash-dashboard-summary>div{padding:7px}.cash-dashboard-summary span{font-size:10px}.cash-dashboard-summary strong{font-size:17px}}
+
+/* V221: Tabellen füllen die verfügbare Breite; jede Körperzeile hat dieselbe Höhe. */
+.cash-year-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;color:#203655;font-variant-numeric:tabular-nums}
+.cash-year-table th,.cash-year-table td{min-width:0!important;max-width:none!important;box-sizing:border-box;height:var(--report-row-height,44px);padding:8px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap!important;border-right:1px solid #d3deed;border-bottom:1px solid #d3deed;vertical-align:middle}
+.cash-year-table tr>:first-child{min-width:0!important;max-width:none!important;width:13%;text-align:left;white-space:nowrap!important}
+.cash-year-table thead th{background:#e5edf8;color:#263f61;text-align:center;font-weight:800}
+.cash-year-table tbody td:nth-child(2n){background:#f1f5fb!important}.cash-year-table tbody tr:nth-child(2n) td:nth-child(2n){background:#e8eff9!important}
+.cash-year-table tbody td:nth-child(2n+1){background:#fff!important}.cash-year-table tbody tr:nth-child(2n) td:nth-child(2n+1){background:#f6f8fc!important}
+.cash-year-table tbody th{background:#edf2f9!important;font-weight:800}.cash-year-table td.cash-year-sum{background:#cedbed!important;color:#142d50;font-weight:800}
+.cash-year-table td.cash-year-paid{background:#e5f3ed!important;font-weight:700}.cash-year-table td.cash-plan-open{background:#fff4d5!important;font-weight:800}
+.cash-negative{color:#bd253b!important}.cash-positive{color:#18202a!important}
+.cash-year-table small{display:inline;font-size:.68em;margin-left:5px}.cash-year-table thead small{display:block;margin:3px 0 0}
+.cash-year-table tfoot th,.cash-year-table tfoot td{background:#263f64!important;color:#fff;font-weight:800}
+#cash-dashboard-scroll table{width:100%;min-width:100%;max-width:100%;table-layout:fixed;zoom:1}
+#cash-dashboard-scroll th,#cash-dashboard-scroll td{height:var(--report-row-height,44px);padding:3px 6px!important}
+#cash-dashboard-scroll{overflow:auto}#cash-dashboard-scroll table caption{padding:5px}
+.cash-dashboard-summary:empty{display:none}.evening-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}.evening-results article{border:1px solid #c1cee1;border-radius:10px;padding:12px;background:#f2f6fc}.evening-results article>*{display:block;margin-bottom:5px}
+#evening-summary-preview .cash-dashboard-summary{margin-bottom:16px}
+.billing-tabs.club-info-tabs{border:0;padding:0;gap:8px;flex-wrap:wrap}.billing-tabs.club-info-tabs button{padding:9px 18px;min-height:40px;border:1px solid #b7c6df;border-radius:9px;background:#f2f6fc;color:#233c65;font-weight:700}.billing-tabs.club-info-tabs button[aria-selected=true]{background:#253d6a;color:white}
+.round-btn{min-width:250px;padding-inline:32px!important}
+.game-properties-tabs>button{display:none!important}.game-properties-tabs{display:block!important}.game-settings-select{display:grid;gap:6px;max-width:420px;font-weight:700}.game-settings-select select{width:100%;padding:12px;border:1px solid #afc2df;border-radius:10px;background:#f2f6fc;color:#223b63;font:700 15px 'DM Sans',sans-serif}
+.start-review-list{display:grid;gap:8px;margin:12px 0}.start-review-list>div{display:flex;justify-content:space-between;gap:20px;padding:9px 12px;background:#f1f5fb;border-radius:8px}.start-review-list dt{color:#52647f}.start-review-list dd{margin:0;font-weight:800;text-align:right}.start-review-return{position:fixed;bottom:20px;right:25px;z-index:25000;box-shadow:0 5px 25px #142c5250;padding:14px 22px!important}
+@media(max-width:700px){.cash-year-table{font-size:12px}.cash-year-table th,.cash-year-table td{padding:5px!important}.cash-year-table tr>:first-child{width:20%}.activity-table{min-width:650px}.cash-year-scroller{overflow:auto}.round-btn{min-width:180px}}
+
+.kc-admin-tabs{gap:8px!important;border:0!important;max-width:none!important;padding:0!important;margin-bottom:14px!important}.kc-admin-tab{border:1px solid #b7c6df!important;border-radius:9px!important;background:#f2f6fc!important;color:#233c65!important;padding:9px 18px!important;min-height:40px;font-weight:700!important}.kc-admin-tab.active{background:#253d6a!important;color:#fff!important;border-color:#253d6a!important}

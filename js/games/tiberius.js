@@ -875,6 +875,7 @@ function finishTiberiusGame() {
   const entry = {
     id: historyId,
     type: 'tiberius',
+      participants: players.map(p=>p.name),winnerNames: [],
     createdAt: new Date().toISOString(),
     gameFineFrozen:true,onTop: !!tiberiusState.onTop,
     score: tiberiusState.score || 0,

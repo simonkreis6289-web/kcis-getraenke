@@ -168,7 +168,7 @@ async function bookSoloSpecialThrow(name,pins,kind) {
   const key=getPenaltyKeyByType(kind);
   if(!key){showToast('Strafenart '+kind+' nicht angelegt','error');return false;}
   const punished=kind==='gosse'?[name]:getActivePlayersForSoloGame().filter(p=>p.name!==name).map(p=>p.name);
-  if(!punished.length)return true;
+  if(!punished.length){addPenaltyStatsEntry(kind,name,[]);return true;}
   soloPinPenaltyBusy=true;
   try {
     const changes=punished.map(personName=>({personName,category:'strafen',key,delta:1}));
@@ -189,9 +189,9 @@ function getSoloThrowPenalty(name, value, isGosse) {
   const punished = kind === 'gosse' ? [name] : getActivePlayersForSoloGame().filter(p => p.name !== name).map(p => p.name);
   return { kind, key, punished };
 }
-function removeOneSoloStatsEntry(name, kind) {
+function removeOneSoloStatsEntry(name, kind, statId) {
   if (!Array.isArray(penaltyStatsLog)) return;
-  const index = penaltyStatsLog.findIndex(x => x.thrower === name && normalizePenaltyStatsType(x.type) === normalizePenaltyStatsType(kind));
+  const index = penaltyStatsLog.findIndex(x => statId?x.id===statId:x.thrower===name&&(!x.eveningStartedAt||x.eveningStartedAt===currentEveningStartedAt)&&normalizePenaltyStatsType(x.type)===normalizePenaltyStatsType(kind));
   if (index >= 0) penaltyStatsLog.splice(index, 1);
 }
 async function changeSoloThrowPenalty(name, oldThrow, newThrow) {

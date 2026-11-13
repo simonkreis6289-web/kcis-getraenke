@@ -17,10 +17,10 @@ test('plans respect first/last due dates, cash-year resets, Berlin date boundari
  assert.equal(overview.planned(order({interval:'weekly',startDate:'2026-01-01'}),{mode:'now',startAt:'2026-01-07T23:30:00Z'},'2026-01-15'),2000);
  for(const change of [{amountCents:0},{amountCents:1.5},{amountCents:10000001},{interval:'daily'},{startDate:'2026-02-30'},{endDate:'2026-01-01'},{id:'bad'}])assert(!overview.validOrder(order(change)));
 });
-test('planned contributions expose open balances and credits but never change the Soll cash balance or archives',()=>{
+test('planned contributions stay separate from confirmed payments and do not change the Soll cash balance or archives',()=>{
  const entries=[{id:'a',category:'strafen',date:'2026-02-01',members:[{name:'A',total:50},{name:'B',total:10}],totals:{grandTotal:60},laneCostCents:500}],settings={startDate:'2026-01-01',openingCents:1000},orders={orders:[order(),order({id:'standing_b',personName:'B',amountCents:1500})]},before=JSON.stringify(entries);
- const m=overview.model(entries,settings,[],[{name:'A'},{name:'B'},{name:'Gast',isGuest:true}],orders,'2026-02-28');assert.equal(m.summary.balance,6500);assert.equal(m.open,1000);assert.equal(m.credit,2000);assert.equal(m.planned,7000);assert.equal(m.rows.find(r=>r.name==='A').open,1000);assert.equal(m.rows.find(r=>r.name==='B').credit,2000);assert.equal(JSON.stringify(entries),before);
- const doc=parseHTML(overview.table(m)).document;assert(doc.querySelector('caption'));assert(doc.querySelector('.cash-plan-open').textContent.includes('10,00'));assert(overview.table(m).includes('Guthaben (Plan)'));
+ const m=overview.model(entries,settings,[],[{name:'A'},{name:'B'},{name:'Gast',isGuest:true}],orders,'2026-02-28');assert.equal(m.summary.balance,6500);assert.equal(m.open,6000);assert.equal(m.credit,0);assert.equal(m.planned,7000);assert.equal(m.rows.find(r=>r.name==='A').open,5000);assert.equal(m.rows.find(r=>r.name==='B').credit,0);assert.equal(JSON.stringify(entries),before);
+ const doc=parseHTML(overview.table(m)).document;assert(doc.querySelector('caption'));assert(doc.querySelector('.cash-plan-open').textContent.includes('-50,00'));assert(overview.table(m).includes('Bisher bezahlt'));
  const evil=overview.model([],null,[],[{name:'<img onerror=x>'}],null,'2026-01-01');assert(!parseHTML(overview.table(evil)).document.querySelector('img'));
 });
 test('dashboard toggle is atomic, idempotent, conflict-safe and protected from generic state saves',async()=>{
@@ -46,7 +46,7 @@ test('actual app button opens and closes the remote view, saves a member plan an
  const s=server({persons:[{name:'A'}]}),f=app(s),c=f.c,doc=f.document;assert(!doc.getElementById('cash-dashboard-toggle').disabled);
  await c.toggleCashDashboard();assert.equal(doc.getElementById('cash-dashboard-toggle').getAttribute('aria-pressed'),'true');assert(s.root().dashboardCashView.open);await c.toggleCashDashboard();assert(!s.root().dashboardCashView.open);
  for(const [id,value] of [['person','A'],['amount','20.00'],['interval','monthly'],['start','2026-01-01'],['end','']])doc.getElementById('cash-standing-'+id).value=value;
- assert(await c.saveCashStandingOrder());assert.equal(s.root().cashStandingOrders.orders[0].amountCents,2000);assert(doc.getElementById('cash-year-table').textContent.includes('Offen'));assert(doc.getElementById('cash-standing-list').textContent.includes('monatlich'));
+ assert(await c.saveCashStandingOrder());assert.equal(s.root().cashStandingOrders.orders[0].amountCents,2000);assert(doc.getElementById('cash-year-table').textContent.includes('Bezahlstatus'));assert(doc.getElementById('cash-standing-list').textContent.includes('monatlich'));
  await c.deleteCashStandingOrder(s.root().cashStandingOrders.orders[0].id);assert.equal(s.root().cashStandingOrders.orders.length,0);
 });
 function dashboard(){
@@ -62,5 +62,5 @@ test('full-width dashboard view live-loads archives, refreshes values and discar
 });
 test('dashboard fitting accounts for panel padding and keeps the final column inside the available area',()=>{
  const f=dashboard();f.c.window.KCCashDashboard.update({dashboardCashView:{open:true},persons:[{name:'A'}]},'club');f.callbacks[0].ok([{id:'a',category:'strafen',date:'2026-01-01',members:[{name:'A',total:50}]}]);
- const area=f.document.getElementById('cash-dashboard-scroll'),table=area.querySelector('table');Object.defineProperty(area,'clientWidth',{value:1000});Object.defineProperty(area,'clientHeight',{value:600});f.c.getComputedStyle=()=>({paddingLeft:'8',paddingRight:'8',paddingTop:'8',paddingBottom:'8'});table.getBoundingClientRect=()=>({width:2000*Number(table.style.zoom||1),height:900*Number(table.style.zoom||1)});f.c.window.KCCashDashboard.fit();const rect=table.getBoundingClientRect();assert(rect.width<=980);assert(rect.height<=580);assert(Number(table.style.zoom)<1);
+ const area=f.document.getElementById('cash-dashboard-scroll'),table=area.querySelector('table');Object.defineProperty(area,'clientWidth',{value:1000});Object.defineProperty(area,'clientHeight',{value:600});f.c.getComputedStyle=()=>({paddingLeft:'8',paddingRight:'8',paddingTop:'8',paddingBottom:'8'});table.getBoundingClientRect=()=>({width:2000*Number(table.style.zoom||1),height:900*Number(table.style.zoom||1)});f.c.window.KCCashDashboard.fit();assert.equal(table.style.width,'100%');assert.equal(Number(table.style.zoom),1);assert(parseFloat(table.style.getPropertyValue('--report-row-height'))<=48);assert(parseFloat(table.style.fontSize)>=10);
 });

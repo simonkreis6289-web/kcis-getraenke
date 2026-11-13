@@ -88,7 +88,10 @@ async function cancelCurrentGame(key){
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
  const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);
- let abort=panel.querySelector('[data-abort-game]');if(s?.active){if(!abort){abort=document.createElement('button');abort.type='button';abort.className='secondary-btn game-abort-button';abort.dataset.abortGame=key;abort.textContent='✕ Spiel abbrechen';abort.onclick=()=>cancelCurrentGame(key);panel.append(abort);}}else abort?.remove();const old=panel.querySelector(':scope > .game-input-panel');
+ // Nur dieser gemeinsame Abbruchweg darf während eines laufenden Spiels sichtbar sein.
+ for(const button of panel.querySelectorAll('button'))if(!button.hasAttribute('data-abort-game')&&/Spiel abbrechen/i.test(button.textContent))button.remove();
+ const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());
+ if(s?.active){if(!abort){abort=document.createElement('button');abort.type='button';abort.className='secondary-btn game-abort-button';abort.dataset.abortGame=key;abort.textContent='✕ Spiel abbrechen';abort.onclick=()=>cancelCurrentGame(key);panel.append(abort);}}else abort?.remove();const old=panel.querySelector(':scope > .game-input-panel');
  if(['haushoch','haustief'].includes(key)){old?.remove();return;}
  if(!s?.active){if(key==='darts'){const finish=old?.querySelector('button[onclick="finishDartsRound()"]');if(finish)document.getElementById('darts-game-area')?.append(finish);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
  const card=document.createElement('section');card.className='game-input-panel';card.dataset.gameInput=key;card.setAttribute('aria-label','Wurfeingabe');

@@ -25,15 +25,16 @@
   function key(value,day){const time=stamp(value);return value&&Number.isFinite(time)?'evening:'+time:'day:'+day;}
   function build({people=[],catalog=[],evenings=[],logs=[],archives=[],eveningStartedAt='',archivedOnly=false,statementsOnly=false,today=KCBirthdays.today()}={}){
     const closedKeys=new Set(),archiveLogLimits=new Map(),sessions=new Map(),get=(id,day,value='')=>{if(!sessions.has(id))sessions.set(id,{key:id,date:day,stamp:value?stamp(value):NaN,people:new Map()});return sessions.get(id);};
-    function person(s,name){const n=norm(name);if(!n)return null;if(!s.people.has(n))s.people.set(n,{name:String(name).trim(),present:0,gosse:0,nine:0,kranz:0,gKnown:false,eventCounts:{gosse:0,nine:0,kranz:0}});return s.people.get(n);}
+    function person(s,name){const n=norm(name);if(!n)return null;if(!s.people.has(n))s.people.set(n,{name:String(name).trim(),present:0,gosse:0,nine:0,kranz:0,loser1:0,loser2:0,loser3:0,gKnown:false,eventCounts:{gosse:0,nine:0,kranz:0}});return s.people.get(n);}
     function gutters(p,cat){
       const keys=[...new Set((cat||[]).filter(s=>/gosse|pudel/i.test(s.label||'')&&!/könig|koenig/i.test(s.label||'')).map(s=>s.key))];
       return {known:keys.some(k=>Object.hasOwn(p.strafen||{},k)),value:keys.reduce((sum,k)=>sum+count(p.strafen?.[k]),0)};
     }
+    function losses(p,item,cat){for(let rank=1;rank<=3;rank++){const keys=(cat||[]).filter(s=>new RegExp('^'+rank+'[. ]*\\s*verlierer','i').test(String(s.label||'').trim())).map(s=>s.key);p['loser'+rank]=keys.reduce((sum,key)=>sum+count(item.strafen?.[key]),0);}}
     for(const e of statementsOnly?[]:evenings){
       const day=date(e.eveningStartedAt)||date(e.date);if(!day)continue;const sessionKey=key(e.eveningStartedAt,day);closedKeys.add(sessionKey);const s=get(sessionKey,day,e.eveningStartedAt);
       for(const name of new Set(e.attendees||[])){const p=person(s,name);if(p)p.present=1;}
-      for(const item of e.statsPeople||[]){const p=person(s,item.name);if(!p)continue;Object.assign(p,{present:item.present?1:p.present,gosse:count(item.gosse),nine:count(item.nine),kranz:count(item.kranz),gKnown:true,archiveStats:true});}
+      for(const item of e.statsPeople||[]){const p=person(s,item.name);if(!p)continue;Object.assign(p,{present:item.present?1:p.present,gosse:count(item.gosse),nine:count(item.nine),kranz:count(item.kranz),loser1:count(item.loser1??p.loser1),loser2:count(item.loser2??p.loser2),loser3:count(item.loser3??p.loser3),gKnown:true,archiveStats:true});}
     }
     const seenArchives=new Set();
     for(const e of archives.slice().sort((a,b)=>(Date.parse(b.closedAt||b.date)||0)-(Date.parse(a.closedAt||a.date)||0))){
@@ -43,9 +44,9 @@
       for(const item of [...(e.members||[]),...(e.guests||[])]){
         const p=person(s,item.name);if(!p)continue;
         if(['present','excused','unexcused','cancelled'].includes(item.status)){p.present=item.status==='present'?1:0;p.archiveAttendanceKnown=true;}else if(typeof item.present==='boolean'){p.present=item.present?1:0;p.archiveAttendanceKnown=true;}
-        const g=gutters(item,e.strafen?.length?e.strafen:catalog);if(g.known){p.gosse=g.value;p.gKnown=true;}
+        losses(p,item,e.strafen?.length?e.strafen:catalog);const g=gutters(item,e.strafen?.length?e.strafen:catalog);if(g.known){p.gosse=g.value;p.gKnown=true;}
       }
-      for(const item of e.statsPeople||[]){const p=person(s,item.name);if(!p)continue;Object.assign(p,{present:p.archiveAttendanceKnown?p.present:item.present?1:0,gosse:p.gKnown?p.gosse:count(item.gosse),nine:count(item.nine),kranz:count(item.kranz),gKnown:true,archiveStats:true});}
+      for(const item of e.statsPeople||[]){const p=person(s,item.name);if(!p)continue;Object.assign(p,{present:p.archiveAttendanceKnown?p.present:item.present?1:0,gosse:p.gKnown?p.gosse:count(item.gosse),nine:count(item.nine),kranz:count(item.kranz),loser1:count(item.loser1??p.loser1),loser2:count(item.loser2??p.loser2),loser3:count(item.loser3??p.loser3),gKnown:true,archiveStats:true});}
     }
     const seen=new Set();
     for(const entry of logs){
@@ -61,7 +62,7 @@
     if(!statementsOnly&&people.some(p=>(p.present||p.left)&&!p.isDrinksOnly)){
       const s=get(currentKey,date(eveningStartedAt)||today,eveningStartedAt);
       for(const item of people.filter(p=>!p.isDrinksOnly&&(p.present||p.left))){
-        const p=person(s,item.name);if(!p||p.archiveStats)continue;p.present=1;const g=gutters(item,catalog);if(g.known){p.gosse=g.value;p.gKnown=true;}
+        const p=person(s,item.name);if(!p||p.archiveStats)continue;p.present=1;losses(p,item,catalog);const g=gutters(item,catalog);if(g.known){p.gosse=g.value;p.gKnown=true;}
       }
     }
     // Old attendance records had only a calendar date; merge them once where a precise evening is known.
@@ -69,7 +70,7 @@
       const candidates=[...sessions.values()].filter(e=>e.date===s.date&&!e.key.startsWith('day:'));
       if(candidates.length){const target=candidates[0];for(const item of s.people.values()){const p=person(target,item.name);p.present=Math.max(p.present,item.present);for(const k of ['gosse','nine','kranz'])p.eventCounts[k]+=item.eventCounts[k];if(!p.gKnown&&item.gKnown){p.gosse=item.gosse;p.gKnown=true;}}sessions.delete(s.key);}
     }
-    return {currentKey,sessions:[...sessions.values()].filter(s=>!archivedOnly||closedKeys.has(s.key)||!statementsOnly&&[...closedKeys].some(k=>k==='day:'+s.date)).map(s=>({...s,people:[...s.people.values()].map(p=>({name:p.name,present:p.present,gosse:p.gKnown?p.gosse:p.eventCounts.gosse,nine:p.eventCounts.nine||p.nine,kranz:p.eventCounts.kranz||p.kranz}))}))};
+    return {currentKey,sessions:[...sessions.values()].filter(s=>!archivedOnly||closedKeys.has(s.key)||!statementsOnly&&[...closedKeys].some(k=>k==='day:'+s.date)).map(s=>({...s,people:[...s.people.values()].map(p=>({name:p.name,present:p.present,gosse:p.gKnown?p.gosse:p.eventCounts.gosse,nine:p.eventCounts.nine||p.nine,kranz:p.eventCounts.kranz||p.kranz,...(p.loser1?{loser1:p.loser1}:{}),...(p.loser2?{loser2:p.loser2}:{}),...(p.loser3?{loser3:p.loser3}:{})}))}))};
   }
   function baseline(data){return {sessionKey:data.currentKey,people:data.sessions.find(s=>s.key===data.currentKey)?.people||[]};}
   function summary(data,{settings=null,custom=false,from='',to='',people=[]}={}){
@@ -82,7 +83,7 @@
       if(!custom&&settings?.mode==='now'&&!partial&&(!Number.isFinite(session.stamp)||session.stamp<Date.parse(settings.startAt)))continue;
       for(const p of session.people){
         const row=rowFor(p.name),base=partial?settings.baseline.people.find(b=>norm(b.name)===norm(p.name)):null;
-        for(const metric of ['present','gosse','nine','kranz'])row[metric]+=Math.max(0,count(p[metric])-count(base?.[metric]));
+        for(const metric of ['present','gosse','nine','kranz','loser1','loser2','loser3']){const delta=Math.max(0,count(p[metric])-count(base?.[metric]));if(!metric.startsWith('loser')||delta)row[metric]=(row[metric]||0)+delta;}
       }
     }
     return [...rows.values()].sort((a,b)=>b.present-a.present||a.name.localeCompare(b.name,'de'));
@@ -114,6 +115,7 @@ function renderPenaltyStats(){
   if(label)label.textContent=penaltyStatsCustom?'Freier Zeitraum: '+(from||'Anfang')+' bis '+(to||'heute'):'Anzeige seit Zählbeginn';
   try{
     const rows=KCPenaltyStats.summary(penaltyStatsSource(),{settings,custom:penaltyStatsCustom,from:penaltyStatsCustom?from:'',to:penaltyStatsCustom?to:'',people:persons});
+    if(window.KCActivityReports){const table=body.closest('table');if(table){const holder=table.parentElement;holder.innerHTML=KCActivityReports.table(rows,KCActivityReports.penaltyColumns,'Strafen- und Wurfstatistik');holder.querySelector('tbody').id='penalty-stats-body';}window.KCReportApp?.renderGames();return;}
     body.innerHTML=rows.map(p=>'<tr><th scope="row" class="sticky-col">'+statsEscape(p.name)+'</th><td>'+p.present+'</td><td>'+p.gosse+'</td><td>'+p.nine+'</td><td>'+p.kranz+'</td></tr>').join('')||'<tr><td colspan="5">Keine Statistikdaten vorhanden.</td></tr>';
   }catch(error){body.innerHTML='<tr><td colspan="5">'+statsEscape(error.message)+'</td></tr>';}
 }

@@ -201,6 +201,7 @@ async function finishMenschGame(winnerName) {
     const entry = {
       id: 'mensch_' + Date.now() + '_' + Math.random().toString(36).slice(2),
       type: 'mensch',
+      participants: players.map(p=>p.name),winnerNames: [winnerName],
       createdAt: new Date().toISOString(),
       winner: winnerName,
       scores: JSON.parse(JSON.stringify(menschState.scores)),
