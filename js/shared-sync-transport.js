@@ -6,7 +6,7 @@
     const ref=club=>doc(db,'clubs',club,'state','current'),personRef=(club,name)=>doc(db,'clubs',club,'livePersons',encodeURIComponent(core.norm(name))),receipt=(club,id)=>doc(db,'clubs',club,'syncCommands',id),path=r=>r.path||r;
     function stamp(value,revision,id){
       return {
-        ...value,syncProtocol:1,syncRevision:revision,syncOperation:id,updatedAt:serverTimestamp()
+        ...value,...(value.tabletClock?.serverAt?._methodName==='serverTimestamp'?{tabletClock:{...value.tabletClock,serverAt:serverTimestamp()}}:{}),syncProtocol:1,syncRevision:revision,syncOperation:id,updatedAt:serverTimestamp()
       };
     }
     const transact=handler=>runTransaction(db,handler,{maxAttempts:10});
@@ -206,8 +206,13 @@
           next=core.apply(next,sides);
         }
         if(!next.currentEveningStartedAt&&(core.legacy.some(k=>next[k+'State']?.active)||next.penaltyStatsLog?.length))next.currentEveningStartedAt=(next.penaltyStatsLog||[]).find(x=>x.eveningStartedAt)?.eveningStartedAt||new Date().toISOString();
-        const started=core.games.find(key=>{const a=root[key+'State'],b=next[key+'State'];return b?.active&&(!a?.active||a.id!==b.id||a.startedAt!==b.startedAt);});
+        // Tablet batches already contain the final focus after all coalesced actions.
+        const started=context.method==='commitTabletBatch'?null:core.games.find(key=>{const a=root[key+'State'],b=next[key+'State'];return b?.active&&(!a?.active||a.id!==b.id||a.startedAt!==b.startedAt);});
         if(started){next.dashboardActiveGame=started;next.dashboardGameOverview={...next.dashboardGameOverview,open:false,revision:Number(next.dashboardGameOverview?.revision||0)+1};for(const key of ['dashboardCashView','dashboardClubContent','dashboardRules'])if(next[key]?.open)next[key]={...next[key],open:false,revision:Number(next[key].revision||0)+1};}
+        if(context.method!=='commitTabletBatch'&&next.dashboardGameOverview?.selectedGame){
+          const changed=core.games.filter(key=>!core.equal(core.clean(root[key+'State']),core.clean(next[key+'State'])));
+          if(changed.length===1){next.dashboardActiveGame=changed[0];next.dashboardGameOverview={...next.dashboardGameOverview,selectedGame:changed[0]};}
+        }
         next=core.totals(next,policy);
         const revision=(Number(root.syncRevision)||0)+1,id=context.opId;
         // Read every mirror before flushing any writes. The root is authoritative.
