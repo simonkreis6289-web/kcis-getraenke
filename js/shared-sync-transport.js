@@ -215,13 +215,12 @@
         }
         next=core.totals(next,policy);
         const revision=(Number(root.syncRevision)||0)+1,id=context.opId;
-        // Read every mirror before flushing any writes. The root is authoritative.
-        const mirrors=[],mirrorReads=[];
+        // The root transaction protects these mirrors; do not read rows whose old values are unused.
+        const mirrors=[];
         for(const p of next.persons||[]){
           const previous=(root.persons||[]).find(x=>core.norm(x.name)===core.norm(p.name));
           if(!core.equal(previous,p)){
             const target=personRef(club,p.name);
-            mirrorReads.push(facade.get(target));
             mirrors.push({
               target,value:p
             });
@@ -229,7 +228,6 @@
         }
         for(const p of root.persons||[])if(!(next.persons||[]).some(x=>core.norm(x.name)===core.norm(p.name))){
           const target=personRef(club,p.name);
-          mirrorReads.push(facade.get(target));
           mirrors.push({
             target,deleted:true
           });
@@ -240,14 +238,12 @@
         }));
         if(!core.equal(root.seatingOrder,next.seatingOrder)||!core.equal(root.groupSettings,next.groupSettings)){
           const target=doc(db,'clubs',club,'live','seating');
-          mirrorReads.push(facade.get(target));
           mirrors.push({
             target,value:{
               seatingOrder:next.seatingOrder||[],groupSettings:next.groupSettings||{}
             }
           });
         }
-        await Promise.all(mirrorReads);
         for(const row of mirrors)writes.set(path(row.target),row);
         next=stamp(next,revision,id);
         writes.set(path(rootRef),{

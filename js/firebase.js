@@ -211,7 +211,7 @@ window.firestoreApi = {
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       await Promise.all(docs.map(row=>tx.get(row.ref)));
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
-      tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence,tabletClock:{time:window.KCSharedClock?.now()??Date.now(),sequence:batch.sequence,serverAt:serverTimestamp()}});
+      tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence,tabletClock:{...(window.KCSharedClock?.captureTablet?.()||{time:window.KCSharedClock?.now()??Date.now()}),sequence:batch.sequence,serverAt:serverTimestamp()}});
       for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(window.KCSharedCore.normalizeGameData(row.value)));}
       return {sequence:batch.sequence};
     });
@@ -222,7 +222,7 @@ window.firestoreApi = {
   async getSharedReceipt(clubId,opId){const snap=await getDocFromServer(doc(db,'clubs',clubId,'syncCommands',opId));return snap.exists()?snap.data():null;},
   subscribeClubList(onData,onError){return onSnapshot(collection(db,'clubs'),snap=>onData(snap.docs.map(item=>({id:item.id,...item.data()}))),onError);},
   async loadClubState(clubId) {
-    if(window.KCSharedClock)await KCSharedClock.useClub(clubId);
+    if(window.KCSharedClock)void KCSharedClock.useClub(clubId);
     const ref = doc(
       db,
       "clubs",
