@@ -2362,7 +2362,7 @@ function getDrinksSnapshot() {
     })),
     spiele: spiele.map(s => ({
       spieltyp: s.spieltyp || '',
-      loser: s.loser || '',
+      loser: s.loser || '',teamName:s.teamName||'',gameId:s.gameId||'',teamId:s.teamId||'',roundGiven:s.roundGiven===true,
       drinks: { ...(s.drinks || {}) },
       total: s.total || 0,
       proKopf: s.proKopf || 0,
@@ -2536,7 +2536,7 @@ async function generateDrinksPDF(snapshot) {
 
     const teamDetails = (snapshot.spiele || [])
       .filter(s => (s.members || []).includes(p.name))
-      .map(s => `Spiel: ${s.spieltyp || 'Teamspiel'} (${teamLabel(s.loser)}) +${formatEuro(s.proKopf || 0)}`);
+      .map(s => `Spiel: ${s.spieltyp || 'Teamspiel'} (${s.teamName||teamLabel(s.loser)}) +${formatEuro(s.proKopf || 0)}`);
 
     const roundDetails = (p.rounds || [])
       .map(r => `Runde: ${r.reason || 'ohne Grund'} +${formatEuro(r.total || 0)}`);
@@ -2636,14 +2636,14 @@ async function generateDrinksPDF(snapshot) {
     snapshot.spiele.forEach((s, idx) => {
       ensureSpace(18);
 
-      const loser = s.loser === 'T1' ? 'Wand' : s.loser === 'T2' ? 'TV' : s.loser || '-';
+      const loser = s.teamName || (s.loser === 'T1' ? 'Wand' : s.loser === 'T2' ? 'TV' : s.loser || '-');
 
       const drinksText = (snapshot.drinks || [])
         .filter(d => (s.drinks && (s.drinks[d.key] || 0) > 0))
         .map(d => `${s.drinks[d.key]}x ${d.label}`)
         .join(', ');
 
-      doc.text(`${idx + 1}. ${s.spieltyp || 'Teamspiel'} | Verlierer: ${loser}`, margin, y);
+      doc.text(`${idx + 1}. ${s.spieltyp || 'Teamspiel'} | ${s.roundGiven?'Runde von':'Verlierer'}: ${loser}`, margin, y);
       y += 5;
 
       doc.text(`Getränke: ${drinksText || '-'}`, margin + 6, y, {
@@ -4675,42 +4675,24 @@ async function deleteRound(
 }
 
 // ── TEAMSPIELE ──
-function selectLoser(t) {
-  selectedLoser = t;
-  document.getElementById('team-btn-t1').classList.toggle('active', t === 'T1');
-  document.getElementById('team-btn-t2').classList.toggle('active', t === 'T2');
-  updateTeamInfoBox();
-  persistState();
-}
+function getDrinkTeamGame(){const catalog=window.KCGameOverview?.catalog||[],options=window.KCTeamDrinkGames?.list(catalog,SPIELE_KATALOG)||SPIELE_KATALOG.map(title=>({title,category:'sides'})),value=document.getElementById('spieltyp-select')?.value;return options.find(g=>g.title===value)||options[0];}
+function getDrinkTeamChoices(){const game=getDrinkTeamGame(),state=game?.key&&typeof gameSetupState==='function'?gameSetupState(game.key):null,sameEvening=!state?.eveningStartedAt||state.eveningStartedAt===currentEveningStartedAt;return window.KCTeamDrinkGames?KCTeamDrinkGames.teams(game,sameEvening?state:null,persons,getGroupLabel):['T1','T2'].map(id=>({id,label:getGroupLabel(id),members:getActiveTeamMembers(id),available:true}));}
+function getSelectedDrinkTeam(){return getDrinkTeamChoices().find(t=>t.id===selectedLoser&&t.available);}
+function changeTeamGameSelection(){selectedLoser=null;renderTeamspiele();}
+function selectLoser(t){const choice=getDrinkTeamChoices().find(x=>x.id===t&&x.available);if(!choice)return;selectedLoser=t;renderTeamspiele();persistState();}
 
 function getActiveTeamMembers(teamKey) {
   return persons.filter(p => p.present && p.tisch === teamKey && !p.left);
 }
 
-function updateTeamInfoBox() {
-  const box = document.getElementById('team-info-box');
-  if (!selectedLoser) {
-    box.innerHTML = 'Als „weg“ markierte Leute werden bei Teamspielen nicht mehr berücksichtigt.';
-    return;
-  }
-
-  const members = getActiveTeamMembers(selectedLoser);
-  const teamName = selectedLoser === 'T1' ? getGroupLabel('T1') : getGroupLabel('T2');
-
-  box.innerHTML = `<strong>${teamName}</strong><br>Aktive Spieler für Aufteilung: ${members.length ? members.map(m => m.name).join(', ') : 'niemand'}`;
-}
+function updateTeamInfoBox(){const box=document.getElementById('team-info-box'),team=getSelectedDrinkTeam();if(team)box.textContent=team.label+' · Aufteilung auf: '+team.members.map(p=>p.name).join(', ');else box.textContent=getDrinkTeamGame()?.category==='pairs'?'Ein Paar aus diesem Spiel auswählen. Dafür muss das Spiel bereits Teams enthalten; alle Teammitglieder müssen anwesend sein.':'Zahlendes Team auswählen. Als „weg“ markierte Personen werden nicht berücksichtigt.';}
+function renderDrinkTeamChoices(){const box=document.getElementById('drink-team-choices');if(!box)return;const choices=getDrinkTeamChoices();if(!choices.some(x=>x.id===selectedLoser&&x.available))selectedLoser=null;box.replaceChildren();for(const team of choices){const b=document.createElement('button');b.type='button';b.className='team-btn '+(team.id==='T1'?'t1':team.id==='T2'?'t2':'pair-team')+(selectedLoser===team.id?' active':'');if(['T1','T2'].includes(team.id))b.id='team-btn-'+team.id.toLowerCase();b.textContent=team.label;b.disabled=!team.available;b.onclick=()=>selectLoser(team.id);box.append(b);}if(!choices.length){const hint=document.createElement('p');hint.textContent='Noch keine Teams in diesem Spiel. Zuerst die Teams im Spiel festlegen.';box.append(hint);}updateTeamInfoBox();}
 
 function renderTeamspiele() {
   const g = document.getElementById('team-drinks-grid');
   g.innerHTML = '';
 
-  updateTeamInfoBox();
-    
-    const btnT1 = document.getElementById('team-btn-t1');
-    const btnT2 = document.getElementById('team-btn-t2');
-
-    if (btnT1) btnT1.textContent = `${getGroupLabel('T1')} verloren`;
-    if (btnT2) btnT2.textContent = `${getGroupLabel('T2')} verloren`;
+  renderDrinkTeamChoices();
 
   DRINKS.forEach(d => {
     const v = teamDrinks[d.key] || 0;
@@ -4747,7 +4729,7 @@ function renderTeamspiele() {
     c.className = 'spiel-card';
     c.innerHTML = `
       <div class="spiel-info">
-        <div class="spiel-verlierer ${s.loser.toLowerCase()}">❌ ${s.loser === 'T1' ? getGroupLabel('T1') : getGroupLabel('T2')} hat verloren</div>
+        <div class="spiel-verlierer ${s.loser==='T1'?'t1':s.loser==='T2'?'t2':'pair-team'}">${s.roundGiven?'🍻':'❌'} ${window.KCTeamDrinkGames?KCTeamDrinkGames.escape(s.teamName||(s.loser==='T1'?getGroupLabel('T1'):getGroupLabel('T2'))):s.teamName||s.loser} ${s.roundGiven?'gibt eine Runde':'hat verloren'}</div>
         <div class="spiel-detail"><strong>${getSpielDisplayName(s)}</strong></div>
         <div class="spiel-detail">${di || 'Keine Getränke'}</div>
         <div class="spiel-detail">Aufgeteilt auf: ${displayMembers || '?'}</div>
@@ -4836,9 +4818,9 @@ function addSpiel() {
     return;
   }
 
-  const members = getActiveTeamMembers(selectedLoser);
+  const selectedTeam=getSelectedDrinkTeam(),members=selectedTeam?.members||[];
   if (!members.length) {
-    showToast('Keine aktiven Spieler mehr im Verlierer-Team', 'error');
+    showToast('Das gewählte Team ist nicht mehr vollständig verfügbar. Bitte neu auswählen.', 'error');
     return;
   }
 
@@ -4846,7 +4828,7 @@ function addSpiel() {
 
   spiele.push({
     spieltyp,
-    loser: selectedLoser,
+    loser: selectedLoser,teamName:selectedTeam.label,gameId:selectedTeam.gameId||'',teamId:selectedTeam.teamId||selectedLoser,roundGiven:document.getElementById('team-drink-reason')?.value==='round',
     drinks: { ...teamDrinks },
     total,
     proKopf: members.length ? total / members.length : 0,
@@ -4855,8 +4837,8 @@ function addSpiel() {
 
   teamDrinks = {};
   selectedLoser = null;
-  document.getElementById('team-btn-t1').classList.remove('active');
-  document.getElementById('team-btn-t2').classList.remove('active');
+  document.getElementById('team-btn-t1')?.classList.remove('active');
+  document.getElementById('team-btn-t2')?.classList.remove('active');
 
   renderAll();
   showToast('⚽ Spiel hinzugefügt!', 'success');
@@ -5446,24 +5428,7 @@ function deleteDrink(key) {
 }
 
 // ── SPIELE KATALOG ──
-function renderSpieltypSelect() {
-  const sel = document.getElementById('spieltyp-select');
-  if (!sel) return;
-
-  sel.innerHTML = '';
-
-  if (!SPIELE_KATALOG.length) {
-    sel.innerHTML = '<option value="">Kein Spiel angelegt</option>';
-    return;
-  }
-
-  SPIELE_KATALOG.slice().sort((a, b) => a.localeCompare(b, 'de')).forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    sel.appendChild(opt);
-  });
-}
+function renderSpieltypSelect(){const sel=document.getElementById('spieltyp-select');if(!sel)return;const previous=sel.value,options=window.KCTeamDrinkGames?.list(window.KCGameOverview?.catalog||[],SPIELE_KATALOG)||SPIELE_KATALOG.map(title=>({title}));sel.replaceChildren();for(const game of options){const opt=document.createElement('option');opt.value=game.title;opt.textContent=(game.category==='pairs'?'👥 ':'⚔️ ')+game.title;sel.append(opt);}if(options.some(g=>g.title===previous))sel.value=previous;}
 
 function renderSpieleKatalog() {
   const el = document.getElementById('spiele-katalog-list');

@@ -37,7 +37,7 @@
       })().finally(()=>pending=null);
       return pending;
     }
-    function useClub(value){club=String(value||'');return sync();}
+    function useClub(value){club=String(value||'');const updating=sync();return anchor?Promise.resolve(true):updating;}
     function configure(value){config=value;}
     function seconds({active,running,start,remaining,duration},at=timerNow()){
       if(!active)return 0;

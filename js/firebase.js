@@ -198,6 +198,18 @@ window.firestoreApi = {
   // GESAMTZUSTAND
   // ─────────────────────────────────────────────
 
+  async sendDashboardSignal(clubId,request){
+    if(!/^[a-zA-Z0-9_-]{1,80}$/.test(request.viewerId||'')||!/^[a-zA-Z0-9_-]{1,80}$/.test(request.connectionId||'')||!['offer','answer'].includes(request.action)||request.description?.type!==request.action||typeof request.description.sdp!=='string'||request.description.sdp.length>60000)throw Error('Ungültige TV-Verbindung');
+    const rootRef=doc(db,'clubs',clubId,'state','current'),target=doc(db,'clubs',clubId,'documents','dashboard_link_'+request.viewerId),opId='sync_'+crypto.randomUUID();
+    for(let attempt=0;attempt<2;attempt++){
+      const snap=await getDocFromServer(rootRef),base=snap.exists()?snap.data():{};if(!base.syncProtocol)return false;
+      const context={method:'dashboardSignal',opId,base,eveningStartedAt:base.currentEveningStartedAt||'',sideOperations:[]};
+      try{return await sharedTransport.transaction(clubId,context,async tx=>{const existing=await tx.get(target),old=existing.exists()?existing.data():{};if(request.action==='answer'&&old.connectionId!==request.connectionId)return false;const value=request.action==='offer'?{kind:'dashboardLink',viewerId:request.viewerId,connectionId:request.connectionId,offer:request.description,answer:null,expiresAt:(window.KCSharedClock?.now()??Date.now())+120000}:{...old,answer:request.description,source:request.source};tx.set(target,value);return true;});}catch(error){if(attempt||error.code!=='sync-conflict')throw error;}
+    }
+  },
+  subscribeDashboardOffers(clubId,onData){return onSnapshot(collection(db,'clubs',clubId,'documents'),snap=>onData(snap.docs.filter(x=>x.id.startsWith('dashboard_link_')).map(x=>x.data()).filter(x=>x.kind==='dashboardLink'&&x.offer&&!x.answer)),()=>{});},
+  subscribeDashboardAnswer(clubId,viewerId,onData){return onSnapshot(doc(db,'clubs',clubId,'documents','dashboard_link_'+viewerId),snap=>onData(snap.exists()?snap.data():null),()=>{});},
+
   async readTabletDocument(clubId,path){
     if(typeof path!=='string'||(path!=='clubs/'+clubId&&!path.startsWith('clubs/'+clubId+'/'))||path.split('/').length%2)throw Error('Ungültiger Dokumentpfad');
     const snap=await getDocFromServer(doc(db,...path.split('/')));return snap.exists()?snap.data():null;

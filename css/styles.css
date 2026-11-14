@@ -4708,3 +4708,6 @@ body.view-only #clubBackBtn {
 .kc-avatar-option.selected{border-color:#13a538;background:#e6ffe9;box-shadow:inset 0 0 0 2px #13a538;}
 .kc-avatar-image{display:flex;align-items:center;justify-content:center;width:49px;height:57px;border-radius:50%;overflow:hidden;font-size:28px;}
 .kc-avatar-image img{width:100%;height:100%;object-fit:cover;}
+
+#tab-teamspiele .team-btn.pair-team.active{border-color:var(--accent2);background:#e5ecfa;color:var(--text)}
+#tab-teamspiele .team-btn:disabled{opacity:.45;cursor:default}
