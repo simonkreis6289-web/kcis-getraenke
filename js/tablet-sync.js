@@ -82,6 +82,10 @@
     if(globals)for(const [k,v] of Object.entries(globals))if(!C.equal(action.before[k],v))draft[k]=C.clone(v);
     const started=C.games.find(k=>draft[k+'State']?.active&&(!action.before[k+'State']?.active||draft[k+'State'].startedAt!==action.before[k+'State'].startedAt||draft[k+'State'].id!==action.before[k+'State']?.id));
     if(started){draft.dashboardActiveGame=started;draft.dashboardGameOverview={open:false,revision:Number(draft.dashboardGameOverview?.revision||0)+1};for(const k of ['dashboardCashView','dashboardRules','dashboardClubContent'])if(draft[k]?.open)draft[k]={...draft[k],open:false,revision:Number(draft[k].revision||0)+1};}
+    if(draft.dashboardGameOverview?.selectedGame){
+      const changed=C.games.filter(k=>!C.equal(C.clean(action.before[k+'State']),C.clean(draft[k+'State'])));
+      if(changed.length===1){draft.dashboardActiveGame=changed[0];draft.dashboardGameOverview={...draft.dashboardGameOverview,selectedGame:changed[0]};}
+    }
     const state=C.totals(draft,window.KCGameFinePolicy);stage(state,docs);project(state);return state;
   }
   function local(fn){const promise=localTail.catch(()=>{}).then(fn);localTail=promise.catch(()=>{});return promise;}
@@ -154,4 +158,11 @@
   document.addEventListener('click',e=>{if(ready&&!unit)return;if(e.target?.closest?.('.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
   window.addEventListener('online',()=>void reconnect());
   setInterval(()=>{for(const s of sessions.values())if(s.error||s.pending)void drain(s);},5000);
+  // Zeitanker nur während laufender Countdowns auffrischen; Eingaben warten nicht darauf.
+  setInterval(()=>{
+    if(!ready||unit||!navigator.onLine)return;
+    const state={...current.root,...snapshot()},now=window.KCSharedClock?.now()??Date.now(),ball=state.ballermannState;
+    if(!state.teamStopwatchRunning&&!(ball?.active&&ball.timer?.running&&ball.timer.endsAt>now))return;
+    try{stage({...state,tabletClock:{time:now}});}catch(error){toast(error.message);}
+  },10000);
 })();

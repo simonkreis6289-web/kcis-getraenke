@@ -211,7 +211,7 @@ window.firestoreApi = {
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       await Promise.all(docs.map(row=>tx.get(row.ref)));
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
-      tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence});
+      tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence,tabletClock:{time:window.KCSharedClock?.now()??Date.now(),sequence:batch.sequence,serverAt:serverTimestamp()}});
       for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(window.KCSharedCore.normalizeGameData(row.value)));}
       return {sequence:batch.sequence};
     });
@@ -375,14 +375,17 @@ window.firestoreApi = {
 
   async setDashboardGameOverview(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCGameOverview||typeof request.open!=='boolean'||!Number.isSafeInteger(request.expectedRevision)||!/^overview_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||''))throw Error('Ungültige Spielübersicht.');
+    if(request.gameKey!==undefined&&(request.open||!window.KCGameOverview.catalog.some(g=>g.key===request.gameKey)))throw Error('Ungültiges Dashboard-Spiel.');
     const ref=doc(db,'clubs',clubId,'state','current');
     return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{},before=current.dashboardGameOverview||{};
       if((before.commands||[]).includes(request.opId))return before;
       if(Number(before.revision||0)!==request.expectedRevision)throw Error('Spielübersicht wurde inzwischen geändert. Bitte erneut versuchen.');
+      if(request.gameKey!==undefined){const game=current[request.gameKey+'State'];if(!game||!game.active&&!game.finished&&!game.id&&!game.startedAt&&!game.history?.length||game.eveningStartedAt&&current.currentEveningStartedAt&&game.eveningStartedAt!==current.currentEveningStartedAt)throw Error('Dieses Spiel wurde noch nicht gestartet oder gehört zu einem anderen Kegelabend.');}
       const value={open:request.open,gameStamp:window.KCGameOverview.context(current).gameStamp,revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};
       const updates={dashboardGameOverview:value,updatedAt:serverTimestamp()};
-      if(value.open)for(const key of ['dashboardCashView','dashboardRules','dashboardClubContent'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
+      if(request.gameKey!==undefined){value.selectedGame=request.gameKey;value.selectedAt=new Date(window.KCSharedClock?.now()??Date.now()).toISOString();updates.dashboardActiveGame=request.gameKey;updates.dashboardDraw=null;updates.dashboardRandomDraw=null;}
+      if(value.open||request.gameKey!==undefined)for(const key of ['dashboardCashView','dashboardRules','dashboardClubContent'])if(current[key]?.open)updates[key]={...current[key],open:false,revision:Number(current[key].revision||0)+1};
       transaction.set(ref,updates,{merge:true});return value;
     });
   },

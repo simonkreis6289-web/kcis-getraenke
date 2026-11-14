@@ -85,9 +85,27 @@ async function cancelCurrentGame(key){
  try{await window.firestoreApi.cancelGame(getClubFirestoreId(ACTIVE_CLUB),{gameKey:key});renderAll();persistState();showToast('Spiel abgebrochen · keine Abschlussbuchung.','success');}
  catch(error){showToast('Abbruch nicht gespeichert: '+error.message,'error');}
 }
+const gameDashboardBusy=new Set();
+async function showGameOnDashboard(key){
+ if(gameDashboardBusy.has(key)||!ACTIVE_CLUB||!window.KCGameOverview?.catalog.some(g=>g.key===key))return false;
+ const s=gameSetupState(key);if(!s||!s.active&&!s.finished&&!s.id&&!s.startedAt&&!s.history?.length)return false;
+ if(!navigator.onLine||!window.firestoreApi?.setDashboardGameOverview){showToast('Zum Anzeigen auf dem Dashboard bitte verbinden.','error');return false;}
+ const club=ACTIVE_CLUB;gameDashboardBusy.add(key);applyGameInputLayout(key);
+ try{
+  const state=window.KCSharedSync?.server||getFirestoreState();
+  await window.firestoreApi.setDashboardGameOverview(getClubFirestoreId(club),{open:false,gameKey:key,expectedRevision:Number(state.dashboardGameOverview?.revision)||0,opId:'overview_'+crypto.randomUUID()});
+  if(ACTIVE_CLUB!==club)return false;showToast('Spiel wird auf dem Dashboard angezeigt.','success');return true;
+ }catch(error){if(ACTIVE_CLUB===club)showToast(error.message||'Dashboard konnte nicht umgeschaltet werden.','error');return false;}
+ finally{gameDashboardBusy.delete(key);if(ACTIVE_CLUB===club)applyGameInputLayout(key);}
+}
+function renderGameDashboardButton(key,panel,s){
+ const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];let button=buttons.shift();buttons.forEach(b=>b.remove());
+ if(!button){button=document.createElement('button');button.type='button';button.className='secondary-btn game-dashboard-button';button.dataset.gameDashboard=key;button.textContent='📺 Auf Dashboard anzeigen';button.onclick=()=>showGameOnDashboard(key);const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');if(title)title.append(button);else panel.prepend(button);}
+ const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));button.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false;button.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
+}
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
- const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);
+ const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);renderGameDashboardButton(key,panel,s);
  // Nur dieser gemeinsame Abbruchweg darf während eines laufenden Spiels sichtbar sein.
  for(const button of panel.querySelectorAll('button'))if(!button.hasAttribute('data-abort-game')&&/Spiel abbrechen/i.test(button.textContent))button.remove();
  const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());
