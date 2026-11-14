@@ -7,9 +7,9 @@
   const toast=(text,type='error')=>typeof showToast==='function'&&showToast(text,type);
   function status(){
     let el=document.getElementById('shared-sync-status');if(!el){const app=document.getElementById('app');if(!app)return;el=document.createElement('div');el.id='shared-sync-status';el.setAttribute('role','status');el.innerHTML='<span></span><button type="button" onclick="KCSharedSync.reconnect()">Übertragung erneut versuchen</button>';app.prepend(el);}
-    const pending=current?.inflight||current?.pending;
+    const pending=current?.inflight||current?.pending,direct=current?.linkStatus?.direct;
     el.dataset.mode=!ready?'blocked':current?.error?'pending':pending?'saving':'ready';
-    el.querySelector('span').textContent=!ready?'Tablet lädt den gespeicherten Stand …':current?.error?'Auf Tablet gespeichert · TV-Übertragung ausstehend':pending?'Auf Tablet gespeichert · Übertragung zum TV läuft …':'Tablet bereit · Übertragung bestätigt';
+    el.querySelector('span').textContent=!ready?'Tablet lädt den gespeicherten Stand …':current?.error?(direct?'TV direkt verbunden · Cloudspeicherung ausstehend':'Auf Tablet gespeichert · Cloudspeicherung ausstehend'):pending?(direct?'TV direkt verbunden · Cloudspeicherung läuft …':'Auf Tablet gespeichert · Cloudspeicherung läuft …'):(direct?'TV direkt verbunden · Cloudspeicherung bestätigt':'Tablet bereit · Cloudspeicherung bestätigt · TV über Cloud');
     el.querySelector('button').hidden=!current?.error;
   }
   function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight}));}
@@ -24,7 +24,7 @@
     const merged=new Map((s.pending?.documents||[]).map(x=>[x.path,x]));for(const doc of docs)merged.set(doc.path,doc);
     s.seq++;s.root={...state,tabletSequence:s.seq};s.pending={sequence:s.seq,opId:id(),state:C.clean(s.root),documents:[...merged.values()]};
     try{store(s);}catch(error){s.seq=previous.seq;s.pending=previous.pending;s.root=previous.root;throw Error('Tablet-Speicher voll. Buchung wurde nicht übernommen.');}
-    server=s.root;cache();status();clearTimeout(timer);timer=setTimeout(()=>void drain(s),40);return true;
+    server=s.root;s.link?.publish(s.root,s.seq,s.cloudEvening);cache();status();clearTimeout(timer);timer=setTimeout(()=>void drain(s),40);return true;
   }
   async function drain(s){
     if(s.uploading)return s.uploading;
@@ -43,7 +43,7 @@
     })().finally(()=>s.uploading=null);
     return s.uploading;
   }
-  function begin(club){ready=false;current=sessions.get(club)||{club,root:null,seq:0,pending:null,inflight:null,uploading:null,error:'',docCache:new Map()};sessions.set(club,current);unit=null;status();}
+  function begin(club){current?.link?.close();ready=false;current=sessions.get(club)||{club,root:null,seq:0,pending:null,inflight:null,uploading:null,error:'',docCache:new Map()};sessions.set(club,current);unit=null;status();}
   async function prepare(club,defaults){
     if(current?.club!==club)begin(club);const s=current;
     try{
@@ -53,7 +53,7 @@
       s.inflight=outbox?.inflight&&outbox.inflight.sequence>Number(saved.tabletSequence||0)?outbox.inflight:null;
       s.pending=outbox?.pending&&outbox.pending.sequence>Number(saved.tabletSequence||0)?outbox.pending:null;
       for(const batch of [s.inflight,s.pending])for(const row of batch?.documents||[])s.docCache.set(row.path,row.deleted?null:C.clone(row.value));
-      s.root=C.clone(s.pending?.state||s.inflight?.state||saved);server=s.root;ready=true;project(s.root,true);store(s);status();void drain(s);return true;
+      s.root=C.clone(s.pending?.state||s.inflight?.state||saved);server=s.root;ready=true;s.link?.close();s.link=window.KCDashboardLink?.create({role:'publisher',club,api:raw,getBase:()=>s.root,onStatus:value=>{s.linkStatus=value;if(current===s)status();}});s.link?.publish(s.root,s.seq,s.cloudEvening);project(s.root,true);store(s);status();void drain(s);return true;
     }catch(error){s.error=error.message;ready=false;status();toast('Gespeicherter Stand konnte nicht geladen werden: '+error.message);return false;}
   }
   function preview(before){
@@ -92,7 +92,7 @@
   function write(method,args){
     if(method==='saveClubMeta'&&(!ready||args[0]!==current?.club))return (async()=>{const base=await raw.loadClubState(args[0])||{},meta=await raw.readTabletDocument(args[0],'clubs/'+args[0])||{};return raw.saveClubMeta(...args,{method,opId:id(),base,metaBase:meta,sideOperations:[],eveningStartedAt:base.currentEveningStartedAt||''});})();
     if(unit)return localCall(method,args);
-    return local(async()=>{if(!ready)throw Error('Tabletstand noch nicht geladen');const action={session:current,before:{...current.root,...snapshot()},promises:[],messages:[],opened:new Set()};action.preview=preview(action.before);unit=action;
+    return local(async()=>{if(!ready)throw Error('Tabletstand noch nicht geladen');const action={session:current,before:method==='startNewEvening'?C.clone(current.root):{...current.root,...snapshot()},promises:[],messages:[],opened:new Set()};action.preview=preview(action.before);unit=action;
       try{const result=await localCall(method,args);await Promise.all(action.promises);finish(action);return result;}catch(error){if(current===action.session)project(action.before,true);throw error;}finally{unit=null;status();}
     });
   }
