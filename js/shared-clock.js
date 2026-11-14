@@ -3,12 +3,14 @@
   const create=({wall=()=>Date.now(),mono=()=>performance.now(),fetcher=typeof fetch==='function'?fetch.bind(globalThis):null}={})=>{
     let config=null,club='',pending=null,anchor=null,tablet=null,lastSync=-Infinity,lastTry=-Infinity;
     const now=()=>anchor?anchor.time+mono()-anchor.mono:wall();
-    const timerNow=()=>tablet?tablet.time+mono()-tablet.mono:now();
+    // Compare reference times captured together; a Firestore commit can finish seconds later.
+    const timerNow=()=>tablet?anchor&&Number.isFinite(tablet.reference)?tablet.time+Math.max(0,now()-tablet.reference):tablet.time+mono()-tablet.mono:now();
+    const captureTablet=()=>({time:timerNow(),...(anchor?{serverTime:now()}:{})});
     function followTablet(value){
       if(!value||!Number.isFinite(value.time)||!Number.isSafeInteger(value.sequence)||value.sequence<1||tablet&&value.sequence<=tablet.sequence)return false;
       const stamp=value.serverAt,written=typeof stamp?.toMillis==='function'?stamp.toMillis():typeof stamp==='string'?Date.parse(stamp):Number(stamp?.seconds??stamp?._seconds)*1000+Number(stamp?.nanoseconds??stamp?._nanoseconds??0)/1e6;
-      const age=anchor&&Number.isFinite(written)?Math.max(0,now()-written):0;
-      tablet={sequence:value.sequence,time:value.time+age,mono:mono()};return true;
+      const reference=Number.isFinite(value.serverTime)?value.serverTime:written;
+      tablet={sequence:value.sequence,time:value.time,reference,mono:mono()};return true;
     }
     function resetTablet(){tablet=null;}
     async function sample(target){
@@ -43,9 +45,9 @@
       const stamp=Date.parse(start);if(running&&Number.isFinite(stamp))ms-=Math.max(0,at-stamp);
       return Math.max(0,Math.ceil(ms/1000));
     }
-    return Object.freeze({configure,useClub,sync,now,timerNow,followTablet,resetTablet,seconds,get enabled(){return !!fetcher&&!!config;},get ready(){return !!anchor;}});
+    return Object.freeze({configure,useClub,sync,now,timerNow,captureTablet,followTablet,resetTablet,seconds,get enabled(){return !!fetcher&&!!config;},get ready(){return !!anchor;}});
   };
-  const clock=create();window.KCSharedClock=Object.freeze({...clock,configure:clock.configure,useClub:clock.useClub,sync:clock.sync,now:clock.now,timerNow:clock.timerNow,followTablet:clock.followTablet,resetTablet:clock.resetTablet,seconds:clock.seconds,create,get enabled(){return clock.enabled;},get ready(){return clock.ready;}});
+  const clock=create();window.KCSharedClock=Object.freeze({...clock,configure:clock.configure,useClub:clock.useClub,sync:clock.sync,now:clock.now,timerNow:clock.timerNow,captureTablet:clock.captureTablet,followTablet:clock.followTablet,resetTablet:clock.resetTablet,seconds:clock.seconds,create,get enabled(){return clock.enabled;},get ready(){return clock.ready;}});
   if(typeof document!=='undefined')document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void clock.sync(true);});
   window.addEventListener?.('online',()=>void clock.sync(true));
   if(typeof setInterval==='function')setInterval(()=>void clock.sync(),300000);
