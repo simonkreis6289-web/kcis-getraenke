@@ -1,26 +1,46 @@
-/* Einstellungen gehören zum Club; die gespeicherte Anordnung wirkt sofort am TV. */
+/* Dashboard-Einstellungen werden beim Club gespeichert und direkt zum TV übertragen. */
 (() => {
  const M=window.KCDashboardLayout;let draft=null,stamp='',busy=false;
  const host=()=>document.getElementById('dashboard-layout-settings');
  const slotNames={'left-top':'Links oben','left-bottom':'Links unten','right-top':'Rechts oben','right-bottom':'Rechts unten'};
- function preview(r){const box=document.createElement('div');box.className='dashboard-layout-preview';box.setAttribute('aria-label','Vorschau der Dashboard-Anordnung');for(const [side,items] of [['left',r.left],['stage',['Spielfeld']],['right',r.right]]){if(!items.length)continue;const column=document.createElement('div');column.className='dashboard-preview-'+side;for(const key of items){const item=document.createElement('span');item.textContent=M.labels[key]||key;column.append(item);}box.append(column);}return box;}
+ function element(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
+ function preview(r){
+  const box=element('div',undefined,'dashboard-layout-preview');box.setAttribute('aria-label','Vorschau der Dashboard-Anordnung');
+  for(const side of ['left','stage','right']){
+   const occupied=side==='stage'?[]:M.slots.filter(slot=>slot.startsWith(side)&&r.groups[slot].length);if(side!=='stage'&&!occupied.length)continue;
+   const column=element('div',undefined,'dashboard-preview-'+side);
+   if(side==='stage')column.append(element('span','Spielfeld'));
+   else for(const slot of occupied){const item=element('span');item.append(element('b',slotNames[slot]));for(const key of r.groups[slot])item.append(element('small',M.labels[key]+(r.groups[slot].length>1?' · '+r.settings.panels[key].seconds+' s':'')));column.append(item);}box.append(column);
+  }return box;
+ }
+ function duration(id,value,min,max,oninput){const input=element('input');input.type='number';input.id=id;input.min=String(min);input.max=String(max);input.step='1';input.value=String(value);input.disabled=busy;input.oninput=()=>oninput(input.value);return input;}
  function draw(){
   const box=host();if(!box||!draft)return;const r=M.resolve(draft);draft=r.settings;box.replaceChildren();
-  const title=document.createElement('h3');title.textContent='Dashboard-Anordnung';const help=document.createElement('p');help.textContent=r.count===2?'Beide Anzeigen stehen links. Wähle ihre Reihenfolge.':r.count===1?'Eine Anzeige füllt die gesamte Höhe auf der gewählten Seite.':r.count===3?'Auf einer Seite stehen zwei Anzeigen, auf der anderen eine über die volle Höhe.':r.count===0?'Alle Anzeigen ausgeblendet: Das Spielfeld nutzt die gesamte Breite.':'Vier Anzeigen: zwei je Seite. Die Standardanordnung lässt sich jederzeit wiederherstellen.';box.append(title,help);
-  const rows=document.createElement('div');rows.className='dashboard-layout-options';
+  box.append(element('h3','Dashboard-Anzeigen'),element('p','Anzeigen am selben Platz wechseln automatisch. Die Anzeigedauer gilt je Tabelle. Ist oben oder unten frei, nutzt der belegte Platz die ganze Höhe. Zwei aktivierte Tabellen stehen links.'));
+  const rows=element('div',undefined,'dashboard-layout-options');
   for(const key of ['fines','drinks','gutters','seating']){
-   const row=document.createElement('div');row.className='dashboard-layout-option';const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.id='dashboard-show-'+key;check.checked=draft.panels[key].enabled;check.disabled=busy;check.onchange=()=>{draft.panels[key].enabled=check.checked;draw();};label.append(check,document.createTextNode(M.labels[key]));row.append(label);
-   const select=document.createElement('select');select.id='dashboard-position-'+key;select.setAttribute('aria-label','Position '+M.labels[key]);select.disabled=busy||!check.checked;select.hidden=!check.checked;
+   const row=element('div',undefined,'dashboard-layout-option'),label=element('label'),check=element('input');check.type='checkbox';check.id='dashboard-show-'+key;check.checked=draft.panels[key].enabled;check.disabled=busy;check.onchange=()=>{draft.panels[key].enabled=check.checked;draw();};label.append(check,document.createTextNode(M.labels[key]));row.append(label);
+   const select=element('select');select.id='dashboard-position-'+key;select.setAttribute('aria-label','Position '+M.labels[key]);select.disabled=busy||!check.checked;select.hidden=!check.checked;
    const positions=r.count===1?['left-top','right-top']:r.count===2?['left-top','left-bottom']:M.slots;
-   for(const slot of positions){const option=document.createElement('option');option.value=slot;option.textContent=r.count===1?(slot.startsWith('left')?'Links · volle Höhe':'Rechts · volle Höhe'):slotNames[slot];option.selected=slot===draft.panels[key].position;select.append(option);}select.value=draft.panels[key].position;select.onchange=()=>{draft=M.move(draft,key,select.value);draw();};row.append(select);rows.append(row);
+   for(const slot of positions){const option=element('option',r.count===1?(slot.startsWith('left')?'Links · volle Höhe':'Rechts · volle Höhe'):slotNames[slot]);option.value=slot;option.selected=slot===draft.panels[key].position;select.append(option);}select.value=draft.panels[key].position;select.onchange=()=>{draft=M.move(draft,key,select.value);draw();};row.append(select);
+   const dwell=element('label',undefined,'dashboard-dwell');dwell.hidden=!check.checked;const input=duration('dashboard-seconds-'+key,draft.panels[key].seconds,1,300,v=>draft.panels[key].seconds=v);input.setAttribute('aria-label','Anzeigedauer '+M.labels[key]+' in Sekunden');dwell.append(input,document.createTextNode('Sekunden'));row.append(dwell);rows.append(row);
   }box.append(rows,preview(r));
-  const actions=document.createElement('div');actions.className='dashboard-layout-actions';const reset=document.createElement('button');reset.type='button';reset.className='secondary-btn';reset.textContent='Standard wiederherstellen';reset.disabled=busy;reset.onclick=()=>{draft=M.defaults();draw();};const save=document.createElement('button');save.type='button';save.className='primary-btn';save.id='dashboard-layout-save';save.textContent=busy?'Wird gespeichert …':'💾 Dashboard-Anordnung speichern';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=document.createElement('p');status.id='dashboard-layout-status';status.setAttribute('role','status');box.append(actions,status);
+  box.append(element('h3','Eigene Laufbandtexte'),element('p','Aktivierte Texte laufen nach den Terminen im Laufband. Bis zu 20 Texte mit jeweils 500 Zeichen.'));
+  const messages=element('div',undefined,'dashboard-ticker-messages');
+  for(const message of draft.tickerMessages){
+   const row=element('div',undefined,'dashboard-ticker-message'),enabled=element('input');enabled.type='checkbox';enabled.checked=message.enabled;enabled.disabled=busy;enabled.setAttribute('aria-label','Text im Laufband anzeigen');enabled.onchange=()=>message.enabled=enabled.checked;
+   const text=element('textarea');text.rows=2;text.maxLength=500;text.value=message.text;text.disabled=busy;text.setAttribute('aria-label','Laufbandtext');text.oninput=()=>message.text=text.value;
+   const remove=element('button','Löschen','secondary-btn');remove.type='button';remove.disabled=busy;remove.setAttribute('aria-label','Laufbandtext löschen');remove.onclick=()=>{draft.tickerMessages=draft.tickerMessages.filter(m=>m.id!==message.id);draw();};row.append(enabled,text,remove);messages.append(row);
+  }
+  const add=element('button','+ Text hinzufügen','secondary-btn');add.type='button';add.id='dashboard-ticker-add';add.disabled=busy||draft.tickerMessages.length>=20;add.onclick=()=>{draft.tickerMessages.push({id:'text-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),text:'',enabled:true});draw();box.querySelector('.dashboard-ticker-message:last-child textarea')?.focus();};box.append(messages,add);
+  box.append(element('h3','Wurf-Popups'));const popupLabel=element('label',undefined,'dashboard-popup-option');popupLabel.htmlFor='dashboard-popup-seconds';popupLabel.append(document.createTextNode('Gosse, Kranz und Alle Neune anzeigen für '),duration('dashboard-popup-seconds',draft.popupSeconds,0,30,v=>draft.popupSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(popupLabel);
+  const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');box.append(actions,status);
  }
  function render(){const box=host();if(!box)return;const value=typeof dashboardSettings==='undefined'?null:dashboardSettings,next=String(typeof ACTIVE_CLUB==='undefined'?'':ACTIVE_CLUB)+'|'+JSON.stringify(value);if(next===stamp&&draft)return;stamp=next;draft=M.resolve(value).settings;draw();}
  async function store(){
-  if(busy||!ACTIVE_CLUB)return false;if(!navigator.onLine){document.getElementById('dashboard-layout-status').textContent='Zum Übertragen der Anordnung bitte verbinden.';return false;}
+  if(busy||!ACTIVE_CLUB)return false;if(!navigator.onLine){document.getElementById('dashboard-layout-status').textContent='Zum Übertragen der Einstellungen bitte verbinden.';return false;}
   const before=dashboardSettings,club=ACTIVE_CLUB;dashboardSettings=M.resolve(draft).settings;busy=true;draw();
-  try{persistState();if(!(await saveToFirestore(false)))throw Error('Anordnung konnte nicht bestätigt werden.');if(ACTIVE_CLUB===club){stamp='';render();document.getElementById('dashboard-layout-status').textContent='Gespeichert · wird auf dem Dashboard übernommen.';}return true;}
+  try{persistState();if(!(await saveToFirestore(false)))throw Error('Einstellungen konnten nicht bestätigt werden.');if(ACTIVE_CLUB===club){stamp='';render();document.getElementById('dashboard-layout-status').textContent='Gespeichert · wird auf dem Dashboard übernommen.';}return true;}
   catch(error){if(ACTIVE_CLUB===club){dashboardSettings=window.KCSharedSync?.server?.dashboardSettings??before;document.getElementById('dashboard-layout-status').textContent=error.message;}return false;}
   finally{busy=false;stamp='';const message=document.getElementById('dashboard-layout-status')?.textContent;render();if(ACTIVE_CLUB===club)document.getElementById('dashboard-layout-status').textContent=message||'';}
  }
