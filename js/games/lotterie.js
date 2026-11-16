@@ -274,7 +274,7 @@ function getLotteriePlayerCount() {
   return getLotteriePlayers().length;
 }
 
-async function startLotterieGame() {
+async function startLotterieGame(forceDraw=false) {
   ensureLotterieState();
   saveLotterieSettings(false);
 
@@ -300,7 +300,7 @@ async function startLotterieGame() {
     return;
   }
 
-  prepareSoloStarter('lotterie', starterName => startLotterieGameFinal(starterName));
+  prepareSoloStarter('lotterie', starterName => startLotterieGameFinal(starterName),forceDraw);
 }
 
 async function startLotterieGameFinal(starterName) {

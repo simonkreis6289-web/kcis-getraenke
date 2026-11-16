@@ -18,7 +18,7 @@ test('existing completed settlements retain the amount actually booked; unfinish
 test('settings, app, dashboard and shared rule text describe the same new calculation',()=>{
  const s=core.start('hindernis',{target:90,baseCents:500,rules:[]}),view=new Function('KCIndividual',read('js/games/individual-view.js')+';return renderIndividualBoard;')(core.g);assert(view(s).includes('fehlende Punkte / 90'));for(const p of ['getraenke-abrechnung.html','js/game-rules.js']){assert(read(p).includes('fehlende Punkte'));assert(!read(p).includes('abzüglich eines Cents'));}assert(!read('js/games/individual-view.js').includes('minus 1 Cent'));
 });
-test('all sixteen active games put a shared input card before their board and remove it after reset',async()=>{
+test('active games share a top input except lottery, which keeps its board-cell entry',async()=>{
  for(const key of ['tannenbaum','darts','lotterie','tiberius','mensch','plusminus','sichern','fuchsjagd','tor','sechstage','blackjack','gluecksspirale','siebener','hindernis']){
   const {c,document}=ui();await starts(c,key);
   const board=document.getElementById(key==='sechstage'?'sechs-board':key==='fuchsjagd'?'fuchs-board':key==='darts'?'darts-game-area':key+'-board');
@@ -27,7 +27,7 @@ test('all sixteen active games put a shared input card before their board and re
   if(key==='sichern')board.innerHTML='<div class="sichern-grid"></div><div class="sichern-controls"><div class="sichern-buttons"><button onclick="sichernThrow(1)">1</button><button onclick="sichernSave()">Sichern</button></div></div>';
   if(key==='fuchsjagd')board.innerHTML='<div class="fox-top"></div><div class="fox-turn">Am Wurf</div><div class="fox-actions"><button onclick="applyFuchsjagdThrow(1)">1</button></div><table></table>';
   if(key==='tor')board.innerHTML='<div class="tor-scoreboard"></div><div class="tor-turn">Am Zug</div><div class="tor-pins"><button onclick="torTogglePin(1)">1</button></div><div class="tor-actions"><button onclick="torThrow()">Treffer</button></div>';
-  render(c,key);const panel=document.getElementById('tab-'+key),card=panel.querySelector(':scope>.game-input-panel');assert(card,key);assert.equal(panel.querySelectorAll(':scope>.game-input-panel').length,1,key);assert(card.compareDocumentPosition(board)&4,key);
+  render(c,key);const panel=document.getElementById('tab-'+key),card=panel.querySelector(':scope>.game-input-panel');if(key==='lotterie'){assert(!card);continue;}assert(card,key);assert.equal(panel.querySelectorAll(':scope>.game-input-panel').length,1,key);assert(card.compareDocumentPosition(board)&4,key);
   if(key!=='tor')assert.equal(card.querySelectorAll('.game-pinpad-numbers button').length,10,key);
   c.gameSetupState(key).active=false;c.applyGameInputLayout(key);assert(!panel.querySelector(':scope>.game-input-panel'),key+' reset');
  }
@@ -42,9 +42,9 @@ test('real Blackjack cards and individual-game choices remain reachable in the t
 test('new input buttons keep existing handlers and disabled state instead of duplicating bookkeeping',async()=>{
  const {c,document}=ui();await c.startSechsGame();const button=document.querySelector('#tab-sechstage>.game-input-panel button[data-pin="2"]');assert.equal(button.getAttribute('onclick'),"sechsThrow('pins',2)");vm.runInContext('sechsBusy=true',c);c.renderSechsGame();assert(document.querySelector('#tab-sechstage>.game-input-panel button[data-pin="2"]').disabled);vm.runInContext('sechsBusy=false',c);c.renderSechsGame();assert(!document.querySelector('#tab-sechstage>.game-input-panel button[data-pin="2"]').disabled);
 });
-test('legacy top inputs use the selected house position and lottery next cell, with a duplicate-click guard',async()=>{
+test('legacy handlers retain selected house position and lottery target with a duplicate-click guard',async()=>{
  const {c,document}=ui();c.startHausGame('hoch');c.gameInputPlace('hoch',2);let args; c.hausThrow=async(...a)=>args=a;await c.gameInputThrow('haushoch',7,false);assert.deepEqual(args,['hoch',7,false,2]);
- await c.startLotterieGameFinal('C');c.lotterieState.columns=[1];let release,calls=0;c.confirmLotterieThrow=async pins=>{calls++;assert.equal(pins,8);assert.equal(c.lotterieEdit.person,'C');assert.equal(c.lotterieEdit.colIndex,0);await new Promise(resolve=>release=resolve);};const pending=c.gameInputThrow('lotterie',8);assert(document.querySelector('#tab-lotterie>.game-input-panel button[data-pin="1"]').disabled);await c.gameInputThrow('lotterie',8);assert.equal(calls,1);release();await pending;assert(!document.querySelector('#tab-lotterie>.game-input-panel button[data-pin="1"]').disabled);
+ await c.startLotterieGameFinal('C');c.lotterieState.columns=[1];let release,calls=0;c.confirmLotterieThrow=async pins=>{calls++;assert.equal(pins,8);assert.equal(c.lotterieEdit.person,'C');assert.equal(c.lotterieEdit.colIndex,0);await new Promise(resolve=>release=resolve);};const pending=c.gameInputThrow('lotterie',8);assert(!document.querySelector('#tab-lotterie>.game-input-panel'));await c.gameInputThrow('lotterie',8);assert.equal(calls,1);release();await pending;assert(!document.querySelector('#tab-lotterie>.game-input-panel'));
 });
 test('Tannenbaum and Darts route special throws through the existing player/penalty dialogs',async()=>{
  const {c}=ui();c.startTannenbaumSetup();c.startDartsGame();let route;c.openTannenbaumPenaltyPlayerModal=(...a)=>route=a;c.gameInputTeam('tannenbaum','T2');await c.gameInputThrow('tannenbaum',9);assert.deepEqual(route,['9er','T2',9]);await c.gameInputThrow('tannenbaum',0,true);assert.deepEqual(route,['gosse','T2',null]);c.openDartsPenaltyPlayerModal=(...a)=>route=a;c.dartsState.valueMap.kranz=70;c.gameInputTeam('darts','T2');await c.gameInputThrow('darts',12);assert.deepEqual(route,['kranz','T2',70]);
@@ -55,6 +55,6 @@ test('TV bought-throw indicators use bordered DOM circles for both colors and re
 test('TV Blackjack active styling covers every cell and overrides the white TV table cells',()=>{
  const css=read('css/table-games.css'),rule=[...parse(css).cssRules].find(r=>r.selectorText?.includes('.tg-tv-board .tg-board .tg-current>th'));assert(rule);assert.equal(rule.style.getPropertyValue('background'),'#f6b900');const {document}=parseHTML('<div class="tg-tv-board"><div class="tg-board"><table><tbody><tr class="tg-current"><th>A</th><td>2</td><td>3</td><td>5</td><td>Am Wurf</td></tr><tr><th>B</th><td>0</td></tr></tbody></table></div></div>');assert.equal(document.querySelectorAll(rule.selectorText).length,5);assert(!document.querySelector('tr:not(.tg-current)>td').matches(rule.selectorText));
 });
-test('the top lottery input follows the starting order frozen for that game after a starter draw',async()=>{
+test('lottery target order stays frozen after a starter draw',async()=>{
  const {c}=ui();await c.startLotterieGameFinal('B');c.lotterieState.columns=[1];assert.equal(c.getLotteriePlayers()[0].name,'B');assert.equal(c.gameInputTarget().name,'B');c.seatingOrder.reverse();assert.equal(c.gameInputTarget().name,'B');
 });
