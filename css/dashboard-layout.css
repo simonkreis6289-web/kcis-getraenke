@@ -29,3 +29,10 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 
 .dashboard-side-full #dashboard-seating .tv-seat{font-size:clamp(13px,1.1vw,18px)}
 .dashboard-side-full #dashboard-seating .seat-avatar{width:30px;height:30px}
+
+/* Crossfade: zwei Panels liegen nur waehrend des Wechsels uebereinander. */
+.dashboard-panel-slot>.panel{transition:opacity var(--dashboard-fade-time,600ms) ease-in-out}
+.dashboard-panel-slot>.panel.dashboard-fade-in{opacity:0}
+.dashboard-panel-slot>.panel.dashboard-fade-out{opacity:0;pointer-events:none}
+.dashboard-panel-slot.dashboard-is-transitioning>.panel{position:absolute;inset:0;width:100%;height:100%;margin:0}
+@media(prefers-reduced-motion:reduce){.dashboard-panel-slot>.panel{transition:none!important}}
