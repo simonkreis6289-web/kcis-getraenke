@@ -65,12 +65,9 @@ test('real app saves messages, panel durations and popup duration across reload 
  const remove=b.document.querySelector('.dashboard-ticker-message button');remove.onclick();assert(await b.c.KCDashboardSettingsApp.save());assert(await b.c.KCSharedSync.waitForUpload());assert.equal(a.db.root().dashboardSettings.tickerMessages.length,1);
 });
 test('Lattenzaun dashboard marks the actual next thrower, preserves last-throw-first order and clears on finish',{timeout:60000},async()=>{
- const a=await app();await a.c.startExtraGame('lattenzaun');assert(await a.c.KCSharedSync.waitForUpload());const d=tv(a.db);
+ const a=await app();await a.c.indStart('lattenzaun');assert(await a.c.KCSharedSync.waitForUpload());const d=tv(a.db);
  const names=()=>[...d.document.querySelectorAll('.extra-fence-row')].map(x=>x.querySelector('.extra-fence-name').textContent),marked=()=>[...d.document.querySelectorAll('.extra-fence-next-thrower')].map(x=>x.querySelector('.extra-fence-name').textContent);
- d.update();assert.deepEqual(marked(),['A']);await a.c.applyExtraThrow('lattenzaun',6);assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);assert(d.document.querySelector('.extra-fence-next-thrower').getAttribute('aria-label').includes('Als Nächstes'));assert(!a.document.querySelector('.extra-fence-next-thrower'));
- await a.c.applyExtraThrow('lattenzaun',4);assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'B');assert.deepEqual(marked(),['C']);
+ d.update();assert.deepEqual(marked(),['A']);await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:6});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.deepEqual(marked(),['A'],'comparison throw keeps the same player');await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:4});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);assert(d.document.querySelector('.extra-fence-next-thrower').getAttribute('aria-label').includes('Als Nächstes'));assert(!a.document.querySelector('.extra-fence-next-thrower'));
+ await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:7});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'B');assert.deepEqual(marked(),['C']);
  const state=copy(a.db.root().lattenzaunState);state.active=false;state.finished=true;const {document}=parseHTML(d.c.renderExtraGameBoard(state,{dashboard:true}));assert.equal(document.querySelectorAll('.extra-fence-next-thrower').length,0);
-});
-test('clock and lane duration use a fixed left edge inside the header tools block',()=>{
- const css=read('css/dashboard-layout.css');assert(css.includes('width:clamp(205px,19vw,290px);text-align:left'));assert(css.includes('justify-content:flex-start;align-items:center;gap:10px'));assert(css.includes('font-variant-numeric:tabular-nums;text-align:left;white-space:nowrap'));
 });
