@@ -2,7 +2,13 @@
 #game-body .extra-clock strong{font-size:clamp(42px,5vw,80px)}#game-body .extra-team-card strong{font-size:clamp(32px,4vw,65px)}#game-body .extra-team-card small{font-size:24px}#game-body .extra-fence-row strong{font-size:21px}#game-body .extra-fence-row span{font-size:18px}
 #game-property-bergundtal [hidden],#game-property-ballermann [hidden],#game-property-lattenzaun [hidden]{display:none!important}
 
-.extra-fence-last{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border:1px solid #b6c3da;border-radius:8px;background:#edf3fc;font-size:16px}.extra-fence-last b{font-size:22px;color:#243d61}
+.extra-fence-row>div:first-child{align-items:center}
+.extra-fence-last{display:inline-flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 20px;border:2px solid #dfa322;border-radius:12px;background:#fff2c5;color:#243d61;font-size:20px;font-weight:700;line-height:1.2}
+.extra-fence-last b{font-size:clamp(36px,3vw,48px);font-weight:900;font-variant-numeric:tabular-nums;color:#172f53;white-space:nowrap}
+#game-body .extra-fence-last{font-size:24px;padding:12px 24px}
+#game-body .extra-fence-last b{font-size:clamp(52px,5vw,76px)}
+.extra-fence-row>div:first-child>span:not(.extra-fence-last){margin-left:auto;font-size:clamp(22px,2vw,28px);font-weight:800;font-variant-numeric:tabular-nums;color:#243d61;text-align:right}
+#game-body .extra-fence-row>div:first-child>span:not(.extra-fence-last){font-size:clamp(28px,3vw,40px)}
 
 #game-body [data-extra-game="ballermann"] .extra-clock{padding:16px 22px}#game-body [data-extra-game="ballermann"] [data-extra-time]{font-size:clamp(100px,9vw,145px);line-height:1}#game-body [data-extra-game="ballermann"] .extra-team-card>strong{font-size:clamp(88px,7vw,125px);line-height:1.1}#game-body [data-extra-game="ballermann"] .extra-team-card>small{font-size:26px}#game-body [data-extra-game="ballermann"] .extra-team-card{padding:16px}
 #game-body .tor-tv-team>strong{font-size:clamp(100px,9vw,150px);line-height:1.05}#game-body .tor-tv-team{min-height:180px}#game-body .tor-tv-team>span{font-size:28px}
