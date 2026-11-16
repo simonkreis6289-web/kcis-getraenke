@@ -48,3 +48,7 @@
 [data-extra-game="ebbeflut"] .round-tide>strong{font-size:18px}
 .round-tide-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 .round-tide-legend>span{padding:5px 10px;border:1px solid #b7c8d8;border-radius:7px;font-size:14px;font-weight:800}
+
+/* Der nächste Werfer fällt am TV auf, die Reihenfolge bleibt beim letzten Werfer beginnend. */
+#game-body .extra-fence-row.extra-fence-next-thrower{background:#fff0aa;border:3px solid #dc8b08;box-shadow:inset 6px 0 #dc8b08}
+#game-body .extra-fence-next-thrower .extra-fence-name>strong{color:#754100}

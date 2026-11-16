@@ -32,7 +32,7 @@ function renderRoundGameBoard(s,{controls=''}={}){
  return '<section class="ind-board extra-board round-game-board" data-extra-game="'+key+'"><h2>'+esc(heading)+'</h2>'+(s.active?'<div class="ind-turn extra-turn">🎳 '+turn+'</div>':'')+controls+top+body+'<p class="ind-help">'+esc(g.summary(key,s.config))+'</p>'+(s.finished?'<p class="extra-result">Spiel beendet · '+(euro?'Restbeträge gebucht.':jump?'Fehlbeträge und 1. Verlierer gebucht.':'Verliererwertung gebucht.')+'</p>':'')+'</section>';
 }
 
-function renderExtraGameBoard(s,{controls='',slatColor}={}){
+function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false}={}){
  if(!s?.id)return '';if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
  const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?s.previous?.name:g.current(s),{running:fence?!!s.previous:s.active&&!s.readyToFinish})||names;
@@ -43,7 +43,8 @@ function renderExtraGameBoard(s,{controls='',slatColor}={}){
  }else if(fence){
   const color=[slatColor,s.config.slatColor,'#bc7949'].find(value=>/^#[0-9a-f]{6}$/i.test(value));
   body='<div class="extra-fences" style="--fence-color:'+color+'">'+rowNames.map(n=>{
-   return '<article class="extra-fence-row"><div class="extra-fence-name"><strong>'+esc(n)+'</strong></div>'+
+   const next=dashboard&&s.active&&!s.finished&&!s.readyToFinish&&n===g.current(s);
+   return '<article class="extra-fence-row'+(next?' extra-fence-next-thrower':'')+'"'+(next?' aria-label="'+esc(n)+' · Als Nächstes am Wurf"':'')+'><div class="extra-fence-name"><strong>'+esc(n)+'</strong></div>'+
     '<div class="extra-fence" style="--fence-slats:'+s.config.slats+';--fence-groups:'+Math.ceil(s.config.slats/5)+'" aria-label="'+s.scores[n]+' von '+s.config.slats+' Latten">'+Array.from({length:Math.ceil(s.config.slats/5)},(_,group)=>'<span class="extra-fence-group" aria-hidden="true">'+Array.from({length:Math.min(5,s.config.slats-group*5)},(_,offset)=>'<i class="'+(group*5+offset<s.scores[n]?'filled':'')+'"></i>').join('')+'</span>').join('')+'</div>'+
     '<div class="extra-fence-count"><b>'+s.scores[n]+' / '+s.config.slats+'</b><small>Latten</small></div>'+
     '<div class="extra-fence-price">'+money(s.scores[n]*s.config.slatCents)+'</div></article>';

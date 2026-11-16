@@ -2,18 +2,26 @@
 (() => {
  const keys=['drinks','fines','gutters','seating'],slots=['left-top','left-bottom','right-top','right-bottom'];
  const labels={drinks:'Getränkestand',fines:'Strafenstand',gutters:'Gossenkönig',seating:'Sitzordnung'};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i]}]))});
- function normalize(value){const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;}return out;}
- function resolve(value){
-  const settings=normalize(value),active=keys.filter(key=>settings.panels[key].enabled),left=[],right=[];
-  if(active.length===2){active.sort((a,b)=>slots.indexOf(settings.panels[a].position)-slots.indexOf(settings.panels[b].position));active.forEach((key,i)=>settings.panels[key].position=slots[i]);}
-  else if(active.length===1)settings.panels[active[0]].position=settings.panels[active[0]].position.startsWith('right')?'right-top':'left-top';
-  else{const used=new Set();for(const key of active){const panel=settings.panels[key];if(used.has(panel.position))panel.position=slots.find(slot=>!used.has(slot));used.add(panel.position);}}
-  active.sort((a,b)=>slots.indexOf(settings.panels[a].position)-slots.indexOf(settings.panels[b].position));
-  for(const key of active)(settings.panels[key].position.startsWith('left')?left:right).push(key);
-  return {settings,left,right,count:active.length};
+ const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
+ const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],popupSeconds:3});
+ function normalize(value){
+  const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
+  out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
+  const ids=new Set();out.tickerMessages=(Array.isArray(value?.tickerMessages)?value.tickerMessages:[]).slice(0,20).map((message,i)=>{let id=String(message?.id||'message-'+i).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||'message-'+i;while(ids.has(id))id+='-'+i;ids.add(id);return {id,text:String(message?.text||'').replace(/\s+/g,' ').trim().slice(0,500),enabled:message?.enabled!==false};});return out;
  }
- function move(value,key,position){const r=resolve(value),s=r.settings;if(!keys.includes(key)||!s.panels[key].enabled||!slots.includes(position))return s;const previous=s.panels[key].position,other=keys.find(k=>k!==key&&s.panels[k].enabled&&s.panels[k].position===position);if(other)s.panels[other].position=previous;s.panels[key].position=position;return resolve(s).settings;}
+ function resolve(value){
+  const settings=normalize(value),active=keys.filter(key=>settings.panels[key].enabled),left=[],right=[],groups=Object.fromEntries(slots.map(slot=>[slot,[]]));
+  if(active.length===2)for(const key of active)settings.panels[key].position=settings.panels[key].position.replace(/^right-/,'left-');
+  if(active.length===1)settings.panels[active[0]].position=settings.panels[active[0]].position.startsWith('right')?'right-top':'left-top';
+  active.sort((a,b)=>slots.indexOf(settings.panels[a].position)-slots.indexOf(settings.panels[b].position));
+  for(const key of active){groups[settings.panels[key].position].push(key);(settings.panels[key].position.startsWith('left')?left:right).push(key);}
+  return {settings,left,right,groups,count:active.length};
+ }
+ function move(value,key,position){const s=normalize(value);if(keys.includes(key)&&s.panels[key].enabled&&slots.includes(position))s.panels[key].position=position;return resolve(s).settings;}
+ function cycle(items,settings,elapsed=0){
+  if(!items.length)return {key:null,remaining:0};const durations=items.map(key=>settings.panels[key].seconds*1000),total=durations.reduce((a,b)=>a+b,0);let at=Math.max(0,Number(elapsed)||0)%total;
+  for(let i=0;i<items.length;i++){if(at<durations[i])return {key:items[i],remaining:durations[i]-at};at-=durations[i];}return {key:items[0],remaining:durations[0]};
+ }
  function turn(root,key,s=root?.[key+'State']){
   const empty={name:'',team:'',members:[]};if(!s?.active||s.finished||s.readyToFinish||s.coinPending||s.eveningStartedAt&&root?.currentEveningStartedAt&&s.eveningStartedAt!==root.currentEveningStartedAt)return empty;
   const person=name=>({...empty,name:name||''}),team=id=>!['T1','T2'].includes(id)?empty:({...empty,team:id||'',members:s.participantTeams?.[id]||s.teams?.[id]||(root?.persons||[]).filter(p=>p.tisch===id).map(p=>p.name)});
@@ -34,5 +42,5 @@
   const tour=all.filter(e=>e.type==='tour'&&B.parse(e.date)&&(B.parse(e.endDate)&&e.endDate>=e.date?e.endDate:e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;
   return {kegeln,tour,birthdays:B.events(root?.persons||[],all,today,kegeln?.date||today)};
  }
- window.KCDashboardLayout=Object.freeze({keys,slots,labels,defaults,normalize,resolve,move,turn,upcoming});
+ window.KCDashboardLayout=Object.freeze({keys,slots,labels,defaults,normalize,resolve,move,cycle,turn,upcoming});
 })();
