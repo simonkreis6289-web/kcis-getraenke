@@ -10,7 +10,7 @@ test('actual receipts and automatic monthly payments produce signed balances',()
  const orders={orders:[{id:'standing_b',personName:'B',amountCents:1000,interval:'monthly',startDate:'2026-11-01'}],payments:[payment()]};
  const m=O.model(entries,null,[],[{name:'A'},{name:'B'}],orders,'2026-11-13');
  assert.equal(m.rows.find(r=>r.name==='A').saldo,2000);assert.equal(m.rows.find(r=>r.name==='B').saldo,-1000);assert.equal(m.summary.balance,7000);assert.equal(m.summary.actualBalance,8000);
- const doc=parseHTML(O.table(m)).document;assert(doc.querySelector('.cash-negative').textContent.includes('-10,00'));assert(doc.querySelector('.cash-positive').textContent.includes('20,00'));assert(!doc.querySelector('tbody small'));assert(doc.querySelector('thead').textContent.includes('Bisher bezahlt'));
+ const doc=parseHTML(O.table(m)).document;assert(doc.querySelector('.cash-negative').textContent.includes('-10,00'));assert(doc.querySelector('.cash-positive').textContent.includes('20,00'));assert(doc.querySelector('tbody .cash-evening-comparison').textContent.includes('Schnitt'));assert(doc.querySelector('thead').textContent.includes('Bisher bezahlt'));
 });
 test('income and debt use the same cash-year boundary and keep general receipts out of member balances',()=>{
  const orders={payments:[payment({date:'2026-10-01'}),payment({id:'income_new',date:'2026-11-12',amountCents:500,personName:''})]};
