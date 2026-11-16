@@ -7,7 +7,7 @@
 .extra-fence-row{display:grid;grid-template-columns:var(--fence-columns);column-gap:12px;align-items:stretch;min-width:740px;height:64px;border:1px solid #c8d2e3;border-radius:9px;background:#f7f9fc;overflow:hidden;box-sizing:border-box}
 .extra-fence-name{display:flex;align-items:center;min-width:0;padding-left:12px}
 .extra-fence-name>strong{font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.extra-fence{display:grid;grid-template-columns:repeat(var(--fence-groups),minmax(0,1fr));gap:8px;min-width:0;width:100%;max-width:calc(var(--fence-groups) * 42px + (var(--fence-groups) - 1) * 8px);margin:7px 0;align-self:stretch}
+.extra-fence{display:grid;grid-template-columns:repeat(var(--fence-groups),minmax(0,1fr));gap:8px;min-width:0;width:100%;max-width:calc(var(--fence-groups) * 62px + (var(--fence-groups) - 1) * 8px);margin:7px 0;align-self:stretch}
 .extra-fence-group{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:min(3px,10%);min-width:0;align-items:stretch}
 .extra-fence i{display:block;min-width:0;height:auto;border:0;box-shadow:inset 0 0 0 1px #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1;box-sizing:border-box}
 .extra-fence i.filled{box-shadow:inset 0 0 0 1px #0003;background:var(--fence-color,#bc7949)}
@@ -37,3 +37,14 @@
 :root .plusminus-table .pm-operator,:root .tv-plusminus .pm-operator{width:26px;min-width:26px!important;max-width:26px;padding:4px 0!important;text-align:center!important;font-size:24px;font-weight:900;color:#3e5575}
 
 #extra-lattenzaun-slatColor{width:100%;height:44px;padding:4px;border:1px solid #afc2df;border-radius:8px;background:#fff;cursor:pointer}
+
+/* Jeder Ebbe-/Flut-Wurf trägt die Farbe seines tatsächlich angewendeten Faktors. */
+:root [data-extra-game="ebbeflut"] .round-tide-cell-ebbe,:root [data-extra-game="ebbeflut"] .round-tide-ebbe{background:#dceeff!important;color:#123e68}
+:root [data-extra-game="ebbeflut"] .round-tide-cell-normal,:root [data-extra-game="ebbeflut"] .round-tide-normal{background:#edf0f4!important;color:#374557}
+:root [data-extra-game="ebbeflut"] .round-tide-cell-flut,:root [data-extra-game="ebbeflut"] .round-tide-flut{background:#d7f0df!important;color:#155b35}
+:root [data-extra-game="ebbeflut"] td.round-tide-cell{vertical-align:middle;text-align:center!important}
+[data-extra-game="ebbeflut"] .round-tide-cell>strong{display:block;font-size:1.25em;line-height:1.15;text-align:center}
+:root [data-extra-game="ebbeflut"] .round-tide-value{display:block;margin-top:5px;color:inherit!important;font-size:clamp(12px,.8em,16px)!important;font-weight:700;text-align:center!important;white-space:normal}
+[data-extra-game="ebbeflut"] .round-tide>strong{font-size:18px}
+.round-tide-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.round-tide-legend>span{padding:5px 10px;border:1px solid #b7c8d8;border-radius:7px;font-size:14px;font-weight:800}
