@@ -2,16 +2,21 @@
 #game-body .extra-clock strong{font-size:clamp(42px,5vw,80px)}#game-body .extra-team-card strong{font-size:clamp(32px,4vw,65px)}#game-body .extra-team-card small{font-size:24px}
 #game-property-bergundtal [hidden],#game-property-ballermann [hidden],#game-property-lattenzaun [hidden]{display:none!important}
 
-/* Gemeinsame Spalten halten Namen, Zaun, letzten Wurf, Latten und Preis bündig. */
-.extra-fences{--fence-columns:minmax(95px,140px) minmax(160px,1fr) 140px 100px 120px;display:grid;gap:6px;overflow-x:auto}
+/* Gemeinsame Spalten halten Namen, Zaun, Latten und Preis bündig. */
+.extra-fences{--fence-columns:minmax(95px,140px) minmax(160px,1fr) 100px 120px;display:grid;gap:6px;overflow-x:auto}
 .extra-fence-row{display:grid;grid-template-columns:var(--fence-columns);column-gap:12px;align-items:stretch;min-width:740px;height:64px;border:1px solid #c8d2e3;border-radius:9px;background:#f7f9fc;overflow:hidden;box-sizing:border-box}
 .extra-fence-name{display:flex;align-items:center;min-width:0;padding-left:12px}
 .extra-fence-name>strong{font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.extra-fence{display:grid;grid-template-columns:repeat(var(--fence-slats),minmax(0,1fr));gap:1px;min-width:0;margin:0;align-self:stretch}
-.extra-fence i{display:block;min-width:0;height:auto;border:1px solid #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1;box-sizing:border-box}
-.extra-fence i.filled{border-color:#a25322;background:#bc7949}
-.extra-fence-last-slot{display:flex;min-width:0;align-items:stretch}
-.extra-fence-last{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;width:100%;border-inline:2px solid #dfa322;background:#fff2c5;color:#243d61;box-sizing:border-box}
+.extra-fence{display:grid;grid-template-columns:repeat(var(--fence-groups),minmax(0,1fr));gap:8px;min-width:0;width:100%;max-width:calc(var(--fence-groups) * 42px + (var(--fence-groups) - 1) * 8px);margin:7px 0;align-self:stretch}
+.extra-fence-group{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:min(3px,10%);min-width:0;align-items:stretch}
+.extra-fence i{display:block;min-width:0;height:auto;border:0;box-shadow:inset 0 0 0 1px #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1;box-sizing:border-box}
+.extra-fence i.filled{box-shadow:inset 0 0 0 1px #0003;background:var(--fence-color,#bc7949)}
+.extra-fence-heading{display:flex;justify-content:space-between;align-items:stretch;gap:16px;margin-bottom:12px}
+.extra-fence-heading>div:first-child{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.extra-fence-heading h2{margin:0 0 5px}
+.extra-fence-next{margin:0;font-size:17px;color:#52637c}
+.extra-fence-next strong{color:#243d61}
+.extra-fence-last{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:180px;padding:8px 16px;border:2px solid #dfa322;border-radius:10px;background:#fff2c5;color:#243d61;box-sizing:border-box}
 .extra-fence-last small{font-size:11px;font-weight:700;line-height:1.2}
 .extra-fence-last b{font-size:34px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
 .extra-fence-count{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;color:#243d61;font-variant-numeric:tabular-nums}
@@ -30,3 +35,5 @@
 
 /* Rechenzeichen stehen als schmale Spalten zwischen den fünf Würfen. */
 :root .plusminus-table .pm-operator,:root .tv-plusminus .pm-operator{width:26px;min-width:26px!important;max-width:26px;padding:4px 0!important;text-align:center!important;font-size:24px;font-weight:900;color:#3e5575}
+
+#extra-lattenzaun-slatColor{width:100%;height:44px;padding:4px;border:1px solid #afc2df;border-radius:8px;background:#fff;cursor:pointer}

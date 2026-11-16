@@ -65,9 +65,19 @@ table input[type="number"]{text-align:center}
 
 /* Gesamtvergleich ausschließlich für aktive Mitglieder, in App und TV identisch. */
 .cash-year-table td.cash-year-deviation{font-weight:800}
-.cash-year-table td.cash-deviation-above{color:#bd253b!important}
-.cash-year-table td.cash-deviation-below{color:#187044!important}
-.cash-year-table td.cash-deviation-neutral{color:#52637c!important}
+.cash-year-table .cash-deviation-above{color:#bd253b!important}
+.cash-year-table .cash-deviation-below{color:#187044!important}
+.cash-year-table .cash-deviation-neutral{color:#52637c!important}
 .cash-average-note{margin:8px 0 0;color:#52637c;font-size:12px;line-height:1.4}
 .cash-dashboard-summary{grid-template-columns:repeat(7,minmax(0,1fr))}
 @media(max-width:800px){.cash-dashboard-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Durchschnitt in der Gesamtzeile unter der Vergleichsspalte. */
+.cash-year-table tfoot .cash-year-average small{display:block;margin:0 0 2px;font-size:.65em;line-height:1.1;color:inherit}
+.cash-year-table tfoot .cash-year-average strong{display:block;font-size:inherit;line-height:1.15}
+
+/* Abendbetrag groß; aktiver Mitgliederschnitt und Abweichung dezent darunter. */
+.cash-year-table td.cash-year-evening{padding:4px 6px!important}
+.cash-evening-amount{display:block;font-size:1.05em;line-height:1.15;font-weight:800}
+:root .cash-year-table .cash-evening-comparison{display:block!important;margin:3px 0 0!important;font-size:clamp(9px,.58em,12px)!important;line-height:1.2;white-space:normal!important;color:#52637c}
+.cash-evening-comparison>span{white-space:nowrap;font-weight:700}
