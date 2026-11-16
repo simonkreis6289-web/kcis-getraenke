@@ -2,19 +2,33 @@
 (() => {
  const M=window.KCDashboardLayout;let layoutStamp='',tickerStamp='',resizeQueued=false;
  const $=id=>document.getElementById(id);
- let arrangement=null,rotationStart=0,rotationTimer=null;
+ let arrangement=null,rotationStart=0,rotationTimer=null;const fadeTimers=new Map();
+ function clearFades(){for(const timer of fadeTimers.values())clearTimeout(timer);fadeTimers.clear();for(const box of document.querySelectorAll('.dashboard-panel-slot')){box.classList.remove('dashboard-is-transitioning');for(const panel of box.querySelectorAll('.panel'))panel.classList.remove('dashboard-fade-in','dashboard-fade-out');}}
  function rotate(now=Date.now()){
   if(rotationTimer!==null){clearTimeout(rotationTimer);rotationTimer=null;}if(!arrangement)return;
   let delay=Infinity;
   for(const slot of M.slots){const items=arrangement.groups[slot],current=M.cycle(items,arrangement.settings,now-rotationStart);
-   for(const key of items){const panel=$('dashboard-panel-'+key);if(panel)panel.hidden=key!==current.key;}
-   const box=$('dashboard-slot-'+slot);if(box){box.dataset.activePanel=current.key||'';const dots=box.querySelectorAll('[data-panel-key]');for(const dot of dots){const active=dot.dataset.panelKey===current.key;dot.classList.toggle('active',active);dot.setAttribute('aria-current',String(active));}}
+   const box=$('dashboard-slot-'+slot);if(box){
+    const previous=box.dataset.activePanel||'',next=current.key||'';
+    const duration=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:arrangement.settings.transitionSeconds*1000;
+    if(fadeTimers.has(slot)){clearTimeout(fadeTimers.get(slot));fadeTimers.delete(slot);}
+    box.classList.remove('dashboard-is-transitioning');
+    for(const key of items){const panel=$('dashboard-panel-'+key);if(panel){panel.classList.remove('dashboard-fade-in','dashboard-fade-out');panel.hidden=key!==previous;}}
+    if(previous&&next&&previous!==next&&duration>0){
+     const outgoing=$('dashboard-panel-'+previous),incoming=$('dashboard-panel-'+next);
+     if(outgoing&&incoming){box.style.setProperty('--dashboard-fade-time',duration+'ms');box.classList.add('dashboard-is-transitioning');incoming.hidden=false;incoming.classList.add('dashboard-fade-in');
+      // Erzwingt den Startzustand, bevor die Deckkraft animiert wird.
+      void incoming.offsetWidth;incoming.classList.remove('dashboard-fade-in');outgoing.classList.add('dashboard-fade-out');
+      fadeTimers.set(slot,setTimeout(()=>{outgoing.hidden=true;outgoing.classList.remove('dashboard-fade-out');box.classList.remove('dashboard-is-transitioning');fadeTimers.delete(slot);},duration+35));
+     }
+    }else for(const key of items){const panel=$('dashboard-panel-'+key);if(panel)panel.hidden=key!==next;}
+   box.dataset.activePanel=current.key||'';const dots=box.querySelectorAll('[data-panel-key]');for(const dot of dots){const active=dot.dataset.panelKey===current.key;dot.classList.toggle('active',active);dot.setAttribute('aria-current',String(active));}}
    if(items.length>1)delay=Math.min(delay,current.remaining);
   }
   if(Number.isFinite(delay))rotationTimer=setTimeout(()=>rotate(),Math.max(25,delay));
  }
  function apply(settings){
-  const r=M.resolve(settings),stamp=JSON.stringify(r.settings.panels);if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;arrangement=r;rotationStart=Date.now();
+  const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();
   let parking=$('dashboard-panel-parking');if(!parking){parking=document.createElement('div');parking.id='dashboard-panel-parking';parking.hidden=true;main.append(parking);}
   const panels=new Map(M.keys.map(key=>[key,$('dashboard-panel-'+key)]));
   for(const key of M.keys){const panel=panels.get(key);if(panel){panel.hidden=true;parking.append(panel);}}
