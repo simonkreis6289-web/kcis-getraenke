@@ -166,6 +166,7 @@ function getClubFirestoreId(clubName) {
 function createEmptyClubData() {
   return {
     avatar: '',
+    dashboardSettings: null,
     clubTermine: [],
     clubKegelSerie: null,
     calendarRevision: 0,

@@ -7,15 +7,10 @@ const now=Date.now(),evening='2026-11-09T18:00:00Z';
 const event=(id,type)=>({id,type,thrower:'Hucke',createdAt:new Date(now).toISOString(),eveningStartedAt:evening});
 const feed=(f,logs)=>f.audio.feed({currentEveningStartedAt:evening,penaltyStatsLog:logs},'club',now);
 
-test('the large countdown overlays the event block and cannot create an extra header grid row',()=>{
+test('the countdown stays in the single compact header row while events and actions occupy the bottom strip',()=>{
  const {document}=parseHTML(read('dashboard.html')),timer=document.getElementById('tv-countdown');
- assert(timer.parentElement.classList.contains('kc-next-events'));
- const rules=[...parse(read('css/dashboard-header.css')).cssRules];
- const box=rules.find(r=>r.selectorText==='.dashboard-header #tv-countdown');
- assert.equal(box.style.getPropertyValue('position'),'absolute');assert.equal(box.style.getPropertyValue('pointer-events'),'none');
- assert.equal(box.style.getPropertyValue('bottom'),'auto');
- const digits=rules.find(r=>r.selectorText==='.dashboard-header #tv-countdown .timer-time');
- assert(digits.style.getPropertyValue('font-size').includes('56px'));assert(digits.style.getPropertyValue('font-size').includes('84px'));
+ assert(timer.parentElement.classList.contains('dashboard-header'));assert(document.querySelector('.dashboard-footer #kc-next-kegeln'));assert(document.querySelector('.dashboard-footer #fullscreen-btn'));assert(!document.querySelector('.dashboard-header .header-actions'));
+ const rules=[...parse(read('css/dashboard-layout.css')).cssRules],box=rules.find(r=>r.selectorText==='.dashboard-header #tv-countdown');assert.equal(box.style.getPropertyValue('position'),'static');assert.equal(box.style.getPropertyValue('grid-row'),'1');assert.equal(box.style.getPropertyValue('transform'),'none');
 });
 
 test('new 9er, Kranz and through throws use the same real bowling recording; gutters use the soft plop',async()=>{

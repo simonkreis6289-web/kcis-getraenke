@@ -1,6 +1,6 @@
-const APP_VERSION = '20261116-238';
-const APPVersionSelf = 'V238 © SK';
-const APP_LAST_UPDATE = '16.11.2026, 12:02 Uhr';
+const APP_VERSION = '20261116-239';
+const APPVersionSelf = 'V239 © SK';
+const APP_LAST_UPDATE = '16.11.2026, 21:20 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -106,6 +106,8 @@ const TANNENBAUM_DEFAULT_BASE = {
 
 let TANNENBAUM_BASE = { ...TANNENBAUM_DEFAULT_BASE };
 let tannenbaumHardRule = true;
+
+let dashboardSettings = null;
 
 let groupSettings = {
   T1: { name: 'Wand', color: '#111111', emoji: '⚫' },

@@ -45,6 +45,7 @@ async function startApp() {
 function getSerializableState() {
   return {
     cashBookSettings,
+    dashboardSettings,
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
     penaltyStatsSettings,
     currentEveningStartedAt,
@@ -139,6 +140,7 @@ function getFirestoreState() {
 
   return {
     cashBookSettings,
+    dashboardSettings,
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
     penaltyStatsSettings,
     ...getTodayMeta(),
@@ -403,6 +405,8 @@ function applyLoadedState(state) {
     state.wurfSettings || {
       maxBuys: 3
     };
+
+  dashboardSettings = window.KCDashboardLayout?.normalize(state.dashboardSettings)||state.dashboardSettings||null;
 
   groupSettings =
     state.groupSettings || {
@@ -3712,6 +3716,7 @@ function updateStrafenLimitInput() {
                                     
 // ── RENDER ──
 function renderAll() {
+  window.KCDashboardSettingsApp?.render();
   window.KCGameOverview?.renderHub();
   ensureSechstageState();
   ensureTableGames();
