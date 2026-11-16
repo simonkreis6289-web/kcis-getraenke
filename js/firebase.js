@@ -276,6 +276,7 @@ window.firestoreApi = {
       if(String(current.currentEveningStartedAt||'')!==String(request.expectedEvening||''))throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
       const payload=JSON.parse(JSON.stringify(request.payload)),evening=payload.currentEveningStartedAt,keys=Object.keys(window.KCGameFinePolicy.titles);
       const next={...payload,...current};
+      if(window.KCKranzPolicy)next.extraGameSettings={...(current.extraGameSettings||payload.extraGameSettings||{}),kranzRules:Object.fromEntries(KCKranzPolicy.keys.map(key=>[key,KCKranzPolicy.configured(current,key)]))};
       for(const key of ['currentEveningStartedAt','seatingOrder','spiele','selectedLoser','teamDrinks','bahnTimerStart','bahnTimerRunning','bahnElapsedSeconds','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore'])if(payload[key]!==undefined)next[key]=payload[key];
       const gameDocs=[];for(const key of keys){const target=doc(db,'clubs',clubId,'liveGames',key),old=await tx.get(target);gameDocs.push({key,target,revision:Number(old.exists()?old.data().revision:0)||0});}
       const seatingRef=doc(db,'clubs',clubId,'live','seating');await tx.get(seatingRef);

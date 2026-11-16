@@ -7,3 +7,5 @@
 #tv-starter-draw.is-running .tv-draw-card{animation:tv-draw-pulse .8s ease-in-out infinite alternate}
 @keyframes tv-draw-pulse{to{box-shadow:0 0 65px #edb43f70;transform:scale(1.02)}}
 @media(prefers-reduced-motion:reduce){#tv-starter-draw.is-running .tv-draw-card{animation:none}}
+
+#coinflip-coin,#solo-start-draw-spin{font-size:clamp(24px,3vw,38px)!important;font-weight:900;line-height:1.2;overflow-wrap:anywhere}

@@ -36,9 +36,12 @@ function torTogglePin(n){ensureTorState();const s=torState;if(!s.active||s.coinP
 function torOther(t){return t==='T1'?'T2':'T1';}
 async function torThrow(kind='pins'){
  ensureTorState();const s=torState;if(!s.active||s.coinPending||s.busy)return;
+ const full=s.standing.length===9,selectedKranz=kind==='pins'&&full&&s.selected.length===8&&!s.selected.includes(5);
+ if(kind==='kranz'&&!full){showToast('Kranz ist nur mit einem Wurf in die Vollen möglich.','error');return;}
+ if(selectedKranz)kind='kranz';
  const kranzValue=kind==='kranz'&&window.KCKranzUI?await KCKranzUI.select('tor'):undefined;if(kranzValue===null)return;
  const team=s.current;
- const hit=kind==='kranz'?s.standing.slice():kind==='pins'?s.selected.slice():[];
+ const hit=kind==='kranz'?s.standing.filter(n=>n!==5):kind==='pins'?s.selected.slice():[];
  if(kind==='pins'&&!hit.length){showToast('Kegel auswählen oder Vorbei/Gosse drücken','error');return;}
  const isGosse=kind==='gosse';const knocked=hit.length;
  s.busy=true;
@@ -48,7 +51,7 @@ async function torThrow(kind='pins'){
  try{
    // Strafregeln für Gosse und 9er analog zu anderen Spielen.
    if(personalPenalty){if(!(await changeSoloThrowPenalty(thrower,null,{pins:isGosse?0:kind==='kranz'?12:9,isGosse})))return;}
-   s.standing=s.standing.filter(n=>!hit.includes(n));s.selected=[];
+   s.standing=kind==='kranz'?[]:s.standing.filter(n=>!hit.includes(n));s.selected=[];
    s.history.push({team,thrower,kind,hit,pins:knocked,...(kranzValue!==undefined?{kranzValue}:{}),at:new Date().toISOString()});
    s.teamTurns[team]=(s.teamTurns[team]||0)+1;
    if(!s.standing.length){
@@ -59,7 +62,7 @@ async function torThrow(kind='pins'){
        if(!key){showToast('Strafe „1. Verlierer“ fehlt','error');s.history.pop();s.scores[team]--;s.standing=[1,2,3,4,5,6,7,8,9];return;}
        const changes=s.teams[other].map(personName=>({personName,category:'strafen',key,delta:1}));
        if(!(await changeMultipleSyncedPersonCounters(changes,'⚽ Tor: Verliererteam'))) {s.history.pop();s.scores[team]--;s.standing=[1,2,3,4,5,6,7,8,9];return;}
-       s.active=false;s.finished=true;s.winner=team;s.message=getGroupLabel(team)+' gewinnt! '+getGroupLabel(other)+': 1. Verlierer +1 pro Spieler';
+       s.finishPenalties=changes.map(({personName,key,delta})=>({personName,key,delta}));s.active=false;s.finished=true;s.winner=team;s.message=getGroupLabel(team)+' gewinnt! '+getGroupLabel(other)+': 1. Verlierer +1 pro Spieler';
      }else{s.standing=[1,2,3,4,5,6,7,8,9];s.current=other;}
    }else if(!knocked){s.current=torOther(team);}
    if(s.finished&&typeof recordCompletedGame==='function')recordCompletedGame('tor',s);

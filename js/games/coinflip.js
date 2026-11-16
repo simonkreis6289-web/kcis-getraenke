@@ -19,7 +19,7 @@ function openCoinFlipModal(context = '') {
       modal.style.boxShadow = '';
     }
 
-if (coin) coin.textContent = getGroupEmoji('T1');
+if (coin) coin.textContent = getGroupLabel('T1');
   if (result) result.textContent = '';
 
   document.getElementById('coinflip-modal')?.classList.remove('hidden');
@@ -42,8 +42,8 @@ function runCoinFlip() {
 
   let ticks = 0;
      const frames = [
-      getGroupEmoji('T1'),
-      getGroupEmoji('T2')
+      getGroupLabel('T1'),
+      getGroupLabel('T2')
     ];
 
   const winner = Math.random() < 0.5 ? 'T1' : 'T2';
@@ -55,7 +55,7 @@ function runCoinFlip() {
     if (coin) {
       coin.textContent = frames[ticks % 2];
       coin.style.transform =
-        `rotate(${ticks * 180}deg) scale(${1 + (ticks % 2) * 0.08})`;
+        `scale(${1 + (ticks % 2) * 0.04})`;
     }
 
     if (ticks >= 14) {
@@ -80,7 +80,7 @@ function runCoinFlip() {
         }
 
       if (coin) {
-        coin.textContent = '🪙';
+        coin.textContent = getGroupLabel(winner);
         coin.style.transform = '';
       }
 

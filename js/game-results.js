@@ -59,7 +59,7 @@
   if(entry.type==='teamspiel_strafe')entry={...entry,type:'game_result',title:entry.spieltyp||'Teamspiel',createdAt:entry.date,ranking:[{rank:1,team:entry.teamName||({T1:'Wand',T2:'TV'}[entry.loser])||entry.loser,names:entry.members||[]}]};
   const legacy=['mensch','haushoch','haustief','plusminus'].includes(entry.type);if(entry.type!=='game_result'&&!legacy)return null;
   const ranking=entry.ranking||[],winners=entry.winners||(entry.winner?[entry.winner]:[]),title=entry.title||titles[entry.type]||entry.type;
-  const rows=ranking.slice(0,3).map((g,i)=>'<div class="spiel-detail"><strong>'+(g.rank||i+1)+'. Verlierer:</strong> '+(g.team?esc(g.team)+' · ':'')+(g.names||[]).map(esc).join(', ')+'</div>').join('');
+  const rows=ranking.length?'<div class="game-loser-summary">'+[1,2,3].map(rank=>{const entries=ranking.filter((g,i)=>(g.rank||i+1)===rank);return '<div class="spiel-detail"><strong>'+rank+'. Verlierer:</strong> '+(entries.length?entries.map(g=>(g.team?esc(g.team)+' · ':'')+(g.names||[]).map(esc).join(', ')).join(' · '):'—')+'</div>';}).join('')+'</div>':'';
   const results=(entry.results||[]).map(r=>esc(r.name)+': '+esc(r.number??r.result??'–')).join(' · ');
   const priceRows=amounts(entry),prices=priceRows.length?'<ul class="game-result-amounts">'+priceRows.map(row=>'<li><span>'+esc(row.name)+'</span><strong>'+esc(money(row.amountCents))+'</strong></li>').join('')+'</ul>':'';
   return '<div class="spiel-card"'+(position?' id="penalty-result-'+position+'"':'')+'><div class="spiel-info"><div class="spiel-verlierer round">'+(position?position+'. ':'')+(icons[entry.gameKey||entry.type]||'🏁')+' '+esc(title)+' abgeschlossen</div><div class="spiel-detail">'+esc(entry.createdAt?new Date(entry.createdAt).toLocaleString('de-DE'):'')+'</div>'+(winners.length?'<div class="spiel-detail"><strong>Gewinner:</strong> '+winners.map(esc).join(' · ')+'</div>':'')+(entry.gameFineOnTop?'<div class="game-fine-mode">🔥 OnTop · zusätzlich zur Strafobergrenze</div>':'')+prices+rows+(results?'<div class="spiel-detail">'+results+'</div>':'')+(!rows&&!prices?'<div class="spiel-detail">Abschluss dokumentiert · Beträge nach den Spielregeln</div>':'')+'</div></div>';
@@ -70,6 +70,7 @@ function recordCompletedGame(key,s){
  if(!s||(!s.finished&&!s.winner))return;
  s.resultHistoryId=s.resultHistoryId||'game_result_'+key+'_'+(s.id||s.startedAt||crypto.randomUUID());
  strafenHistory=window.KCGameResults.append(strafenHistory,key,s,{groups:typeof groupSettings==='undefined'?{}:groupSettings});
+ if(typeof renderStrafenHistory==='function')renderStrafenHistory();if(typeof renderStrafen==='function')renderStrafen();if(typeof updateStats==='function')updateStats();
 }
 function applyCompletedGameResults(entries){
  if(!Array.isArray(entries))return;

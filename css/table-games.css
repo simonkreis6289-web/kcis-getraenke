@@ -107,3 +107,5 @@
 /* Auf dem TV die komplette aktive Blackjack-Zeile deutlich absetzen. */
 .tg-tv-board .tg-board .tg-current>th,.tg-tv-board .tg-board .tg-current>td{background:#f6b900;color:#17233d;border-top:2px solid #9a5700;border-bottom:2px solid #9a5700;font-weight:700}
 .tg-tv-board .tg-board .tg-current>th:first-child{box-shadow:inset 6px 0 #8b4b00}
+
+.tg-loser-summary{margin-top:12px;padding:10px 12px;background:#edf2fa;border:1px solid #c5d1e4;border-radius:9px;display:grid;gap:6px;line-height:1.4}.tg-tv-board .tg-spiral-teams{grid-template-columns:1fr;gap:6px}.tg-tv-board .tg-spiral-team{padding:7px 12px}.tg-tv-board .tg-spiral-team-top>strong{font-size:24px}.tg-tv-board .tg-spiral-team-top>b{font-size:48px;line-height:1}.tg-tv-board .tg-spiral-names{font-size:20px;margin:2px 0 5px}.tg-tv-board .tg-spiral-team-top small{font-size:19px}.tg-tv-board .tg-loser-summary{font-size:18px}

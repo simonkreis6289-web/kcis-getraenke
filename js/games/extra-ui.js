@@ -20,7 +20,7 @@ function extraStart(key){
 function extraChooseTeam(team){if(!['T1','T2'].includes(team)||indBusy.ballermann)return;extraDraft('ballermann').startTeam=team;renderIndividualGame('ballermann');}
 function extraDraw(key){
  if(indBusy[key]||indPending[key]||indGet(key)?.id)return;if(key==='parteienspiel'&&typeof gameSetupCheckGroups==='function'&&!gameSetupCheckGroups(key))return;const club=ACTIVE_CLUB,stamp=currentEveningStartedAt,d=extraDraft(key),names=indDraft(key).names;
- const teams=['T1','T2'].map((t,i)=>'Gruppe '+(i+1)+' · '+(typeof getGroupLabel==='function'?getGroupLabel(t):t));
+ const teams=['T1','T2'].map(t=>typeof getGroupLabel==='function'?getGroupLabel(t):t);
  if(typeof openSoloStartDraw!=='function')return;
  openSoloStartDraw({kind:['ballermann','parteienspiel'].includes(key)?'team':'player',subtitle:['ballermann','parteienspiel'].includes(key)?'Welche Seite beginnt?':'Wer beginnt?',players:['ballermann','parteienspiel'].includes(key)?teams:names,title:key==='parteienspiel'?'⚖️ Startseite':key==='ballermann'?'🏖️ Startmannschaft':'🎲 Startspieler',onConfirm:winner=>{
   if(ACTIVE_CLUB!==club||currentEveningStartedAt!==stamp||indGet(key)?.id||indBusy[key]||indPending[key])return;

@@ -1098,8 +1098,7 @@ function closeAttendanceStatusModal() {
 async function confirmAttendanceStatus(
   status
 ) {
-  const person =
-    attendanceStatusPerson;
+  const person = persons.find(p=>p.name===attendanceStatusPerson?.name);
 
   if (!person) {
     return;
@@ -1860,8 +1859,8 @@ async function confirmArrivalTime() {
     return;
   }
 
-  const person =
-    arrivalEditPerson;
+  const person = persons.find(p=>p.name===arrivalEditPerson.name);
+  if(!person){closeArrivalModal();showToast('Person ist nicht mehr vorhanden.','error');return;}
 
   const previousState = {
     arrivalTime:
