@@ -72,3 +72,9 @@ test('new game settings save round variants and euro prices and keep each game i
  for(const [name,value] of Object.entries({throws:'7',startCents:'4.50',pinCents:'0.15',penaltyCents:'0.75'}))input('dreieuro',name,value);assert(await a.c.saveRoundSettings('dreieuro'));assert.deepEqual(copy(a.c.extraConfig('dreieuro')),{kranzMode:'fixed',kranzValue:8,throws:7,startCents:450,pinCents:15,penaltyCents:75});
  input('ebbeflut','rounds','9');assert(await a.c.saveRoundSettings('ebbeflut'));assert.equal(a.c.extraConfig('ebbeflut').rounds,9);assert.equal(a.c.extraConfig('parteienspiel').rounds,3);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().extraGameSettings.dreieuro.pinCents,15);
 });
+test('Ebbe und Flut cells keep the color and readable label of their applied factor, including a Kranz',()=>{
+ let state=start('ebbeflut',{rounds:4,kranzValue:12});for(const [pins,kind] of [[3,'pins'],[3,'pins'],[5,'pins'],[7,'pins'],[12,'kranz'],[5,'pins'],[4,'pins'],[3,'pins']])state=roll(state,pins,kind).state;
+ const before=copy(state),doc=parseHTML(c.renderExtraGameBoard(state)).document;
+ assert.equal(doc.querySelectorAll('td.round-tide-cell-normal').length,3);assert.equal(doc.querySelectorAll('td.round-tide-cell-ebbe').length,2);assert.equal(doc.querySelectorAll('td.round-tide-cell-flut').length,3);
+ const kranz=[...doc.querySelectorAll('td.round-tide-cell')].find(td=>td.querySelector('strong').textContent==='K(12)');assert(kranz.classList.contains('round-tide-cell-flut'));assert.equal(kranz.querySelector('small').textContent,'Flut · × 2 = 24');assert(doc.querySelector('.round-tide-value').textContent.includes('Normal'));assert.equal(doc.querySelectorAll('.round-tide-legend>span').length,3);assert(doc.querySelector('.round-tide-ebbe strong').textContent.includes('Aktuell:'));assert.deepEqual(copy(state),before);
+});
