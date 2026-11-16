@@ -1,14 +1,32 @@
-.extra-clock{display:flex;flex-direction:column;align-items:center;gap:3px;margin:12px 0;padding:14px;border:2px solid #d9a140;border-radius:14px;background:#25364e;color:#fff}.extra-clock strong{font:700 clamp(38px,5vw,72px)/1 'Bebas Neue',sans-serif;font-variant-numeric:tabular-nums}.extra-clock small,.extra-clock span{font:600 13px/1.5 'DM Sans',sans-serif}.extra-clock.urgent{background:#7b2331;border-color:#ef6972}.extra-team-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.extra-team-card{display:flex;flex-direction:column;gap:7px;border:2px solid #c5cede;border-radius:12px;padding:18px;text-align:center;background:#f4f7fc}.extra-team-card strong{font-size:48px}.extra-team-card span{font-size:13px;overflow-wrap:anywhere}.extra-current{background:#fff2c5!important;border-color:#e2a432!important}.extra-fences{display:grid;gap:8px}.extra-fence-row{border:1px solid #c8d2e3;border-radius:10px;background:#f7f9fc;padding:10px 14px}.extra-fence-row>div:first-child{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px}.extra-fence{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}.extra-fence i{display:block;width:8px;height:28px;border:1px solid #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1}.extra-fence i.filled{border-color:#a25322;background:#bc7949}.extra-negative{color:#b62f42}.extra-result{font-size:14px}.extra-score-table small{white-space:normal}.extra-controls button[aria-pressed=true]{background:#ffe4a3}.extra-error{color:#a43037}
-#game-body .extra-clock strong{font-size:clamp(42px,5vw,80px)}#game-body .extra-team-card strong{font-size:clamp(32px,4vw,65px)}#game-body .extra-team-card small{font-size:24px}#game-body .extra-fence-row strong{font-size:21px}#game-body .extra-fence-row span{font-size:18px}
+.extra-clock{display:flex;flex-direction:column;align-items:center;gap:3px;margin:12px 0;padding:14px;border:2px solid #d9a140;border-radius:14px;background:#25364e;color:#fff}.extra-clock strong{font:700 clamp(38px,5vw,72px)/1 'Bebas Neue',sans-serif;font-variant-numeric:tabular-nums}.extra-clock small,.extra-clock span{font:600 13px/1.5 'DM Sans',sans-serif}.extra-clock.urgent{background:#7b2331;border-color:#ef6972}.extra-team-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.extra-team-card{display:flex;flex-direction:column;gap:7px;border:2px solid #c5cede;border-radius:12px;padding:18px;text-align:center;background:#f4f7fc}.extra-team-card strong{font-size:48px}.extra-team-card span{font-size:13px;overflow-wrap:anywhere}.extra-current{background:#fff2c5!important;border-color:#e2a432!important}.extra-negative{color:#b62f42}.extra-result{font-size:14px}.extra-score-table small{white-space:normal}.extra-controls button[aria-pressed=true]{background:#ffe4a3}.extra-error{color:#a43037}
+#game-body .extra-clock strong{font-size:clamp(42px,5vw,80px)}#game-body .extra-team-card strong{font-size:clamp(32px,4vw,65px)}#game-body .extra-team-card small{font-size:24px}
 #game-property-bergundtal [hidden],#game-property-ballermann [hidden],#game-property-lattenzaun [hidden]{display:none!important}
 
-.extra-fence-row>div:first-child{align-items:center}
-.extra-fence-last{display:inline-flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 20px;border:2px solid #dfa322;border-radius:12px;background:#fff2c5;color:#243d61;font-size:20px;font-weight:700;line-height:1.2}
-.extra-fence-last b{font-size:clamp(36px,3vw,48px);font-weight:900;font-variant-numeric:tabular-nums;color:#172f53;white-space:nowrap}
-#game-body .extra-fence-last{font-size:24px;padding:12px 24px}
-#game-body .extra-fence-last b{font-size:clamp(52px,5vw,76px)}
-.extra-fence-row>div:first-child>span:not(.extra-fence-last){margin-left:auto;font-size:clamp(22px,2vw,28px);font-weight:800;font-variant-numeric:tabular-nums;color:#243d61;text-align:right}
-#game-body .extra-fence-row>div:first-child>span:not(.extra-fence-last){font-size:clamp(28px,3vw,40px)}
+/* Gemeinsame Spalten halten Namen, Zaun, letzten Wurf, Latten und Preis bündig. */
+.extra-fences{--fence-columns:minmax(95px,140px) minmax(160px,1fr) 140px 100px 120px;display:grid;gap:6px;overflow-x:auto}
+.extra-fence-row{display:grid;grid-template-columns:var(--fence-columns);column-gap:12px;align-items:stretch;min-width:740px;height:64px;border:1px solid #c8d2e3;border-radius:9px;background:#f7f9fc;overflow:hidden;box-sizing:border-box}
+.extra-fence-name{display:flex;align-items:center;min-width:0;padding-left:12px}
+.extra-fence-name>strong{font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.extra-fence{display:grid;grid-template-columns:repeat(var(--fence-slats),minmax(0,1fr));gap:1px;min-width:0;margin:0;align-self:stretch}
+.extra-fence i{display:block;min-width:0;height:auto;border:1px solid #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1;box-sizing:border-box}
+.extra-fence i.filled{border-color:#a25322;background:#bc7949}
+.extra-fence-last-slot{display:flex;min-width:0;align-items:stretch}
+.extra-fence-last{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;width:100%;border-inline:2px solid #dfa322;background:#fff2c5;color:#243d61;box-sizing:border-box}
+.extra-fence-last small{font-size:11px;font-weight:700;line-height:1.2}
+.extra-fence-last b{font-size:34px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.extra-fence-count{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;color:#243d61;font-variant-numeric:tabular-nums}
+.extra-fence-count b{font-size:25px;line-height:1.1;white-space:nowrap}
+.extra-fence-count small{font-size:12px;line-height:1.2}
+.extra-fence-price{display:flex;justify-content:flex-end;align-items:center;padding-right:12px;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;color:#243d61;white-space:nowrap}
+#game-body .extra-fence-row{height:70px}
+#game-body .extra-fence-name>strong{font-size:22px}
+#game-body .extra-fence-last small{font-size:12px}
+#game-body .extra-fence-last b{font-size:38px}
+#game-body .extra-fence-count b{font-size:28px}
+#game-body .extra-fence-price{font-size:30px}
 
 #game-body [data-extra-game="ballermann"] .extra-clock{padding:16px 22px}#game-body [data-extra-game="ballermann"] [data-extra-time]{font-size:clamp(100px,9vw,145px);line-height:1}#game-body [data-extra-game="ballermann"] .extra-team-card>strong{font-size:clamp(88px,7vw,125px);line-height:1.1}#game-body [data-extra-game="ballermann"] .extra-team-card>small{font-size:26px}#game-body [data-extra-game="ballermann"] .extra-team-card{padding:16px}
 #game-body .tor-tv-team>strong{font-size:clamp(100px,9vw,150px);line-height:1.05}#game-body .tor-tv-team{min-height:180px}#game-body .tor-tv-team>span{font-size:28px}
+
+/* Rechenzeichen stehen als schmale Spalten zwischen den fünf Würfen. */
+:root .plusminus-table .pm-operator,:root .tv-plusminus .pm-operator{width:26px;min-width:26px!important;max-width:26px;padding:4px 0!important;text-align:center!important;font-size:24px;font-weight:900;color:#3e5575}

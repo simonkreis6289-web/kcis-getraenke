@@ -155,10 +155,10 @@ function clearSeatingOrder() {
   seatingOrder=Array(16).fill('');persistState();publishSeatingLive();renderAll();
 }
 function shouldDrawSoloStart(id) {return !!document.getElementById(id+'-random-starter')?.checked;}
-function prepareSoloStarter(id, callback) {
+function prepareSoloStarter(id, callback, forceDraw=false) {
   const players=getSoloNames(id);
   if(!players.length){showToast('Keine aktiven Kegler vorhanden','error');return;}
-  if(!shouldDrawSoloStart(id)){callback(players[0]);return;}
+  if(!forceDraw&&!shouldDrawSoloStart(id)){callback(players[0]);return;}
   openSoloStartDraw({title:'🎲 Startspieler',subtitle:'Wer beginnt?',players,onConfirm:callback});
 }
 let soloPinPenaltyBusy=false;

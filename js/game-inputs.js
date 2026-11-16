@@ -67,7 +67,7 @@ function buildGameThrowKeypad(buttons){
  pad.append(numbers,specials);if(extras.children.length)pad.append(extras);return pad;
 }
 function normalizeGameThrowDialog(modal,selector){
- if(!modal)return;const source=modal.querySelector(selector);if(!source||source.dataset.phonePad)return;const buttons=[...source.querySelectorAll('button')];if(!buttons.length)return;
+ if(!modal)return;const source=modal.querySelector(selector)||modal.querySelector('[data-phone-pad]');if(!source||source.querySelector(':scope > .game-pinpad'))return;const buttons=[...source.querySelectorAll('button')];if(!buttons.length)return;
  modal.classList.add('game-throw-dialog');const card=modal.querySelector('.modal,.haus-modal-card');if(card){card.classList.add('game-throw-dialog-card');card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}
  source.className='game-throw-dialog-pad';source.removeAttribute('style');source.dataset.phonePad='true';source.replaceChildren(buildGameThrowKeypad(buttons));
 }
@@ -110,7 +110,7 @@ function applyGameInputLayout(key){
  for(const button of panel.querySelectorAll('button'))if(!button.hasAttribute('data-abort-game')&&/Spiel abbrechen/i.test(button.textContent))button.remove();
  const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());
  if(s?.active){if(!abort){abort=document.createElement('button');abort.type='button';abort.className='secondary-btn game-abort-button';abort.dataset.abortGame=key;abort.textContent='✕ Spiel abbrechen';abort.onclick=()=>cancelCurrentGame(key);panel.append(abort);}}else abort?.remove();const old=panel.querySelector(':scope > .game-input-panel');
- if(['haushoch','haustief'].includes(key)){old?.remove();return;}
+ if(['haushoch','haustief','lotterie'].includes(key)){old?.remove();return;}
  if(!s?.active){if(key==='darts'){const finish=old?.querySelector('button[onclick="finishDartsRound()"]');if(finish)document.getElementById('darts-game-area')?.append(finish);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
  const card=document.createElement('section');card.className='game-input-panel';card.dataset.gameInput=key;card.setAttribute('aria-label','Wurfeingabe');
  const heading=document.createElement('h3');heading.className='gi-heading';heading.textContent='🎳 Wurf eingeben';card.append(heading);
