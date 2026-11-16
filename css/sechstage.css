@@ -48,3 +48,7 @@
 @media(max-width:600px){.six-tracks{grid-template-columns:1fr}.six-rule-days{grid-template-columns:repeat(3,1fr)}.six-pairs{grid-template-columns:1fr}.six-race-board{padding:6px}}
 @media(prefers-reduced-motion:reduce){.six-track-road i,.six-track-road span{transition:none}}
 .six-loser-label{display:inline-block;font-size:12px;font-weight:700;margin-top:2px}
+
+.six-tv-board .six-track-label{align-items:center}.six-tv-board .six-track-label>b{font-size:38px;line-height:1.1}.six-tv-board .six-track-label>strong{font-size:20px}.six-tv-board .six-track{padding:8px 10px}.six-tv-board .six-score-table{font-size:13px}.six-tv-board .six-score-table th,.six-tv-board .six-score-table td{padding:4px 6px;min-width:0}.six-tv-board .six-score-table small{font-size:10px;margin-top:2px}
+
+.six-track-label>b{display:flex;align-items:baseline;gap:5px;white-space:nowrap}.six-track-label>b small{display:inline;font-size:12px;margin:0}

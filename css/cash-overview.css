@@ -62,3 +62,12 @@ table input[type="number"]{text-align:center}
 #cash-income-list .cash-income-action:disabled{opacity:.5;cursor:default}
 #cash-income-list .cash-income-action-cell{height:auto;white-space:normal!important;padding:6px 8px!important}
 @media(max-width:700px){#cash-income-list .cash-income-action{min-width:80px;min-height:38px;padding:7px 8px;font-size:11px}.cash-income-actions{gap:5px}}
+
+/* Gesamtvergleich ausschließlich für aktive Mitglieder, in App und TV identisch. */
+.cash-year-table td.cash-year-deviation{font-weight:800}
+.cash-year-table td.cash-deviation-above{color:#bd253b!important}
+.cash-year-table td.cash-deviation-below{color:#187044!important}
+.cash-year-table td.cash-deviation-neutral{color:#52637c!important}
+.cash-average-note{margin:8px 0 0;color:#52637c;font-size:12px;line-height:1.4}
+.cash-dashboard-summary{grid-template-columns:repeat(7,minmax(0,1fr))}
+@media(max-width:800px){.cash-dashboard-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}

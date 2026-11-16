@@ -4,7 +4,7 @@
  const box=()=>document.getElementById('cash-dashboard-overlay');
  function fit(){
   frame=0;const overlay=box(),area=document.getElementById('cash-dashboard-scroll'),table=area?.querySelector('table');if(!overlay||overlay.hidden||!table||!area.clientWidth||!area.clientHeight)return;
-  const style=getComputedStyle(area),roomW=area.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-4,roomH=area.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom)-4;
+  const style=getComputedStyle(area),roomW=area.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-4,roomH=area.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom)-4-(area.querySelector('.cash-average-note')?.offsetHeight||0)-(area.querySelector('.cash-average-note')?12:0);
   // Die Tabelle behält immer die volle Breite. Bei vielen Zeilen wird nur
   // die Höhe reduziert; eine Zoom-Skalierung würde rechts Leerraum erzeugen.
   table.style.zoom='1';table.style.width='100%';

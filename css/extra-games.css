@@ -3,3 +3,6 @@
 #game-property-bergundtal [hidden],#game-property-ballermann [hidden],#game-property-lattenzaun [hidden]{display:none!important}
 
 .extra-fence-last{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border:1px solid #b6c3da;border-radius:8px;background:#edf3fc;font-size:16px}.extra-fence-last b{font-size:22px;color:#243d61}
+
+#game-body [data-extra-game="ballermann"] .extra-clock{padding:16px 22px}#game-body [data-extra-game="ballermann"] [data-extra-time]{font-size:clamp(100px,9vw,145px);line-height:1}#game-body [data-extra-game="ballermann"] .extra-team-card>strong{font-size:clamp(88px,7vw,125px);line-height:1.1}#game-body [data-extra-game="ballermann"] .extra-team-card>small{font-size:26px}#game-body [data-extra-game="ballermann"] .extra-team-card{padding:16px}
+#game-body .tor-tv-team>strong{font-size:clamp(100px,9vw,150px);line-height:1.05}#game-body .tor-tv-team{min-height:180px}#game-body .tor-tv-team>span{font-size:28px}

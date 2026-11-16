@@ -317,10 +317,10 @@ function getDartsRoundTotal(team) {
   }, 0);
 }
 
-function finishDartsRound() {
+async function finishDartsRound() {
   ensureDartsState();
 
-  if (!dartsState.active || dartsState.winner) return;
+  if (!dartsState.active || dartsState.winner || dartsState.closing) return;
 
   const t1Round = getDartsRoundTotal('T1');
   const t2Round = getDartsRoundTotal('T2');
@@ -373,6 +373,12 @@ function finishDartsRound() {
   dartsState.roundThrows.T2 = [];
 
   if (dartsState.scores[winningTeam] <= 0) {
+    const loser=winningTeam==='T1'?'T2':'T1',key=getFirstLoserStrafeKey();
+    if(!key)throw Error('Strafe „1. Verlierer“ fehlt.');
+    const names=(dartsState.participantTeams?.[loser]||getActiveTeamMembers(loser).map(p=>p.name));
+    const changes=names.map(personName=>({personName,category:'strafen',key,delta:1}));
+    dartsState.closing=true;try{if(!changes.length||!(await changeMultipleSyncedPersonCounters(changes,'🎯 Darts: Verliererteam')))throw Error('Darts-Abschluss konnte nicht gebucht werden.');}finally{dartsState.closing=false;}
+    dartsState.finishPenalties=changes.map(({personName,key,delta})=>({personName,key,delta}));dartsState.finished=true;
     dartsState.winner = winningTeam;
     dartsState.active = false;
     if(typeof recordCompletedGame==='function')recordCompletedGame('darts',dartsState);

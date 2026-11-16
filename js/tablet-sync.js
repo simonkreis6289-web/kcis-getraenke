@@ -15,7 +15,7 @@
   function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight}));}
   function cache(){try{if(typeof syncCurrentClubToStore==='function'){syncCurrentClubToStore();saveClubSystem();}}catch{/* Die dauerhafte Übertragungswarteschlange bleibt maßgeblich. */}}
   function project(state,render=false){
-    const old=isApplyingRemoteState;try{isApplyingRemoteState=true;applyLoadedState(C.clone(state));livePersonCounters.clear();for(const p of state.persons||[])livePersonCounters.set(p.name,C.clone(p));liveCountersReady=true;if(render)renderAll();cache();}finally{isApplyingRemoteState=old;}
+    const old=isApplyingRemoteState;try{isApplyingRemoteState=true;const previousPeople=new Map(persons.map(p=>[C.norm(p.name),p]));applyLoadedState(C.clone(state));persons=persons.map(p=>{const old=previousPeople.get(C.norm(p.name));if(!old)return p;for(const k of Object.keys(old))if(!Object.hasOwn(p,k))delete old[k];return Object.assign(old,p);});livePersonCounters.clear();for(const p of state.persons||[])livePersonCounters.set(p.name,C.clone(p));liveCountersReady=true;if(render)renderAll();cache();}finally{isApplyingRemoteState=old;}
   }
   function stage(state,docs=[]){
     const s=current;if(!ready||!s)return false;
@@ -69,7 +69,7 @@
     const filled=args.slice(),count=api.__syncArity[method];while(filled.length<count)filled.push(undefined);filled[count]={preview:unit.preview,base:C.clone(unit.before),eveningStartedAt:unit.before.currentEveningStartedAt||''};
     const result=Promise.resolve(raw[method](...filled));unit.promises.push(result);return result;
   }
-  function finish(action,globals){
+  function finish(action,globals,method){
     if(current!==action.session)throw Error('Club wurde gewechselt. Eingabe verworfen.');
     const root='clubs/'+current.club+'/state/current',draft=C.clone(action.preview.data.get(root)),docs=[];
     for(const change of action.preview.writes.values()){
@@ -86,14 +86,14 @@
       const changed=C.games.filter(k=>!C.equal(C.clean(action.before[k+'State']),C.clean(draft[k+'State'])));
       if(changed.length===1){draft.dashboardActiveGame=changed[0];draft.dashboardGameOverview={...draft.dashboardGameOverview,selectedGame:changed[0]};}
     }
-    const state=C.totals(draft,window.KCGameFinePolicy);stage(state,docs);project(state);return state;
+    const state=C.totals(draft,window.KCGameFinePolicy);stage(state,docs);project(state);if(method==='saveLivePersonStatus'){renderAnwesenheit();updateStats();}return state;
   }
   function local(fn){const promise=localTail.catch(()=>{}).then(fn);localTail=promise.catch(()=>{});return promise;}
   function write(method,args){
     if(method==='saveClubMeta'&&(!ready||args[0]!==current?.club))return (async()=>{const base=await raw.loadClubState(args[0])||{},meta=await raw.readTabletDocument(args[0],'clubs/'+args[0])||{};return raw.saveClubMeta(...args,{method,opId:id(),base,metaBase:meta,sideOperations:[],eveningStartedAt:base.currentEveningStartedAt||''});})();
     if(unit)return localCall(method,args);
     return local(async()=>{if(!ready)throw Error('Tabletstand noch nicht geladen');const action={session:current,before:method==='startNewEvening'?C.clone(current.root):{...current.root,...snapshot()},promises:[],messages:[],opened:new Set()};action.preview=preview(action.before);unit=action;
-      try{const result=await localCall(method,args);await Promise.all(action.promises);finish(action);return result;}catch(error){if(current===action.session)project(action.before,true);throw error;}finally{unit=null;status();}
+      try{const result=await localCall(method,args);await Promise.all(action.promises);finish(action,undefined,method);return result;}catch(error){if(current===action.session)project(action.before,true);throw error;}finally{unit=null;status();}
     });
   }
   function legacyAction(key,fn,args,self){

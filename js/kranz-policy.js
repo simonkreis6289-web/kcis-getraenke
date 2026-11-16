@@ -17,6 +17,7 @@
     return {mode:'fixed',value:12};
   }
   function existing(key,state,root={}){
+    if(!state?.active&&!state?.finished&&!state?.id&&!state?.startedAt&&!state?.history?.length)return configured(root,key);
     if(valid(state?.kranzRule,key))return {...state.kranzRule};
     if(state?.config?.kranzMode)return fromConfig(state.config);
     if(key==='siebener')return fromConfig(state?.config?.seven);

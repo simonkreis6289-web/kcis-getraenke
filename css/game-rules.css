@@ -23,3 +23,5 @@
 #dashboard-rules-content h3{font-size:1.1em;line-height:1.2;margin:.4em 0;break-after:avoid}
 #dashboard-rules-content .rules-obstacle-table th,#dashboard-rules-content .rules-obstacle-table td{font:inherit;padding:.25em .4em;white-space:normal}
 #dashboard-rules-content>:last-child{margin-bottom:0}
+
+.rules-source{display:block;column-span:all;break-inside:avoid;text-align:right;margin:12px 0 0;font:400 11px/1.35 'DM Sans',sans-serif!important;color:#a3aab4!important}.rules-source a{color:inherit!important;font:inherit!important;text-decoration:none}.rules-source a:hover{text-decoration:underline}
