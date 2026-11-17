@@ -143,7 +143,7 @@
   const scope=String(club||'')+'|'+String(root?.currentEveningStartedAt||''),seconds=M.normalize(root?.dashboardSettings).popupSeconds;
   if(scope!==popupScope){popupScope=scope;popupInitialized=false;seenThrows.clear();hidePopup(true);}
   if(seconds!==popupSeconds){popupSeconds=seconds;hidePopup(true);}
-  if(!root)return;const start=Date.parse(root.currentEveningStartedAt||''),fresh=[];
+  if(!root)return;window.KCClubToasts?.feed(root,club,now);const start=Date.parse(root.currentEveningStartedAt||''),fresh=[];
   for(const event of Array.isArray(root.penaltyStatsLog)?root.penaltyStatsLog:[]){
    if(!event?.id||seenThrows.has(event.id))continue;seenThrows.add(event.id);const at=Date.parse(event.createdAt);
    if(event.eveningStartedAt?String(event.eveningStartedAt)!==String(root.currentEveningStartedAt||''):Number.isFinite(start)&&(!Number.isFinite(at)||at<start))continue;
@@ -155,7 +155,7 @@
   const event=fresh.sort((a,b)=>a.at-b.at).at(-1);let box=$('dashboard-throw-popup');
   if(!box){box=document.createElement('div');box.id='dashboard-throw-popup';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.hidden=true;document.body.append(box);}
   hidePopup(true);box.className='dashboard-throw-popup is-'+event.kind;
-  const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];box.replaceChildren(title,name);positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
+  const titleText={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];if(window.KCClubToasts)window.KCClubToasts.decorate(box,root,titleText,event.name,event.name);else{const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent=titleText;box.replaceChildren(title,name);}positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
   popupTimer=setTimeout(hidePopup,popupSeconds*1000);
  }
  window.addEventListener('kc-football-updated',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});

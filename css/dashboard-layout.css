@@ -79,3 +79,19 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 .dashboard-ticker-slot .dashboard-ticker-copy{gap:12px;padding-right:12px}
 .dashboard-ticker-slot .dashboard-ticker-track{max-height:100%}
 @media(max-width:750px){.dashboard-ticker-region{gap:4px}.dashboard-ticker-slot .dashboard-ticker-chip{padding:3px 8px}}
+
+/* V247: Personenfotos und Initialen in allen Kegel-Toasts. */
+.dashboard-throw-popup .kc-toast-person-layout{display:flex;align-items:center;justify-content:center;gap:clamp(16px,3vw,42px);width:100%;max-width:100%;min-width:0}
+.dashboard-throw-popup .kc-toast-person-text{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;min-width:0;text-align:left}
+.dashboard-throw-popup .kc-toast-person-text>strong{font-size:clamp(34px,4.3vw,66px);font-weight:900;line-height:1.06}
+.dashboard-throw-popup .kc-toast-person-text>span{font-size:clamp(23px,2.8vw,41px);font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.dashboard-throw-popup .kc-toast-avatar{width:clamp(94px,10vw,150px);height:clamp(94px,10vw,150px);flex:0 0 auto;position:relative;display:grid;place-items:center;overflow:hidden;border-radius:50%;background:#ffffffcf;border:4px solid #ffffff;box-shadow:0 6px 22px #0d23475c;box-sizing:border-box}
+.dashboard-throw-popup .kc-toast-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dashboard-throw-popup .kc-toast-avatar-initials{font-size:clamp(30px,4vw,57px);font-weight:900;color:#183550}
+.dashboard-throw-popup .kc-toast-avatar-initials[hidden]{display:none!important}
+.kc-club-event-toast.is-arrival{border-color:#119e60;background:linear-gradient(135deg,#b9ffd2,#40cf88);color:#074e2e}
+.kc-club-event-toast.is-departure{border-color:#5576b6;background:linear-gradient(135deg,#daebff,#7ba3ed);color:#173e77}
+.kc-club-event-toast.is-round{border-color:#bf7605;background:linear-gradient(135deg,#fff1b8,#f9ba3e);color:#744109}
+.kc-club-event-toast.is-loser{border-color:#a74caf;background:linear-gradient(135deg,#f7d9fa,#df83e7);color:#60256b}
+.kc-club-event-toast.is-team-loss{border-color:#b75a48;background:linear-gradient(135deg,#ffe0ca,#fc977d);color:#702e20}
+@media(max-width:680px){.dashboard-throw-popup .kc-toast-avatar{width:82px;height:82px}.dashboard-throw-popup .kc-toast-person-text>strong{font-size:30px}.dashboard-throw-popup .kc-toast-person-text>span{font-size:20px}.dashboard-throw-popup .kc-toast-person-layout{gap:14px}}
