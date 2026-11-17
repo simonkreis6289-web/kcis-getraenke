@@ -29,6 +29,21 @@
   const tickerOptions=element('div',undefined,'dashboard-ticker-options');
   const showTicker=element('label',undefined,'dashboard-popup-option'),tickerCheck=element('input');tickerCheck.type='checkbox';tickerCheck.id='dashboard-ticker-enabled';tickerCheck.checked=draft.tickerEnabled;tickerCheck.disabled=busy;tickerCheck.onchange=()=>{draft.tickerEnabled=tickerCheck.checked;draw();};showTicker.append(tickerCheck,document.createTextNode('Laufschrift auf dem Dashboard anzeigen'));tickerOptions.append(showTicker);
   const fontLabel=element('label',undefined,'dashboard-popup-option'),tickerFont=duration('dashboard-ticker-font-size',draft.tickerFontSize,12,30,v=>draft.tickerFontSize=v);fontLabel.htmlFor='dashboard-ticker-font-size';tickerFont.disabled=busy||!draft.tickerEnabled;fontLabel.append(document.createTextNode('Schriftgröße '),tickerFont,document.createTextNode(' px (12 bis 30, Standard 18)'));tickerOptions.append(fontLabel);box.append(element('h3','Laufschrift'),tickerOptions);
+  const streamBox=element('div',undefined,'dashboard-ticker-stream-settings');
+  streamBox.append(element('p','Club-Infos und Bundesliga haben eigene Laufbänder. Je Seite links/rechts positionieren. Liegen beide auf derselben Seite, wechseln sie nach ihren individuellen Anzeigedauern. Eine einzelne Laufschrift nutzt die volle verfügbare Breite.'));
+  for(const [key,label] of [['club','🎳 Clubinfos, Termine und Geburtstage'],['football','⚽ Bundesliga-Ergebnisse']]){
+   const config=draft.tickerStreams[key],line=element('div',undefined,'dashboard-ticker-stream-row'),toggleLabel=element('label'),toggle=element('input');
+   toggle.type='checkbox';toggle.id='dashboard-ticker-stream-'+key;toggle.checked=config.enabled;toggle.disabled=busy||!draft.tickerEnabled;
+   toggle.onchange=()=>{config.enabled=toggle.checked;draw();};toggleLabel.append(toggle,document.createTextNode(label));line.append(toggleLabel);
+   const position=element('select');position.id='dashboard-ticker-position-'+key;position.disabled=busy||!draft.tickerEnabled||!config.enabled;
+   for(const [id,caption] of [['left','Links'],['right','Rechts']]){const option=element('option',caption);option.value=id;position.append(option);}position.value=config.position;position.onchange=()=>{config.position=position.value;draw();};line.append(position);
+   const dwell=element('label',undefined,'dashboard-popup-option');dwell.append(document.createTextNode('Wechsel nach '),duration('dashboard-ticker-seconds-'+key,config.seconds,2,120,v=>config.seconds=v),document.createTextNode(' s'));
+   dwell.hidden=!config.enabled||!(draft.tickerStreams.club.enabled&&draft.tickerStreams.football.enabled&&draft.tickerStreams.club.position===draft.tickerStreams.football.position);
+   line.append(dwell);streamBox.append(line);
+  }
+  const splitLabel=element('label',undefined,'dashboard-popup-option');splitLabel.append(document.createTextNode('Breite links bei zwei nebeneinanderliegenden Laufbändern: '),duration('dashboard-ticker-left-percent',draft.tickerStreams.leftPercent,25,75,v=>draft.tickerStreams.leftPercent=v),document.createTextNode(' %'));
+  splitLabel.hidden=!(draft.tickerStreams.club.enabled&&draft.tickerStreams.football.enabled&&draft.tickerStreams.club.position!==draft.tickerStreams.football.position);
+  streamBox.append(splitLabel);box.append(streamBox);
   box.append(element('h3','Farben der Lauftext-Kacheln'),element('p','Jeder Bereich bekommt eine eigene Hintergrundfarbe. Die Textfarbe wird automatisch gut lesbar gewählt.'));
   const palette=element('div',undefined,'dashboard-ticker-palette');
   for(const [key,name] of Object.entries(M.tickerTypes)){
