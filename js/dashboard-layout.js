@@ -3,9 +3,11 @@
  const keys=['drinks','fines','gutters','seating'],slots=['left-top','left-bottom','right-top','right-bottom'];
  const labels={drinks:'Getränkestand',fines:'Strafenstand',gutters:'Gossenkönig',seating:'Sitzordnung'};
  const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,demo:null}});
+ const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerEnabled:true,tickerFontSize:18,popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,demo:null}});
  function normalize(value){
   const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
+  out.tickerEnabled=value?.tickerEnabled!==false;
+  out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
   out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30),demo:null};
   const demo=value?.football?.demo;
