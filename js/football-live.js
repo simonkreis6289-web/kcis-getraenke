@@ -6,7 +6,19 @@
  const fetchJSON=async path=>{const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),9000);try{const response=await fetch(base+path,{signal:ctrl.signal,cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}finally{clearTimeout(timeout);}};
  const enabled=league=>settings?.[league]===true;
  const score=m=>{const results=Array.isArray(m.matchResults)?m.matchResults:[],end=results.find(x=>x.resultTypeID===2)||results.at(-1);const goals=Array.isArray(m.goals)?m.goals:[];if(end&&Number.isFinite(+end.pointsTeam1)&&Number.isFinite(+end.pointsTeam2))return [+end.pointsTeam1,+end.pointsTeam2];if(goals.length)return [goals.filter(x=>!x.isOvertime&&x.scoreTeam1!=null).at(-1)?.scoreTeam1??0,goals.filter(x=>!x.isOvertime&&x.scoreTeam2!=null).at(-1)?.scoreTeam2??0];return [0,0];};
- const label=(m)=>{const s=score(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(m.matchIsFinished?' (Ende)':'');};
+ const gameMinute=(m,now=Date.now())=>{
+  if(m.matchIsFinished)return 'Ende';
+  const kickoff=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');
+  if(!Number.isFinite(kickoff))return '';
+  const elapsed=Math.floor((now-kickoff)/60000);
+  if(elapsed<0)return 'Anpfiff folgt';
+  if(elapsed<=45)return 'ca. '+Math.max(1,elapsed+1)+'. Min.';
+  // Die API enthaelt keine verifizierte Live-Uhr. In der Halbzeit keine falsche Minute behaupten.
+  if(elapsed<65)return 'ca. Halbzeit';
+  if(elapsed<=125)return 'ca. '+Math.min(90,elapsed-14)+'. Min.';
+  return '';
+ };
+ const label=(m)=>{const s=score(m),minute=gameMinute(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(minute?' · '+minute:'');};
  function announce(m,old,next){
   if(!settings?.goalToastSeconds||document.hidden)return;
   const box=document.getElementById('dashboard-football-toast')||document.createElement('div');box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
