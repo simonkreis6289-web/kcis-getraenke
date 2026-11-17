@@ -31,10 +31,22 @@
  let scope='',initialized=false,snapshot=new Map(),historySeen=new Set(),queue=[],showing=false,activeTimer=null,exitTimer=null;
  const clear=()=>{queue=[];showing=false;if(activeTimer!==null)clearTimeout(activeTimer);if(exitTimer!==null)clearTimeout(exitTimer);activeTimer=null;exitTimer=null;const box=$('dashboard-club-event-toast');if(box){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');}};
  function toast(entry){if(queue.length<15)queue.push(entry);if(!showing)next();}
+ const defaults={arrival:'#40cf88',departure:'#7ba3ed',round:'#f9ba3e',loser:'#df83e7',teamLoss:'#fc977d'};
+ const colorFor=(kind,root)=>{
+  const key=kind==='team-loss'?'teamLoss':kind;
+  const supplied=root?.dashboardSettings?.eventToasts?.colors?.[key];
+  return /^#[0-9a-f]{6}$/i.test(String(supplied||''))?String(supplied):defaults[key]||'#ffffff';
+ };
+ const contrast=(hex)=>{
+  const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+  const y=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+  return y>.179?'#13243d':'#ffffff';
+ };
  function next(){
   if(!queue.length){showing=false;return;}showing=true;
   const event=queue.shift(),box=$('dashboard-club-event-toast')||document.createElement('div');
   box.id='dashboard-club-event-toast';box.className='dashboard-throw-popup kc-club-event-toast is-'+event.kind;box.setAttribute('role','status');box.setAttribute('aria-live','polite');
+  const bg=colorFor(event.kind,event.root);box.style.background=bg;box.style.borderColor=bg;box.style.color=contrast(bg);
   if(!box.parentNode)document.body.append(box);
   const stage=document.querySelector('main.dashboard .stage'),bounds=stage?.getBoundingClientRect();
   if(bounds){box.style.left=(bounds.left+bounds.width/2)+'px';box.style.width=Math.max(200,Math.min(bounds.width-24,760))+'px';}
