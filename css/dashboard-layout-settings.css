@@ -13,3 +13,5 @@
 .dashboard-popup-option{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
 @media(max-width:750px){.dashboard-layout-option{grid-template-columns:1fr minmax(145px,1fr)}.dashboard-dwell{grid-column:2}.dashboard-ticker-message{grid-template-columns:24px minmax(0,1fr)}.dashboard-ticker-message button{grid-column:2;justify-self:end}}
 @media(max-width:650px){.dashboard-layout-option{grid-template-columns:1fr}.dashboard-dwell{grid-column:1}}
+
+.dashboard-ticker-options{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding:12px;border:1px solid #d5dfed;border-radius:8px;background:#f5f8fc}.dashboard-ticker-options input[type=number]{width:76px;height:38px;padding:6px;border:1px solid #b4c5dd;border-radius:7px;font:inherit}.dashboard-ticker-options input[type=checkbox]{width:20px;height:20px}
