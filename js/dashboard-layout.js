@@ -6,8 +6,9 @@
  const tickerColor=(value,fallback)=>/^#[0-9a-fA-F]{6}$/.test(String(value||''))?String(value).toLowerCase():fallback;
  const tickerTypes={birthdays:'Geburtstage',tour:'Kegeltour',kegeln:'Kegeltermin',bl1:'1. Bundesliga',bl2:'2. Bundesliga'};
  const tickerDefaults=()=>({birthdays:'#fce7f3',tour:'#fef3c7',kegeln:'#dcfce7',bl1:'#dbeafe',bl2:'#ede9fe'});
+ const eventToastColors=()=>({arrival:'#40cf88',departure:'#7ba3ed',round:'#f9ba3e',loser:'#df83e7',teamLoss:'#fc977d'});
  const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,seconds:4},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
+ const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
  function normalize(value){
   const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
   out.tickerEnabled=value?.tickerEnabled!==false;
@@ -22,7 +23,8 @@
   for(const type of Object.keys(tickerTypes))out.tickerColors[type]=tickerColor(value?.tickerColors?.[type],out.tickerColors[type]);
   out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
-  out.eventToasts={seconds:seconds(value?.eventToasts?.seconds,4,0,30)};
+  out.eventToasts={seconds:seconds(value?.eventToasts?.seconds,4,0,30),colors:eventToastColors()};
+  for(const key of Object.keys(out.eventToasts.colors))out.eventToasts.colors[key]=tickerColor(value?.eventToasts?.colors?.[key],out.eventToasts.colors[key]);
   for(const key of ['arrival','departure','round','loser','teamLoss'])out.eventToasts[key]=value?.eventToasts?.[key]!==false;
   out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30),events:{goal:value?.football?.events?.goal!==false,kickoff:value?.football?.events?.kickoff!==false,halftime:value?.football?.events?.halftime!==false,fulltime:value?.football?.events?.fulltime!==false,red:false,secondYellow:false},demo:null};
   const demo=value?.football?.demo;
