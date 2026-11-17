@@ -1,5 +1,5 @@
-const APP_VERSION = '20261116-240';
-const APPVersionSelf = 'V245 © SK';
+const APP_VERSION = '20261117-246';
+const APPVersionSelf = 'V246 © SK';
 const APP_LAST_UPDATE = '17.11.2026';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
