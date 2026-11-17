@@ -115,6 +115,23 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .fox-tv-score{background:#fff1c6;border-color:#f5a623}
 .fox-tv-phase{text-align:center;padding:12px;border-radius:9px;background:#e9eaf0;font-weight:800;font-size:clamp(16px,1.7vw,25px)}
 .fox-tv-result{text-align:center;background:#fff1c6;border:2px solid #f5a623;padding:12px;border-radius:10px;font-weight:800}
+.fox-race{padding:12px 14px;border:2px solid #91a4b9;border-radius:15px;background:linear-gradient(160deg,#f4f9fd,#eaf5ed);color:#193450;min-width:0}
+.fox-race-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:clamp(15px,1.7vw,25px);margin-bottom:12px}
+.fox-race-title span{font-size:clamp(13px,1.25vw,18px);font-weight:700}
+.fox-race-stations{position:relative;display:grid;grid-template-columns:repeat(var(--fox-stop-count),minmax(0,1fr));align-items:start;min-height:90px;padding:8px 2px 2px}
+.fox-race-stations:before{content:"";position:absolute;top:22px;left:calc(50% / var(--fox-stop-count));right:calc(50% / var(--fox-stop-count));height:8px;border-radius:8px;background:linear-gradient(90deg,#e1bb56,#248c52);box-shadow:0 2px 6px #142f3b42}
+.fox-race-stop{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;min-width:0;position:relative}
+.fox-race-dot{width:25px;height:25px;border:4px solid #fff;border-radius:50%;background:#a9bbcd;box-shadow:0 0 0 2px #587a8b,0 2px 6px #09284142;box-sizing:border-box;z-index:1}
+.fox-race-current .fox-race-dot{background:#f0a522;box-shadow:0 0 0 3px #f59d20,0 0 14px #f4c253}
+.fox-race-number{font-size:clamp(12px,1.3vw,19px);font-weight:900}
+.fox-race-occupants{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;min-width:0}
+.fox-race-runner{display:block;max-width:100%;box-sizing:border-box;border-radius:8px;border:1px solid #7d8d98;padding:4px 5px;font-size:clamp(10px,.92vw,15px);font-weight:800;background:#fff;color:#273645;overflow-wrap:anywhere}
+.fox-race-running{background:#fff1a2;color:#68430b;border:2px solid #dc9d26;box-shadow:0 0 0 2px #f6d56675}
+.fox-race-caught{background:#f8d3d3;color:#7b2222;border-color:#d96060}
+.fox-race-escaped{background:#c5ebd1;color:#135e33;border-color:#39a76a}
+.fox-race-legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.fox-race-summary{border-radius:999px;padding:4px 9px;border:1px solid #b9cbd0;background:white;font-size:clamp(11px,1vw,15px);font-weight:700}
+@media(max-width:850px){.fox-race{padding:8px}.fox-race-stations{min-height:78px}.fox-race-runner{font-size:10px;padding:3px}}
 .fox-tv-table{table-layout:fixed}.fox-tv-table td{padding:7px!important}.fox-tv-table th{padding:8px!important}
 </style>
 <style id="dashboard-live-events-v153">
@@ -607,12 +624,22 @@ window.addEventListener('resize',()=>requestAnimationFrame(fitTvBoard));
 document.getElementById('game-body').addEventListener('toggle',()=>requestAnimationFrame(fitTvBoard),true);
 
 function renderFuchsjagdBoard(d){
- const fox=safe(d.fox||'–'),score=Number(d.score)||0, hunters=d.hunters||[];
+ const fox=safe(d.fox||'–'),score=Number(d.score)||0,hunters=d.hunters||[],order=Array.isArray(d.order)&&d.order.length?d.order:[d.fox,...hunters].filter(Boolean),results=Array.isArray(d.results)?d.results:[];
  const current=d.active?(d.phase==='hunt'?hunters[d.hunterIndex]:d.fox):'🏁';
  const phase=d.phase==='start'?`Startwurf ${(d.startThrows||0)+1}/2`:d.phase==='hunt'?'Jäger jagt den Fuchs':d.phase==='fox'?'Fuchs baut Vorsprung aus':'Spiel abgeschlossen';
+ const count=order.length,station=Math.min(count,Math.max(1,Number(d.hunterIndex||0)+1));
+ const stations=Array.from({length:count},(_,i)=>{
+  const place=i+1,occupants=results.filter(r=>r.station===place).map(r=>({name:r.fox,escaped:r.escaped}));
+  if(d.active&&place===station)occupants.push({name:d.fox,live:true});
+  const chips=occupants.map(r=>`<span class="fox-race-runner${r.live?' fox-race-running':r.escaped?' fox-race-escaped':' fox-race-caught'}" title="${safe(r.name)}: Station ${place}">🦊 ${safe(r.name)}</span>`).join('');
+  return `<div class="fox-race-stop${d.active&&place===station?' fox-race-current':''}"><span class="fox-race-dot"></span><span class="fox-race-number">${place}</span><div class="fox-race-occupants">${chips}</div></div>`;
+ }).join('');
+ const ranking=results.length?`<div class="fox-race-legend">${results.map(r=>`<span class="fox-race-summary">${safe(r.fox)}: ${r.station}/${count} ${r.escaped?'🏁':'🦊'}</span>`).join('')}</div>`:'';
+ const race=count?`<section class="fox-race" aria-label="Fuchsjagd: Rennstrecke mit ${count} Stationen"><div class="fox-race-title"><strong>🦊 Fuchsjagd-Strecke</strong><span>${d.active?'Fuchs '+(Number(d.foxIndex||0)+1)+' von '+count+' · '+safe(d.fox):'Alle Füchse waren unterwegs'}</span></div><div class="fox-race-stations" style="--fox-stop-count:${count}">${stations}</div>${ranking}</section>`:'';
  const rows=(d.throws||[]).slice().reverse().map((x,i)=>`<tr><td>${d.throws.length-i}</td><td class="tv-name">${safe(x.name)}</td><td>${(x.rawPins??x.pins)===12?'🎳 Kranz ('+x.pins+')':x.pins===0?'Gosse':safe(x.pins)}</td><td style="font-weight:800;color:${x.delta<0?'#be2323':'#177e3b'}">${x.delta>0?'+':''}${safe(x.delta)}</td><td><strong>${safe(x.score)}</strong></td></tr>`).join('');
- return `<div class="tv-board fox-tv-board"><h2 class="tv-headline">🦊 Fuchsjagd</h2><div class="fox-tv-grid"><div class="fox-tv-card">🦊 Fuchs<strong>${fox}</strong></div><div class="fox-tv-card fox-tv-score">Vorsprung<strong>${score} Holz</strong></div><div class="fox-tv-card">🎳 Am Wurf<strong>${safe(current||'🏁')}</strong></div></div><div class="fox-tv-phase">${safe(phase)} · ${hunters.length} Jäger</div>${d.result?`<div class="fox-tv-result">🏆 ${safe(d.result)}</div>`:''}<table class="tv-table fox-tv-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;
+ return `<div class="tv-board fox-tv-board"><h2 class="tv-headline">🦊 Fuchsjagd</h2><div class="fox-tv-grid"><div class="fox-tv-card">🦊 Fuchs<strong>${fox}</strong></div><div class="fox-tv-card fox-tv-score">Vorsprung<strong>${score} Holz</strong></div><div class="fox-tv-card">🎳 Am Wurf<strong>${safe(current||'🏁')}</strong></div></div><div class="fox-tv-phase">${safe(phase)} · ${hunters.length} Jäger</div>${race}${d.result?`<div class="fox-tv-result">🏆 ${safe(d.result)}</div>`:''}<table class="tv-table fox-tv-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;
 }
+
 function sichernDashboardThrower(d,key){
   if(d.mode!=='team')return key;
   const players=d.teams?.[key]||[];
