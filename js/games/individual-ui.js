@@ -32,7 +32,7 @@ async function indRun(key,action,fields={}){
     for(const x of result.counters)applyConfirmedLiveCounter(x.personName,x.category,x.key,x.value);dashboardActiveGame=key;
   }
     if(typeof applyCompletedGameResults==='function')applyCompletedGameResults(result.gameResultsHistory);
-  indPending[key]=null;persistState();renderAll();if(action==='finish'||result.state.finished&&action==='throw')showToast('Spiel abgeschlossen und Beträge gebucht','success');
+  indPending[key]=null;persistState();renderAll();if(action==='start'&&key==='hindernis'&&result.state.startPlayer)showToast('🎲 Startspieler ausgelost: '+result.state.startPlayer,'success');if(action==='finish'||result.state.finished&&action==='throw')showToast('Spiel abgeschlossen und Beträge gebucht','success');
  }catch(error){if(ACTIVE_CLUB===club){if(error.code==='individual-game-rejected'){indPending[key]=null;rejected=true;}else pending.error=error.message;showToast(error.message,'error');}}
  finally{indBusy[key]=false;renderIndividualGame(key);}
  if(rejected)await indReload(key);
