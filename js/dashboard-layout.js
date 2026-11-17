@@ -3,11 +3,15 @@
  const keys=['drinks','fines','gutters','seating'],slots=['left-top','left-bottom','right-top','right-bottom'];
  const labels={drinks:'Getränkestand',fines:'Strafenstand',gutters:'Gossenkönig',seating:'Sitzordnung'};
  const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5}});
+ const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerEnabled:true,tickerFontSize:18,popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,demo:null}});
  function normalize(value){
   const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
+  out.tickerEnabled=value?.tickerEnabled!==false;
+  out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
-  out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30)};
+  out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30),demo:null};
+  const demo=value?.football?.demo;
+  if(demo?.active===true&&/^[a-zA-Z0-9_-]{1,80}$/.test(String(demo.id||''))&&['bl1','bl2'].includes(demo.league))out.football.demo={active:true,id:demo.id,league:demo.league,home:Math.max(0,Math.min(30,Math.trunc(Number(demo.home)||0))),away:Math.max(0,Math.min(30,Math.trunc(Number(demo.away)||0)))};
   const transition=Number(value?.transitionSeconds);out.transitionSeconds=value?.transitionSeconds!=null&&value.transitionSeconds!==''&&Number.isFinite(transition)?Math.max(0,Math.min(3,Math.round(transition*10)/10)):0.6;
   const ids=new Set();out.tickerMessages=(Array.isArray(value?.tickerMessages)?value.tickerMessages:[]).slice(0,20).map((message,i)=>{let id=String(message?.id||'message-'+i).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||'message-'+i;while(ids.has(id))id+='-'+i;ids.add(id);return {id,text:String(message?.text||'').replace(/\s+/g,' ').trim().slice(0,500),enabled:message?.enabled!==false};});return out;
  }
