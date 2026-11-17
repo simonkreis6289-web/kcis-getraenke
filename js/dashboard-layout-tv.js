@@ -85,7 +85,7 @@
   const event=fresh.sort((a,b)=>a.at-b.at).at(-1);let box=$('dashboard-throw-popup');
   if(!box){box=document.createElement('div');box.id='dashboard-throw-popup';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.hidden=true;document.body.append(box);}
   hidePopup(true);box.className='dashboard-throw-popup is-'+event.kind;
-  const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];box.replaceChildren(title,name);positionPopup();box.hidden=false;requestAnimationFrame(()=>box.classList.add('toast-visible'));
+  const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];box.replaceChildren(title,name);positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
   popupTimer=setTimeout(hidePopup,popupSeconds*1000);
  }
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hidePopup();else rotate();});
