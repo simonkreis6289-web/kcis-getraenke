@@ -61,9 +61,16 @@
   window.KCFootballLive?.configure(tickerSettings.football);
   const data=M.upcoming(root,now),date=day=>new Date(day+'T12:00:00Z').toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'medium'}),when=e=>date(e.date)+(e.endDate&&e.endDate>e.date?' – '+date(e.endDate):e.time?', '+e.time+' Uhr':'')+(e.note?' · '+e.note:'');
   const groups=[['kc-next-birthdays',data.birthdays.length?'🎂 Geburtstage bis zum nächsten Kegeln: '+data.birthdays.map(e=>e.date.slice(8,10)+'.'+e.date.slice(5,7)+'. '+(e.note||e.personName||'')).join(' · '):''],['kc-next-tour',data.tour?'🚌 Kegeltour: '+when(data.tour):''],['kc-next-kegeln',data.kegeln?'🎳 Nächstes Kegeln: '+when(data.kegeln):'🎳 Noch kein nächster Kegeltermin']];
-  for(const message of M.normalize(root?.dashboardSettings).tickerMessages)if(message.enabled&&message.text)groups.push(['dashboard-message-'+message.id,message.text]);
-  groups.push(...(window.KCFootballLive?.ticker()||[]));
-  const stamp=JSON.stringify(groups),track=$('dashboard-ticker-track');if(!track||stamp===tickerStamp)return;tickerStamp=stamp;track.replaceChildren();const first=document.createElement('div');first.className='dashboard-ticker-copy';for(const [id,text] of groups){const span=document.createElement('span');span.id=id;span.textContent=text;span.hidden=!text;first.append(span);}const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');for(const el of second.querySelectorAll('[id]'))el.removeAttribute('id');track.append(first,second);tickerFit();
+  for(const message of tickerSettings.tickerMessages)if(message.enabled&&message.text)groups.push(['dashboard-message-'+message.id,message.text,message.color]);
+  for(const entry of window.KCFootballLive?.ticker()||[])groups.push([entry[0],entry[1],tickerSettings.tickerColors[entry[0].includes('bl2')?'bl2':'bl1']]);
+  const categorized=groups.map(([id,text,color])=>[id,text,color||tickerSettings.tickerColors[id==='kc-next-birthdays'?'birthdays':id==='kc-next-tour'?'tour':'kegeln']]);
+  const stamp=JSON.stringify(categorized),track=$('dashboard-ticker-track');if(!track||stamp===tickerStamp)return;tickerStamp=stamp;track.replaceChildren();
+  const first=document.createElement('div');first.className='dashboard-ticker-copy';
+  for(const [id,text,color] of categorized){
+   const span=document.createElement('span');span.id=id;span.className='dashboard-ticker-chip';span.textContent=text;span.hidden=!text;span.style.backgroundColor=color;
+   const rgb=color.match(/[a-f0-9]{2}/gi)?.map(n=>parseInt(n,16))||[255,255,255],luminance=(0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2]);span.style.color=luminance<145?'#ffffff':'#102239';first.append(span);
+  }
+  const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');for(const el of second.querySelectorAll('[id]'))el.removeAttribute('id');track.append(first,second);tickerFit();
  }
  let popupScope='',popupInitialized=false,popupTimer=null,popupExitTimer=null,popupSeconds=3;const seenThrows=new Set();
  function positionPopup(){const box=$('dashboard-throw-popup'),stage=document.querySelector('main.dashboard .stage');if(!box||!stage)return;const bounds=stage.getBoundingClientRect();box.style.left=(bounds.left+bounds.width/2)+'px';box.style.width=Math.max(200,Math.min(bounds.width-24,760))+'px';}

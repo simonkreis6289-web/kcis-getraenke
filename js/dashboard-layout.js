@@ -2,18 +2,23 @@
 (() => {
  const keys=['drinks','fines','gutters','seating'],slots=['left-top','left-bottom','right-top','right-bottom'];
  const labels={drinks:'Getränkestand',fines:'Strafenstand',gutters:'Gossenkönig',seating:'Sitzordnung'};
+ const tickerPalette=['#dbeafe','#fef3c7','#dcfce7','#fce7f3','#ede9fe','#cffafe','#ffedd5','#e2e8f0'];
+ const tickerColor=(value,fallback)=>/^#[0-9a-fA-F]{6}$/.test(String(value||''))?String(value).toLowerCase():fallback;
+ const tickerTypes={birthdays:'Geburtstage',tour:'Kegeltour',kegeln:'Kegeltermin',bl1:'1. Bundesliga',bl2:'2. Bundesliga'};
+ const tickerDefaults=()=>({birthdays:'#fce7f3',tour:'#fef3c7',kegeln:'#dcfce7',bl1:'#dbeafe',bl2:'#ede9fe'});
  const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerEnabled:true,tickerFontSize:18,popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,demo:null}});
+ const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
  function normalize(value){
   const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
   out.tickerEnabled=value?.tickerEnabled!==false;
+  for(const type of Object.keys(tickerTypes))out.tickerColors[type]=tickerColor(value?.tickerColors?.[type],out.tickerColors[type]);
   out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
-  out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30),demo:null};
+  out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30),events:{goal:value?.football?.events?.goal!==false,kickoff:value?.football?.events?.kickoff!==false,halftime:value?.football?.events?.halftime!==false,fulltime:value?.football?.events?.fulltime!==false,red:false,secondYellow:false},demo:null};
   const demo=value?.football?.demo;
   if(demo?.active===true&&/^[a-zA-Z0-9_-]{1,80}$/.test(String(demo.id||''))&&['bl1','bl2'].includes(demo.league))out.football.demo={active:true,id:demo.id,league:demo.league,home:Math.max(0,Math.min(30,Math.trunc(Number(demo.home)||0))),away:Math.max(0,Math.min(30,Math.trunc(Number(demo.away)||0)))};
   const transition=Number(value?.transitionSeconds);out.transitionSeconds=value?.transitionSeconds!=null&&value.transitionSeconds!==''&&Number.isFinite(transition)?Math.max(0,Math.min(3,Math.round(transition*10)/10)):0.6;
-  const ids=new Set();out.tickerMessages=(Array.isArray(value?.tickerMessages)?value.tickerMessages:[]).slice(0,20).map((message,i)=>{let id=String(message?.id||'message-'+i).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||'message-'+i;while(ids.has(id))id+='-'+i;ids.add(id);return {id,text:String(message?.text||'').replace(/\s+/g,' ').trim().slice(0,500),enabled:message?.enabled!==false};});return out;
+  const ids=new Set();out.tickerMessages=(Array.isArray(value?.tickerMessages)?value.tickerMessages:[]).slice(0,20).map((message,i)=>{let id=String(message?.id||'message-'+i).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)||'message-'+i;while(ids.has(id))id+='-'+i;ids.add(id);return {id,text:String(message?.text||'').replace(/\s+/g,' ').trim().slice(0,500),enabled:message?.enabled!==false,color:tickerColor(message?.color,tickerPalette[i%tickerPalette.length])};});return out;
  }
  function resolve(value){
   const settings=normalize(value),active=keys.filter(key=>settings.panels[key].enabled),left=[],right=[],groups=Object.fromEntries(slots.map(slot=>[slot,[]]));
@@ -48,5 +53,5 @@
   const tour=all.filter(e=>e.type==='tour'&&B.parse(e.date)&&(B.parse(e.endDate)&&e.endDate>=e.date?e.endDate:e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;
   return {kegeln,tour,birthdays:B.events(root?.persons||[],all,today,kegeln?.date||today)};
  }
- window.KCDashboardLayout=Object.freeze({keys,slots,labels,defaults,normalize,resolve,move,cycle,turn,upcoming});
+ window.KCDashboardLayout=Object.freeze({keys,slots,labels,tickerTypes,tickerPalette,tickerColor,defaults,normalize,resolve,move,cycle,turn,upcoming});
 })();

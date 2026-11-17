@@ -21,7 +21,7 @@ test('every selection and slot combination retains enabled tables exactly once w
  const stacked=M.move(M.defaults(),'seating','left-top');assert.equal(stacked.panels.drinks.position,'left-top');assert.equal(stacked.panels.seating.position,'left-top');
 });
 test('three tables rotate at their individual 3/5/10 second boundaries and occupy full side height',()=>{
- const f=setup(),s=f.model.defaults();for(const k of f.model.keys)s.panels[k].position='left-top';s.panels.seating.enabled=false;[s.panels.drinks.seconds,s.panels.fines.seconds,s.panels.gutters.seconds]=[3,5,10];
+ const f=setup(),s=f.model.defaults();s.transitionSeconds=0;for(const k of f.model.keys)s.panels[k].position='left-top';s.panels.seating.enabled=false;[s.panels.drinks.seconds,s.panels.fines.seconds,s.panels.gutters.seconds]=[3,5,10];
  const before=copy(s),original=Object.fromEntries(f.model.keys.map(k=>[k,f.document.getElementById('dashboard-panel-'+k)]));f.tv.apply(s);
  const active=()=>[...f.document.querySelectorAll('.side .panel')].filter(p=>!p.hidden).map(p=>p.id);
  assert(f.document.querySelector('.side.left').classList.contains('dashboard-side-full'));assert(f.document.querySelector('.side.right').hidden);assert.equal(f.document.querySelector('.side.left').children.length,1);assert.deepEqual(active(),['dashboard-panel-drinks']);
@@ -48,12 +48,12 @@ test('throw popups handle fresh gutter/wreath/nine events once, duration/disable
  const f=setup(),root={currentEveningStartedAt:'2026-11-16T19:00:00Z',dashboardSettings:{popupSeconds:5},penaltyStatsLog:[]},event=(id,type='gosse',extras={})=>({id,type,thrower:'Marius <img>',createdAt:new Date(f.now()).toISOString(),eveningStartedAt:root.currentEveningStartedAt,...extras});
  root.penaltyStatsLog=[event('old')];f.tv.feed(root,'club',f.now());assert(!f.document.getElementById('dashboard-throw-popup'));
  for(const [id,type,label] of [['a','gosse','Gosse'],['b','kranz','Kranz'],['c','9er','Alle Neune']]){
-  root.penaltyStatsLog.unshift(event(id,type));f.tv.feed(root,'club',f.now());const box=f.document.getElementById('dashboard-throw-popup');assert(!box.hidden);assert(box.textContent.includes(label));assert(box.textContent.includes('Marius <img>'));assert(!box.querySelector('img'));f.advance(4999);assert(!box.hidden);f.advance(1);assert(box.hidden);f.tv.feed(root,'club',f.now());assert(box.hidden,'confirmed repeats must not replay');
+  root.penaltyStatsLog.unshift(event(id,type));f.tv.feed(root,'club',f.now());const box=f.document.getElementById('dashboard-throw-popup');assert(!box.hidden);assert(box.textContent.includes(label));assert(box.textContent.includes('Marius <img>'));assert(!box.querySelector('img'));f.advance(4999);assert(!box.hidden);f.advance(1);assert(box.classList.contains('toast-leaving'));f.advance(420);assert(box.hidden);f.tv.feed(root,'club',f.now());assert(box.hidden,'confirmed repeats must not replay');
  }
  root.penaltyStatsLog.unshift(event('stale','gosse',{createdAt:new Date(f.now()-31000).toISOString()}));f.tv.feed(root,'club',f.now());assert(f.document.getElementById('dashboard-throw-popup').hidden);
  root.dashboardSettings.popupSeconds=0;root.penaltyStatsLog.unshift(event('off'));f.tv.feed(root,'club',f.now());assert(f.document.getElementById('dashboard-throw-popup').hidden);root.dashboardSettings.popupSeconds=2;f.tv.feed(root,'club',f.now());assert(f.document.getElementById('dashboard-throw-popup').hidden);
  root.currentEveningStartedAt='2026-11-16T20:05:00Z';root.penaltyStatsLog=[event('next-old')];f.tv.feed(root,'club',f.now());assert(f.document.getElementById('dashboard-throw-popup').hidden);
- root.penaltyStatsLog.unshift(event('next-new'));f.tv.feed(root,'club',f.now());assert(!f.document.getElementById('dashboard-throw-popup').hidden);f.advance(2000);assert(f.document.getElementById('dashboard-throw-popup').hidden);
+ root.penaltyStatsLog.unshift(event('next-new'));f.tv.feed(root,'club',f.now());assert(!f.document.getElementById('dashboard-throw-popup').hidden);f.advance(2000);f.advance(420);assert(f.document.getElementById('dashboard-throw-popup').hidden);
 });
 const source=read('tests/v230-player-rows.cjs'),{app,tv,fullApp}=new Function('require','__dirname',source.slice(0,source.indexOf('const keys='))+';return {app,tv,fullApp};')(require,__dirname);
 test('real app saves messages, panel durations and popup duration across reload and new evening',{timeout:60000},async()=>{
@@ -92,4 +92,22 @@ test('ticker visibility and larger font are normalized independently of football
  assert.equal(ticker.style.getPropertyValue('--ticker-font-size'),'24px');
  assert.equal(f.document.querySelector('main.dashboard').style.getPropertyValue('--ticker-row-height'),'44px');
  assert(footer.querySelector('.header-actions'));
+});
+
+
+test('ticker chips use configured colors and keep text as safe text nodes',()=>{
+ const f=setup(),root={dashboardSettings:{tickerColors:{birthdays:'#123456',tour:'#fedcba',kegeln:'#112233',bl1:'#334455'},tickerMessages:[{id:'custom',text:'Hallo <script>alert(1)</script>',color:'#abcdef',enabled:true}]}};
+ f.tv.ticker(root);
+ const track=f.document.getElementById('dashboard-ticker-track');
+ const birthday=f.document.getElementById('kc-next-birthdays'),custom=f.document.getElementById('dashboard-message-custom');
+ assert(birthday.classList.contains('dashboard-ticker-chip'));
+ assert.equal(birthday.style.backgroundColor,'#123456');
+ assert.equal(custom.style.backgroundColor,'#abcdef');
+ assert.match(custom.textContent,/Hallo <script>/);
+ assert.equal(track.querySelector('script'),null);
+ const normalized=f.model.normalize({tickerColors:{birthdays:'url(bad)'},tickerMessages:[{text:'abc',color:'red'}]});
+ assert.equal(normalized.tickerColors.birthdays,'#fce7f3');
+ assert(/^#[0-9a-f]{6}$/.test(normalized.tickerMessages[0].color));
+ assert.equal(f.model.normalize({football:{events:{goal:false,halftime:false}}}).football.events.goal,false);
+ assert.equal(f.model.normalize({football:{events:{red:true,secondYellow:true}}}).football.events.red,false);
 });
