@@ -7,10 +7,18 @@
  const tickerTypes={birthdays:'Geburtstage',tour:'Kegeltour',kegeln:'Kegeltermin',bl1:'1. Bundesliga',bl2:'2. Bundesliga'};
  const tickerDefaults=()=>({birthdays:'#fce7f3',tour:'#fef3c7',kegeln:'#dcfce7',bl1:'#dbeafe',bl2:'#ede9fe'});
  const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
+ const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
  function normalize(value){
   const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
   out.tickerEnabled=value?.tickerEnabled!==false;
+  const streamSettings=value?.tickerStreams;
+  for(const key of ['club','football']){
+   const stream=streamSettings?.[key];
+   out.tickerStreams[key].enabled=typeof stream?.enabled==='boolean'?stream.enabled:(key==='club'?out.tickerEnabled:true);
+   out.tickerStreams[key].position=['left','right'].includes(stream?.position)?stream.position:(key==='club'?'left':'right');
+   out.tickerStreams[key].seconds=seconds(stream?.seconds,8,2,120);
+  }
+  out.tickerStreams.leftPercent=seconds(streamSettings?.leftPercent,50,25,75);
   for(const type of Object.keys(tickerTypes))out.tickerColors[type]=tickerColor(value?.tickerColors?.[type],out.tickerColors[type]);
   out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
