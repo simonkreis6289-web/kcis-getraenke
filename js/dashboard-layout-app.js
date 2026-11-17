@@ -62,7 +62,15 @@
   box.append(element('h3','Wurf-Popups'));const popupLabel=element('label',undefined,'dashboard-popup-option');popupLabel.htmlFor='dashboard-popup-seconds';popupLabel.append(document.createTextNode('Gosse, Kranz und Alle Neune anzeigen für '),duration('dashboard-popup-seconds',draft.popupSeconds,0,30,v=>draft.popupSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(popupLabel);
   box.append(element('h3','Weitere TV-Toasts'),element('p','Neue Meldungen erscheinen erst nach einer tatsächlichen Änderung. Beim Öffnen des Dashboards werden alte Ereignisse nicht nachgespielt.'));
   for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam']]){
-   const line=element('label',undefined,'dashboard-popup-option'),checkbox=element('input');checkbox.type='checkbox';checkbox.checked=draft.eventToasts[key];checkbox.disabled=busy;checkbox.id='dashboard-event-toast-'+key;checkbox.onchange=()=>draft.eventToasts[key]=checkbox.checked;line.append(checkbox,document.createTextNode(title));box.append(line);
+   const line=element('div',undefined,'dashboard-event-toast-color-row'),label=element('label',undefined,'dashboard-popup-option'),checkbox=element('input');
+   checkbox.type='checkbox';checkbox.checked=draft.eventToasts[key];checkbox.disabled=busy;checkbox.id='dashboard-event-toast-'+key;
+   checkbox.onchange=()=>{draft.eventToasts[key]=checkbox.checked;draw();};
+   label.append(checkbox,document.createTextNode(title));
+   const picker=element('input');picker.type='color';picker.id='dashboard-event-toast-color-'+key;
+   picker.value=draft.eventToasts.colors[key];picker.disabled=busy||!draft.eventToasts[key];
+   picker.setAttribute('aria-label','Toast-Hintergrundfarbe '+title);
+   picker.oninput=()=>{draft.eventToasts.colors[key]=picker.value;};
+   line.append(label,picker);box.append(line);
   }
   const eventDuration=element('label',undefined,'dashboard-popup-option');eventDuration.htmlFor='dashboard-event-toast-seconds';
   eventDuration.append(document.createTextNode('Diese Toasts anzeigen für '),duration('dashboard-event-toast-seconds',draft.eventToasts.seconds,0,30,v=>draft.eventToasts.seconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(eventDuration);
