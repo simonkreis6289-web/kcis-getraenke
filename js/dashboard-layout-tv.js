@@ -54,7 +54,11 @@
   resizeQueued=false;const viewport=$('dashboard-ticker'),track=$('dashboard-ticker-track');if(!viewport||!track)return;for(const copy of track.children)copy.style.minWidth=Math.max(0,viewport.clientWidth)+'px';const distance=track.firstElementChild?.scrollWidth||track.firstElementChild?.getBoundingClientRect?.().width||500;track.style.setProperty('--ticker-duration',Math.max(18,distance/42)+'s');
  }
  function ticker(root,now=new Date()){
-  lastTickerRoot=root;window.KCFootballLive?.configure(M.normalize(root?.dashboardSettings).football);
+  lastTickerRoot=root;const tickerSettings=M.normalize(root?.dashboardSettings);
+  const viewport=$('dashboard-ticker'),main=document.querySelector('main.dashboard');
+  if(viewport){viewport.hidden=!tickerSettings.tickerEnabled;viewport.style.setProperty('--ticker-font-size',tickerSettings.tickerFontSize+'px');}
+  if(main)main.style.setProperty('--ticker-row-height',tickerSettings.tickerEnabled?Math.max(44,tickerSettings.tickerFontSize+20)+'px':'34px');
+  window.KCFootballLive?.configure(tickerSettings.football);
   const data=M.upcoming(root,now),date=day=>new Date(day+'T12:00:00Z').toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'medium'}),when=e=>date(e.date)+(e.endDate&&e.endDate>e.date?' – '+date(e.endDate):e.time?', '+e.time+' Uhr':'')+(e.note?' · '+e.note:'');
   const groups=[['kc-next-birthdays',data.birthdays.length?'🎂 Geburtstage bis zum nächsten Kegeln: '+data.birthdays.map(e=>e.date.slice(8,10)+'.'+e.date.slice(5,7)+'. '+(e.note||e.personName||'')).join(' · '):''],['kc-next-tour',data.tour?'🚌 Kegeltour: '+when(data.tour):''],['kc-next-kegeln',data.kegeln?'🎳 Nächstes Kegeln: '+when(data.kegeln):'🎳 Noch kein nächster Kegeltermin']];
   for(const message of M.normalize(root?.dashboardSettings).tickerMessages)if(message.enabled&&message.text)groups.push(['dashboard-message-'+message.id,message.text]);
