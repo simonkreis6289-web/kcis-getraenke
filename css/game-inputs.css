@@ -47,3 +47,11 @@
 @media(max-height:680px){.game-throw-dialog .game-throw-dialog-card{padding:12px 16px}.game-throw-dialog .game-pinpad{margin-top:8px}.game-throw-dialog .gi-throw{min-height:62px;gap:3px}.game-throw-dialog .game-pin-caption{display:none}.game-throw-dialog .game-pinpad-specials .gi-throw{min-height:44px}.game-throw-dialog .game-pinpad-specials strong{font-size:23px}}
 
 .game-dashboard-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin:0 0 0 auto;padding:7px 12px;min-height:34px;border:1px solid #29466e;border-radius:8px;background:#29466e;color:#fff;font:700 13px/1.2 'DM Sans',sans-serif;text-transform:none;letter-spacing:0;cursor:pointer}.game-dashboard-button:disabled{opacity:.5;cursor:default}.game-dashboard-button:hover:not(:disabled){background:#1c3559}
+
+/* V250: Alle Spiele haben denselben Dashboard-Schalter rechts oben. */
+#main-spiele .game-dashboard-toolbar{display:flex;justify-content:flex-end;align-items:center;min-height:44px;width:100%;margin:0 0 8px;padding:0;box-sizing:border-box}
+#main-spiele .game-dashboard-toolbar .game-dashboard-button{margin:0;flex:none;max-width:100%;white-space:normal;text-align:center}
+#main-spiele .darts-round-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
+#main-spiele .darts-round-actions .save-prices-btn{flex:1 1 190px;min-width:0}
+#main-spiele .darts-round-actions #darts-undo-round{flex:1 1 190px;min-width:0;min-height:42px}
+#main-spiele #darts-undo-round:disabled{opacity:.5;cursor:not-allowed}

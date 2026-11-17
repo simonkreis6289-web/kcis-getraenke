@@ -99,9 +99,21 @@ async function showGameOnDashboard(key){
  finally{gameDashboardBusy.delete(key);if(ACTIVE_CLUB===club)applyGameInputLayout(key);}
 }
 function renderGameDashboardButton(key,panel,s){
- const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];let button=buttons.shift();buttons.forEach(b=>b.remove());
- if(!button){button=document.createElement('button');button.type='button';button.className='secondary-btn game-dashboard-button';button.dataset.gameDashboard=key;button.textContent='📺 Auf Dashboard anzeigen';button.onclick=()=>showGameOnDashboard(key);const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');if(title)title.append(button);else panel.prepend(button);}
- const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));button.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false;button.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
+ // Einheitlicher Platz bei ALLEN Spielen: eigene Leiste rechts oben,
+ // nicht abhängig von der jeweiligen Überschrift oder Spielvorbereitung.
+ const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];
+ let button=buttons.shift();buttons.forEach(b=>b.remove());
+ let toolbar=panel.querySelector(':scope > .game-dashboard-toolbar');
+ if(!toolbar){toolbar=document.createElement('div');toolbar.className='game-dashboard-toolbar';panel.prepend(toolbar);}
+ if(!button){
+  button=document.createElement('button');button.type='button';
+  button.className='secondary-btn game-dashboard-button';button.dataset.gameDashboard=key;
+  button.textContent='📺 Auf Dashboard anzeigen';button.onclick=()=>showGameOnDashboard(key);
+ }
+ if(button.parentElement!==toolbar)toolbar.append(button);
+ const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
+ button.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false;
+ button.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
 }
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
@@ -111,7 +123,7 @@ function applyGameInputLayout(key){
  const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());
  if(s?.active){if(!abort){abort=document.createElement('button');abort.type='button';abort.className='secondary-btn game-abort-button';abort.dataset.abortGame=key;abort.textContent='✕ Spiel abbrechen';abort.onclick=()=>cancelCurrentGame(key);panel.append(abort);}}else abort?.remove();const old=panel.querySelector(':scope > .game-input-panel');
  if(['haushoch','haustief','lotterie'].includes(key)){old?.remove();return;}
- if(!s?.active){if(key==='darts'){const finish=old?.querySelector('button[onclick="finishDartsRound()"]');if(finish)document.getElementById('darts-game-area')?.append(finish);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
+ if(!s?.active){if(key==='darts'){const actions=old?.querySelector('.darts-round-actions');if(actions)document.getElementById('darts-game-area')?.append(actions);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
  const card=document.createElement('section');card.className='game-input-panel';card.dataset.gameInput=key;card.setAttribute('aria-label','Wurfeingabe');
  const heading=document.createElement('h3');heading.className='gi-heading';heading.textContent='🎳 Wurf eingeben';card.append(heading);
  if(['tannenbaum','darts','lotterie','tiberius','haushoch','haustief'].includes(key)){
@@ -125,7 +137,7 @@ function applyGameInputLayout(key){
   if(!nodes.length){if(old)return;else return;}
   for(const node of nodes)card.append(node);
  }
- normalizeGamePinpad(card);if(key==='darts'){const finish=panel.querySelector('button[onclick="finishDartsRound()"]');if(finish){finish.type='button';finish.disabled=!!gameInputBusy[key]||!!s.busy;card.append(finish);}}if(gameInputBusy[key])for(const button of card.querySelectorAll('button'))button.disabled=true;old?.remove();
+ normalizeGamePinpad(card);if(key==='darts'){const actions=panel.querySelector('.darts-round-actions');if(actions){const finish=actions.querySelector('button[onclick="finishDartsRound()"]');if(finish){finish.type='button';finish.disabled=!!gameInputBusy[key]||!!s.busy;}card.append(actions);}}if(gameInputBusy[key])for(const button of card.querySelectorAll('button'))button.disabled=true;old?.remove();
  const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');
  if(title)title.after(card);else panel.prepend(card);
 }

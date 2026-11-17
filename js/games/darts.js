@@ -317,78 +317,94 @@ function getDartsRoundTotal(team) {
   }, 0);
 }
 
-async function finishDartsRound() {
+function dartsRoundSnapshot(){
+  return {
+    scores:{...dartsState.scores},buffer:dartsState.buffer,
+    roundThrows:JSON.parse(JSON.stringify(dartsState.roundThrows)),
+    currentTeam:dartsState.currentTeam,active:dartsState.active,
+    winner:dartsState.winner,finished:!!dartsState.finished
+  };
+}
+function dartsRestoreRound(snapshot){
+  dartsState.scores={...snapshot.scores};
+  dartsState.buffer=snapshot.buffer;
+  dartsState.roundThrows=JSON.parse(JSON.stringify(snapshot.roundThrows));
+  dartsState.currentTeam=snapshot.currentTeam;
+  dartsState.active=snapshot.active;
+  dartsState.winner=snapshot.winner;
+  dartsState.finished=snapshot.finished;
+  delete dartsState.finishPenalties;
+  delete dartsState.resultHistoryId;
+}
+async function finishDartsRound(){
   ensureDartsState();
-
-  if (!dartsState.active || dartsState.winner || dartsState.closing) return;
-
-  const t1Round = getDartsRoundTotal('T1');
-  const t2Round = getDartsRoundTotal('T2');
-
-  if (t1Round <= 0 && t2Round <= 0) {
-    showToast('Keine Würfe in dieser Runde eingetragen', 'error');
+  if(!dartsState.active||dartsState.winner||dartsState.closing)return;
+  const t1Round=getDartsRoundTotal('T1'),t2Round=getDartsRoundTotal('T2');
+  if(t1Round<=0&&t2Round<=0){showToast('Keine Würfe in dieser Runde eingetragen','error');return;}
+  const before=dartsRoundSnapshot(),now=new Date().toISOString();
+  if(t1Round===t2Round){
+    dartsState.buffer+=t1Round+t2Round;
+    dartsState.history.unshift({type:'draw',t1Round,t2Round,bufferAdded:t1Round+t2Round,bufferAfter:dartsState.buffer,createdAt:now,undoSnapshot:before});
+    dartsState.roundThrows.T1=[];dartsState.roundThrows.T2=[];
+    renderDarts();persistState();
+    showToast('🤝 Gleichstand. '+(t1Round+t2Round)+' Punkte in den Puffer','success');
     return;
   }
-
-  if (t1Round === t2Round) {
-    dartsState.buffer += t1Round + t2Round;
-
-    dartsState.history.unshift({
-      type: 'draw',
-      t1Round,
-      t2Round,
-      bufferAdded: t1Round + t2Round,
-      bufferAfter: dartsState.buffer,
-      createdAt: new Date().toISOString()
-    });
-
-    dartsState.roundThrows.T1 = [];
-    dartsState.roundThrows.T2 = [];
-
-    renderDarts();
-    persistState();
-
-    showToast(`🤝 Gleichstand. ${t1Round + t2Round} Punkte in den Puffer`, 'success');
-    return;
-  }
-
-  const winningTeam = t1Round > t2Round ? 'T1' : 'T2';
-  const winningPoints = t1Round + t2Round + dartsState.buffer;
-
-  dartsState.scores[winningTeam] = Math.max(0, dartsState.scores[winningTeam] - winningPoints);
-
-  dartsState.history.unshift({
-    type: 'round',
-    winner: winningTeam,
-    t1Round,
-    t2Round,
-    bufferUsed: dartsState.buffer,
-    pointsSubtracted: winningPoints,
-    scoreAfter: dartsState.scores[winningTeam],
-    createdAt: new Date().toISOString()
-  });
-
-  dartsState.buffer = 0;
-  dartsState.roundThrows.T1 = [];
-  dartsState.roundThrows.T2 = [];
-
-  if (dartsState.scores[winningTeam] <= 0) {
+  const winningTeam=t1Round>t2Round?'T1':'T2',winningPoints=t1Round+t2Round+dartsState.buffer;
+  const nextScore=Math.max(0,dartsState.scores[winningTeam]-winningPoints);
+  const final=nextScore<=0;
+  let finishPenalties=[];
+  if(final){
     const loser=winningTeam==='T1'?'T2':'T1',key=getFirstLoserStrafeKey();
-    if(!key)throw Error('Strafe „1. Verlierer“ fehlt.');
+    if(!key){showToast('Strafe „1. Verlierer“ fehlt.','error');return;}
     const names=(dartsState.participantTeams?.[loser]||getActiveTeamMembers(loser).map(p=>p.name));
-    const changes=names.map(personName=>({personName,category:'strafen',key,delta:1}));
-    dartsState.closing=true;try{if(!changes.length||!(await changeMultipleSyncedPersonCounters(changes,'🎯 Darts: Verliererteam')))throw Error('Darts-Abschluss konnte nicht gebucht werden.');}finally{dartsState.closing=false;}
-    dartsState.finishPenalties=changes.map(({personName,key,delta})=>({personName,key,delta}));dartsState.finished=true;
-    dartsState.winner = winningTeam;
-    dartsState.active = false;
-    if(typeof recordCompletedGame==='function')recordCompletedGame('darts',dartsState);
-    showToast(`🏆 ${getTeamLabel(winningTeam)} gewinnt Darts!`, 'success');
-  } else {
-    showToast(`${getTeamLabel(winningTeam)} gewinnt die Runde: -${winningPoints}`, 'success');
+    finishPenalties=names.map(personName=>({personName,category:'strafen',key,delta:1}));
+    if(!finishPenalties.length){showToast('Kein Verliererteam zum Buchen vorhanden','error');return;}
+    dartsState.closing=true;
+    try{
+      if(!(await changeMultipleSyncedPersonCounters(finishPenalties,'🎯 Darts: Verliererteam'))){
+        showToast('Darts-Abschluss konnte nicht gebucht werden.','error');return;
+      }
+    }catch(error){showToast('Darts-Abschluss fehlgeschlagen: '+(error?.message||error),'error');return;}
+    finally{dartsState.closing=false;}
   }
-
-  renderDarts();
-  persistState();
+  dartsState.scores[winningTeam]=nextScore;
+  dartsState.history.unshift({type:'round',winner:winningTeam,t1Round,t2Round,bufferUsed:dartsState.buffer,pointsSubtracted:winningPoints,scoreAfter:nextScore,createdAt:now,undoSnapshot:before});
+  dartsState.buffer=0;dartsState.roundThrows.T1=[];dartsState.roundThrows.T2=[];
+  if(final){
+    dartsState.finishPenalties=finishPenalties.map(({personName,key,delta})=>({personName,key,delta}));
+    dartsState.finished=true;dartsState.winner=winningTeam;dartsState.active=false;
+    if(typeof recordCompletedGame==='function')recordCompletedGame('darts',dartsState);
+    showToast('🏆 '+getTeamLabel(winningTeam)+' gewinnt Darts!','success');
+  }else showToast(getTeamLabel(winningTeam)+' gewinnt die Runde: -'+winningPoints,'success');
+  renderDarts();persistState();
+}
+async function undoDartsRound(){
+  ensureDartsState();
+  const last=dartsState.history[0],snapshot=last?.undoSnapshot;
+  if(!last||!snapshot||dartsState.closing)return;
+  if(dartsState.roundThrows.T1.length||dartsState.roundThrows.T2.length){
+    showToast('Erst die Würfe der aktuellen Runde entfernen, bevor die vorherige Runde zurückgenommen wird.','error');return;
+  }
+  if(!confirm('Letzte abgeschlossene Darts-Runde rückgängig machen? Punktestand, Puffer und Würfe werden wiederhergestellt.'))return;
+  dartsState.closing=true;renderDarts();
+  try{
+    if(dartsState.finished&&dartsState.finishPenalties?.length){
+      const reverse=dartsState.finishPenalties.map(({personName,key,delta})=>({personName,key,category:'strafen',delta:-delta}));
+      if(!(await changeMultipleSyncedPersonCounters(reverse,'↩ Darts: Verlierer-Strafen zurückgenommen'))){
+        showToast('Verlierer-Strafen konnten nicht zurückgenommen werden. Runde bleibt abgeschlossen.','error');return;
+      }
+    }
+    if(dartsState.resultHistoryId&&typeof strafenHistory!=='undefined'&&Array.isArray(strafenHistory)){
+      strafenHistory=strafenHistory.filter(entry=>entry.id!==dartsState.resultHistoryId);
+    }
+    dartsState.history.shift();
+    dartsRestoreRound(snapshot);
+    renderAll();persistState();
+    showToast('↩ Darts-Runde zurückgenommen: Würfe, Punkte und Puffer wiederhergestellt','success');
+  }catch(error){
+    showToast('Rückgängig fehlgeschlagen: '+(error?.message||error),'error');
+  }finally{dartsState.closing=false;renderDarts();}
 }
 
 function renderDarts() {
@@ -455,6 +471,8 @@ function renderDarts() {
     }
   }
 
+  const undoButton=document.getElementById('darts-undo-round');
+  if(undoButton){undoButton.disabled=!!dartsState.closing||!dartsState.history[0]?.undoSnapshot||dartsState.roundThrows.T1.length>0||dartsState.roundThrows.T2.length>0;undoButton.title=dartsState.roundThrows.T1.length||dartsState.roundThrows.T2.length?'Erst die Würfe der aktuellen Runde entfernen':'Letzte abgeschlossene Runde wiederherstellen';}
   renderDartsRoundList();
   renderDartsHistory();
 }

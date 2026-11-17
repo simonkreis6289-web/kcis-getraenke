@@ -31,3 +31,45 @@ test('both extra-team draws use only the configured group names in the shared ap
  const a=await app();let options;a.c.openSoloStartDraw=value=>options=value;for(const key of ['ballermann','parteienspiel']){a.c.extraDraw(key);assert(options);assert.deepEqual(copy(options.players),['T1','T2'].map(k=>a.c.getGroupLabel(k)));assert(!options.players.some(x=>x.includes('Gruppe 1')||x.includes('Gruppe 2')));}
  a.c.openCoinFlipModal('Darts');assert.equal(a.document.getElementById('coinflip-coin').textContent,a.c.getGroupLabel('T1'));let draw;a.c.beginDashboardDraw=config=>{draw=config;return {...config,startedAt:Date.now()};};a.c.runCoinFlip();assert.deepEqual(copy(draw.frames),['T1','T2'].map(k=>a.c.getGroupLabel(k)));
 });
+
+
+test('Darts: after closing a regular round, undo restores both teams throws, score, buffer and turn',{timeout:60000},async()=>{
+ const a=await app();await a.c.startDartsGame();
+ a.run("dartsState.buffer=10;dartsState.currentTeam='T2';dartsState.roundThrows.T1=[{hit:'3',value:30}];dartsState.roundThrows.T2=[{hit:'2',value:20}];persistState()");
+ const before=copy(a.c.gameSetupState('darts'));
+ await a.c.finishDartsRound();
+ assert.equal(a.c.gameSetupState('darts').scores.T1,before.scores.T1-60);
+ assert.equal(a.c.gameSetupState('darts').history.length,1);
+ assert.equal(a.document.getElementById('darts-undo-round').disabled,false);
+ a.c.confirm=()=>true;await a.c.undoDartsRound();
+ const after=copy(a.c.gameSetupState('darts'));
+ assert.deepEqual(after.scores,before.scores);
+ assert.deepEqual(after.roundThrows,before.roundThrows);
+ assert.equal(after.buffer,before.buffer);assert.equal(after.currentTeam,'T2');
+ assert.equal(after.history.length,0);
+});
+test('Darts: equal-round undo rolls back buffer and restores throws',{timeout:60000},async()=>{
+ const a=await app();await a.c.startDartsGame();
+ a.run("dartsState.buffer=5;dartsState.roundThrows.T1=[{hit:'2',value:20}];dartsState.roundThrows.T2=[{hit:'2',value:20}];persistState()");
+ await a.c.finishDartsRound();assert.equal(a.c.gameSetupState('darts').buffer,45);
+ a.c.confirm=()=>true;await a.c.undoDartsRound();
+ assert.equal(a.c.gameSetupState('darts').buffer,5);
+ assert.equal(a.c.gameSetupState('darts').roundThrows.T1.length,1);
+ assert.equal(a.c.gameSetupState('darts').roundThrows.T2.length,1);
+});
+test('Darts: undo of final round restores live match and reverses loser charges and recorded result',{timeout:60000},async()=>{
+ const a=await app();await a.c.startDartsGame();
+ a.run("dartsState.scores.T1=3;dartsState.roundThrows.T1=[{hit:'2',value:5}];persistState()");
+ await a.c.finishDartsRound();
+ assert.equal(a.c.gameSetupState('darts').finished,true);
+ for(const name of ['B','D'])assert.equal(a.run("persons.find(p=>p.name==='"+name+"').strafen.loser"),1);
+ assert.equal(a.run("strafenHistory.filter(x=>x.gameKey==='darts').length"),1);
+ a.c.confirm=()=>true;await a.c.undoDartsRound();
+ assert.equal(a.c.gameSetupState('darts').active,true);
+ assert.equal(a.c.gameSetupState('darts').winner,null);
+ assert.equal(a.c.gameSetupState('darts').scores.T1,3);
+ assert.equal(a.c.gameSetupState('darts').roundThrows.T1.length,1);
+ for(const name of ['B','D'])assert.equal(a.run("persons.find(p=>p.name==='"+name+"').strafen.loser"),0);
+ assert.equal(a.run("strafenHistory.filter(x=>x.gameKey==='darts').length"),0);
+ assert(await a.c.KCSharedSync.waitForUpload());
+});
