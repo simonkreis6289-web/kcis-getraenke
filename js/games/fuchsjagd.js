@@ -16,8 +16,7 @@ function fuchsjagdSetFox(s,index){
  s.score=0;s.phase='start';s.startThrows=0;s.hunterIndex=0;s.round=0;
 }
 function startFuchsjagdGame(){
- const fox=typeof gameSetupDraft==='function'?(gameSetupDraft('fuchsjagd').fox||gameSetupNames('fuchsjagd')[0]):document.getElementById('fuchs-select')?.value;
- const participants=getFuchsjagdPlayers();
+ const participants=getFuchsjagdPlayers(),fox=participants[0]?.name;
  if(!fox||!participants.some(p=>p.name===fox)||participants.length<2){showToast('Fuchs auswählen und mindestens zwei Spieler anwesend melden','error');return;}
  const s=createFuchsjagdState();s.order=fuchsjagdRotateRoster(participants.map(p=>p.name),fox);s.active=true;s.startedAt=new Date().toISOString();
  fuchsjagdSetFox(s,0);fuchsjagdState=s;
