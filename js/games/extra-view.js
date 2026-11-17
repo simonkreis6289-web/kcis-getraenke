@@ -1,3 +1,9 @@
+function pokerRankingPanel(){
+ // Reihenfolge und Bezeichnungen stammen aus KCRoundGames.pokerHand.
+ const labels=['Nichts','Zwilling','Doppelzwilling','Drilling','Full House','Vierling','Straße','Fünfling'];
+ const examples=['1 · 2 · 3 · 5 · 7','4 · 4 · 2 · 5 · 7','4 · 4 · 6 · 6 · 2','5 · 5 · 5 · 2 · 8','3 · 3 · 3 · 7 · 7','9 · 9 · 9 · 9 · 2','2 · 3 · 4 · 5 · 6','8 · 8 · 8 · 8 · 8'];
+ return '<aside class="poker-ranking-panel" aria-label="Rangliste der Pokerwertungen"><h3>🃏 Wertungs-Rangliste</h3><p>Von stark nach schwach</p><ol class="poker-ranking-list">'+labels.map((name,level)=>({name,level,example:examples[level]})).reverse().map((item,i)=>'<li class="poker-ranking-item"><span class="poker-ranking-place">'+(i+1)+'.</span><span class="poker-ranking-description"><strong>'+item.name+'</strong><small>'+item.example+'</small></span></li>').join('')+'</ol></aside>';
+}
 function renderClassicGameBoard(s,{controls=''}={}){
  if(!s?.id)return '';const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=v=>(v/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,current=window.KCExtraGames.current(s),g=window.KCRoundGames;
  const rowPlayers=window.KCPlayerRows?.order(s.players,current,{running:s.active&&!s.finished,unavailable:n=>s.phase==='tiebreak'&&!s.tiePlayers.includes(n)})||s.players;
@@ -7,8 +13,8 @@ function renderClassicGameBoard(s,{controls=''}={}){
  else if(key==='pfaelzer')body='<p class="ind-help">Noch nicht vergebene Zahlen: '+Array.from({length:9},(_,i)=>i+1).filter(v=>!Object.values(s.ownNumbers).includes(v)).join(' · ')+'</p><table class="ind-table"><thead><tr><th>Kegler</th><th>Eigene Zahl</th><th>Striche</th><th>Betrag</th><th>Würfe</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th><td>'+esc(s.ownNumbers[n]??'—')+'</td><td><strong>'+s.scores[n]+'</strong></td><td>'+money(s.scores[n]*s.config.strichCents)+'</td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table>';
  else body='<table class="ind-table"><thead><tr><th>Kegler</th>'+Array.from({length:s.config.rounds},(_,i)=>'<th>R'+(i+1)+'</th>').join('')+'<th>Gesamt</th><th>Abstand</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th>'+Array.from({length:s.config.rounds},(_,i)=>'<td>'+(s.results[n][i]?'<strong>'+s.results[n][i].value+'</strong><small>'+s.results[n][i].throws.map(t=>t.kind==='gosse'?'G('+t.pins+')':t.kind==='kranz'?'K('+t.pins+')':t.pins).join(' · ')+'</small>':'—')+'</td>').join('')+'<td><strong>'+s.scores[n]+'</strong></td><td>'+Math.abs(s.config.target-s.scores[n])+'</td></tr>').join('')+'</tbody></table>';
  if(s.phase==='tiebreak')body+='<div class="classic-tie"><strong>Stechen · '+s.config.tieThrows+' Würfe pro Kegler</strong><p>'+s.tiePlayers.map(n=>esc(n)+': '+s.tieScores[n]).join(' · ')+'</p></div>';
- if(s.finished)body+='<p class="extra-result">Spiel beendet · Verliererwertung'+(key==='pfaelzer'?' und Strichbeträge':'')+' gebucht.</p>';
- return '<section class="ind-board extra-board classic-game-board" data-extra-game="'+key+'"><h2>'+head+'</h2>'+(s.active?'<div class="extra-turn ind-turn">🎳 '+esc(current)+' · '+esc(phase)+'</div>':'')+controls+'<div class="ind-table-scroll">'+body+'</div><p class="ind-help">'+esc(g.summary(key,s.config))+'</p></section>';
+ if(s.finished)body+='<p class="extra-result">'+(key==='pfaelzer'?'Spiel beendet · nur Strichbeträge gebucht, keine Verliererwertung.':'Spiel beendet · Verliererwertung gebucht.')+'</p>';
+ return '<section class="ind-board extra-board classic-game-board" data-extra-game="'+key+'"><h2>'+head+'</h2>'+(s.active?'<div class="extra-turn ind-turn">🎳 '+esc(current)+' · '+esc(phase)+'</div>':'')+controls+'<div class="classic-table-and-ranking"><div class="ind-table-scroll">'+body+'</div>'+(key==='poker'?pokerRankingPanel():'')+'</div><p class="ind-help">'+esc(g.summary(key,s.config))+'</p></section>';
 }
 
 /* Die gleiche Spieltafel wird in der App und auf dem TV verwendet. */

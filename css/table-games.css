@@ -109,3 +109,16 @@
 .tg-tv-board .tg-board .tg-current>th:first-child{box-shadow:inset 6px 0 #8b4b00}
 
 .tg-loser-summary{margin-top:12px;padding:10px 12px;background:#edf2fa;border:1px solid #c5d1e4;border-radius:9px;display:grid;gap:6px;line-height:1.4}.tg-tv-board .tg-spiral-teams{grid-template-columns:1fr;gap:6px}.tg-tv-board .tg-spiral-team{padding:7px 12px}.tg-tv-board .tg-spiral-team-top>strong{font-size:24px}.tg-tv-board .tg-spiral-team-top>b{font-size:48px;line-height:1}.tg-tv-board .tg-spiral-names{font-size:20px;margin:2px 0 5px}.tg-tv-board .tg-spiral-team-top small{font-size:19px}.tg-tv-board .tg-loser-summary{font-size:18px}
+
+/* V251: 17+4 auf dem TV als echte Spielkarten statt Text in Tabellenzellen. */
+.tg-tv-board .bj-tv-playing-card{width:clamp(78px,7.2vw,126px);min-height:clamp(108px,10.2vw,174px);padding:9px 8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:space-between;position:relative;border:2px solid #d7dce7;border-radius:12px;background:linear-gradient(145deg,#fff 0%,#f5f7fc 100%);box-shadow:0 5px 12px #0d213c27, inset 0 0 0 2px #fff;color:#17243b;overflow:hidden}
+.tg-tv-board .bj-tv-card-red{color:#bd2537}
+.tg-tv-board .bj-tv-card-corner{align-self:flex-start;display:flex;flex-direction:column;align-items:center;font-weight:900;line-height:1;font-size:clamp(21px,2vw,33px)}
+.tg-tv-board .bj-tv-card-corner small{font-size:clamp(15px,1.5vw,24px)}
+.tg-tv-board .bj-tv-card-center{font-size:clamp(35px,3.9vw,62px);line-height:.95}
+.tg-tv-board .bj-tv-card-value{font-size:clamp(10px,1vw,16px);font-weight:800;line-height:1.1;text-align:center;max-width:100%;overflow-wrap:anywhere}
+.tg-tv-board .bj-tv-card-back{background:repeating-linear-gradient(45deg,#16416e 0,#16416e 8px,#22578e 8px,#22578e 16px);border-color:#e3edf9;box-shadow:0 5px 12px #071e4061,inset 0 0 0 5px #fff}
+.tg-tv-board .bj-tv-card-back-mark{display:grid;place-items:center;width:72%;aspect-ratio:1;border-radius:50%;border:3px solid #e1efff;background:#0e2a52;color:white;font-size:clamp(18px,2.4vw,36px);font-weight:900;letter-spacing:.03em}
+.tg-tv-board .tg-table-scroll td:nth-child(2){text-align:center;vertical-align:middle}
+.tg-tv-board .tg-table-scroll td:nth-child(2) .bj-tv-playing-card{margin:2px auto}
+@media(max-width:800px){.tg-tv-board .bj-tv-playing-card{width:70px;min-height:99px;padding:6px}.tg-tv-board .bj-tv-card-center{font-size:30px}.tg-tv-board .bj-tv-card-corner{font-size:20px}.tg-tv-board .bj-tv-card-value{font-size:10px}}

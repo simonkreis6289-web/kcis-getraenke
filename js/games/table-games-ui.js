@@ -82,8 +82,18 @@ function tableMove(index,delta){
 }
 function tableDrawStarter(){
   if(tableBusy.blackjack||tablePending.blackjack)return;
-  const d=tableDraft('blackjack');if(d.selected.length<2)return;
-  const index=Math.floor(Math.random()*d.selected.length);d.selected=[...d.selected.slice(index),...d.selected.slice(0,index)];if(typeof gameSetupDraft==='function'){const draft=gameSetupDraft('blackjack');draft.names=d.selected.slice();draft.editing=true;}renderTableGame('blackjack');showToast('🎲 '+d.selected[0]+' beginnt','success');
+  const d=tableDraft('blackjack'),players=d.selected.slice();if(players.length<2)return;
+  const club=ACTIVE_CLUB,evening=currentEveningStartedAt;
+  if(typeof openSoloStartDraw!=='function'){showToast('Auslosung derzeit nicht verfügbar','error');return;}
+  openSoloStartDraw({kind:'player',title:'🎲 17 + 4 · Startspieler',subtitle:'Wer beginnt?',players,onConfirm:winner=>{
+    if(ACTIVE_CLUB!==club||currentEveningStartedAt!==evening||tableBusy.blackjack||tablePending.blackjack||tableGameGet('blackjack')?.id)return;
+    const actual=tableDraft('blackjack');if(actual.selected.length!==players.length||actual.selected.some((name,i)=>name!==players[i])){showToast('Spielerreihenfolge wurde geändert. Bitte neu auslosen.','error');return;}
+    const index=actual.selected.indexOf(winner);if(index<0)return;
+    actual.selected=[...actual.selected.slice(index),...actual.selected.slice(0,index)];
+    if(typeof gameSetupDraft==='function'){const draft=gameSetupDraft('blackjack');draft.names=actual.selected.slice();draft.editing=true;}
+    renderTableGame('blackjack');
+    return startTableGame('blackjack');
+  }});
 }
 function tableBuildPairs(random=false){
   const key='gluecksspirale';if(tableBusy[key]||tablePending[key])return;

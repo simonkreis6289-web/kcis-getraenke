@@ -52,3 +52,22 @@
 /* Der nächste Werfer fällt am TV auf, die Reihenfolge bleibt beim letzten Werfer beginnend. */
 #game-body .extra-fence-row.extra-fence-next-thrower{background:#fff0aa;border:3px solid #dc8b08;box-shadow:inset 6px 0 #dc8b08}
 #game-body .extra-fence-next-thrower .extra-fence-name>strong{color:#754100}
+
+/* V251: Pokerwertungen dauerhaft rechts neben der Spieltabelle. */
+[data-extra-game="poker"] .classic-table-and-ranking{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px);gap:14px;align-items:start;min-width:0}
+[data-extra-game="poker"] .classic-table-and-ranking>.ind-table-scroll{min-width:0;max-width:100%;overflow-x:auto}
+.poker-ranking-panel{min-width:0;background:linear-gradient(160deg,#f5f8fc,#e8eff9);color:#1c3250;border:2px solid #bac9df;border-radius:13px;padding:12px;box-sizing:border-box}
+.poker-ranking-panel h3{margin:0 0 2px;font-size:clamp(16px,1.4vw,23px);font-weight:900}
+.poker-ranking-panel>p{margin:0 0 12px;font-size:12px;color:#526985;font-weight:700}
+.poker-ranking-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:5px}
+.poker-ranking-item{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;padding:7px 8px;border:1px solid #ccd7e7;border-radius:8px;background:#fff}
+.poker-ranking-item:nth-child(-n+3){background:#fff4d9;border-color:#e1ba66}
+.poker-ranking-place{font-size:20px;font-weight:900;text-align:center;color:#b27720}
+.poker-ranking-description{display:flex;flex-direction:column;gap:2px;min-width:0}
+.poker-ranking-description strong{font-size:clamp(13px,1.1vw,18px);line-height:1.15}
+.poker-ranking-description small{font-size:clamp(10px,.9vw,13px);line-height:1.2;color:#52657b;white-space:normal}
+#game-body [data-extra-game="poker"] .classic-table-and-ranking{grid-template-columns:minmax(0,1fr) minmax(235px,25%)}
+#game-body [data-extra-game="poker"] .poker-ranking-panel{padding:14px}
+#game-body [data-extra-game="poker"] .poker-ranking-item{padding:9px 8px}
+@media(max-width:950px){[data-extra-game="poker"] .classic-table-and-ranking{grid-template-columns:minmax(0,1fr)}[data-extra-game="poker"] .poker-ranking-panel{width:100%}.poker-ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:530px){.poker-ranking-list{grid-template-columns:1fr}}

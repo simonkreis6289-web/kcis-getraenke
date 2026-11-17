@@ -70,10 +70,7 @@ function gameSetupMarkup(key,{busy=false}={}){
   html+='<div class="gs-team-actions"><strong>'+(mode==='pairs'?'Zweierteams':'Gruppe 1 gegen Gruppe 2')+'</strong>'+(mode==='pairs'?'<button type="button" class="secondary-btn" '+(locked||names.length<2?'disabled':'')+' onclick="gameSetupDrawTeams(\''+key+'\')">🎲 Teams auslosen</button>':'<small>Einteilung aus „Gruppen“</small>')+'</div><div class="gs-teams">'+teams.map((team,i)=>'<div class="gs-team"><strong>'+(mode==='pairs'?'Team '+(i+1)+(team.length===1?' · Einzelteam':''):(typeof getGroupLabel==='function'?gsEscape(getGroupLabel(i===0?'T1':'T2')):'Team '+(i+1)))+'</strong><div class="gs-order">'+team.map(n=>chip(n,names.indexOf(n))).join('')+'</div></div>').join('')+'</div>';
   if(mode==='teams'){const error=gameSetupGroupError(key);if(error)html+='<p class="gs-group-warning" role="status">'+gsEscape(error)+'</p>';}
  }
- if(key==='fuchsjagd'){
-  if(!names.includes(d.fox))d.fox=names[0]||'';
-  html+='<div class="gs-role"><strong>🦊 Fuchs wählen</strong><div class="gs-order">'+names.map((n,i)=>'<button type="button" class="gs-role-choice '+(n===d.fox?'selected':'')+'" '+disabled+' onclick="gameSetupFox('+i+')">'+gameSetupAvatar(n)+'<span>'+gsEscape(n)+'</span></button>').join('')+'</div></div>';
- }
+ if(key==='fuchsjagd')html+='<div class="gs-role"><strong>🦊 Alle werden nacheinander Fuchs</strong><p>Der erste Spieler der Wurfreihenfolge beginnt als Fuchs. Danach kommt der Zweite, Dritte usw. Die Reihenfolge kannst du oben ändern.</p></div>';
  return html+'</section>';
 }
 function renderCommonGameSetups(){
