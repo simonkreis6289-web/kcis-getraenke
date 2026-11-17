@@ -38,6 +38,17 @@
   box.append(element('h3','⚽ Bundesliga Live-Ergebnisse'),element('p','OpenLigaDB: Spielstände im Laufband und Tor-Toasts. Daten können zeitverzögert sein.'));
   for(const [key,name] of [['bl1','1. Bundesliga'],['bl2','2. Bundesliga']]){const label=element('label',undefined,'dashboard-popup-option'),check=element('input');check.type='checkbox';check.checked=draft.football[key];check.disabled=busy;check.onchange=()=>draft.football[key]=check.checked;label.append(check,document.createTextNode(name+' im Laufband anzeigen'));box.append(label);}
   const goalLabel=element('label',undefined,'dashboard-popup-option');goalLabel.append(document.createTextNode('Tor-Toast anzeigen für '),duration('dashboard-goal-seconds',draft.football.goalToastSeconds,0,30,v=>draft.football.goalToastSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(goalLabel);
+  box.append(element('h3','🧪 Bundesliga-Testspiel'),element('p','Nur Simulation: BVB gegen Schalke. Starten, Tore buchen und auf dem TV die Laufschrift sowie den Tor-Toast prüfen. Keine echten Ergebnisse oder Strafen werden verändert.'));
+  const demoRow=element('div',undefined,'dashboard-layout-actions'),demo=draft.football.demo;
+  const makeTestButton=(caption,id,action)=>{const button=element('button',caption,'secondary-btn');button.type='button';button.id=id;button.disabled=busy;button.onclick=async()=>{action();draw();await store();};demoRow.append(button);};
+  if(!demo?.active){makeTestButton('▶ Testspiel starten (0:0)','dashboard-demo-start',()=>{draft.football.demo={active:true,id:'demo-'+Date.now().toString(36),league:'bl1',home:0,away:0};});}
+  else {
+   box.append(element('p','🧪 BVB '+demo.home+':'+demo.away+' Schalke · simuliertes Spiel'));
+   makeTestButton('⚽ Tor BVB','dashboard-demo-home',()=>{draft.football.demo.home++;});
+   makeTestButton('⚽ Tor Schalke','dashboard-demo-away',()=>{draft.football.demo.away++;});
+   makeTestButton('■ Testspiel beenden','dashboard-demo-stop',()=>{draft.football.demo=null;});
+  }
+  box.append(demoRow);
   const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');box.append(actions,status);
  }
  function render(){const box=host();if(!box)return;const value=typeof dashboardSettings==='undefined'?null:dashboardSettings,next=String(typeof ACTIVE_CLUB==='undefined'?'':ACTIVE_CLUB)+'|'+JSON.stringify(value);if(next===stamp&&draft)return;stamp=next;draft=M.resolve(value).settings;draw();}
