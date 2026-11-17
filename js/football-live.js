@@ -1,26 +1,15 @@
 /* Bundesliga 1+2: sparsames OpenLigaDB-Polling ohne API-Schluessel. */
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
- const state=new Map(),seen=new Map();let settings=null,timer=null,busy=false,lastGroup=0,initialized=false,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false;
+ const state=new Map(),seen=new Map();let settings=null,timer=null,busy=false,lastGroup=0,initialized=false,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map();
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),9000);try{const response=await fetch(base+path,{signal:ctrl.signal,cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}finally{clearTimeout(timeout);}};
  const enabled=league=>settings?.[league]===true;
  const score=m=>{const results=Array.isArray(m.matchResults)?m.matchResults:[],end=results.find(x=>x.resultTypeID===2)||results.at(-1);const goals=Array.isArray(m.goals)?m.goals:[];if(end&&Number.isFinite(+end.pointsTeam1)&&Number.isFinite(+end.pointsTeam2))return [+end.pointsTeam1,+end.pointsTeam2];if(goals.length)return [goals.filter(x=>!x.isOvertime&&x.scoreTeam1!=null).at(-1)?.scoreTeam1??0,goals.filter(x=>!x.isOvertime&&x.scoreTeam2!=null).at(-1)?.scoreTeam2??0];return [0,0];};
- const gameMinute=(m,now=Date.now())=>{
-  if(m.matchIsFinished)return 'Ende';
-  const kickoff=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');
-  if(!Number.isFinite(kickoff))return '';
-  const elapsed=Math.floor((now-kickoff)/60000);
-  if(elapsed<0)return 'Anpfiff folgt';
-  if(elapsed<=45)return 'ca. '+Math.max(1,elapsed+1)+'. Min.';
-  // Die API enthaelt keine verifizierte Live-Uhr. In der Halbzeit keine falsche Minute behaupten.
-  if(elapsed<65)return 'ca. Halbzeit';
-  if(elapsed<=125)return 'ca. '+Math.min(90,elapsed-14)+'. Min.';
-  return '';
- };
- const label=(m)=>{const s=score(m),minute=gameMinute(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(minute?' · '+minute:'');};
+ // Keine Spielminute erraten: OpenLigaDB liefert lediglich Minuten einzelner Tore.
+ const label=(m)=>{const s=score(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(m.matchIsFinished?' (Ende)':'');};
  function announce(m,old,next){
-  if(!settings?.goalToastSeconds||document.hidden)return;
+  if(!settings?.goalToastSeconds||!settings.events?.goal||document.hidden)return;
   const box=document.getElementById('dashboard-football-toast')||document.createElement('div');box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
   // Torjubel spannt die ganze TV-Breite auf, auch bei seitlichen Tabellen.
   box.style.left='50%';box.style.width='calc(100vw - 32px)';
@@ -35,9 +24,26 @@
   caption.append(title,detail);row.append(crest,caption);box.replaceChildren(row);
   clearTimeout(toastTimer);box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));toastTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');setTimeout(()=>{if(!box.classList.contains('toast-visible'))box.hidden=true;},450);},settings.goalToastSeconds*1000);
  }
+ function announceStatus(m,kind){
+  if(!settings?.goalToastSeconds||!settings.events?.[kind]||document.hidden)return;
+  const box=document.getElementById('dashboard-football-status-toast')||document.createElement('div');box.id='dashboard-football-status-toast';box.className='dashboard-throw-popup dashboard-football-toast is-wreath';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
+  const title=document.createElement('strong'),detail=document.createElement('span');
+  title.textContent={kickoff:'▶ Anstoßzeit erreicht',halftime:'⏸ Halbzeit',fulltime:'■ Abpfiff'}[kind];detail.textContent=label(m);
+  box.style.left='50%';box.style.width='calc(100vw - 32px)';box.replaceChildren(title,detail);box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;
+  requestAnimationFrame(()=>box.classList.add('toast-visible'));
+  clearTimeout(box._hideTimer);box._hideTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');setTimeout(()=>{if(!box.classList.contains('toast-visible'))box.hidden=true;},450);},settings.goalToastSeconds*1000);
+ }
+ const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
   const now=Date.now(),list=Array.isArray(matches)?matches:[];state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
-  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);if(old&&initialized&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);seen.set(id,next);}
+  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);if(old&&initialized&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);
+   seen.set(id,next);
+   const previous=seenPhases.get(id),current=phase(m);
+   if(previous&&initialized&&enabled(league)){
+    if(!previous.half&&current.half)announceStatus(m,'halftime');
+    if(!previous.finished&&current.finished)announceStatus(m,'fulltime');
+   }
+   seenPhases.set(id,current);}
   window.dispatchEvent(new Event('kc-football-updated'));
  }
  async function refresh(){
@@ -71,11 +77,11 @@
   window.dispatchEvent(new Event('kc-football-updated'));
  }
  function configure(value){
-  const next={bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),demo:value?.demo?.active?value.demo:null};
+  const next={bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),events:value?.events||{goal:true,kickoff:true,halftime:true,fulltime:true},demo:value?.demo?.active?value.demo:null};
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
   const demoChanged=JSON.stringify(settings?.demo??null)!==JSON.stringify(next.demo??null);
   settings=next;if(!timer)timer=setInterval(refresh,30000);
-  if(sourceChanged){initialized=false;seen.clear();state.clear();refresh();}
+  if(sourceChanged){initialized=false;seen.clear();seenPhases.clear();state.clear();refresh();}
   if(demoChanged)syncDemo(next.demo);
  }
  function ticker(){if(!settings)return [];const live=leagues.filter(enabled).flatMap(league=>(state.get(league)||[]).map(m=>['football-'+league+'-'+m.matchID,'⚽ '+label(m)]));if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);return live;}
