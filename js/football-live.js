@@ -10,7 +10,8 @@
  function announce(m,old,next){
   if(!settings?.goalToastSeconds||document.hidden)return;
   const box=document.getElementById('dashboard-football-toast')||document.createElement('div');box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
-  const stage=document.querySelector('main.dashboard .stage'),rect=stage?.getBoundingClientRect();if(rect){box.style.left=(rect.left+rect.width/2)+'px';box.style.width=Math.max(200,Math.min(rect.width-24,760))+'px';}
+  // Torjubel spannt die ganze TV-Breite auf, auch bei seitlichen Tabellen.
+  box.style.left='50%';box.style.width='calc(100vw - 32px)';
   const scoring=next[0]>old[0]?m.team1:m.team2,goal=(m.goals||[]).at(-1);
   const row=document.createElement('div'),crest=document.createElement('div'),caption=document.createElement('div'),title=document.createElement('strong'),detail=document.createElement('span');
   row.className='dashboard-football-toast-content';crest.className='dashboard-football-crest';caption.className='dashboard-football-toast-copy';
