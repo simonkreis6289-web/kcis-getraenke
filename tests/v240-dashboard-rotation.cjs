@@ -111,3 +111,56 @@ test('ticker chips use configured colors and keep text as safe text nodes',()=>{
  assert.equal(f.model.normalize({football:{events:{goal:false,halftime:false}}}).football.events.goal,false);
  assert.equal(f.model.normalize({football:{events:{red:true,secondYellow:true}}}).football.events.red,false);
 });
+
+
+test('two ticker lanes split independently, preserve their tracks and use the configured width',()=>{
+ const f=setup(),settings=f.model.defaults();
+ settings.tickerStreams.leftPercent=65;
+ f.c.KCFootballLive={configure(){},ticker(){return [['football-bl1-123','⚽ BVB 2:1 S04'],['football-bl2-321','⚽ Zweite Liga 0:0']];}};
+ const original=f.document.getElementById('dashboard-ticker-track');
+ f.tv.ticker({dashboardSettings:settings});
+ const region=f.document.getElementById('dashboard-ticker-region'),club=f.document.getElementById('dashboard-ticker'),football=f.document.getElementById('dashboard-football-ticker');
+ assert(!region.hidden);
+ assert.equal(club.parentNode.id,'dashboard-ticker-slot-left');
+ assert.equal(football.parentNode.id,'dashboard-ticker-slot-right');
+ assert.equal(region.style.gridTemplateColumns,'65fr 35fr');
+ assert(f.document.getElementById('dashboard-ticker-track')===original);
+ assert(!club.hidden&&!football.hidden);
+ assert(!original.textContent.includes('BVB 2:1 S04'));
+ assert(f.document.getElementById('dashboard-football-ticker-track').textContent.includes('BVB 2:1 S04'));
+ settings.tickerStreams.football.enabled=false;f.tv.ticker({dashboardSettings:settings});
+ assert(f.document.getElementById('dashboard-ticker-slot-right').hidden);
+ assert(!club.hidden);
+ settings.tickerStreams.football.enabled=true;
+ settings.tickerStreams.club.position='right';
+ f.tv.ticker({dashboardSettings:settings});
+ assert.equal(club.parentNode.id,'dashboard-ticker-slot-right');
+ assert(f.document.getElementById('dashboard-ticker-slot-left').hidden);
+});
+test('two ticker streams on same side alternate with per-stream dwell and stop when disabled',()=>{
+ const f=setup(),settings=f.model.defaults();
+ settings.tickerStreams.club.position='left';settings.tickerStreams.football.position='left';
+ settings.tickerStreams.club.seconds=3;settings.tickerStreams.football.seconds=5;
+ f.tv.ticker({dashboardSettings:settings});
+ const club=f.document.getElementById('dashboard-ticker'),football=f.document.getElementById('dashboard-football-ticker');
+ assert.equal(club.hidden,false);assert.equal(football.hidden,true);
+ f.advance(3000);assert.equal(club.hidden,true);assert.equal(football.hidden,false);
+ f.advance(5000);assert.equal(club.hidden,false);assert.equal(football.hidden,true);
+ settings.tickerStreams.club.enabled=false;f.tv.ticker({dashboardSettings:settings});
+ assert(club.hidden);assert(!football.hidden);
+ settings.tickerEnabled=false;f.tv.ticker({dashboardSettings:settings});
+ assert(f.document.getElementById('dashboard-ticker-region').hidden);
+ assert(f.document.querySelector('.dashboard-footer .header-actions'));
+});
+test('ticker stream settings migrate old ticker enabled state and bound invalid inputs',()=>{
+ const {model}=setup();
+ const fallback=model.normalize({tickerEnabled:false});
+ assert.equal(fallback.tickerStreams.club.enabled,false);
+ assert.equal(fallback.tickerStreams.football.position,'right');
+ const settings=model.normalize({tickerStreams:{club:{position:'bad',seconds:0},football:{enabled:false,position:'left',seconds:500},leftPercent:99}});
+ assert.equal(settings.tickerStreams.club.position,'left');
+ assert.equal(settings.tickerStreams.club.seconds,2);
+ assert.equal(settings.tickerStreams.football.seconds,120);
+ assert.equal(settings.tickerStreams.football.enabled,false);
+ assert.equal(settings.tickerStreams.leftPercent,75);
+});
