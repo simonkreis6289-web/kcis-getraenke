@@ -14,11 +14,36 @@ test('Poker enforces each exchange selection and undo restores its player phase'
 test('Poker shares equal hand ranks without a playoff and all empty hands receive first loser',()=>{
  const g=game('poker');deal(g,[[1,2,4,6,8],[2,3,5,7,9]]);g.run('exchange',{indices:[]});g.run('exchange',{indices:[]});assert(g.state.finished);assert.equal(g.state.tieRound,0);assert.deepEqual(copy(g.state.winners),[]);assert.deepEqual(copy(g.state.loserGroups),[{rank:1,names:['A','B']}]);g.run('undo');assert.equal(g.state.phase,'select');
 });
-test('Pfälzerspiel retries a gutter in number assignment and strikes every duplicate-number owner',()=>{
- const g=game('pfaelzer',{rounds:1,strichCents:10,tieThrows:1},['A','B','C']);g.roll(0,'gosse');assert.equal(G.current(g.state),'A');assert.equal(g.state.scores.A,1);for(const n of [4,4,7])g.roll(n);assert.equal(g.state.phase,'rounds');g.roll(4);assert.equal(g.state.scores.A,2);assert.equal(g.state.scores.B,1);g.roll(6);assert.equal(g.state.scores.B,2);g.roll(7);assert.equal(g.state.phase,'tiebreak');g.roll(3);g.roll(4);assert(g.state.finished);assert.deepEqual(copy(g.state.winners),['C']);assert.deepEqual(copy(g.state.bookings.map(x=>x.amountCents)),[20,20,10]);assert.deepEqual(copy(g.state.loserGroups),[{rank:1,names:['A']},{rank:2,names:['B']}]);
+test('Pfälzerspiel books strike charges directly after last throw, even when scores tie',()=>{
+ const g=game('pfaelzer',{rounds:1,strichCents:10},['A','B','C']);
+ g.roll(0,'gosse');assert.equal(G.current(g.state),'A');assert.equal(g.state.scores.A,1);
+ for(const n of [4,4,7])g.roll(n);
+ assert.equal(g.state.phase,'rounds');g.roll(4);assert.equal(g.state.scores.A,2);assert.equal(g.state.scores.B,1);
+ g.roll(6);assert.equal(g.state.scores.B,2);g.roll(7);
+ assert(g.state.finished);assert.equal(g.state.phase,'finished');assert.equal(g.state.tieRound,0);
+ assert.deepEqual(copy(g.state.winners),['C']);
+ assert.deepEqual(copy(g.state.bookings.map(x=>x.amountCents)),[20,20,10]);
+ assert.deepEqual(copy(g.state.loserGroups),[]);
+ assert.deepEqual(copy(g.effects.changes.filter(x=>/^l[123]$/.test(x.key))),[]);
 });
-test('Pfälzerspiel resolves tied ranks by playoffs and refunds all final charges on undo',()=>{
- const g=game('pfaelzer',{rounds:1,strichCents:15,tieThrows:1});g.roll(3);g.roll(4);g.roll(3);g.roll(4);assert.equal(g.state.phase,'tiebreak');g.roll(8);g.roll(7);assert(g.state.finished);assert.deepEqual(copy(g.state.winners),['A']);assert.equal(g.effects.moneyAdded.length,2);g.run('undo');assert.equal(g.effects.moneyRemoved.length,2);assert.equal(g.state.phase,'tiebreak');assert.equal(g.state.scores.A,1);
+test('Pfälzerspiel equal scores share first place, have no loser penalties, and undo refunds charges',()=>{
+ const g=game('pfaelzer',{rounds:1,strichCents:15});
+ for(const pins of [3,4,3,4])g.roll(pins);
+ assert(g.state.finished);assert.equal(g.state.phase,'finished');assert.equal(g.state.tieRound,0);
+ assert.deepEqual(copy(g.state.winners),['A','B']);
+ assert.deepEqual(copy(g.state.loserGroups),[]);
+ assert.deepEqual(copy(g.state.bookings.map(x=>x.amountCents)),[15,15]);
+ assert.equal(g.effects.moneyAdded.length,2);
+ assert(!g.effects.changes.some(x=>/^l[123]$/.test(x.key)));
+ g.run('undo');assert.equal(g.effects.moneyRemoved.length,2);
+ assert.equal(g.state.phase,'rounds');assert.equal(g.state.scores.A,1);
+});
+test('Pfälzerspiel at zero euros per stripe finishes without any penalty or booking',()=>{
+ const g=game('pfaelzer',{rounds:1,strichCents:0});
+ for(const pins of [3,4,3,4])g.roll(pins);
+ assert(g.state.finished);assert.deepEqual(copy(g.state.bookings),[]);
+ assert.deepEqual(copy(g.state.loserGroups),[]);
+ assert.deepEqual(copy(g.effects.changes),[]);
 });
 test('1000 forms freely arranged, reverse and forward numbers and compares absolute target distances',()=>{
  const g=game('tausend');for(const n of [5,6,3])g.roll(n);assert(g.state.pendingArrange);assert.throws(()=>g.roll(1),/Auswahl/);assert.throws(()=>g.run('arrange',{order:[0,0,1]}),/anordnen/);g.run('arrange',{order:[2,0,1]});for(const n of [1,1,1])g.roll(n);g.run('arrange',{order:[0,1,2]});for(const n of [4,6,3,2,2,2,3,2,2,3,3,3])g.roll(n);assert(g.state.finished);assert.deepEqual(copy(g.state.results.A.map(r=>r.value)),[356,364,322]);assert.equal(g.state.scores.A,1042);assert.equal(g.state.scores.B,666);assert.deepEqual(copy(g.state.winners),['A']);g.run('undo');assert.equal(g.state.results.B.length,2);assert.equal(g.state.turn.length,2);
