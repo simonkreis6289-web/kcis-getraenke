@@ -1,6 +1,6 @@
 /* Vorhandene Panels umsetzen; Spiel- und Buchungsdaten bleiben unangetastet. */
 (() => {
- const M=window.KCDashboardLayout;let layoutStamp='',tickerStamp='',resizeQueued=false;
+ const M=window.KCDashboardLayout;let layoutStamp='',tickerStamp='',resizeQueued=false,lastTickerRoot=null;
  const $=id=>document.getElementById(id);
  let arrangement=null,rotationStart=0,rotationTimer=null;const fadeTimers=new Map();
  function clearFades(){for(const timer of fadeTimers.values())clearTimeout(timer);fadeTimers.clear();for(const box of document.querySelectorAll('.dashboard-panel-slot')){box.classList.remove('dashboard-is-transitioning');for(const panel of box.querySelectorAll('.panel'))panel.classList.remove('dashboard-fade-in','dashboard-fade-out');}}
@@ -54,9 +54,11 @@
   resizeQueued=false;const viewport=$('dashboard-ticker'),track=$('dashboard-ticker-track');if(!viewport||!track)return;for(const copy of track.children)copy.style.minWidth=Math.max(0,viewport.clientWidth)+'px';const distance=track.firstElementChild?.scrollWidth||track.firstElementChild?.getBoundingClientRect?.().width||500;track.style.setProperty('--ticker-duration',Math.max(18,distance/42)+'s');
  }
  function ticker(root,now=new Date()){
+  lastTickerRoot=root;window.KCFootballLive?.configure(M.normalize(root?.dashboardSettings).football);
   const data=M.upcoming(root,now),date=day=>new Date(day+'T12:00:00Z').toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'medium'}),when=e=>date(e.date)+(e.endDate&&e.endDate>e.date?' – '+date(e.endDate):e.time?', '+e.time+' Uhr':'')+(e.note?' · '+e.note:'');
   const groups=[['kc-next-birthdays',data.birthdays.length?'🎂 Geburtstage bis zum nächsten Kegeln: '+data.birthdays.map(e=>e.date.slice(8,10)+'.'+e.date.slice(5,7)+'. '+(e.note||e.personName||'')).join(' · '):''],['kc-next-tour',data.tour?'🚌 Kegeltour: '+when(data.tour):''],['kc-next-kegeln',data.kegeln?'🎳 Nächstes Kegeln: '+when(data.kegeln):'🎳 Noch kein nächster Kegeltermin']];
   for(const message of M.normalize(root?.dashboardSettings).tickerMessages)if(message.enabled&&message.text)groups.push(['dashboard-message-'+message.id,message.text]);
+  groups.push(...(window.KCFootballLive?.ticker()||[]));
   const stamp=JSON.stringify(groups),track=$('dashboard-ticker-track');if(!track||stamp===tickerStamp)return;tickerStamp=stamp;track.replaceChildren();const first=document.createElement('div');first.className='dashboard-ticker-copy';for(const [id,text] of groups){const span=document.createElement('span');span.id=id;span.textContent=text;span.hidden=!text;first.append(span);}const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');for(const el of second.querySelectorAll('[id]'))el.removeAttribute('id');track.append(first,second);tickerFit();
  }
  let popupScope='',popupInitialized=false,popupTimer=null,popupExitTimer=null,popupSeconds=3;const seenThrows=new Set();
@@ -88,6 +90,7 @@
   const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];box.replaceChildren(title,name);positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
   popupTimer=setTimeout(hidePopup,popupSeconds*1000);
  }
+ window.addEventListener('kc-football-updated',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hidePopup();else rotate();});
  window.addEventListener('resize',()=>{positionPopup();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
  window.KCDashboardLayoutTV=Object.freeze({apply,rotate,highlight,ticker,tickerFit,feed});
