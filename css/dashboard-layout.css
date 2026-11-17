@@ -45,3 +45,14 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 @media(prefers-reduced-motion:reduce){.dashboard-panel-slot>.panel{transition:none!important}}
 
 .dashboard-football-toast{border-color:#2387e0!important;background:linear-gradient(135deg,#d8edff,#51a8f5)!important;color:#072c55!important}
+
+/* Tor-Toast: Vereinswappen links, grosses Ergebnis rechts. */
+.dashboard-football-toast .dashboard-football-toast-content{display:flex;align-items:center;justify-content:center;gap:clamp(15px,2.5vw,34px);width:100%;min-width:0}
+.dashboard-football-toast .dashboard-football-crest{display:grid;place-items:center;flex:none;width:clamp(85px,9vw,145px);height:clamp(85px,9vw,145px);border-radius:18px;background:#ffffffd9;border:2px solid #ffffff;box-shadow:0 4px 18px #0c3b7040;overflow:hidden;padding:10px;box-sizing:border-box}
+.dashboard-football-toast .dashboard-football-crest img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
+.dashboard-football-toast .dashboard-football-crest-fallback{font-size:clamp(24px,3vw,44px);font-weight:900;color:#15395d}
+.dashboard-football-toast .dashboard-football-crest-fallback[hidden]{display:none!important}
+.dashboard-football-toast .dashboard-football-toast-copy{display:flex;flex-direction:column;gap:8px;min-width:0;text-align:left}
+.dashboard-football-toast .dashboard-football-toast-copy strong{font-size:clamp(30px,4vw,60px);line-height:1.08;font-weight:900}
+.dashboard-football-toast .dashboard-football-toast-copy span{font-size:clamp(20px,2.5vw,36px);line-height:1.15;font-weight:800;overflow-wrap:anywhere}
+@media(max-width:700px){.dashboard-football-toast .dashboard-football-crest{width:76px;height:76px}.dashboard-football-toast .dashboard-football-toast-content{gap:12px}.dashboard-football-toast .dashboard-football-toast-copy strong{font-size:27px}.dashboard-football-toast .dashboard-football-toast-copy span{font-size:19px}}
