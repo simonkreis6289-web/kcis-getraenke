@@ -198,7 +198,10 @@ function renderTableGameBoard(s,options={}){
     (window.KCPlayerRows?.order(s.players,KCTableGames.currentName(s),{running:s.active&&!s.readyToFinish})||s.players).map(name=>{
       const known=Object.hasOwn(s.cardValues,name),legacy=!s.cards&&s.finished;
       const card=known?tableEscape(KCTableGames.cardLabel(s.cardValues[name],s.cardSettings)):'🂠';
-      const cardCell=known&&s.active&&options.editCards?'<button type="button" class="bj-card-edit" '+(options.blocked?'disabled':'')+' onclick="tableEditCard('+s.players.indexOf(name)+')" aria-label="Karte für '+tableEscape(name)+' ändern">'+card+' <small>✏️ Ändern</small></button>':card;
+      const isRed=known&&(['Q','8','10'].includes(String(s.cardValues[name]))),cardFace=known?({A:'A',J:'B',Q:'D',K:'K'}[String(s.cardValues[name])]||String(s.cardValues[name])):'?';
+      const suit=isRed?'♥':'♠',cardName=known?tableEscape(KCTableGames.cardLabel(s.cardValues[name],s.cardSettings)):'Verdeckt';
+      const tvCard='<span class="bj-tv-playing-card '+(known?'bj-tv-card-face':'bj-tv-card-back')+(isRed?' bj-tv-card-red':'')+'" role="img" aria-label="'+cardName+'">'+(known?'<span class="bj-tv-card-corner">'+tableEscape(cardFace)+'<small>'+suit+'</small></span><span class="bj-tv-card-center">'+suit+'</span><span class="bj-tv-card-value">'+cardName+'</span>':'<span class="bj-tv-card-back-mark">KC</span>')+'</span>';
+      const cardCell=options.dashboard?tvCard:known&&s.active&&options.editCards?'<button type="button" class="bj-card-edit" '+(options.blocked?'disabled':'')+' onclick="tableEditCard('+s.players.indexOf(name)+')" aria-label="Karte für '+tableEscape(name)+' ändern">'+card+' <small>✏️ Ändern</small></button>':card;
       const score=known||legacy?values[name]+(values[name]>21?' · Über 21':values[name]===21?' 🎯':''):'🔒';
       const rank=(s.loserGroups||[]).findIndex(g=>g.names.includes(name));
       const fines=[...(known&&values[name]>21?['Über 21: 1. Verlierer +1']:[]),...(s.finished&&rank>=0&&rank<3?['Platzierung: '+(rank+1)+'. Verlierer +1']:[])];
