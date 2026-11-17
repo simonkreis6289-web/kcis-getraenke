@@ -1080,9 +1080,10 @@
           </button>
         </div>
 
-        <button class="save-prices-btn" onclick="finishDartsRound()">
-          Runde abschließen
-        </button>
+        <div class="darts-round-actions">
+          <button class="save-prices-btn" onclick="finishDartsRound()">Runde abschließen</button>
+          <button type="button" id="darts-undo-round" class="secondary-btn" onclick="undoDartsRound()" disabled>↩ Letzte Runde rückgängig</button>
+        </div>
 
         <button class="modal-cancel" style="width:100%;margin-top:10px;" onclick="resetDartsGame()">
           ↻ Darts neu starten
