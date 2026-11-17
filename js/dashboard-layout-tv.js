@@ -1,6 +1,6 @@
 /* Vorhandene Panels umsetzen; Spiel- und Buchungsdaten bleiben unangetastet. */
 (() => {
- const M=window.KCDashboardLayout;let layoutStamp='',tickerStamp='',resizeQueued=false,lastTickerRoot=null;
+ const M=window.KCDashboardLayout;let layoutStamp='',tickerStamp='',footballTickerStamp='',tickerLayoutStamp='',resizeQueued=false,lastTickerRoot=null,tickerSwitchTimer=null,tickerSwitchStart=0,tickerConfig=null;
  const $=id=>document.getElementById(id);
  let arrangement=null,rotationStart=0,rotationTimer=null;const fadeTimers=new Map();
  function clearFades(){for(const timer of fadeTimers.values())clearTimeout(timer);fadeTimers.clear();for(const box of document.querySelectorAll('.dashboard-panel-slot')){box.classList.remove('dashboard-is-transitioning');for(const panel of box.querySelectorAll('.panel'))panel.classList.remove('dashboard-fade-in','dashboard-fade-out');}}
@@ -51,26 +51,83 @@
   }
  }
  function tickerFit(){
-  resizeQueued=false;const viewport=$('dashboard-ticker'),track=$('dashboard-ticker-track');if(!viewport||!track)return;for(const copy of track.children)copy.style.minWidth=Math.max(0,viewport.clientWidth)+'px';const distance=track.firstElementChild?.scrollWidth||track.firstElementChild?.getBoundingClientRect?.().width||500;track.style.setProperty('--ticker-duration',Math.max(18,distance/42)+'s');
+  resizeQueued=false;
+  for(const [viewportId,trackId] of [['dashboard-ticker','dashboard-ticker-track'],['dashboard-football-ticker','dashboard-football-ticker-track']]){
+   const viewport=$(viewportId),track=$(trackId);if(!viewport||!track)return;
+   for(const copy of track.children)copy.style.minWidth=Math.max(0,viewport.clientWidth)+'px';
+   const distance=track.firstElementChild?.scrollWidth||track.firstElementChild?.getBoundingClientRect?.().width||500;
+   track.style.setProperty('--ticker-duration',Math.max(18,distance/42)+'s');
+  }
+ }
+ function switchTickers(now=Date.now()){
+  if(tickerSwitchTimer!==null){clearTimeout(tickerSwitchTimer);tickerSwitchTimer=null;}
+  if(!tickerConfig)return;
+  for(const side of ['left','right']){
+   const active=['club','football'].filter(key=>tickerConfig.tickerEnabled&&tickerConfig.tickerStreams[key].enabled&&tickerConfig.tickerStreams[key].position===side);
+   let current=active[0],wait=Infinity;
+   if(active.length>1){
+    const a=tickerConfig.tickerStreams[active[0]].seconds*1000,b=tickerConfig.tickerStreams[active[1]].seconds*1000;
+    const elapsed=Math.max(0,now-tickerSwitchStart)%(a+b);
+    current=elapsed<a?active[0]:active[1];wait=elapsed<a?a-elapsed:a+b-elapsed;
+   }
+   for(const key of active){const el=$(key==='club'?'dashboard-ticker':'dashboard-football-ticker');if(el)el.hidden=key!==current;}
+   if(Number.isFinite(wait))tickerSwitchTimer=setTimeout(()=>switchTickers(),Math.max(25,wait));
+  }
+  tickerFit();
+ }
+ function arrangeTickers(settings){
+  const config=JSON.stringify({enabled:settings.tickerEnabled,streams:settings.tickerStreams,fontSize:settings.tickerFontSize});
+  if(config===tickerLayoutStamp)return;
+  tickerLayoutStamp=config;tickerConfig=settings;tickerSwitchStart=Date.now();
+  if(tickerSwitchTimer!==null){clearTimeout(tickerSwitchTimer);tickerSwitchTimer=null;}
+  const region=$('dashboard-ticker-region'),left=$('dashboard-ticker-slot-left'),right=$('dashboard-ticker-slot-right'),main=document.querySelector('main.dashboard');
+  if(!region||!left||!right)return;
+  const active=['club','football'].filter(key=>settings.tickerEnabled&&settings.tickerStreams[key].enabled);
+  region.hidden=!active.length;
+  const leftKeys=active.filter(key=>settings.tickerStreams[key].position==='left'),rightKeys=active.filter(key=>settings.tickerStreams[key].position==='right');
+  for(const key of ['club','football']){
+   const el=$(key==='club'?'dashboard-ticker':'dashboard-football-ticker');if(!el)continue;
+   el.style.setProperty('--ticker-font-size',settings.tickerFontSize+'px');
+   (settings.tickerStreams[key].position==='right'?right:left).append(el);
+   el.hidden=!active.includes(key);
+  }
+  left.hidden=!leftKeys.length;right.hidden=!rightKeys.length;
+  const bothSides=leftKeys.length&&rightKeys.length;
+  region.style.gridTemplateColumns=bothSides?settings.tickerStreams.leftPercent+'fr '+(100-settings.tickerStreams.leftPercent)+'fr':'minmax(0,1fr)';
+  if(main)main.style.setProperty('--ticker-row-height',active.length?Math.max(44,settings.tickerFontSize+20)+'px':'34px');
+  switchTickers();
+ }
+ function renderTickerTrack(trackId,entries,previousStamp){
+  const stamp=JSON.stringify(entries),track=$(trackId);
+  if(!track||stamp===previousStamp)return stamp;
+  track.replaceChildren();const first=document.createElement('div');first.className='dashboard-ticker-copy';
+  for(const [id,text,color] of entries){
+   const span=document.createElement('span');span.id=id;span.className='dashboard-ticker-chip';span.textContent=text;span.hidden=!text;span.style.backgroundColor=color;
+   const rgb=color.match(/[a-f0-9]{2}/gi)?.map(n=>parseInt(n,16))||[255,255,255];
+   span.style.color=(.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2])<145?'#ffffff':'#102239';
+   first.append(span);
+  }
+  const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');
+  for(const el of second.querySelectorAll('[id]'))el.removeAttribute('id');
+  track.append(first,second);
+  tickerFit();
+  return stamp;
  }
  function ticker(root,now=new Date()){
-  lastTickerRoot=root;const tickerSettings=M.normalize(root?.dashboardSettings);
-  const viewport=$('dashboard-ticker'),main=document.querySelector('main.dashboard');
-  if(viewport){viewport.hidden=!tickerSettings.tickerEnabled;viewport.style.setProperty('--ticker-font-size',tickerSettings.tickerFontSize+'px');}
-  if(main)main.style.setProperty('--ticker-row-height',tickerSettings.tickerEnabled?Math.max(44,tickerSettings.tickerFontSize+20)+'px':'34px');
-  window.KCFootballLive?.configure(tickerSettings.football);
-  const data=M.upcoming(root,now),date=day=>new Date(day+'T12:00:00Z').toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'medium'}),when=e=>date(e.date)+(e.endDate&&e.endDate>e.date?' – '+date(e.endDate):e.time?', '+e.time+' Uhr':'')+(e.note?' · '+e.note:'');
-  const groups=[['kc-next-birthdays',data.birthdays.length?'🎂 Geburtstage bis zum nächsten Kegeln: '+data.birthdays.map(e=>e.date.slice(8,10)+'.'+e.date.slice(5,7)+'. '+(e.note||e.personName||'')).join(' · '):''],['kc-next-tour',data.tour?'🚌 Kegeltour: '+when(data.tour):''],['kc-next-kegeln',data.kegeln?'🎳 Nächstes Kegeln: '+when(data.kegeln):'🎳 Noch kein nächster Kegeltermin']];
-  for(const message of tickerSettings.tickerMessages)if(message.enabled&&message.text)groups.push(['dashboard-message-'+message.id,message.text,message.color]);
-  for(const entry of window.KCFootballLive?.ticker()||[])groups.push([entry[0],entry[1],tickerSettings.tickerColors[entry[0].includes('bl2')?'bl2':'bl1']]);
-  const categorized=groups.map(([id,text,color])=>[id,text,color||tickerSettings.tickerColors[id==='kc-next-birthdays'?'birthdays':id==='kc-next-tour'?'tour':'kegeln']]);
-  const stamp=JSON.stringify(categorized),track=$('dashboard-ticker-track');if(!track||stamp===tickerStamp)return;tickerStamp=stamp;track.replaceChildren();
-  const first=document.createElement('div');first.className='dashboard-ticker-copy';
-  for(const [id,text,color] of categorized){
-   const span=document.createElement('span');span.id=id;span.className='dashboard-ticker-chip';span.textContent=text;span.hidden=!text;span.style.backgroundColor=color;
-   const rgb=color.match(/[a-f0-9]{2}/gi)?.map(n=>parseInt(n,16))||[255,255,255],luminance=(0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2]);span.style.color=luminance<145?'#ffffff':'#102239';first.append(span);
-  }
-  const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');for(const el of second.querySelectorAll('[id]'))el.removeAttribute('id');track.append(first,second);tickerFit();
+  lastTickerRoot=root;
+  const settings=M.normalize(root?.dashboardSettings);
+  arrangeTickers(settings);
+  window.KCFootballLive?.configure(settings.football);
+  const data=M.upcoming(root,now),date=day=>new Date(day+'T12:00:00Z').toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'medium'}),
+   when=e=>date(e.date)+(e.endDate&&e.endDate>e.date?' – '+date(e.endDate):e.time?', '+e.time+' Uhr':'')+(e.note?' · '+e.note:'');
+  const club=[['kc-next-birthdays',data.birthdays.length?'🎂 Geburtstage bis zum nächsten Kegeln: '+data.birthdays.map(e=>e.date.slice(8,10)+'.'+e.date.slice(5,7)+'. '+(e.note||e.personName||'')).join(' · '):'',settings.tickerColors.birthdays],
+   ['kc-next-tour',data.tour?'🚌 Kegeltour: '+when(data.tour):'',settings.tickerColors.tour],
+   ['kc-next-kegeln',data.kegeln?'🎳 Nächstes Kegeln: '+when(data.kegeln):'🎳 Noch kein nächster Kegeltermin',settings.tickerColors.kegeln]];
+  for(const msg of settings.tickerMessages)if(msg.enabled&&msg.text)club.push(['dashboard-message-'+msg.id,msg.text,msg.color]);
+  const football=(window.KCFootballLive?.ticker()||[]).map(([id,text])=>[id,text,settings.tickerColors[id.includes('bl2')?'bl2':'bl1']]);
+  if(!football.length)football.push(['football-empty','⚽ Momentan keine laufenden Bundesliga-Ergebnisse',settings.tickerColors.bl1]);
+  tickerStamp=renderTickerTrack('dashboard-ticker-track',club,tickerStamp);
+  footballTickerStamp=renderTickerTrack('dashboard-football-ticker-track',football,footballTickerStamp);
  }
  let popupScope='',popupInitialized=false,popupTimer=null,popupExitTimer=null,popupSeconds=3;const seenThrows=new Set();
  function positionPopup(){const box=$('dashboard-throw-popup'),stage=document.querySelector('main.dashboard .stage');if(!box||!stage)return;const bounds=stage.getBoundingClientRect();box.style.left=(bounds.left+bounds.width/2)+'px';box.style.width=Math.max(200,Math.min(bounds.width-24,760))+'px';}
