@@ -32,13 +32,13 @@ async function indRun(key,action,fields={}){
     for(const x of result.counters)applyConfirmedLiveCounter(x.personName,x.category,x.key,x.value);dashboardActiveGame=key;
   }
     if(typeof applyCompletedGameResults==='function')applyCompletedGameResults(result.gameResultsHistory);
-  indPending[key]=null;persistState();renderAll();if(action==='finish'||result.state.finished&&action==='throw')showToast('Spiel abgeschlossen und Beträge gebucht','success');
+  indPending[key]=null;persistState();renderAll();if(action==='start'&&key==='hindernis'&&result.state.startPlayer)showToast('🎲 Startspieler ausgelost: '+result.state.startPlayer,'success');if(action==='finish'||result.state.finished&&action==='throw')showToast('Spiel abgeschlossen und Beträge gebucht','success');
  }catch(error){if(ACTIVE_CLUB===club){if(error.code==='individual-game-rejected'){indPending[key]=null;rejected=true;}else pending.error=error.message;showToast(error.message,'error');}}
  finally{indBusy[key]=false;renderIndividualGame(key);}
  if(rejected)await indReload(key);
 }
 async function indAction(key,action,fields={}){if(indPending[key]||indBusy[key])return;if(action==='throw'&&fields.kind==='kranz'&&fields.kranzValue===undefined&&window.KCKranzUI){const value=await KCKranzUI.select(key);if(value===null)return;fields={...fields,kranzValue:value};}return indRun(key,action,fields);}
-function indStart(key){if(window.KCExtraGames?.keys.includes(key))return extraStart(key);const d=indDraft(key);return indRun(key,'start',{gameId:'indgame_'+crypto.randomUUID(),players:d.names,config:KCIndividual.settings(hindernisSettings),...(key==='siebener'?{sevenSettings:KCIndividual.sevenSettings(typeof siebenerSettings==='undefined'?null:siebenerSettings)}:{})});}
+function indStart(key){if(window.KCExtraGames?.keys.includes(key))return extraStart(key);const d=indDraft(key);const startIndex=key==='hindernis'&&d.names.length?(()=>{const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);return bytes[0]%d.names.length;})():0;return indRun(key,'start',{gameId:'indgame_'+crypto.randomUUID(),players:d.names,config:KCIndividual.settings(hindernisSettings),...(key==='hindernis'?{startIndex}:{sevenSettings:KCIndividual.sevenSettings(typeof siebenerSettings==='undefined'?null:siebenerSettings)})});}
 function indRetry(key){const p=indPending[key];if(p)return indRun(key,p.request.action);}
 async function indReload(key){
  if(indBusy[key]||!ACTIVE_CLUB||!navigator.onLine)return;const club=ACTIVE_CLUB;indBusy[key]=true;renderIndividualGame(key);

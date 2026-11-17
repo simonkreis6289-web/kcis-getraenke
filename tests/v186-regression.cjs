@@ -126,3 +126,30 @@ test('hurdle rule popup sends the captured obstacle map and amount to the dashbo
 test('a delayed successful response cannot overwrite a newer confirmed game, ledger or statistics snapshot',async()=>{
  const f=ui(),c=f.c;await c.indStart('hindernis');const actual=f.store.api.transactIndividualGame;let intercept=true;c.window.firestoreApi.transactIndividualGame=async function(club,request){const older=await actual.call(this,club,request);if(intercept){intercept=false;const newer=await actual.call(this,club,req(older.state,'throw',{kind:'pins',pins:1}));c.applyIndividualServerStates({hindernisState:newer.state,individualGameLedger:newer.ledger,individualGameRevision:newer.individualGameRevision,penaltyStatsLog:newer.gameStats});}return older;};await c.indAction('hindernis','throw',{kind:'pins',pins:1});assert.equal(c.hindernisState.scores.A,1);assert.equal(c.hindernisState.scores.B,1);assert.equal(c.hindernisState.revision,3);assert.equal(c.individualGameRevision,3);
 });
+
+
+test('Hindernislauf starts with the selected random draw and undo preserves the drawn person',()=>{
+ const base=g.empty('hindernis');
+ const startReq=req(base,'start',{players:['A','B','C'],config:g.defaults(),startIndex:2});
+ const started=g.command(base,startReq,ctx).state;
+ assert.equal(started.startIndex,2);
+ assert.equal(started.startPlayer,'C');
+ assert.equal(g.current(started),'C');
+ const next=step(started,'throw',{kind:'pins',pins:3}).state;
+ assert.equal(g.current(next),'A');
+ const restored=step(next,'undo').state;
+ assert.equal(restored.startPlayer,'C');
+ assert.equal(restored.startIndex,2);
+ assert.equal(g.current(restored),'C');
+ const html=view.renderIndividualBoard(restored);
+ assert.match(html,/Startspieler ausgelost: <strong>C<\/strong>/);
+ assert.match(html,/ind-hindernis-board/);
+});
+test('Hindernislauf invalid starter index falls back safely and Siebener starts in regular order',()=>{
+ const base=g.empty('hindernis');
+ const invalid=g.command(base,req(base,'start',{players:['A','B','C'],config:g.defaults(),startIndex:99}),ctx).state;
+ assert.equal(g.current(invalid),'A');
+ const sevenBase=g.empty('siebener');
+ const seven=g.command(sevenBase,req(sevenBase,'start',{players:['A','B','C'],config:g.defaults(),startIndex:2}),ctx).state;
+ assert.equal(g.current(seven),'A');
+});
