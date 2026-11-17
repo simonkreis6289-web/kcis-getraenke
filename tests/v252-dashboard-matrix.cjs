@@ -20,7 +20,7 @@ test('Tiberius scoreboard has three distinct equally wide stat rectangles',()=>{
  const doc=parseHTML('<div id="host">'+markup+'</div>').document;
  assert.equal(doc.querySelectorAll('.tv-stats>.tv-stat').length,3);
  assert.equal(doc.querySelectorAll('.tv-stats strong').length,3);
- assert.equal(doc.querySelectorAll('.tv-table').length,0);
+ assert.equal(doc.querySelectorAll('table th').length,5);
 });
 test('lottery retains matrix markup and penalty column while using the shared layout',()=>{
  const part=html.slice(html.indexOf('function renderLottery('),html.indexOf('function renderTiberiusBoard('));
