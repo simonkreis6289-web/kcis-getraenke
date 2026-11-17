@@ -93,3 +93,21 @@ test('ticker visibility and larger font are normalized independently of football
  assert.equal(f.document.querySelector('main.dashboard').style.getPropertyValue('--ticker-row-height'),'44px');
  assert(footer.querySelector('.header-actions'));
 });
+
+
+test('ticker chips use configured colors and keep text as safe text nodes',()=>{
+ const f=setup(),root={dashboardSettings:{tickerColors:{birthdays:'#123456',tour:'#fedcba',kegeln:'#112233',bl1:'#334455'},tickerMessages:[{id:'custom',text:'Hallo <script>alert(1)</script>',color:'#abcdef',enabled:true}]}};
+ f.tv.ticker(root);
+ const track=f.document.getElementById('dashboard-ticker-track');
+ const birthday=f.document.getElementById('kc-next-birthdays'),custom=f.document.getElementById('dashboard-message-custom');
+ assert(birthday.classList.contains('dashboard-ticker-chip'));
+ assert.equal(birthday.style.backgroundColor,'#123456');
+ assert.equal(custom.style.backgroundColor,'#abcdef');
+ assert.match(custom.textContent,/Hallo <script>/);
+ assert.equal(track.querySelector('script'),null);
+ const normalized=f.model.normalize({tickerColors:{birthdays:'url(bad)'},tickerMessages:[{text:'abc',color:'red'}]});
+ assert.equal(normalized.tickerColors.birthdays,'#fce7f3');
+ assert(/^#[0-9a-f]{6}$/.test(normalized.tickerMessages[0].color));
+ assert.equal(f.model.normalize({football:{events:{goal:false,halftime:false}}}).football.events.goal,false);
+ assert.equal(f.model.normalize({football:{events:{red:true,secondYellow:true}}}).football.events.red,false);
+});
