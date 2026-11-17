@@ -72,3 +72,24 @@ test('Lattenzaun dashboard marks the actual next thrower, preserves last-throw-f
  await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:4});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'B');assert.deepEqual(marked(),['C']);
  const state=copy(a.db.root().lattenzaunState);state.active=false;state.finished=true;const {document}=parseHTML(d.c.renderExtraGameBoard(state,{dashboard:true}));assert.equal(document.querySelectorAll('.extra-fence-next-thrower').length,0);
 });
+
+
+test('ticker visibility and larger font are normalized independently of football and panel layout',()=>{
+ const f=setup(),M=f.model;
+ assert.equal(M.normalize(null).tickerEnabled,true);
+ assert.equal(M.normalize(null).tickerFontSize,18);
+ assert.equal(M.normalize({tickerEnabled:false,tickerFontSize:100}).tickerFontSize,30);
+ assert.equal(M.normalize({tickerFontSize:1}).tickerFontSize,12);
+ const root={dashboardSettings:{tickerEnabled:false,tickerFontSize:24}};
+ f.tv.ticker(root);
+ const ticker=f.document.getElementById('dashboard-ticker'),footer=f.document.querySelector('.dashboard-footer');
+ assert(ticker.hidden);
+ assert(footer);
+ assert.equal(f.document.querySelector('main.dashboard').style.getPropertyValue('--ticker-row-height'),'34px');
+ root.dashboardSettings.tickerEnabled=true;
+ f.tv.ticker(root);
+ assert.equal(ticker.hidden,false);
+ assert.equal(ticker.style.getPropertyValue('--ticker-font-size'),'24px');
+ assert.equal(f.document.querySelector('main.dashboard').style.getPropertyValue('--ticker-row-height'),'44px');
+ assert(footer.querySelector('.header-actions'));
+});
