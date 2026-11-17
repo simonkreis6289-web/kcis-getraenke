@@ -83,8 +83,17 @@ test('legacy group migration preserves proofs and amounts, is idempotent and lea
  assert.deepEqual(input,before);assert.equal(out.syncRevision,17);assert.equal(out.sequence,8);assert.equal(out.opId,'sync_original');assert.deepEqual(out.state.pokerState.rankingGroups,[{names:['A','B']},{names:['C']}]);assert.deepEqual(out.state.pokerState.finishPenalties,input.state.pokerState.finishPenalties);assert.equal(out.documents[0].value.amountCents,210);assert.deepEqual(out.documents[0].value.updatedAt,{serverTime:true});assert.deepEqual(copy(c.window.KCSharedCore.normalizeGameData(out)),out);
 });
 
-test('a pre-update Pfälzerspiel playoff continues from legacy groups and keeps its winner and loser ranks',()=>{
- const c={window:{},Date};c.window=c;vm.createContext(c);vm.runInContext(read('js/games/extra-core.js'),c);const G=c.KCExtraGames,ctx={people:roster().persons,catalog:roster().STRAFEN,now:evening,eveningStartedAt:evening};let s=G.empty('pfaelzer'),n=0;
+test('legacy Pfälzerspiel groups are normalized but new games finish without Stechen or loser ranks',()=>{
+ const c={window:{},Date};c.window=c;vm.createContext(c);vm.runInContext(read('js/games/extra-core.js'),c);const G=c.KCExtraGames;
+ const ctx={people:roster().persons,catalog:roster().STRAFEN,now:evening,eveningStartedAt:evening};
+ let s=G.empty('pfaelzer'),n=0;
  const run=(action,fields={})=>s=G.command(s,{gameKey:'pfaelzer',gameId:'indgame_legacy',opId:'ind_legacy_'+(++n),expectedRevision:s.revision,action,...fields},ctx).state;
- run('start',{players:['A','B'],config:{...G.defaults('pfaelzer'),rounds:1,tieThrows:1}});for(const pins of [3,4,3,4])run('throw',{kind:'pins',pins});assert.equal(s.phase,'tiebreak');s=legacyGroups(s);const before=copy(s);run('throw',{kind:'pins',pins:8});assert.deepEqual(before.rankingGroups,[['A','B']]);assert.deepEqual(copy(s.rankingGroups),[{names:['A','B']}]);run('throw',{kind:'pins',pins:7});assert(s.finished);assert.deepEqual(copy(s.winners),['A']);assert.deepEqual(copy(s.loserGroups),[{rank:1,names:['B']}]);
+ run('start',{players:['A','B'],config:{...G.defaults('pfaelzer'),rounds:1,tieThrows:1}});
+ for(const pins of [3,4,3,4])run('throw',{kind:'pins',pins});
+ assert.equal(s.phase,'finished');
+ assert.deepEqual(copy(s.winners),['A','B']);
+ assert.deepEqual(copy(s.loserGroups),[]);
+ assert.equal(s.tieRound,0);
+ s=legacyGroups(s);
+ assert.deepEqual(copy(s.rankingGroups),[{names:['A','B']}]);
 });
