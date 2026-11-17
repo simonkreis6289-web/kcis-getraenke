@@ -59,12 +59,20 @@
   for(const message of M.normalize(root?.dashboardSettings).tickerMessages)if(message.enabled&&message.text)groups.push(['dashboard-message-'+message.id,message.text]);
   const stamp=JSON.stringify(groups),track=$('dashboard-ticker-track');if(!track||stamp===tickerStamp)return;tickerStamp=stamp;track.replaceChildren();const first=document.createElement('div');first.className='dashboard-ticker-copy';for(const [id,text] of groups){const span=document.createElement('span');span.id=id;span.textContent=text;span.hidden=!text;first.append(span);}const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');for(const el of second.querySelectorAll('[id]'))el.removeAttribute('id');track.append(first,second);tickerFit();
  }
- let popupScope='',popupInitialized=false,popupTimer=null,popupSeconds=3;const seenThrows=new Set();
- function hidePopup(){if(popupTimer!==null){clearTimeout(popupTimer);popupTimer=null;}const box=$('dashboard-throw-popup');if(box)box.hidden=true;}
+ let popupScope='',popupInitialized=false,popupTimer=null,popupExitTimer=null,popupSeconds=3;const seenThrows=new Set();
+ function positionPopup(){const box=$('dashboard-throw-popup'),stage=document.querySelector('main.dashboard .stage');if(!box||!stage)return;const bounds=stage.getBoundingClientRect();box.style.left=(bounds.left+bounds.width/2)+'px';box.style.width=Math.max(200,Math.min(bounds.width-24,760))+'px';}
+ function hidePopup(immediate=false){
+  if(popupTimer!==null){clearTimeout(popupTimer);popupTimer=null;}
+  if(popupExitTimer!==null){clearTimeout(popupExitTimer);popupExitTimer=null;}
+  const box=$('dashboard-throw-popup');if(!box)return;
+  if(immediate||box.hidden){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');return;}
+  box.classList.remove('toast-visible');box.classList.add('toast-leaving');
+  popupExitTimer=setTimeout(()=>{box.hidden=true;box.classList.remove('toast-leaving');popupExitTimer=null;},420);
+ }
  function feed(root,club,now=Date.now()){
   const scope=String(club||'')+'|'+String(root?.currentEveningStartedAt||''),seconds=M.normalize(root?.dashboardSettings).popupSeconds;
-  if(scope!==popupScope){popupScope=scope;popupInitialized=false;seenThrows.clear();hidePopup();}
-  if(seconds!==popupSeconds){popupSeconds=seconds;hidePopup();}
+  if(scope!==popupScope){popupScope=scope;popupInitialized=false;seenThrows.clear();hidePopup(true);}
+  if(seconds!==popupSeconds){popupSeconds=seconds;hidePopup(true);}
   if(!root)return;const start=Date.parse(root.currentEveningStartedAt||''),fresh=[];
   for(const event of Array.isArray(root.penaltyStatsLog)?root.penaltyStatsLog:[]){
    if(!event?.id||seenThrows.has(event.id))continue;seenThrows.add(event.id);const at=Date.parse(event.createdAt);
@@ -76,11 +84,11 @@
   popupInitialized=true;if(!popupSeconds||!fresh.length||document.hidden)return;
   const event=fresh.sort((a,b)=>a.at-b.at).at(-1);let box=$('dashboard-throw-popup');
   if(!box){box=document.createElement('div');box.id='dashboard-throw-popup';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.hidden=true;document.body.append(box);}
-  hidePopup();box.className='dashboard-throw-popup is-'+event.kind;
-  const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];box.replaceChildren(title,name);box.hidden=false;
+  hidePopup(true);box.className='dashboard-throw-popup is-'+event.kind;
+  const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];box.replaceChildren(title,name);positionPopup();box.hidden=false;requestAnimationFrame(()=>box.classList.add('toast-visible'));
   popupTimer=setTimeout(hidePopup,popupSeconds*1000);
  }
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hidePopup();else rotate();});
- window.addEventListener('resize',()=>{if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
+ window.addEventListener('resize',()=>{positionPopup();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
  window.KCDashboardLayoutTV=Object.freeze({apply,rotate,highlight,ticker,tickerFit,feed});
 })();
