@@ -31,3 +31,9 @@
 .dashboard-ticker-stream-row input[type=number],.dashboard-ticker-stream-settings>label input{width:65px;min-height:36px;border:1px solid #b4c5dd;border-radius:7px;padding:5px}
 .dashboard-ticker-stream-row [hidden],.dashboard-ticker-stream-settings>label[hidden]{display:none!important}
 @media(max-width:720px){.dashboard-ticker-stream-row{grid-template-columns:1fr 1fr}.dashboard-ticker-stream-row>label:first-child{grid-column:1/-1}}
+
+/* V248: Individuelle Farbfelder fuer weitere Dashboard-Toasts. */
+.dashboard-event-toast-color-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 11px;margin:5px 0;border:1px solid #d5dfed;border-radius:8px;background:#f5f8fc}
+.dashboard-event-toast-color-row .dashboard-popup-option{flex:1;min-width:0}
+.dashboard-event-toast-color-row input[type=color]{flex:none;width:52px;height:38px;padding:3px;border-radius:7px;border:1px solid #aebdd2;background:#fff;cursor:pointer}
+.dashboard-event-toast-color-row input[type=color]:disabled{cursor:not-allowed;opacity:.55}
