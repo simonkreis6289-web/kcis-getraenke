@@ -1,7 +1,7 @@
 /* Bundesliga 1+2: sparsames OpenLigaDB-Polling ohne API-Schluessel. */
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
- const state=new Map(),seen=new Map();let settings=null,timer=null,busy=false,lastGroup=0,initialized=false,toastTimer=null,demoSeen=null,demoMatch=null;
+ const state=new Map(),seen=new Map();let settings=null,timer=null,busy=false,lastGroup=0,initialized=false,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false;
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),9000);try{const response=await fetch(base+path,{signal:ctrl.signal,cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}finally{clearTimeout(timeout);}};
  const enabled=league=>settings?.[league]===true;
@@ -11,7 +11,15 @@
   if(!settings?.goalToastSeconds||document.hidden)return;
   const box=document.getElementById('dashboard-football-toast')||document.createElement('div');box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
   const stage=document.querySelector('main.dashboard .stage'),rect=stage?.getBoundingClientRect();if(rect){box.style.left=(rect.left+rect.width/2)+'px';box.style.width=Math.max(200,Math.min(rect.width-24,760))+'px';}
-  const scoring=next[0]>old[0]?m.team1:m.team2,goal=(m.goals||[]).at(-1),title=document.createElement('strong'),detail=document.createElement('span');title.textContent='⚽ TOR! '+next[0]+':'+next[1];detail.textContent=(scoring?.teamName||'Bundesliga')+(goal?.goalGetterName?' · '+goal.goalGetterName:'');box.replaceChildren(title,detail);
+  const scoring=next[0]>old[0]?m.team1:m.team2,goal=(m.goals||[]).at(-1);
+  const row=document.createElement('div'),crest=document.createElement('div'),caption=document.createElement('div'),title=document.createElement('strong'),detail=document.createElement('span');
+  row.className='dashboard-football-toast-content';crest.className='dashboard-football-crest';caption.className='dashboard-football-toast-copy';
+  const short=String(scoring?.shortName||scoring?.teamName||'⚽').trim(),initials=short.length<=4?short:short.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase();
+  const fallback=document.createElement('span');fallback.className='dashboard-football-crest-fallback';fallback.textContent=initials||'⚽';
+  const candidate=String(scoring?.teamIconUrl||'').trim();
+  if(/^https:\/\/[^\s<>"']+$/i.test(candidate)){const logo=document.createElement('img');logo.src=candidate;logo.alt='Wappen '+String(scoring?.teamName||short);logo.loading='eager';logo.referrerPolicy='no-referrer';logo.onerror=()=>{logo.remove();fallback.hidden=false;};fallback.hidden=true;crest.append(logo);}
+  crest.append(fallback);title.textContent='⚽ TOR! '+next[0]+':'+next[1];detail.textContent=(scoring?.teamName||'Bundesliga')+(goal?.goalGetterName?' · '+goal.goalGetterName:'');
+  caption.append(title,detail);row.append(crest,caption);box.replaceChildren(row);
   clearTimeout(toastTimer);box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));toastTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');setTimeout(()=>{if(!box.classList.contains('toast-visible'))box.hidden=true;},450);},settings.goalToastSeconds*1000);
  }
  function ingest(league,matches){
@@ -30,12 +38,23 @@
    }lastGroup=now;initialized=true;
   }catch(e){console.warn('Bundesliga-Live-Daten momentan nicht erreichbar',e);}finally{busy=false;}
  }
- function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB'},team2:{teamName:'FC Schalke 04',shortName:'S04'},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,goalGetterName:'Testtor'}]:[],matchResults:[]};}
+ function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:demoTeams?.bvb||''},team2:{teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:demoTeams?.schalke||''},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,goalGetterName:'Testtor'}]:[],matchResults:[]};}
+ async function loadDemoCrests(){
+  if(demoTeamsLoading||demoTeams)return;demoTeamsLoading=true;
+  try{
+   const matches=(await Promise.allSettled(leagues.map(l=>fetchJSON('/getavailableteams/'+l+'/'+season())))).filter(r=>r.status==='fulfilled').flatMap(r=>Array.isArray(r.value)?r.value:[]);
+   const lookup=(pattern)=>matches.find(t=>pattern.test(String(t.teamName||'')))?.teamIconUrl||'';
+   demoTeams={bvb:lookup(/dortmund/i),schalke:lookup(/schalke/i)};
+   if(settings?.demo?.active){demoMatch=mockMatch(settings.demo);window.dispatchEvent(new Event('kc-football-updated'));}
+  }catch(error){console.warn('Test-Wappen konnten nicht geladen werden',error);}
+  finally{demoTeamsLoading=false;}
+ }
  function syncDemo(demo){
   if(!demo?.active){demoSeen=null;demoMatch=null;window.dispatchEvent(new Event('kc-football-updated'));return;}
   const match=mockMatch(demo),next=[demo.home,demo.away];
   if(demoSeen?.id===demo.id&&(next[0]>demoSeen.home||next[1]>demoSeen.away))announce(match,[demoSeen.home,demoSeen.away],next);
   demoSeen={id:demo.id,home:next[0],away:next[1]};demoMatch=match;
+  if(!demoTeams)void loadDemoCrests();
   window.dispatchEvent(new Event('kc-football-updated'));
  }
  function configure(value){
