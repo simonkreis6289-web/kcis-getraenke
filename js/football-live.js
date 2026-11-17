@@ -5,7 +5,17 @@
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),9000);try{const response=await fetch(base+path,{signal:ctrl.signal,cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}finally{clearTimeout(timeout);}};
  const enabled=league=>settings?.[league]===true;
- const score=m=>{const results=Array.isArray(m.matchResults)?m.matchResults:[],end=results.find(x=>x.resultTypeID===2)||results.at(-1);const goals=Array.isArray(m.goals)?m.goals:[];if(end&&Number.isFinite(+end.pointsTeam1)&&Number.isFinite(+end.pointsTeam2))return [+end.pointsTeam1,+end.pointsTeam2];if(goals.length)return [goals.filter(x=>!x.isOvertime&&x.scoreTeam1!=null).at(-1)?.scoreTeam1??0,goals.filter(x=>!x.isOvertime&&x.scoreTeam2!=null).at(-1)?.scoreTeam2??0];return [0,0];};
+ const score=m=>{
+  const results=Array.isArray(m.matchResults)?m.matchResults:[],goals=Array.isArray(m.goals)?m.goals:[];
+  const end=results.find(x=>x.resultTypeID===2),half=results.find(x=>x.resultTypeID===1);
+  const lastGoal=goals.at(-1);
+  const pair=x=>x&&Number.isFinite(Number(x.pointsTeam1))&&Number.isFinite(Number(x.pointsTeam2))?[Number(x.pointsTeam1),Number(x.pointsTeam2)]:null;
+  if(m.matchIsFinished)return pair(end)||pair(results.at(-1))||[Number(lastGoal?.scoreTeam1)||0,Number(lastGoal?.scoreTeam2)||0];
+  // OpenLigaDB liefert waehrend der zweiten Halbzeit oft weiterhin ein Halbzeitergebnis.
+  // Der aktuellste Toreintrag hat bei laufenden Spielen Vorrang.
+  if(lastGoal)return [Number(lastGoal.scoreTeam1)||0,Number(lastGoal.scoreTeam2)||0];
+  return pair(end)||pair(half)||[0,0];
+ };
  const label=(m)=>{const s=score(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(m.matchIsFinished?' (Ende)':'');};
  function announce(m,old,next){
   if(!settings?.goalToastSeconds||document.hidden)return;
