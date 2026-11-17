@@ -56,3 +56,18 @@ test('new evening resets baselines so old arrival and rounds never replay',()=>{
  root.currentEveningStartedAt='evening-2';root.persons=[person('Karl',{present:true,rounds:[{id:'old',createdAt:new Date(f.now).toISOString()}]})];
  f.tool.feed(root,'club',f.now);assert.equal(f.box,null);
 });
+
+
+test('toast background picks configured category color and uses legible foreground',()=>{
+ const f=setup(),root={currentEveningStartedAt:'evening-colors',dashboardSettings:{eventToasts:{seconds:4,colors:{arrival:'#152030',departure:'#e9f0fb',round:'#ffee88',loser:'#aa1133',teamLoss:'#224488'}}},persons:[person('Karl',{present:false})],strafenHistory:[]};
+ f.tool.feed(root,'club',f.now);
+ root.persons=[person('Karl',{present:true})];f.tool.feed(root,'club',f.now);
+ assert.equal(f.box.style.background,'#152030');assert.equal(f.box.style.color,'#ffffff');
+ f.advance();f.advance();root.persons=[person('Karl',{present:true,left:true})];f.tool.feed(root,'club',f.now);
+ assert.equal(f.box.style.background,'#e9f0fb');assert.equal(f.box.style.color,'#13243d');
+});
+test('invalid persisted toast colors cannot become CSS properties',()=>{
+ const f=setup(),root={currentEveningStartedAt:'evening-badcolor',dashboardSettings:{eventToasts:{colors:{arrival:'red; display:none'}}},persons:[person('Karl')]};
+ f.tool.feed(root,'club',f.now);root.persons=[person('Karl',{present:true})];f.tool.feed(root,'club',f.now);
+ assert.equal(f.box.style.background,'#40cf88');
+});
