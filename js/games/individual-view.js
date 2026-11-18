@@ -18,36 +18,42 @@ const HURDLE_PLAYER_COLORS=[
  '#0072b2','#d14d00','#008463','#993a9b','#e8a000','#c42042','#31a7d3','#563a92',
  '#729000','#a15a19','#df6fa1','#006c74','#566376','#afa300','#825d7d','#423528'
 ];
-function hurdlePlayerDot(color,label='',current=false){
- return '<span class="hurdle-player-dot'+(current?' hurdle-dot-current':'')+'" style="--player-color:'+color+'"'+(label?' role="img" aria-label="'+indEscape(label)+'" title="'+indEscape(label)+'"':' aria-hidden="true"')+'></span>';
+function hurdlePlayerDot(color,current=false){
+ return '<span class="hurdle-player-dot'+(current?' hurdle-dot-current':'')+'" style="--player-color:'+color+'" aria-hidden="true"></span>';
 }
 function renderHurdleCircuit(s,colors,current){
  const target=s.config.target;
  const rules=s.config.rules.filter(rule=>rule.enabled&&rule.from>0&&rule.from<target).sort((a,b)=>a.from-b.from);
- const stops=[{score:0,label:'Start',points:'0'},...rules.map((rule,i)=>({
-  score:rule.from,label:'Hürde '+(i+1),points:rule.from===rule.to?String(rule.from):rule.from+'–'+rule.to
+ const startRange=s.config.rules.find(rule=>rule.enabled&&rule.from===0&&rule.to>0);
+ const stops=[{score:0,label:'Start',points:startRange?'0–'+startRange.to:'0',end:startRange?.to},...rules.map((rule,i)=>({
+  score:rule.from,end:rule.to,label:'Hürde '+(i+1),points:rule.from===rule.to?String(rule.from):rule.from+'–'+rule.to
  })),{score:target,label:'Ziel',points:String(target)}];
- const marks=new Map(stops.map((stop,index)=>[stop.score,{...stop,progress:index/(stops.length-1),dots:[]}]));
+ const marks=new Map(stops.map((stop,index)=>[stop.score,{...stop,progress:index/(stops.length-1),players:[]}]));
+ const progressFor=score=>{
+  const stop=marks.get(score);
+  if(stop)return stop.progress;
+  const upper=stops.findIndex(stop=>stop.score>score);
+  const low=stops[upper-1].score,high=stops[upper].score;
+  return (upper-1+(score-low)/(high-low))/(stops.length-1);
+ };
+ const ranges=stops.filter(stop=>stop.end>stop.score).map(stop=>'<path data-range-start="'+progressFor(stop.score)+'" data-range-end="'+progressFor(stop.end)+'"></path>').join('');
  const thrown=new Set((s.history||[]).filter(entry=>entry.action==='throw').map(entry=>entry.name));
  for(const player of s.players){
   if(!thrown.has(player))continue;
   const score=Number(s.scores[player])||0;
   const position=Math.max(0,Math.min(target,score));
-  if(!marks.has(position)){
-   const upper=stops.findIndex(stop=>stop.score>position);
-   const low=stops[upper-1].score,high=stops[upper].score;
-   const progress=(upper-1+(position-low)/(high-low))/(stops.length-1);
-   marks.set(position,{score:position,progress,dots:[]});
-  }
-  marks.get(position).dots.push(hurdlePlayerDot(colors.get(player),player+' · '+score+' Pkt.',player===current));
+  if(!marks.has(position))marks.set(position,{score:position,progress:progressFor(position),players:[]});
+  const title=indEscape(player+' · '+score+' Pkt.');
+  marks.get(position).players.push('<span class="hurdle-circuit-player" title="'+title+'">'+hurdlePlayerDot(colors.get(player),player===current)+
+   '<span>'+indEscape(player)+(score!==position?' <small>('+score+' Pkt.)</small>':'')+'</span></span>');
  }
  const markers=[...marks.values()].sort((a,b)=>a.progress-b.progress).map(mark=>{
   const label=mark.label?'<span class="hurdle-circuit-stop"><strong>'+mark.label+'</strong><small>'+mark.points+' Pkt.</small></span>':'';
-  const players=mark.dots.length?'<span class="hurdle-circuit-pointer" aria-hidden="true"></span><div class="hurdle-circuit-players">'+
-   (mark.label?'':'<strong>'+mark.score+'</strong>')+'<span class="hurdle-circuit-dots">'+mark.dots.join('')+'</span></div>':'';
+  const players=mark.players.length?'<span class="hurdle-circuit-pointer" aria-hidden="true"></span><div class="hurdle-circuit-players">'+
+   (mark.label?'':'<strong>'+mark.score+'</strong>')+'<div class="hurdle-circuit-names">'+mark.players.join('')+'</div></div>':'';
   return '<div class="hurdle-circuit-mark'+(mark.label?' hurdle-circuit-milestone':'')+'" data-score="'+mark.score+'" data-progress="'+mark.progress+'">'+label+players+'</div>';
  }).join('');
- return '<section class="hurdle-circuit" aria-label="Spielerpositionen auf der Hindernisstrecke"><div class="hurdle-circuit-rail" aria-hidden="true"></div>'+markers+'</section>';
+ return '<section class="hurdle-circuit" aria-label="Spielerpositionen auf der Hindernisstrecke"><div class="hurdle-circuit-rail" aria-hidden="true"></div>'+(ranges?'<svg class="hurdle-circuit-ranges" aria-hidden="true">'+ranges+'</svg>':'')+markers+'</section>';
 }
 function hurdleCircuitPoint(progress,width,height){
  const distance=progress*(width+2*height);
@@ -55,12 +61,41 @@ function hurdleCircuitPoint(progress,width,height){
  if(distance<=height+width)return {side:'top',x:distance-height,y:0};
  return {side:'right',x:width,y:distance-height-width};
 }
+const HURDLE_LABEL_GAP=4;
+function positionHurdleLabels(groups,start,end,horizontal,drop=0){
+ let edge=start;
+ for(const group of groups){
+  const size=horizontal?group.width:group.height;
+  group.center=Math.max(group.position,edge+size/2);
+  edge=group.center+size/2+HURDLE_LABEL_GAP;
+ }
+ edge=end;
+ for(let index=groups.length-1;index>=0;index--){
+  const {mark,players,position,width,height,center}=groups[index];
+  const size=horizontal?width:height,fit=Math.min(center,edge-size/2),shift=fit-position;
+  edge=fit-size/2-HURDLE_LABEL_GAP;
+  players.style.setProperty('--shift',shift+'px');
+  players.style.setProperty('--drop',drop+'px');
+  const pointer=mark.querySelector('.hurdle-circuit-pointer');
+  const dx=horizontal?shift:mark.dataset.side==='left'?8:-8,dy=horizontal?8+drop:shift;
+  pointer.style.width=Math.hypot(dx,dy)+'px';
+  pointer.style.transform='rotate('+Math.atan2(dy,dx)+'rad)';
+ }
+}
 function layoutHurdleCircuit(track){
  const rail=track?.querySelector('.hurdle-circuit-rail');
  if(!rail||!rail.offsetWidth||!rail.offsetHeight)return;
  // The middle of the two-pixel rail is the exact position used by every tick.
  const left=rail.offsetLeft+1,top=rail.offsetTop+1,width=rail.offsetWidth-2,height=rail.offsetHeight-1;
- const entries={left:[],top:[],right:[]};
+ for(const range of track.querySelectorAll('[data-range-start]')){
+  const start=Number(range.dataset.rangeStart),end=Number(range.dataset.rangeEnd),length=width+2*height;
+  const corners=[height/length,(height+width)/length].filter(step=>step>start&&step<end);
+  const path=[start,...corners,end].map(step=>{const {x,y}=hurdleCircuitPoint(step,width,height);return (left+x)+' '+(top+y);});
+  range.setAttribute('d','M'+path.join(' L'));
+ }
+ const field=track.parentElement,padding=parseFloat(window.getComputedStyle?.(field)?.paddingLeft);
+ const sideWidth=Number.isFinite(padding)?Math.max(24,padding-left-15):110;
+ const topWidth=Math.max(1,width-24),entries={left:[],top:[],right:[]};
  for(const mark of track.querySelectorAll('.hurdle-circuit-mark')){
   const point=hurdleCircuitPoint(Number(mark.dataset.progress),width,height);
   mark.dataset.side=point.side;
@@ -69,31 +104,36 @@ function layoutHurdleCircuit(track){
   const players=mark.querySelector('.hurdle-circuit-players');
   if(players){
    const horizontal=point.side==='top';
-   entries[point.side].push({mark,players,position:horizontal?point.x:point.y,size:horizontal?players.offsetWidth:players.offsetHeight});
+   players.style.maxWidth=(horizontal?Math.min(320,topWidth):sideWidth)+'px';
+   entries[point.side].push({mark,players,position:horizontal?point.x:point.y,width:players.offsetWidth,height:players.offsetHeight});
   }
  }
- // Keep adjacent score groups readable while their ticks stay at the actual score.
- for(const [side,groups] of Object.entries(entries)){
-  const horizontal=side==='top',extent=horizontal?width:height;
-  const start=horizontal?12:48,end=extent-(horizontal?12:0);
-  groups.sort((a,b)=>a.position-b.position);
-  const gap=3;
-  let edge=start;
-  for(const group of groups){
-   group.center=Math.max(group.position,edge+group.size/2);
-   edge=group.center+group.size/2+gap;
+ // Pack crowded labels into additional rows while keeping their ticks at the actual score.
+ let lane=[],laneWidth=0,laneHeight=0,drop=0;
+ for(const group of entries.top){
+  if(lane.length&&laneWidth+HURDLE_LABEL_GAP+group.width>topWidth){
+   positionHurdleLabels(lane,12,width-12,true,drop);
+   drop+=laneHeight+HURDLE_LABEL_GAP;
+   lane=[];laneWidth=0;laneHeight=0;
   }
-  edge=end;
-  for(const {mark,players,position,size,center} of groups.reverse()){
-   const fit=Math.min(center,edge-size/2),shift=fit-position;
-   edge=fit-size/2-gap;
-   players.style.setProperty('--shift',shift+'px');
-   const pointer=mark.querySelector('.hurdle-circuit-pointer');
-   const dx=horizontal?shift:side==='left'?8:-8,dy=horizontal?8:shift;
-   pointer.style.width=Math.hypot(dx,dy)+'px';
-   pointer.style.transform='rotate('+Math.atan2(dy,dx)+'rad)';
-  }
+  laneWidth+=(lane.length?HURDLE_LABEL_GAP:0)+group.width;
+  laneHeight=Math.max(laneHeight,group.height);
+  lane.push(group);
  }
+ positionHurdleLabels(lane,12,width-12,true,drop);
+ const topDepth=drop+laneHeight;
+ const sideStart=Math.max(24,topDepth+16);
+ let minHeight=0;
+ for(const side of ['left','right']){
+  const groups=entries[side].sort((a,b)=>a.position-b.position);
+  if(!groups.length)continue;
+  const stackHeight=groups.reduce((sum,group)=>sum+group.height+HURDLE_LABEL_GAP,0);
+  const end=Math.max(height,sideStart+stackHeight);
+  positionHurdleLabels(groups,sideStart,end,false);
+  minHeight=Math.max(minHeight,top+sideStart+stackHeight+12);
+ }
+ field.style.setProperty('--hurdle-top-space',Math.max(70,top+topDepth+19)+'px');
+ field.style.setProperty('--hurdle-track-min-height',minHeight+'px');
 }
 function hurdleThrowPreview(s,name){
  const targets=new Map(),hits=new Map();
@@ -113,7 +153,9 @@ function hurdleThrowPreview(s,name){
 }
 function renderHurdleTables(s,rowPlayers,{dashboard,preview,colors,current}){
  const status=n=>s.skip[n]?'⏸ Einmal aussetzen':s.subtract[n]?'− Nächster Wurf':s.double[n]?'×2 Zusatzwurf':s.finished&&s.winners.includes(n)?'🏆 Sieger':'';
- const scores='<section class="hurdle-scores"><h3>Punktestand · Ziel '+s.config.target+'</h3><div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Name</th><th>Punkte</th><th title="Gebuchte Hinderniszahlungen und Endabrechnung">Strafen</th><th>Status</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr'+(n===current?' class="hurdle-current-row" aria-current="true"':'')+'><th>'+(dashboard?hurdlePlayerDot(colors.get(n)):'')+indEscape(n)+'</th><td><strong>'+s.scores[n]+'</strong></td><td class="ind-penalty"><strong>'+indEuro(indBookedCents(s,n))+'</strong></td><td>'+status(n)+'</td></tr>').join('')+'</tbody></table></div>'+(!dashboard?'<p class="ind-help">'+(s.finished&&s.settlementVersion!==2?'Gespeicherte Endabrechnung nach bisheriger Wertung.':'Abrechnung: '+indEuro(s.config.baseCents)+' × fehlende Punkte / '+s.config.target+'; auf volle Cent aufgerundet. Sieger zahlen keinen Endbetrag.')+'</p>':'')+'</section>';
+ const penalty=n=>'<strong>'+indEuro(indBookedCents(s,n))+'</strong>'+
+  (s.active&&!s.finished?'<small class="hurdle-penalty-preview" title="Zusätzliche Strafe nach aktuellem Punktestand">+'+indEuro(KCIndividual.hurdleEndCents(s.config,s.scores[n]))+'</small>':'');
+ const scores='<section class="hurdle-scores"><h3>Punktestand · Ziel '+s.config.target+'</h3><div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Name</th><th>Punkte</th><th title="Gebuchte Hinderniszahlungen und Endabrechnung">Strafen</th><th>Status</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr'+(n===current?' class="hurdle-current-row" aria-current="true"':'')+'><th>'+(dashboard?hurdlePlayerDot(colors.get(n)):'')+indEscape(n)+'</th><td><strong>'+s.scores[n]+'</strong></td><td class="ind-penalty">'+penalty(n)+'</td><td>'+status(n)+'</td></tr>').join('')+'</tbody></table></div>'+(!dashboard?'<p class="ind-help">'+(s.finished&&s.settlementVersion!==2?'Gespeicherte Endabrechnung nach bisheriger Wertung.':'Abrechnung: '+indEuro(s.config.baseCents)+' × fehlende Punkte / '+s.config.target+'; auf volle Cent aufgerundet. Sieger zahlen keinen Endbetrag.')+'</p>':'')+'</section>';
  const obstacles='<section class="hurdle-rules"><h3>Hindernisse</h3><div class="ind-table-scroll ind-obstacles"><table class="ind-table"><thead><tr><th>Punkte</th><th>Aktion</th></tr></thead><tbody>'+s.config.rules.map(r=>{
   const throws=preview?.hits.get(r.id);
   const classes=!r.enabled?'ind-rule-off':throws?'ind-rule-reachable':s.lastRules.includes(r.id)?'ind-rule-hit':'';
@@ -139,5 +181,5 @@ function renderIndividualBoard(s,options={}){
    renderHurdleTables(s,rowPlayers,{dashboard,preview,colors,current})+'</div>';
  }
  const events=seven||dashboard?'':(s.events||[]).slice(-3).reverse().map(e=>'<div class="ind-event">'+indEscape(e.name)+' · '+(e.point??'')+' · '+indEscape(e.text)+'</div>').join('');
- return '<section class="ind-board'+(!seven?' ind-hindernis-board':'')+(dashboard?' ind-hurdle-tv':'')+'"><h2>'+head+'</h2>'+(!seven&&s.startPlayer?'<div class="ind-drawn-starter">🎲 Startspieler ausgelost: <strong>'+indEscape(s.startPlayer)+'</strong></div>':'')+turn+(seven?'<p class="ind-help">'+indEuro(KCIndividual.sevenSettings(s.config?.seven).pinCents)+' je Pin Abstand · '+indEscape(KCIndividual.sevenKranzLabel(s.config?.seven))+'</p>':'')+(options.controls||'')+(seven||dashboard?'':renderHurdleTrack(s,name))+body+events+'</section>';
+ return '<section class="ind-board'+(!seven?' ind-hindernis-board':'')+(dashboard?' ind-hurdle-tv':'')+'"><h2>'+head+'</h2>'+turn+(seven?'<p class="ind-help">'+indEuro(KCIndividual.sevenSettings(s.config?.seven).pinCents)+' je Pin Abstand · '+indEscape(KCIndividual.sevenKranzLabel(s.config?.seven))+'</p>':'')+(options.controls||'')+(seven||dashboard?'':renderHurdleTrack(s,name))+body+events+'</section>';
 }

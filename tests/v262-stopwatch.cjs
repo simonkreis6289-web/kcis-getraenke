@@ -30,9 +30,10 @@ test('actual tablet and TV share running, paused, reloaded and finalized game ti
      assert.equal(clock.querySelector('[data-stopwatch-label]').textContent,label);
    }
  };
+ assert.equal(a.document.querySelector('[data-game-pause=hindernis]').nextElementSibling.dataset.gameNext,'hindernis');
  time+=11500;
  check(a,'00:11','Spielzeit');
- await appClock(a).querySelector('button').onclick();
+ await a.document.querySelector('[data-game-pause=hindernis]').onclick();
  assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(a.db.root().hindernisState.stopwatch.elapsedMs,11500);
  time+=90000;
@@ -43,7 +44,7 @@ test('actual tablet and TV share running, paused, reloaded and finalized game ti
  setClock(reopened);
  reopened.c.showSideTab('spiele','hindernis');
  check(reopened,'00:11','Pausiert');
- await appClock(reopened).querySelector('button').onclick();
+ await reopened.document.querySelector('[data-game-pause=hindernis]').onclick();
  time+=9500;
  const roll=pins=>reopened.c.indAction('hindernis','throw',{kind:'pins',pins});
  for(const pins of [9,9,9,9,9,9,9,9,2])await roll(pins);
@@ -55,7 +56,7 @@ test('actual tablet and TV share running, paused, reloaded and finalized game ti
  assert.equal(pdf.history.find(row=>row.gameKey==='hindernis').durationMs,21000);
  time+=30000;
  check(reopened,'00:21','Spieldauer');
- assert(appClock(reopened).querySelector('button').hidden);
+ assert(reopened.document.querySelector('[data-game-pause=hindernis]').disabled);
 });
 
 test('legacy Tannenbaum records each stopwatch round and skips countdown rounds',{timeout:60000},async()=>{
@@ -66,7 +67,7 @@ test('legacy Tannenbaum records each stopwatch round and skips countdown rounds'
  await a.c.startTannenbaumSetup();
  assert.equal(a.run('tannenbaumState.stopwatch.runningSince'),time);
  time+=3601000;
- await a.document.querySelector('#tab-tannenbaum .game-stopwatch button').onclick();
+ await a.document.querySelector('[data-game-pause=tannenbaum]').onclick();
  time+=60000;
  await a.c.finishTannenbaumGame();
  assert(await a.c.KCSharedSync.waitForUpload());
@@ -102,7 +103,7 @@ test('table games, six-day races and lotterie start separate clocks; abort clear
 
  a.c.showSideTab('spiele','lotterie');
  time+=5000;
- await a.document.querySelector('#tab-lotterie .game-stopwatch button').onclick();
+ await a.document.querySelector('[data-game-pause=lotterie]').onclick();
  assert.equal(a.c.gameSetupState('lotterie').stopwatch.elapsedMs,5000);
  await a.c.cancelCurrentGame('lotterie');
  assert(await a.c.KCSharedSync.waitForUpload());

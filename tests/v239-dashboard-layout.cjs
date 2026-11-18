@@ -7,6 +7,7 @@ function selection(enabled){const s=M.defaults();for(const key of M.keys)s.panel
 test('all sixteen selections preserve default placement and allow shared positions',()=>{
  assert.deepEqual(copy(M.resolve(null).left),['drinks','fines']);assert.deepEqual(copy(M.resolve(null).right),['gutters','seating']);
  for(let mask=0;mask<16;mask++){const enabled=M.keys.filter((_,i)=>mask&(1<<i)),s=selection(enabled),before=copy(s),r=M.resolve(s);assert.equal(r.count,enabled.length);assert.equal(r.left.length+r.right.length,enabled.length);assert.equal(new Set([...r.left,...r.right]).size,enabled.length);if(enabled.length===2){assert.equal(r.left.length,2);assert.equal(r.right.length,0);}if(enabled.length===3)assert.deepEqual([r.left.length,r.right.length].sort(),[1,2]);assert.deepEqual(copy(s),before);}
+ assert.deepEqual(copy(M.normalize({tableWidth:{left:8,right:26}}).tableWidth),{left:10,right:26});
  const one=selection(['seating']);one.panels.seating.position='right-bottom';assert.deepEqual(copy(M.resolve(one).right),['seating']);assert.equal(M.resolve(one).left.length,0);
  const swapped=M.move(M.defaults(),'seating','left-top');assert.equal(swapped.panels.drinks.position,'left-top');assert.equal(swapped.panels.seating.position,'left-top');
  const broken={panels:{drinks:{enabled:true,position:'nope'},fines:{enabled:true,position:'left-top'}}};const fixed=M.resolve(broken);assert.deepEqual(copy(fixed.groups['left-top']),['drinks','fines']);
@@ -15,7 +16,7 @@ test('TV moves the original panels and expands the stage and single side without
  const f=ui();vm.runInContext(read('js/dashboard-layout-tv.js'),f);const T=f.KCDashboardLayoutTV,panels=Object.fromEntries(M.keys.map(k=>[k,f.document.getElementById('dashboard-panel-'+k)]));panels.drinks.dataset.marker='retained';T.apply(null);assert.deepEqual([...f.document.querySelector('.side.left').querySelectorAll('.panel')].map(x=>x.id),['dashboard-panel-drinks','dashboard-panel-fines']);
  let s=selection(['seating']);s.panels.seating.position='right-top';T.apply(s);assert(f.document.querySelector('.side.left').hidden);assert(!f.document.querySelector('.side.right').hidden);assert.equal(f.document.querySelector('.stage').style.gridColumn,'1');assert(f.document.querySelector('.side.right').style.gridTemplateRows.startsWith('repeat(1,'));
  s=selection(['gutters','fines']);s=M.move(s,'fines','left-bottom');s=M.move(s,'gutters','left-top');T.apply(s);assert(f.document.querySelector('.side.right').hidden);assert.deepEqual([...f.document.querySelector('.side.left').querySelectorAll('.panel')].map(x=>x.id),['dashboard-panel-gutters','dashboard-panel-fines']);
- T.apply(selection(['drinks','gutters','seating']));assert(f.document.querySelector('.side.left').style.gridTemplateRows.startsWith('repeat(1,'));assert(f.document.querySelector('.side.right').style.gridTemplateRows.startsWith('repeat(2,'));T.apply(selection([]));assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,1fr)');T.apply(null);for(const key of M.keys)assert.equal(f.document.getElementById('dashboard-panel-'+key),panels[key]);assert.equal(panels.drinks.dataset.marker,'retained');
+ T.apply(selection(['drinks','gutters','seating']));assert(f.document.querySelector('.side.left').style.gridTemplateRows.startsWith('repeat(1,'));assert(f.document.querySelector('.side.right').style.gridTemplateRows.startsWith('repeat(2,'));T.apply(selection([]));assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,1fr)');T.apply({tableWidth:{left:14,right:23}});assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,14%) minmax(0,1fr) minmax(0,23%)');T.apply(null);for(const key of M.keys)assert.equal(f.document.getElementById('dashboard-panel-'+key),panels[key]);assert.equal(panels.drinks.dataset.marker,'retained');
 });
 test('real app saves panel choices and ordering, reloads them and keeps them on a new evening',{timeout:60000},async()=>{
  const a=await app();const box=a.document.getElementById('dashboard-layout-settings');assert(box);assert.equal(box.querySelectorAll('[id^="dashboard-show-"]').length,4);for(const check of box.querySelectorAll('[id^="dashboard-show-"]'))assert(check.checked);
@@ -96,7 +97,7 @@ test('finished game board renders persistent booked loser ranks and the obstacle
  assert.match(runners[2].textContent,/Im Ziel 40/);
 });
 
-test('TV hurdles show only stops and occupied positions, matching the colored score rows',()=>{
+test('TV hurdles show player names at occupied positions, matching the colored score rows',()=>{
  const f=ui();
  for(const file of ['kranz-policy','games/individual-core','games/individual-view'])vm.runInContext(read('js/'+file+'.js'),f);
  const s=f.KCIndividual.empty('hindernis');
@@ -118,19 +119,20 @@ test('TV hurdles show only stops and occupied positions, matching the colored sc
  assert.match(marks[5].textContent,/Ziel24 Pkt/);
  assert.equal(marks[3].querySelectorAll('.hurdle-player-dot').length,2);
  assert.equal(marks[3].querySelector('.hurdle-circuit-players strong'),null);
- const trackDots=[...root.querySelectorAll('.hurdle-circuit .hurdle-player-dot')];
- assert.equal(trackDots.length,4);
- assert(!trackDots.some(dot=>dot.getAttribute('aria-label').startsWith('Nico')));
+ const trackPlayers=[...root.querySelectorAll('.hurdle-circuit-player')];
+ assert.deepEqual(trackPlayers.map(player=>player.textContent),['Peter','Daniel','Cora','Mara']);
+ assert.deepEqual([...marks[3].querySelectorAll('.hurdle-circuit-player')].map(player=>player.textContent),['Cora','Mara']);
+ assert.equal(root.querySelector('.hurdle-dot-current').closest('.hurdle-circuit-player').textContent,'Daniel');
  const rows=[...root.querySelectorAll('.hurdle-scores tbody tr')];
  assert.equal(rows[0].getAttribute('aria-current'),'true');
  assert.equal(rows[0].querySelector('th').textContent,'Daniel');
  const rowColors=new Map(rows.map(row=>[row.querySelector('th').textContent,row.querySelector('.hurdle-player-dot').getAttribute('style')]));
  assert.equal(new Set(rowColors.values()).size,s.players.length);
- for(const dot of trackDots)assert.equal(dot.getAttribute('style'),rowColors.get(dot.getAttribute('aria-label').split(' · ')[0]));
+ for(const player of trackPlayers)assert.equal(player.querySelector('.hurdle-player-dot').getAttribute('style'),rowColors.get(player.textContent));
  const track=root.querySelector('.hurdle-circuit'),rail=track.querySelector('.hurdle-circuit-rail');
- Object.defineProperties(rail,{offsetWidth:{value:702},offsetHeight:{value:271},offsetLeft:{value:62},offsetTop:{value:26}});
+ Object.defineProperties(rail,{offsetWidth:{value:702,configurable:true},offsetHeight:{value:271,configurable:true},offsetLeft:{value:62},offsetTop:{value:26}});
  for(const players of track.querySelectorAll('.hurdle-circuit-players')){
-  Object.defineProperties(players,{offsetWidth:{value:60},offsetHeight:{value:18}});
+  Object.defineProperties(players,{offsetWidth:{value:60,configurable:true},offsetHeight:{value:18}});
  }
  f.layoutHurdleCircuit(track);
  assert.deepEqual(marks.map(m=>m.dataset.side),['left','left','top','top','top','right']);
@@ -139,8 +141,21 @@ test('TV hurdles show only stops and occupied positions, matching the colored sc
  assert.deepEqual([marks.at(-1).style.left,marks.at(-1).style.top],['763px','297px']);
  assert.match(root.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt.*15 Pkt.*3 Holz.*17 Pkt.*5 Holz.*Ziel.*Kranz/);
  assert.deepEqual([...root.querySelectorAll('.ind-rule-reachable th')].map(x=>x.textContent),['15','17–18']);
- assert.match(root.querySelectorAll('.hurdle-scores .ind-penalty')[1].textContent,/1,00/);
+ assert.match(root.querySelectorAll('.hurdle-scores .ind-penalty')[1].querySelector('strong').textContent,/1,00/);
+ assert.match(root.querySelector('.hurdle-penalty-preview').textContent,/^\+0,50/);
+ assert.match(track.querySelector('[data-range-start]').getAttribute('d'),/^M.+ L.+/);
  assert.equal(root.querySelectorAll('.ind-event').length,0);
+ // At narrow widths, labels over the top keep their anchors and use separate lanes.
+ Object.defineProperties(rail,{
+  offsetWidth:{value:382,configurable:true},offsetHeight:{value:101,configurable:true}
+ });
+ const firstTop=marks[1].querySelector('.hurdle-circuit-players'),secondTop=marks[3].querySelector('.hurdle-circuit-players');
+ for(const players of [firstTop,secondTop])Object.defineProperty(players,'offsetWidth',{value:200,configurable:true});
+ f.layoutHurdleCircuit(track);
+ assert.deepEqual([marks[1].dataset.side,marks[3].dataset.side],['top','top']);
+ assert.deepEqual([firstTop.style.getPropertyValue('--drop'),secondTop.style.getPropertyValue('--drop')],['0px','22px']);
+ assert.equal(track.parentElement.style.getPropertyValue('--hurdle-top-space'),'86px');
+ assert.equal(firstTop.querySelector('.hurdle-circuit-player').textContent,'Daniel');
  s.double.Daniel=true;
  const twice=f.hurdleThrowPreview(s,'Daniel');
  assert.equal(twice.hits.has('pause'),false);

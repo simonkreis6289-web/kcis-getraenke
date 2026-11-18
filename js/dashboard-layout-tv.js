@@ -28,7 +28,7 @@
   if(Number.isFinite(delay))rotationTimer=setTimeout(()=>rotate(),Math.max(25,delay));
  }
  function apply(settings){
-  const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();
+  const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds,tableWidth:r.settings.tableWidth});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();
   let parking=$('dashboard-panel-parking');if(!parking){parking=document.createElement('div');parking.id='dashboard-panel-parking';parking.hidden=true;main.append(parking);}
   const panels=new Map(M.keys.map(key=>[key,$('dashboard-panel-'+key)]));
   for(const key of M.keys){const panel=panels.get(key);if(panel){panel.hidden=true;parking.append(panel);}}
@@ -39,7 +39,7 @@
     if(r.groups[slot].length>1){const dots=document.createElement('div');dots.className='dashboard-rotation-dots';dots.setAttribute('aria-label','Wechselnde Anzeigen');for(const key of r.groups[slot]){const dot=document.createElement('span');dot.dataset.panelKey=key;dot.title=M.labels[key]+' · '+r.settings.panels[key].seconds+' Sekunden';dots.append(dot);}frame.append(dots);}box.append(frame);
    }
   }
-  const width='minmax(190px,17%)',columns=[...(r.left.length?[width]:[]),'minmax(0,1fr)',...(r.right.length?[width]:[])];main.style.gridTemplateColumns=columns.join(' ');main.dataset.panelCount=String(r.count);left.style.gridColumn='1';document.querySelector('.stage').style.gridColumn=String(r.left.length?2:1);right.style.gridColumn=String(columns.length);rotate();
+  const width=side=>'minmax(0,'+r.settings.tableWidth[side]+'%)',columns=[...(r.left.length?[width('left')]:[]),'minmax(0,1fr)',...(r.right.length?[width('right')]:[])];main.style.gridTemplateColumns=columns.join(' ');main.dataset.panelCount=String(r.count);left.style.gridColumn='1';document.querySelector('.stage').style.gridColumn=String(r.left.length?2:1);right.style.gridColumn=String(columns.length);rotate();
   requestAnimationFrame(()=>{if(typeof window.dispatchEvent==='function'&&typeof Event==='function')window.dispatchEvent(new Event('resize'));});return r;
  }
  function highlight(root,key,state){

@@ -2,7 +2,18 @@
 (() => {
  const clone=x=>JSON.parse(JSON.stringify(x)),keys=['siebener','hindernis'],columns=[7,14,21,28,35,42,49],norm=n=>String(n).trim().toLocaleLowerCase('de-DE');
  const specs=[['start',0,0,'start',0],['pause',5,5,'skip',1],['pay11',11,11,'pay',20],['minus',17,17,'subtract',0],['reset19',19,19,'reset',0],['leader',28,28,'leader',0],['pay35',35,35,'pay',20],['back43',43,43,'move',20],['forward47',47,47,'move',66],['double',50,50,'double',0],['pay54',54,54,'pay',20],['pay60',60,65,'pay',20],['back69',69,69,'move',59],['others',70,70,'others',8],['forward77',77,77,'move',84],['back83',83,83,'move',66],['choice',89,89,'choice',100]];
- function ruleLabel(r){return r.kind==='start'?'Fehlstart – zurück auf 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?(r.value<100?r.value+' Cent':(r.value/100).toFixed(2).replace('.',',')+' €')+' in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
+ const playerRule={id:'setPlayer',kind:'setPlayer',value:0};
+ const ruleKinds=Object.fromEntries([...specs.map(([,,,kind,value])=>[kind,value]),['setPlayer',0]]);
+ const ruleIds=new Set([...specs.map(([id])=>id),playerRule.id]);
+ const maxRules=ruleIds.size;
+ function validRuleValue({kind,value},target){
+  if(!Number.isInteger(value)||value<0)return false;
+  if(kind==='move'||kind==='setPlayer')return value<target;
+  if(kind==='pay')return value<=10000;
+  return value===ruleKinds[kind];
+ }
+ function eventValue(kind,target){return ['move','setPlayer'].includes(kind)?Math.min(target-1,ruleKinds[kind]):ruleKinds[kind];}
+ function ruleLabel(r){return r.kind==='start'?'Fehlstart – zurück auf 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?(r.value<100?r.value+' Cent':(r.value/100).toFixed(2).replace('.',',')+' €')+' in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='setPlayer'?'Beliebigen Spieler auf '+r.value+' Punkte setzen':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
  function sevenDefaults(){return {pinCents:10,kranzMode:'fixed',kranzValue:8,addLimit:1};}
  function validSevenSettings(v){return !!v&&Number.isSafeInteger(v.pinCents)&&v.pinCents>=0&&v.pinCents<=10000&&['fixed','choose'].includes(v.kranzMode)&&Number.isInteger(v.kranzValue)&&v.kranzValue>=1&&v.kranzValue<=12&&(v.addLimit===undefined||Number.isInteger(v.addLimit)&&v.addLimit>=1&&v.addLimit<=3);}
  function sevenSettings(v){return validSevenSettings(v)?{...clone(v),addLimit:v.addLimit??1}:sevenDefaults();}
@@ -12,9 +23,14 @@
  function sevenKranzLabel(v){const c=sevenSettings(v);return c.kranzMode==='choose'?'Kranz (Wert wählen)':'Kranz ('+c.kranzValue+')';}
  function defaults(){return {target:90,baseCents:100,rules:specs.map(([id,from,to,kind,value])=>({id,from,to,kind,value,enabled:true}))};}
  function validSettings(v){
-  if(!v||!Number.isInteger(v.target)||v.target<20||v.target>500||!Number.isInteger(v.baseCents)||v.baseCents<0||v.baseCents>10000||!Array.isArray(v.rules)||v.rules.length>17)return false;
+  if(!v||!Number.isInteger(v.target)||v.target<20||v.target>500||!Number.isInteger(v.baseCents)||v.baseCents<0||v.baseCents>10000||!Array.isArray(v.rules)||v.rules.length>maxRules)return false;
   const seen=new Set();
-  return v.rules.every(r=>{const spec=specs.find(x=>x[0]===r.id);if(!spec||seen.has(r.id)||r.kind!==spec[3]||typeof r.enabled!=='boolean'||!Number.isInteger(r.from)||!Number.isInteger(r.to)||r.from<0||r.to<r.from||r.to>=v.target||!Number.isInteger(r.value)||r.value<0||(r.kind==='move'?r.value>=v.target:r.kind==='pay'?r.value>10000:r.value!==spec[4]))return false;seen.add(r.id);return true;})&&v.rules.every((r,i)=>!r.enabled||!v.rules.some((q,j)=>j<i&&q.enabled&&q.from<=r.to&&r.from<=q.to));
+  return v.rules.every((rule,index)=>{
+   if(!rule||!ruleIds.has(rule.id)||seen.has(rule.id)||!Object.hasOwn(ruleKinds,rule.kind)||typeof rule.enabled!=='boolean')return false;
+   if(!Number.isInteger(rule.from)||!Number.isInteger(rule.to)||rule.from<0||rule.to<rule.from||rule.to>=v.target||!validRuleValue(rule,v.target))return false;
+   seen.add(rule.id);
+   return !rule.enabled||!v.rules.slice(0,index).some(other=>other.enabled&&rule.from<=other.to&&rule.to>=other.from);
+  });
  }
  function settings(v){return clone(validSettings(v)?v:defaults());}
  function makeRules(target,random=Math.random){
@@ -34,8 +50,8 @@
  function recommendedCount(target){return Math.min(specs.length,Math.max(3,Math.round(specs.length*target/90)));}
  function randomRules(target,count=recommendedCount(target),random=Math.random,previous=[]){
   if(!Number.isInteger(target)||target<20||target>500)throw Error('Ziel: 20 bis 500 Punkte eingeben');
-  if(!Number.isInteger(count)||count<1||count>specs.length)throw Error('Anzahl: 1 bis '+specs.length+' Hindernisse eingeben');
-  const pool=defaults().rules.map(rule=>{const saved=previous.find(r=>r.id===rule.id);return saved&&rule.kind==='pay'?{...rule,value:saved.value}:rule;});
+  if(!Number.isInteger(count)||count<1||count>maxRules)throw Error('Anzahl: 1 bis '+maxRules+' Hindernisse eingeben');
+  const pool=[...defaults().rules,playerRule].map(rule=>{const saved=previous.find(r=>r.id===rule.id);return saved&&rule.kind==='pay'?{...rule,value:saved.value}:rule;});
   const points=Array.from({length:target-1},(_,i)=>i+1);
   for(const list of [pool,points])for(let i=list.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
   return pool.slice(0,count).map((rule,i)=>({...rule,from:points[i],to:points[i],enabled:true,value:rule.kind==='move'?Math.max(1,Math.min(target-1,Math.round(rule.value*target/90))):rule.value})).sort((a,b)=>a.from-b.from);
@@ -46,7 +62,7 @@
  function rebuildSettings(config,target,count,random=Math.random){
   if(!validSettings(config))throw Error('Ungültige Hindernisverteilung');
   const amounts={},pool=defaults().rules;
-  for(const rule of pool.filter(r=>r.kind==='pay')){const saved=config.payAmounts?.[rule.id];amounts[rule.id]=Number.isInteger(saved)&&saved>=0&&saved<=10000?saved:rule.value;}
+  for(const rule of pool){const saved=config.payAmounts?.[rule.id];if(Number.isInteger(saved)&&saved>=0&&saved<=10000)amounts[rule.id]=saved;else if(rule.kind==='pay')amounts[rule.id]=rule.value;}
   for(const rule of config.rules.filter(r=>r.kind==='pay'))amounts[rule.id]=rule.value;
   return {...clone(config),target,payAmounts:amounts,rules:randomRules(target,count,random,pool.map(rule=>rule.kind==='pay'?{...rule,value:amounts[rule.id]}:rule))};
  }
@@ -111,7 +127,7 @@
    else if(r.kind==='move')s.scores[n]=r.value;
    else if(r.kind==='double'){s.double[n]=true;again=true;}
    else if(r.kind==='others'){for(const other of s.players)if(other!==n)s.scores[other]=Math.max(0,s.scores[other]-8);}
-   else if(r.kind==='choice')s.pendingChoice={name:n,point,ruleId:r.id};
+   else if(r.kind==='choice'||r.kind==='setPlayer')s.pendingChoice={name:n,point,ruleId:r.id};
    s.events.push({name:n,text:ruleLabel(r),point,round:s.round,ruleId:r.id});
   }
   if(s.scores[n]>=s.config.target){s.readyToFinish=true;return;}
@@ -129,8 +145,17 @@
    if(s.gameKey!=='siebener'||s.turn.length!==2||!sevenColumns(s).includes(e.column)||Object.hasOwn(s.sheet[n],e.column)||e.add&&sevenAddCount(s,n)>=sevenAddLimit(s))throw Error('Zwei Würfe, eine freie Spalte und die noch ungenutzte Addition wählen');
    const value=e.add?s.turn[0]+s.turn[1]:s.turn[0]*s.turn[1],diff=Math.abs(e.column-value);Object.defineProperty(s.sheet[n],e.column,{value:{value,diff,cents:diff*sevenSettings(s.config?.seven).pinCents,add:!!e.add,throws:s.turn.slice()},writable:true,enumerable:true,configurable:true});s.scores[n]+=diff*sevenSettings(s.config?.seven).pinCents;if(e.add)s.addUsed[n]=sevenAddCount(s,n)+1;s.turn=[];next(s);
   }else if(e.action==='choose'){
-   if(!s.pendingChoice||s.pendingChoice.name!==n||!['reset','pay'].includes(e.choice))throw Error('Neustart oder 1 € Zahlung auswählen');
-   if(e.choice==='reset')s.scores[n]=0;else booking(s,e,n,100,'Hindernislauf · Neustart vermieden');s.pendingChoice=null;next(s);
+   const pending=s.pendingChoice,rule=s.config.rules.find(rule=>rule.id===pending?.ruleId);
+   if(!pending||pending.name!==n)throw Error('Keine offene Hindernisauswahl');
+   if(rule?.kind==='setPlayer'){
+    if(!s.players.includes(e.playerName))throw Error('Bitte einen Spieler aus dieser Runde auswählen');
+    s.scores[e.playerName]=rule.value;
+    s.events.push({name:e.playerName,point:pending.point,text:'Auf '+rule.value+' Punkte gesetzt',round:s.round,ruleId:rule.id});
+   }else{
+    if(!['reset','pay'].includes(e.choice))throw Error('Neustart oder 1 € Zahlung auswählen');
+    if(e.choice==='reset')s.scores[n]=0;else booking(s,e,n,100,'Hindernislauf · Neustart vermieden');
+   }
+   s.pendingChoice=null;next(s);
   }else throw Error('Ungültige Spielaktion');
   s.history.push(e);
  }
@@ -160,7 +185,7 @@
       const config=sevenSettings(s.config?.seven);
       if(!s.kranzRule&&req.kind==='kranz'&&s.gameKey==='siebener'&&config.kranzMode==='choose'&&(!Number.isInteger(req.kranzValue)||req.kranzValue<1||req.kranzValue>12))throw Error('Kranzwert: eine ganze Zahl von 1 bis 12 wählen');
       const pins=req.kind==='kranz'?(s.kranzRule&&window.KCKranzPolicy?KCKranzPolicy.resolve(s.kranzRule,req.kranzValue):s.gameKey==='hindernis'?12:config.kranzMode==='choose'?req.kranzValue:config.kranzValue):['gosse','miss'].includes(req.kind)?0:Number(req.pins);if(!Number.isInteger(pins)||pins<0||req.kind==='pins'&&(pins<1||pins>9))throw Error('1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');Object.assign(e,{kind:req.kind,pins});
-     }else if(req.action==='place')Object.assign(e,{column:req.column,add:!!req.add});else if(req.action==='choose')e.choice=req.choice;else throw Error('Ungültige Spielaktion');play(s,e);
+     }else if(req.action==='place')Object.assign(e,{column:req.column,add:!!req.add});else if(req.action==='choose'){if(req.choice!==undefined)e.choice=req.choice;if(req.playerName!==undefined)e.playerName=req.playerName;}else throw Error('Ungültige Spielaktion');play(s,e);
      // Zielwurf und Endabrechnung sind eine einzige, wiederholsichere Spielaktion.
      if(reachedTarget(s))finish(s);
     }
@@ -177,5 +202,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({hurdleLanding,sevenColumns,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({ruleKinds:Object.keys(ruleKinds),eventValue,maxRules,hurdleLanding,sevenColumns,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();

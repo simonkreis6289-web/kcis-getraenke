@@ -47,11 +47,11 @@ test('cash hurdles accept individual cent amounts and use them for labels and un
 });
 
 test('random generation honors an explicit count and uses unique valid point numbers',()=>{
- for(const target of [20,30,50,90,500])for(const count of [1,4,9,17]){
+ for(const target of [20,30,50,90,500])for(const count of [1,4,9,17,18]){
   const rules=g.randomRules(target,count),c={target,baseCents:500,rules};assert(g.validSettings(c));assert.equal(rules.length,count);
   assert.equal(new Set(rules.map(r=>r.id)).size,count);assert.equal(new Set(rules.map(r=>r.from)).size,count);assert(rules.every(r=>r.from>0&&r.to<target&&r.enabled));
  }
- for(const count of [0,18,2.5,NaN])assert.throws(()=>g.randomRules(90,count),/Anzahl/);
+ for(const count of [0,19,2.5,NaN])assert.throws(()=>g.randomRules(90,count),/Anzahl/);
 });
 
 test('all-random resets positions, disabled flags and count to a sensible density',()=>{
@@ -64,7 +64,7 @@ test('all-random resets positions, disabled flags and count to a sensible densit
 test('custom cash amounts survive rerandomization, even if their hurdle temporarily disappears',()=>{
  const c=g.defaults();c.rules.find(r=>r.id==='pay11').value=75;
  let next=g.rebuildSettings(c,30,1,()=>.999);assert.equal(next.payAmounts.pay11,75);
- next=g.rebuildSettings(next,90,17,()=>.3);assert.equal(next.rules.find(r=>r.id==='pay11').value,75);
+ next=g.rebuildSettings(next,90,18,()=>.3);assert.equal(next.rules.find(r=>r.id==='pay11').value,75);
  const shifted=g.shiftRule(next,1,1);assert(g.validSettings(shifted));assert.equal(shifted.rules.find(r=>r.id==='pay11').value,75);
 });
 
@@ -90,10 +90,11 @@ test('random settings choose a healthy count; invalid money and point input cann
 test('both app and dashboard standings show accumulated cash hurdles and the automatic final settlement',()=>{
  const c=g.defaults();c.rules.forEach(r=>r.enabled=r.id==='pay11');c.rules.find(r=>r.id==='pay11').value=75;
  let s=start('hindernis',c);s.scores.A=10;s=roll(s,1);let doc=parseHTML(view.renderIndividualBoard(s)).document;
- assert(doc.querySelector('thead').textContent.includes('Strafen'));assert.equal(doc.querySelector('.ind-penalty').textContent,'0,75 €');
+ assert(doc.querySelector('thead').textContent.includes('Strafen'));assert.equal(doc.querySelector('.ind-penalty strong').textContent,'0,75 €');
+ assert.equal(doc.querySelector('.hurdle-penalty-preview').textContent,'+0,88 €');
  s.index=0;s.scores.A=89;s.scores.B=70;const out=step(s,'throw',{kind:'pins',pins:1});doc=parseHTML(view.renderIndividualBoard(out.state)).document;
  const rows=[...doc.querySelector('.ind-hurdle-split table tbody').children];assert.equal(rows[0].querySelector('.ind-penalty').textContent,'0,75 €');assert.equal(rows[1].querySelector('.ind-penalty').textContent,'0,23 €');
- assert(doc.documentElement.textContent.includes('🏆 A'));assert(!doc.querySelector('.ind-turn'));
+ assert(doc.documentElement.textContent.includes('🏆 A'));assert(!doc.querySelector('.ind-turn'));assert(!doc.querySelector('.hurdle-penalty-preview'));
  const dashboard=parseHTML(view.renderIndividualBoard(out.state,{dashboard:true})).document;
  assert.deepEqual([...dashboard.querySelectorAll('.hurdle-scores .ind-penalty')].map(cell=>cell.textContent),['0,75 €','0,23 €']);
 });

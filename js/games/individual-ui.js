@@ -75,6 +75,9 @@ function renderIndividualGame(key){
  let controls='';
  if(s.active&&!ready){
   if(seven&&s.turn.length===2){const name=KCIndividual.current(s),stamp=s.id+'|'+s.index+'|'+s.round;if(indAddStamp!==stamp){indAddStamp=stamp;indAdd=false;}const used=KCIndividual.sevenAddCount(s,name),limit=KCIndividual.sevenAddLimit(s);if(used>=limit)indAdd=false;const value=indAdd?s.turn[0]+s.turn[1]:s.turn[0]*s.turn[1];controls='<div class="ind-place"><strong>'+s.turn.join(indAdd?' + ':' × ')+' = '+value+'</strong><label><input type="checkbox" '+(indAdd?'checked ':'')+(used>=limit||busy?'disabled':'')+' onchange="indUseAdd(this.checked)"> Summe addieren · '+used+' / '+limit+' genutzt ('+(limit-used)+' übrig)'+'</label><div class="ind-actions">'+KCIndividual.sevenColumns(s).filter(c=>!Object.hasOwn(s.sheet[name],c)).map(c=>'<button type="button" '+disabled+' onclick="indPlace('+c+')">'+c+'<small>'+indEuro(Math.abs(c-value)*KCIndividual.sevenSettings(s.config?.seven).pinCents)+'</small></button>').join('')+'</div></div>';
+  }else if(s.pendingChoice&&s.config.rules.find(rule=>rule.id===s.pendingChoice.ruleId)?.kind==='setPlayer'){
+   const rule=s.config.rules.find(rule=>rule.id===s.pendingChoice.ruleId);
+   controls='<div class="ind-actions hurdle-player-choice"><strong>Spieler auswählen · auf '+rule.value+' Punkte setzen</strong><div class="kc-avatar-picker">'+s.players.map((name,index)=>'<button type="button" class="kc-avatar-option" '+disabled+' onclick="indChooseHurdlePlayer('+index+')">'+sixAvatar(name)+'</button>').join('')+'</div></div>';
   }else if(s.pendingChoice)controls='<div class="ind-actions"><strong>Neustart vermeiden?</strong><button type="button" '+disabled+' onclick="indAction(\'hindernis\',\'choose\',{choice:\'reset\'})">Zurück auf 0</button><button type="button" '+disabled+' onclick="indAction(\'hindernis\',\'choose\',{choice:\'pay\'})">1 € zahlen</button></div>';
   else controls='<div class="ind-actions ind-pinpad">'+Array.from({length:9},(_,i)=>'<button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'pins\',pins:'+(i+1)+'})">'+(i+1)+'</button>').join('')+['miss','gosse','kranz'].map((kind,i)=>'<button type="button" '+disabled+' onclick="'+(kind==='kranz'&&seven?'indKranz()':"indAction('"+key+"','throw',{kind:'"+kind+"'})")+'">'+['Vorbei','Gosse',window.KCKranzUI?KCKranzUI.label(key,s):seven?KCIndividual.sevenKranzLabel(s.config?.seven):'Kranz (12)'][i]+'</button>').join('')+'</div>';
  }
@@ -82,13 +85,18 @@ function renderIndividualGame(key){
  const error=pending?.error?'<div class="tg-error">'+indEscape(pending.error)+'<div class="ind-actions"><button type="button" '+(indBusy[key]?'disabled':'')+' onclick="indRetry(\''+key+'\')">Erneut versuchen</button><button type="button" '+(indBusy[key]?'disabled':'')+' onclick="indReload(\''+key+'\')">Serverstand laden</button></div></div>':'';
  box.innerHTML=error+renderIndividualBoard(s,{controls})+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="indReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'');
 }
+function indChooseHurdlePlayer(index){
+ const name=indGet('hindernis')?.players[index];
+ if(name!==undefined)return indAction('hindernis','choose',{playerName:name});
+}
+const HURDLE_EVENT_TITLES={start:'Fehlstart',skip:'Pause',pay:'Kassenbeitrag',subtract:'Punkte abziehen',reset:'Neustart',leader:'Aufschließen',move:'Eigene Punktzahl setzen',double:'Doppelwurf',others:'Alle anderen zurück',choice:'Neustart oder 1 € zahlen',setPlayer:'Beliebigen Spieler auf X Punkte setzen'};
 function hurdleRuleCard(r,i){
- const icons={start:'🏁',skip:'⏸',pay:'💰',subtract:'➖',reset:'↩',leader:'🏃',move:'↗',double:'✕2',others:'👥'},titles={start:'Fehlstart',skip:'Pause',pay:'Kassenbeitrag',subtract:'Punkte abziehen',reset:'Neustart',leader:'Aufschließen',move:'Positionswechsel',double:'Doppelwurf',others:'Mitspieler zurück'};
+ const icons={start:'🏁',skip:'⏸',pay:'💰',subtract:'➖',reset:'↩',leader:'🏃',move:'↗',double:'✕2',others:'👥',setPlayer:'🎯'};
  const disabled=indSettingsBusy?'disabled':'',max=indSettingsDraft.target-1;
  return `<div class="hurdle-rule-row ${r.enabled?'':'rule-disabled'}">
   <div class="hurdle-rule-points"><label>Von<input type="number" min="0" max="${max}" step="1" data-hurdle-from="${i}" aria-label="Punktnummer für Hindernis ${i+1}" value="${r.from}" ${disabled} onchange="indSetRulePoint(${i},'from',this.value)"></label><label>Bis<input type="number" min="0" max="${max}" step="1" data-hurdle-to="${i}" aria-label="Endpunkt für Hindernis ${i+1}" value="${r.to}" ${disabled} onchange="indSetRulePoint(${i},'to',this.value)"></label></div>
-  <div class="hurdle-rule-event ${r.kind==='pay'?'has-amount':''}"><div class="hurdle-rule-top"><span class="hurdle-rule-icon" aria-hidden="true">${icons[r.kind]||'🚧'}</span><div class="hurdle-rule-title"><small>Hindernis ${i+1}</small><strong>${titles[r.kind]||'Entscheidung'}</strong><p class="hurdle-rule-copy" id="hurdle-rule-label-${i}">${indEscape(KCIndividual.ruleLabel(r))}</p></div></div>
-  ${r.kind==='pay'?`<label class="hurdle-rule-amount">Betrag (€)<input type="number" min="0" max="100" step="0.01" data-hurdle-amount="${i}" aria-label="Betrag für Hindernis bei ${r.from} Punkten in Euro" value="${(r.value/100).toFixed(2)}" ${disabled} onchange="indSetRuleAmount(${i},this.value)"></label>`:''}</div>
+  <div class="hurdle-rule-event ${r.kind==='pay'?'has-amount':''}"><div class="hurdle-rule-top"><span class="hurdle-rule-icon" aria-hidden="true">${icons[r.kind]||'🚧'}</span><div class="hurdle-rule-title"><small>Hindernis ${i+1}</small><select aria-label="Ereignis für Hindernis ${i+1}" ${disabled} onchange="indSetRuleEvent(${i},this.value)">${KCIndividual.ruleKinds.map(kind=>'<option value="'+kind+'" '+(r.kind===kind?'selected':'')+'>'+HURDLE_EVENT_TITLES[kind]+'</option>').join('')}</select><p class="hurdle-rule-copy" id="hurdle-rule-label-${i}">${indEscape(KCIndividual.ruleLabel(r))}</p></div></div>
+  ${r.kind==='pay'?`<label class="hurdle-rule-amount">Betrag (€)<input type="number" min="0" max="100" step="0.01" data-hurdle-amount="${i}" aria-label="Betrag für Hindernis bei ${r.from} Punkten in Euro" value="${(r.value/100).toFixed(2)}" ${disabled} onchange="indSetRuleAmount(${i},this.value)"></label>`:['move','setPlayer'].includes(r.kind)?`<label class="hurdle-rule-amount">Zielpunkte<input type="number" min="0" max="${max}" step="1" data-hurdle-destination="${i}" value="${r.value}" ${disabled} onchange="indSetRuleDestination(${i},this.value)"></label>`:''}</div>
   <div class="hurdle-rule-bottom"><label class="hurdle-rule-toggle"><input type="checkbox" aria-label="Hindernis ${i+1} aktivieren" ${r.enabled?'checked':''} ${disabled} onchange="indToggleRule(${i},this.checked)"><span>${r.enabled?'Aktiv':'Aus'}</span></label><div class="hurdle-rule-moves"><button type="button" ${indSettingsBusy||i===0?'disabled':''} aria-label="Ereignis ${i+1} nach vorne" onclick="indMoveRule(${i},-1)">↑</button><button type="button" ${indSettingsBusy||i===indSettingsDraft.rules.length-1?'disabled':''} aria-label="Ereignis ${i+1} nach hinten" onclick="indMoveRule(${i},1)">↓</button></div></div>
  </div>`;
 }
@@ -100,6 +108,21 @@ function renderHurdleSettings(){
  for(const id of ['hurdle-target','hurdle-count','hurdle-base','hurdle-save','hurdle-shuffle'])document.getElementById(id).disabled=indSettingsBusy;
 }
 function indRuleAmountCents(value){const text=String(value).replace(',','.');return /^\d+(?:\.\d{1,2})?$/.test(text)&&Number(text)<=100?Math.round(Number(text)*100):null;}
+function indSetRuleEvent(index,kind){
+ const rule=indSettingsDraft?.rules[index];
+ if(indSettingsBusy||!rule||rule.kind===kind||!KCIndividual.ruleKinds.includes(kind))return;
+ rule.kind=kind;
+ rule.value=kind==='pay'?(indSettingsDraft.payAmounts?.[rule.id]??KCIndividual.eventValue(kind,indSettingsDraft.target)):KCIndividual.eventValue(kind,indSettingsDraft.target);
+ renderHurdleSettings();
+}
+function indSetRuleDestination(index,value){
+ const rule=indSettingsDraft?.rules[index],point=/^\d+$/.test(String(value))?Number(value):NaN;
+ if(indSettingsBusy||!rule||!['move','setPlayer'].includes(rule.kind))return;
+ if(!Number.isInteger(point)||point>=indSettingsDraft.target){showToast('Zielpunkte müssen zwischen 0 und Ziel minus 1 liegen','error');renderHurdleSettings();return;}
+ rule.value=point;
+ const label=document.getElementById('hurdle-rule-label-'+index);
+ if(label)label.textContent=KCIndividual.ruleLabel(rule);
+}
 function indSetRuleAmount(index,value){
  if(indSettingsBusy)return false;const rule=indSettingsDraft?.rules[index],cents=indRuleAmountCents(value);
  if(!rule||rule.kind!=='pay'||cents===null){showToast('Hindernisbetrag: 0 bis 100 € mit höchstens zwei Nachkommastellen eingeben','error');return false;}
@@ -139,6 +162,11 @@ async function saveHurdleSettings(){
  for(const input of document.querySelectorAll('[data-hurdle-amount]')){
   const cents=indRuleAmountCents(input.value),rule=config.rules[Number(input.dataset.hurdleAmount)];
   if(cents===null||rule?.kind!=='pay'){showToast('Hindernisbetrag: 0 bis 100 € eingeben','error');return false;}rule.value=cents;
+ }
+ for(const input of document.querySelectorAll('[data-hurdle-destination]')){
+  const rule=config.rules[Number(input.dataset.hurdleDestination)];
+  if(!rule||!/^\d+$/.test(input.value)||Number(input.value)>=target){showToast('Gültige Zielpunkte eingeben','error');return false;}
+  rule.value=Number(input.value);
  }
  if(Number(document.getElementById('hurdle-count').value)!==config.rules.length){showToast('Anzahl erst übernehmen oder neu auslosen','error');return false;}
  config.rules.sort((a,b)=>a.from-b.from);

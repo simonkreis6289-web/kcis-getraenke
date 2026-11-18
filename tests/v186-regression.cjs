@@ -35,7 +35,7 @@ test('short routes produce fewer stable, unique points and allow every point to 
  assert.deepEqual(g.makeRules(90),g.defaults().rules);
 });
 test('settings reject duplicate enabled points, invalid targets, money or modified effect identities',()=>{
- for(const v of [{...g.defaults(),target:0},{...g.defaults(),baseCents:-1},{...g.defaults(),baseCents:10100},{...g.defaults(),rules:[{...g.defaults().rules[1],kind:'pay'}]}])assert(!g.validSettings(v));const d=g.defaults();d.rules[2].from=5;d.rules[2].to=5;assert(!g.validSettings(d));d.rules[2].enabled=false;assert(g.validSettings(d));
+ for(const v of [{...g.defaults(),target:0},{...g.defaults(),baseCents:-1},{...g.defaults(),baseCents:10100},{...g.defaults(),rules:[{...g.defaults().rules[1],kind:'unbekannt'}]}])assert(!g.validSettings(v));const d=g.defaults();d.rules[2].from=5;d.rules[2].to=5;assert(!g.validSettings(d));d.rules[2].enabled=false;assert(g.validSettings(d));
 });
 test('pay obstacles book 20 cents and enabled range obstacles apply at every point in the interval',()=>{for(const [id,score] of [['pay11',10],['pay35',34],['pay54',53],['pay60',59],['pay60',64]]){const out=step(singleRule(id,score),'throw',{kind:'pins',pins:1});assert.equal(out.effect.moneyAdded[0].amountCents,20);assert.equal(out.state.events[0].point,score+1);}});
 test('skip is consumed at the next turn and never skips the player permanently',()=>{let s=roll(singleRule('pause',4),1);assert.equal(g.current(s),'B');assert(s.skip.A);s=roll(s,1);assert.equal(g.current(s),'B');assert(!s.skip.A);s=roll(s,1);assert.equal(g.current(s),'A');});
@@ -142,7 +142,7 @@ test('Hindernislauf starts with the selected random draw and undo preserves the 
  assert.equal(restored.startIndex,2);
  assert.equal(g.current(restored),'C');
  const html=view.renderIndividualBoard(restored);
- assert.match(html,/Startspieler ausgelost: <strong>C<\/strong>/);
+ assert.doesNotMatch(html,/Startspieler ausgelost/);
  assert.match(html,/ind-hindernis-board/);
 });
 test('Hindernislauf invalid starter index falls back safely and Siebener starts in regular order',()=>{
@@ -152,4 +152,29 @@ test('Hindernislauf invalid starter index falls back safely and Siebener starts 
  const sevenBase=g.empty('siebener');
  const seven=g.command(sevenBase,req(sevenBase,'start',{players:['A','B','C'],config:g.defaults(),startIndex:2}),ctx).state;
  assert.equal(g.current(seven),'A');
+});
+
+
+test('an obstacle can set a chosen player to its configured score and undo restores the selection',()=>{
+ const config={target:24,baseCents:100,rules:[{id:'pause',from:5,to:7,kind:'setPlayer',value:2,enabled:true}]};
+ assert(g.validSettings(config));
+ let s=start('hindernis',config);
+ s=roll(s,4);s=roll(s,8);s=roll(s,1);
+ assert.equal(g.current(s),'A');
+ assert.equal(s.pendingChoice.ruleId,'pause');
+ assert.throws(()=>step(s,'choose',{playerName:'Outsider'}),/aus dieser Runde/);
+ assert.throws(()=>roll(s,1),/offene Auswahl/);
+ const change=step(s,'choose',{playerName:'B'});
+ assert.deepEqual(change.state.scores,{A:5,B:2});
+ assert.equal(g.current(change.state),'B');
+ assert.equal(change.effect.moneyAdded.length,0);
+ const restored=step(change.state,'undo').state;
+ assert.deepEqual(restored.scores,s.scores);
+ assert.deepEqual(restored.pendingChoice,s.pendingChoice);
+ const f=ui();
+ f.c.hindernisSettings=config;f.c.renderHurdleSettings();
+ assert.equal(f.document.querySelector('[data-hurdle-destination]').value,'2');
+ f.c.indSetRuleEvent(0,'double');
+ assert.equal(f.document.querySelector('[data-hurdle-destination]'),null);
+ assert.match(f.document.getElementById('hurdle-rule-label-0').textContent,/zählt doppelt/);
 });

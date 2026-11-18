@@ -8,9 +8,10 @@
  const tickerDefaults=()=>({birthdays:'#fce7f3',tour:'#fef3c7',kegeln:'#dcfce7',bl1:'#dbeafe',bl2:'#ede9fe'});
  const eventToastColors=()=>({arrival:'#40cf88',departure:'#7ba3ed',round:'#f9ba3e',loser:'#df83e7',teamLoss:'#fc977d'});
  const seconds=(value,fallback,min,max)=>{const n=Number(value);return value!==''&&value!=null&&Number.isFinite(n)?Math.max(min,Math.min(max,Math.round(n))):fallback;};
- const defaults=()=>({panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
+ const defaults=()=>({tableWidth:{left:17,right:17},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
  function normalize(value){
   const out=defaults();for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
+  for(const side of ['left','right'])out.tableWidth[side]=seconds(value?.tableWidth?.[side],17,10,35);
   out.tickerEnabled=value?.tickerEnabled!==false;
   const streamSettings=value?.tickerStreams;
   for(const key of ['club','football']){
