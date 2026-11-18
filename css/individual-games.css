@@ -150,11 +150,24 @@
 }
 #game-body .ind-hurdle-tv .ind-hurdle-split {
   flex: 1 0 auto;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, 1fr);
+  position: relative;
+  --hurdle-side: clamp(116px, 10vw, 158px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: 12px;
+  padding: 70px var(--hurdle-side) 0;
 }
-#game-body .ind-hurdle-tv .ind-table-scroll { overflow: visible; }
+#game-body .ind-hurdle-tv .ind-hurdle-split > :is(.hurdle-scores, .hurdle-rules) {
+  display: flex;
+  flex-direction: column;
+}
+#game-body .ind-hurdle-tv .ind-table-scroll { overflow: visible; flex: 1; display: flex; }
 #game-body .ind-hurdle-tv .ind-table { table-layout: fixed; }
+#game-body .ind-hurdle-tv .ind-table thead tr { height: 32px; }
+#game-body .ind-hurdle-tv .hurdle-current-row :is(th, td) {
+  background: #fff0bb;
+  font-weight: 800;
+}
+#game-body .ind-hurdle-tv .hurdle-current-row th { box-shadow: inset 3px 0 #c38613; }
 #game-body .ind-hurdle-tv .ind-table :is(th, td) {
   position: static;
   padding: 5px 6px;
@@ -169,62 +182,97 @@
   background: #d6edf8;
 }
 #game-body .ind-hurdle-tv .ind-rule-reachable small { color: #254e68; }
-.hurdle-track-vertical { display: flex; flex-direction: column; }
-.hurdle-track-vertical ol {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.hurdle-track-vertical li {
-  position: relative;
-  display: grid;
-  flex: 1 0 auto;
-  grid-template-columns: minmax(65px, 24%) minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  min-height: 10px;
-  padding: 0 0 0 12px;
-  border-left: 3px solid #9bb0cd;
-}
-.hurdle-track-vertical li::before {
-  position: absolute;
-  top: calc(50% - 1px);
-  left: -3px;
-  width: 5px;
-  height: 1px;
-  background: #9bb0cd;
-  content: '';
-}
-.hurdle-track-vertical .hurdle-milestone { min-height: 16px; }
-.hurdle-track-vertical .hurdle-tick { min-height: 1px; }
-.hurdle-track-vertical .hurdle-milestone::before {
-  top: calc(50% - 4px);
-  left: -6px;
-  width: 9px;
-  height: 9px;
+.hurdle-player-dot {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #13233c65;
   border-radius: 50%;
-  background: #39618d;
+  background: var(--player-color);
 }
-.hurdle-level {
-  color: #365271;
+.hurdle-scores .hurdle-player-dot { margin-inline-end: 7px; }
+.hurdle-dot-current { outline: 2px solid #17233d; outline-offset: 1px; }
+
+.hurdle-circuit {
+  position: absolute;
+  inset: 0;
+  color: #294467;
+}
+.hurdle-circuit-rail {
+  position: absolute;
+  inset: 26px 62px 12px;
+  border: 2px solid #90a8c8;
+  border-bottom: 0;
+}
+.hurdle-circuit-mark {
+  position: absolute;
+  visibility: hidden;
+  font: 700 12px/1.1 sans-serif;
+}
+.hurdle-circuit-mark[data-side] { visibility: visible; }
+.hurdle-circuit-mark::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  background: #57779c;
+}
+.hurdle-circuit-mark[data-side="top"]::before { width: 2px; height: 8px; }
+.hurdle-circuit-mark.hurdle-circuit-milestone::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #375c89;
+}
+.hurdle-circuit-stop, .hurdle-circuit-players {
+  position: absolute;
+  white-space: nowrap;
+}
+.hurdle-circuit-stop small {
+  color: #4c6280;
   font-size: 10px;
-  line-height: 1;
-  overflow-wrap: anywhere;
+  font-weight: 600;
 }
-.hurdle-level strong { font-size: 13px; }
-.hurdle-level small { margin-inline-start: 4px; font-size: .9em; }
-.hurdle-position-runners { display: flex; flex-wrap: wrap; gap: 3px; }
-.hurdle-position-shared .hurdle-position-runners { padding: 2px 4px; background: #f3f7fc; border-radius: 6px; }
-.hurdle-position-runners .hurdle-runner {
-  border: 1px solid #bed0ea;
-  padding: 2px 5px;
-  font-size: clamp(11px, .9vw, 15px);
+.hurdle-circuit-mark[data-side="left"] .hurdle-circuit-stop {
+  right: 8px;
+  text-align: right;
+  transform: translateY(-50%);
 }
-.hurdle-position-runners .hurdle-runner small { margin-inline-start: 5px; }
-.hurdle-position-runners .hurdle-current { border-color: #d49c25; }
+.hurdle-circuit-mark[data-side="right"] .hurdle-circuit-stop {
+  left: 8px;
+  transform: translateY(-50%);
+}
+.hurdle-circuit-mark:not([data-side="top"]) .hurdle-circuit-stop small { display: block; }
+.hurdle-circuit-mark[data-side="top"] .hurdle-circuit-stop {
+  bottom: 8px;
+  transform: translateX(-50%);
+}
+.hurdle-circuit-mark[data-side="top"] .hurdle-circuit-stop small { margin-inline-start: 5px; }
+.hurdle-circuit-players { display: flex; align-items: center; gap: 4px; }
+.hurdle-circuit-dots { display: grid; grid-template-columns: repeat(4, max-content); gap: 4px; padding: 2px; }
+.hurdle-circuit-mark[data-side="left"] .hurdle-circuit-players {
+  left: 9px;
+  transform: translateY(calc(-50% + var(--shift, 0px)));
+}
+.hurdle-circuit-mark[data-side="right"] .hurdle-circuit-players {
+  right: 9px;
+  flex-direction: row-reverse;
+  transform: translateY(calc(-50% + var(--shift, 0px)));
+}
+.hurdle-circuit-mark[data-side="top"] .hurdle-circuit-players {
+  top: 9px;
+  transform: translateX(calc(-50% + var(--shift, 0px)));
+}
+.hurdle-circuit-mark[data-side="top"] .hurdle-circuit-dots { display: flex; }
+.hurdle-circuit-pointer {
+  position: absolute;
+  height: 1px;
+  background: #57779c;
+  transform-origin: 0 0;
+}
 .hurdle-next-throws {
   display: flex;
   flex-wrap: wrap;
@@ -233,3 +281,11 @@
   font-size: .72em;
 }
 .hurdle-next-throws span { background: #fffaf0; border-radius: 4px; padding: 3px 6px; }
+
+@media (max-width: 760px) {
+  #game-body .ind-hurdle-tv .ind-hurdle-split { --hurdle-side: 103px; }
+  .hurdle-circuit-rail { inset-inline: 48px; }
+  .hurdle-circuit-stop { font-size: 10px; }
+  .hurdle-circuit-stop small { font-size: 9px; }
+  .hurdle-circuit-dots { grid-template-columns: repeat(3, max-content); }
+}

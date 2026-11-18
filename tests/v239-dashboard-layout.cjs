@@ -96,7 +96,7 @@ test('finished game board renders persistent booked loser ranks and the obstacle
  assert.match(runners[2].textContent,/Im Ziel 40/);
 });
 
-test('TV hurdles show individual runner boxes, the two tables and actual one-throw targets without event rows',()=>{
+test('TV hurdles show only stops and occupied positions, matching the colored score rows',()=>{
  const f=ui();
  for(const file of ['kranz-policy','games/individual-core','games/individual-view'])vm.runInContext(read('js/'+file+'.js'),f);
  const s=f.KCIndividual.empty('hindernis');
@@ -108,13 +108,35 @@ test('TV hurdles show individual runner boxes, the two tables and actual one-thr
   {id:'leader',from:23,to:23,kind:'leader',enabled:false}
  ]},bookings:[{personName:'Peter',amountCents:100}],events:[{name:'Peter',point:17,text:'1,00 € in die Kasse'}]});
  const root=f.document.createElement('div');root.innerHTML=f.renderIndividualBoard(s,{dashboard:true});
- assert.deepEqual([...root.querySelector('.ind-hurdle-split').children].map(x=>x.className),['hurdle-track-vertical','hurdle-scores','hurdle-rules']);
- assert.match(root.querySelector('.hurdle-track-vertical li').textContent,/Ziel.*24/);
- assert.match(root.querySelector('.hurdle-track-vertical li:last-child').textContent,/Hürde 0.*Peter/);
- assert.equal(root.querySelectorAll('.hurdle-track-vertical li').length,25);
- assert.equal(root.querySelectorAll('.hurdle-track-vertical .hurdle-runner').length,4);
- assert.equal(root.querySelector('.hurdle-track-vertical .hurdle-position-shared .hurdle-position-runners').children.length,2);
- assert(!root.querySelector('.hurdle-track-vertical').textContent.includes('Nico'));
+ assert.deepEqual([...root.querySelector('.ind-hurdle-split').children].map(x=>x.className),['hurdle-circuit','hurdle-scores','hurdle-rules']);
+ const marks=[...root.querySelectorAll('.hurdle-circuit-mark')];
+ assert.deepEqual(marks.map(m=>Number(m.dataset.score)),[0,12,15,17,22,24]);
+ assert.deepEqual(marks.filter(m=>m.classList.contains('hurdle-circuit-milestone')).map(m=>Number(m.dataset.progress)),[0,.25,.5,.75,1]);
+ assert.equal(Number(marks[1].dataset.progress),.2);
+ assert.equal(marks[1].querySelector('.hurdle-circuit-players strong').textContent,'12');
+ assert.match(marks[0].textContent,/Start0 Pkt/);
+ assert.match(marks[5].textContent,/Ziel24 Pkt/);
+ assert.equal(marks[3].querySelectorAll('.hurdle-player-dot').length,2);
+ assert.equal(marks[3].querySelector('.hurdle-circuit-players strong'),null);
+ const trackDots=[...root.querySelectorAll('.hurdle-circuit .hurdle-player-dot')];
+ assert.equal(trackDots.length,4);
+ assert(!trackDots.some(dot=>dot.getAttribute('aria-label').startsWith('Nico')));
+ const rows=[...root.querySelectorAll('.hurdle-scores tbody tr')];
+ assert.equal(rows[0].getAttribute('aria-current'),'true');
+ assert.equal(rows[0].querySelector('th').textContent,'Daniel');
+ const rowColors=new Map(rows.map(row=>[row.querySelector('th').textContent,row.querySelector('.hurdle-player-dot').getAttribute('style')]));
+ assert.equal(new Set(rowColors.values()).size,s.players.length);
+ for(const dot of trackDots)assert.equal(dot.getAttribute('style'),rowColors.get(dot.getAttribute('aria-label').split(' · ')[0]));
+ const track=root.querySelector('.hurdle-circuit'),rail=track.querySelector('.hurdle-circuit-rail');
+ Object.defineProperties(rail,{offsetWidth:{value:702},offsetHeight:{value:271},offsetLeft:{value:62},offsetTop:{value:26}});
+ for(const players of track.querySelectorAll('.hurdle-circuit-players')){
+  Object.defineProperties(players,{offsetWidth:{value:60},offsetHeight:{value:18}});
+ }
+ f.layoutHurdleCircuit(track);
+ assert.deepEqual(marks.map(m=>m.dataset.side),['left','left','top','top','top','right']);
+ assert.deepEqual([marks[0].style.left,marks[0].style.top],['63px','297px']);
+ assert.deepEqual([marks[1].style.left,marks[1].style.top],['63px','49px']);
+ assert.deepEqual([marks.at(-1).style.left,marks.at(-1).style.top],['763px','297px']);
  assert.match(root.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt.*15 Pkt.*3 Holz.*17 Pkt.*5 Holz.*Ziel.*Kranz/);
  assert.deepEqual([...root.querySelectorAll('.ind-rule-reachable th')].map(x=>x.textContent),['15','17–18']);
  assert.match(root.querySelectorAll('.hurdle-scores .ind-penalty')[1].textContent,/1,00/);
@@ -130,8 +152,8 @@ test('TV hurdles show individual runner boxes, the two tables and actual one-thr
 
 test('the dense hurdle board fits the available width and height as one block',()=>{
  const html=read('dashboard.html');
- const fit=new Function('getComputedStyle',html.slice(html.indexOf('function fitHurdleBoard'),html.indexOf('function fitTvBoard'))+';return fitHurdleBoard;')(()=>({paddingLeft:'9px',paddingRight:'9px',paddingTop:'8px',paddingBottom:'8px'}));
- const board={style:{},dataset:{},offsetHeight:950};
+ const fit=new Function('getComputedStyle','layoutHurdleCircuit',html.slice(html.indexOf('function fitHurdleBoard'),html.indexOf('function fitTvBoard'))+';return fitHurdleBoard;')(()=>({paddingLeft:'9px',paddingRight:'9px',paddingTop:'8px',paddingBottom:'8px'}),track=>assert.equal(track,'course'));
+ const board={style:{},dataset:{},offsetHeight:950,querySelector:()=> 'course'};
  fit({clientWidth:900,clientHeight:620},board);
  const zoom=Number(board.style.zoom);
  assert(zoom<1&&board.offsetHeight*zoom<=602);
