@@ -71,3 +71,38 @@
 #game-body [data-extra-game="poker"] .poker-ranking-item{padding:9px 8px}
 @media(max-width:950px){[data-extra-game="poker"] .classic-table-and-ranking{grid-template-columns:minmax(0,1fr)}[data-extra-game="poker"] .poker-ranking-panel{width:100%}.poker-ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:530px){.poker-ranking-list{grid-template-columns:1fr}}
+
+.ind-table .poker-old-card {
+  display: block;
+  margin-top: 2px;
+  color: #52637c;
+  font-size: .68em;
+  line-height: 1.1;
+}
+.poker-current-hand { margin: 0 0 10px; color: #223b62; }
+.poker-current-hand strong {
+  margin-left: 6px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: #fff0c8;
+}
+.tv-loser-results {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px 0;
+}
+.tv-loser-results > div {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 11px;
+  color: #203655;
+  background: #edf2f9;
+  border: 1px solid #c7d5ea;
+  border-radius: 8px;
+}
+.tv-loser-results strong { font-size: .86em; }
+.tv-loser-results span { font-weight: 700; overflow-wrap: anywhere; }

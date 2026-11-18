@@ -98,13 +98,24 @@
   switchTickers();
  }
  function renderTickerTrack(trackId,entries,previousStamp){
-  const stamp=JSON.stringify(entries),track=$(trackId);
-  if(!track||stamp===previousStamp)return stamp;
+  const stamp=JSON.stringify(entries.map(([id,text,color])=>[id,text,color])),track=$(trackId);
+  if(!track)return stamp;
+  if(stamp===previousStamp){
+   const minutes=new Map(entries.map(([id,,,clock])=>[id,clock||'']));
+   for(const clock of track.querySelectorAll('[data-football-clock]')){
+    const text=minutes.get(clock.dataset.footballClock)||'';
+    if(clock.textContent!==text){clock.textContent=text;clock.hidden=!text;}
+   }
+   return stamp;
+  }
   track.replaceChildren();const first=document.createElement('div');first.className='dashboard-ticker-copy';
-  for(const [id,text,color] of entries){
+  for(const [id,text,color,clock] of entries){
    const span=document.createElement('span');span.id=id;span.className='dashboard-ticker-chip';span.textContent=text;span.hidden=!text;span.style.backgroundColor=color;
    const rgb=color.match(/[a-f0-9]{2}/gi)?.map(n=>parseInt(n,16))||[255,255,255];
    span.style.color=(.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2])<145?'#ffffff':'#102239';
+   if(id.startsWith('football-')&&id!=='football-empty'){
+    const minute=document.createElement('span');minute.className='football-clock';minute.dataset.footballClock=id;minute.textContent=clock||'';minute.hidden=!clock;span.append(minute);
+   }
    first.append(span);
   }
   const second=first.cloneNode(true);second.setAttribute('aria-hidden','true');
@@ -124,7 +135,7 @@
    ['kc-next-tour',data.tour?'🚌 Kegeltour: '+when(data.tour):'',settings.tickerColors.tour],
    ['kc-next-kegeln',data.kegeln?'🎳 Nächstes Kegeln: '+when(data.kegeln):'🎳 Noch kein nächster Kegeltermin',settings.tickerColors.kegeln]];
   for(const msg of settings.tickerMessages)if(msg.enabled&&msg.text)club.push(['dashboard-message-'+msg.id,msg.text,msg.color]);
-  const football=(window.KCFootballLive?.ticker()||[]).map(([id,text])=>[id,text,settings.tickerColors[id.includes('bl2')?'bl2':'bl1']]);
+  const football=(window.KCFootballLive?.ticker()||[]).map(([id,text,clock])=>[id,text,settings.tickerColors[id.includes('bl2')?'bl2':'bl1'],clock]);
   if(!football.length)football.push(['football-empty','⚽ Momentan keine laufenden Bundesliga-Ergebnisse',settings.tickerColors.bl1]);
   tickerStamp=renderTickerTrack('dashboard-ticker-track',club,tickerStamp);
   footballTickerStamp=renderTickerTrack('dashboard-football-ticker-track',football,footballTickerStamp);
@@ -159,6 +170,7 @@
   popupTimer=setTimeout(hidePopup,popupSeconds*1000);
  }
  window.addEventListener('kc-football-updated',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
+ window.addEventListener('kc-football-clock',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hidePopup();else rotate();});
  window.addEventListener('resize',()=>{positionPopup();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
  window.KCDashboardLayoutTV=Object.freeze({apply,rotate,highlight,ticker,tickerFit,feed});

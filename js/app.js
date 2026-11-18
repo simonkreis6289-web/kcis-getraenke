@@ -5506,7 +5506,7 @@ const subTabMap = {
   getraenke: ['getraenke-statistik', 'getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
   spiele: ['spiele-statistik', 'spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'parteienspiel', 'dreieuro', 'ebbeflut', 'hochsprung', 'poker', 'pfaelzer', 'tausend', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
-  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'info', 'notizen']
+  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'dashboard', 'info', 'notizen']
 };
 
 const defaultSubTab = {
@@ -5588,7 +5588,7 @@ function showSideTab(mainKey, subKey, el) {
   if(['getraenke-statistik','spiele-statistik'].includes(subKey)){refreshCashHistory();window.KCReportApp?.render();}
   if (subKey === 'termine') {kcRenderTermine();kcEnsureKegelSeries();}
   if (subKey === 'termingruende') kcRenderTerminGruende();
-  if (subKey === 'info') kcShowInfo();
+  if (subKey === 'dashboard') kcShowInfo();
   if(typeof renderGameFineSettings==='function')renderGameFineSettings();
   if (['info','notizen'].includes(subKey)) window.KCClubContentApp?.render();
   if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();

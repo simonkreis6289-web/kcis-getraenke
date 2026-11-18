@@ -23,13 +23,13 @@
  function moneyMarkup(person,items,ledger,history,evening){
   const rows=freeItems(person,items,ledger,history,evening);return rows.length?'<ol class="penalty-free-list">'+rows.map(row=>'<li value="'+row.number+'" title="'+esc(row.reason)+'" aria-label="'+esc(row.number+'. '+row.reason+': '+money(row.amountCents))+'"><span class="penalty-free-item"><span aria-hidden="true">'+(icons[row.key]||icons.free)+'</span><strong>'+esc(money(row.amountCents))+'</strong>'+((typeof gameFineOnTop==='function'?gameFineOnTop({...row.entry,gameKey:row.key,reason:row.reason}):false)?'<span title="Zusätzlich zur Strafobergrenze">🔥</span>':'')+'</span></li>').join('')+'</ol>':'';
  }
- function build(key,s,{now=new Date().toISOString(),groups={},server=false,catalog=[]}={}){
-  if(!s||(!s.finished&&!s.winner))return null;
-  const teamName=k=>String(groups[k]?.name||({T1:'Wand',T2:'TV'}[k])||k);
+ const groupName=(groups,k)=>String(groups?.[k]?.name||({T1:'Wand',T2:'TV'}[k])||k);
+ function placements(key,s,groups){
+  const teamName=k=>groupName(groups,k);
   const teams=Array.isArray(s.teams)?s.teams:[];let ranking=[],winners=[];
   if(teams.length){
    winners=teams.filter(t=>(s.winners||[]).includes(t.id)).map(t=>t.name+' ('+t.players.join(', ')+')');
-   ranking=(s.teamLoserGroups||[]).slice(0,3).flatMap((g,i)=>g.teamIds.map(id=>{const t=teams.find(t=>t.id===id);return {rank:i+1,team: t?.name||id,names:t?.players||[]};}));
+   ranking=(s.teamLoserGroups||[]).slice(0,3).flatMap((g,i)=>(g.teamIds||[]).map(id=>{const t=teams.find(t=>t.id===id);return {rank:g.rank||i+1,team: t?.name||id,names:t?.players||[]};}));
   }else if(['darts','tor','ballermann'].includes(key)||key==='sichern'&&s.mode==='team'){
    if(key==='ballermann'){winners=(s.winners||[]).map(t=>(s.teamNames?.[t]||teamName(t))+' ('+(s.participantTeams[t]||[]).join(', ')+')');ranking=(s.loserGroups||[]).map(g=>({rank:1,team:s.teamNames?.[g.names[0]]||teamName(g.names[0]),names:(s.participantTeams[g.names[0]]||[]).slice()}));}
    const winner=key==='ballermann'?null:s.winner,other=winner==='T1'?'T2':'T1',map=s.participantTeams||s.teams||{};
@@ -40,6 +40,11 @@
    ranking=(s.loserGroups||s.ranking||[]).slice(0,3).map((g,i)=>({rank:g.rank||i+1,names:(g.names||[]).slice()}));
    winners=Array.isArray(s.winners)?s.winners.slice():s.winner?[s.winner]:[];
   }
+  return {ranking,winners,teams};
+ }
+ function build(key,s,{now=new Date().toISOString(),groups={},server=false,catalog=[]}={}){
+  if(!s||(!s.finished&&!s.winner))return null;
+  const {ranking,winners,teams}=placements(key,s,groups),teamName=k=>groupName(groups,k);
   const counterCharges=(s.finishPenalties||[]).map(x=>({...x}));
   if(key==='blackjack'){const penalty=catalog.find(x=>/^1\.?\s*verlierer/i.test(x.label))?.key||(s.history||[]).find(e=>e.action==='card'&&e.penalties?.length)?.penalties[0]?.key;for(const name of s.players||[]){const e=(s.history||[]).filter(e=>e.action==='card'&&e.name===name).at(-1);if(e?.bustPenalty&&penalty)counterCharges.push({personName:name,key:penalty,delta:1});}}
   const participants=[...new Set([...(s.players||[]),...(s.order||[]),...(s.playerOrder||[]),...teams.flatMap(t=>t.players||[]),...(s.fox?[s.fox]:[]),...(s.hunters||[]),...Object.values(s.participantTeams||{}).flat(),...(!Array.isArray(s.teams)?Object.values(s.teams||{}).filter(Array.isArray).flat():[]),...Object.keys(s.scores||{}).filter(n=>!['T1','T2'].includes(n)&&!teams.some(t=>t.id===n))])].filter(n=>typeof n==='string');
@@ -55,6 +60,23 @@
   const list=Array.isArray(history)?history:[],entry=build(key,s,context);if(!entry||list.some(e=>e.id===entry.id))return list;
   return [entry,...list];
  }
+ function dashboardRanking(key,game,history,groups){
+  if(!game?.finished)return [];
+  const resultId=game.resultHistoryId||(game.startedAt?'game_result_'+key+'_'+(game.id||game.startedAt):'');
+  const recorded=(history||[]).find(entry=>entry.gameKey===key&&((resultId&&entry.id===resultId)||(game.id&&entry.gameId===game.id)));
+  const local=Array.isArray(game.history)?game.history.find(entry=>entry.type===key&&Array.isArray(entry.ranking)):null;
+  return (recorded?.ranking||local?.ranking||placements(key,game,groups).ranking)
+   .map(entry=>({...entry,rank:Number(entry.rank)})).filter(entry=>[1,2,3].includes(entry.rank)&&(entry.team||entry.names?.length));
+ }
+ function dashboardMarkup(ranking){
+  if(!ranking.length)return '';
+  return '<aside class="tv-loser-results" aria-label="Verliererwertung">'+[1,2,3].map(rank=>{
+   const entries=ranking.filter(entry=>entry.rank===rank);
+   if(!entries.length)return '';
+   const names=entries.map(entry=>[entry.team,entry.names?.join(' · ')].filter(Boolean).map(esc).join(' · '));
+   return '<div><strong>' + ['🥇','🥈','🥉'][rank-1]+' '+rank+'. Verlierer</strong><span>'+names.join(' / ')+'</span></div>';
+  }).join('')+'</aside>';
+ }
  function markup(entry,position=0){
   if(entry.type==='teamspiel_strafe')entry={...entry,type:'game_result',title:entry.spieltyp||'Teamspiel',createdAt:entry.date,ranking:[{rank:1,team:entry.teamName||({T1:'Wand',T2:'TV'}[entry.loser])||entry.loser,names:entry.members||[]}]};
   const legacy=['mensch','haushoch','haustief','plusminus'].includes(entry.type);if(entry.type!=='game_result'&&!legacy)return null;
@@ -64,7 +86,7 @@
   const priceRows=amounts(entry),prices=priceRows.length?'<ul class="game-result-amounts">'+priceRows.map(row=>'<li><span>'+esc(row.name)+'</span><strong>'+esc(money(row.amountCents))+'</strong></li>').join('')+'</ul>':'';
   return '<div class="spiel-card"'+(position?' id="penalty-result-'+position+'"':'')+'><div class="spiel-info"><div class="spiel-verlierer round">'+(position?position+'. ':'')+(icons[entry.gameKey||entry.type]||'🏁')+' '+esc(title)+' abgeschlossen</div><div class="spiel-detail">'+esc(entry.createdAt?new Date(entry.createdAt).toLocaleString('de-DE'):'')+'</div>'+(winners.length?'<div class="spiel-detail"><strong>Gewinner:</strong> '+winners.map(esc).join(' · ')+'</div>':'')+(entry.gameFineOnTop?'<div class="game-fine-mode">🔥 OnTop · zusätzlich zur Strafobergrenze</div>':'')+prices+rows+(results?'<div class="spiel-detail">'+results+'</div>':'')+(!rows&&!prices?'<div class="spiel-detail">Abschluss dokumentiert · Beträge nach den Spielregeln</div>':'')+'</div></div>';
  }
- window.KCGameResults=Object.freeze({build,append,markup,titles,icons,ordered,number,amounts,freeItems,moneyMarkup});
+ window.KCGameResults=Object.freeze({build,append,markup,dashboardRanking,dashboardMarkup,titles,icons,ordered,number,amounts,freeItems,moneyMarkup});
 })();
 function recordCompletedGame(key,s){
  if(!s||(!s.finished&&!s.winner))return;

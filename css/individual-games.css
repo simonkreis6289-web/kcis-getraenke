@@ -106,3 +106,47 @@
 #game-body .ind-hindernis-board .ind-drawn-starter{flex:none}
 #game-body .ind-hindernis-board .ind-event{flex:none;padding:5px 8px;margin-top:4px;font-size:clamp(11px,.9vw,16px)}
 .ind-drawn-starter{padding:7px 12px;margin:5px 0;border:1px solid #d7af42;border-radius:8px;background:#fff0bc;color:#694309;font-size:14px}
+
+.hurdle-track { margin: 8px 0 12px; }
+.hurdle-track ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+  gap: 8px 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.hurdle-track li { min-width: 0; text-align: center; }
+.hurdle-station {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 16px 3px 3px;
+  border-top: 3px solid #8fa8ca;
+  color: #233e66;
+  font-size: .83em;
+}
+.hurdle-station::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3f648f;
+}
+.hurdle-station small { color: #4f6581; }
+.hurdle-occupied::before { background: #d38a16; }
+.hurdle-runner-groups, .hurdle-runners { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px; }
+.hurdle-runners { padding: 3px 6px; border: 1px solid #d5e1f1; border-radius: 6px; }
+.hurdle-runner-station { color: #3d5779; font-weight: 750; font-size: .8em; }
+.hurdle-runner {
+  padding: 3px 4px;
+  border-radius: 5px;
+  background: #e7effb;
+  color: #203655;
+  font-size: .8em;
+  overflow-wrap: anywhere;
+}
+.hurdle-current { background: #ffe29a; color: #503300; }

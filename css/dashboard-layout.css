@@ -95,3 +95,12 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 .kc-club-event-toast.is-loser{border-color:#a74caf;background:linear-gradient(135deg,#f7d9fa,#df83e7);color:#60256b}
 .kc-club-event-toast.is-team-loss{border-color:#b75a48;background:linear-gradient(135deg,#ffe0ca,#fc977d);color:#702e20}
 @media(max-width:680px){.dashboard-throw-popup .kc-toast-avatar{width:82px;height:82px}.dashboard-throw-popup .kc-toast-person-text>strong{font-size:30px}.dashboard-throw-popup .kc-toast-person-text>span{font-size:20px}.dashboard-throw-popup .kc-toast-person-layout{gap:14px}}
+
+.football-clock {
+  margin-inline-start: .5em;
+  font-size: .84em;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.football-clock[hidden] { display: none; }

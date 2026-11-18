@@ -4,12 +4,26 @@ function pokerRankingPanel(){
  const examples=['1 · 2 · 3 · 5 · 7','4 · 4 · 2 · 5 · 7','4 · 4 · 6 · 6 · 2','5 · 5 · 5 · 2 · 8','3 · 3 · 3 · 7 · 7','9 · 9 · 9 · 9 · 2','2 · 3 · 4 · 5 · 6','8 · 8 · 8 · 8 · 8'];
  return '<aside class="poker-ranking-panel" aria-label="Rangliste der Pokerwertungen"><h3>🃏 Wertungs-Rangliste</h3><p>Von stark nach schwach</p><ol class="poker-ranking-list">'+labels.map((name,level)=>({name,level,example:examples[level]})).reverse().map((item,i)=>'<li class="poker-ranking-item"><span class="poker-ranking-place">'+(i+1)+'.</span><span class="poker-ranking-description"><strong>'+item.name+'</strong><small>'+item.example+'</small></span></li>').join('')+'</ol></aside>';
 }
+function pokerCardText(card){
+ return card?.kind==='gosse'?'G':card?.kind==='kranz'?'K('+card.pins+')':card?.pins??'—';
+}
+function pokerTableCards(s,name){
+ const starting=(s.rows[name]||[]).filter(roll=>roll.phase==='deal');
+ const replacements=(s.rows[name]||[]).filter(roll=>roll.phase==='redraw');
+ const positions=s.exchanges[name]||[];
+ return Array.from({length:5},(_,i)=>{
+  const replacement=positions.indexOf(i),exchanged=replacement>=0&&!!replacements[replacement];
+  const old=exchanged&&starting[i]?'<del class="poker-old-card" aria-label="Vorher '+indPokerEscape(pokerCardText(starting[i]))+'">'+indPokerEscape(pokerCardText(starting[i]))+'</del>':'';
+  return '<td'+(replacement>=0?' class="poker-exchanged"':'')+'>'+indPokerEscape(pokerCardText(s.hands[name]?.[i]))+old+'</td>';
+ }).join('');
+}
+function indPokerEscape(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderClassicGameBoard(s,{controls=''}={}){
  if(!s?.id)return '';const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=v=>(v/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,current=window.KCExtraGames.current(s),g=window.KCRoundGames;
  const rowPlayers=window.KCPlayerRows?.order(s.players,current,{running:s.active&&!s.finished,unavailable:n=>s.phase==='tiebreak'&&!s.tiePlayers.includes(n)})||s.players;
  const phase=s.phase==='tiebreak'?'Stechen '+s.tieRound+' · Wurf '+(s.turn.length+1)+' / '+s.config.tieThrows:key==='poker'?({deal:'Erste Hand · Wurf '+((s.hands[current]?.length||0)+1)+' / 5',select:'Tauschpositionen wählen',redraw:'Tauschen · Wurf '+(s.turn.length+1)+' / '+s.exchanges[current]?.length}[s.phase]||''):key==='pfaelzer'?(s.phase==='numbers'?'Eigene Zahl bestimmen':'Runde '+s.round+' / '+s.config.rounds):'Runde '+s.round+' / '+s.config.rounds+' · '+g.thousandModeLabel(g.thousandMode(s.config,s.round))+' · '+(s.pendingArrange?'Zahl anordnen':'Wurf '+(s.turn.length+1)+' / 3');
  const head=s.finished?(s.winners.length?'🏆 '+s.winners.map(esc).join(' · '):'🏁 Alle ohne Kombination'):g.icons[key]+' '+g.titles[key];let body='';
- if(key==='poker')body='<table class="ind-table"><thead><tr><th>Kegler</th>'+[1,2,3,4,5].map(i=>'<th>'+i+'</th>').join('')+'<th>Wertung</th><th>Würfe</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th>'+Array.from({length:5},(_,i)=>'<td class="'+(s.exchanges[n]?.includes(i)?'poker-exchanged':'')+'">'+(s.hands[n][i]?.kind==='gosse'?'G':s.hands[n][i]?.kind==='kranz'?'K('+s.hands[n][i].pins+')':s.hands[n][i]?.pins??'—')+'</td>').join('')+'<td>'+esc(g.pokerHand(s.hands[n]).label)+'</td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table>';
+ if(key==='poker')body='<table class="ind-table"><thead><tr><th>Kegler</th>'+[1,2,3,4,5].map(i=>'<th>'+i+'</th>').join('')+'<th>Wertung</th><th>Würfe</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th>'+pokerTableCards(s,n)+'<td>'+esc(g.pokerHand(s.hands[n]).label)+'</td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table>';
  else if(key==='pfaelzer')body='<p class="ind-help">Noch nicht vergebene Zahlen: '+Array.from({length:9},(_,i)=>i+1).filter(v=>!Object.values(s.ownNumbers).includes(v)).join(' · ')+'</p><table class="ind-table"><thead><tr><th>Kegler</th><th>Eigene Zahl</th><th>Striche</th><th>Betrag</th><th>Würfe</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th><td>'+esc(s.ownNumbers[n]??'—')+'</td><td><strong>'+s.scores[n]+'</strong></td><td>'+money(s.scores[n]*s.config.strichCents)+'</td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table>';
  else body='<table class="ind-table"><thead><tr><th>Kegler</th>'+Array.from({length:s.config.rounds},(_,i)=>'<th>R'+(i+1)+'</th>').join('')+'<th>Gesamt</th><th>Abstand</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th>'+Array.from({length:s.config.rounds},(_,i)=>'<td>'+(s.results[n][i]?'<strong>'+s.results[n][i].value+'</strong><small>'+s.results[n][i].throws.map(t=>t.kind==='gosse'?'G('+t.pins+')':t.kind==='kranz'?'K('+t.pins+')':t.pins).join(' · ')+'</small>':'—')+'</td>').join('')+'<td><strong>'+s.scores[n]+'</strong></td><td>'+Math.abs(s.config.target-s.scores[n])+'</td></tr>').join('')+'</tbody></table>';
  if(s.phase==='tiebreak')body+='<div class="classic-tie"><strong>Stechen · '+s.config.tieThrows+' Würfe pro Kegler</strong><p>'+s.tiePlayers.map(n=>esc(n)+': '+s.tieScores[n]).join(' · ')+'</p></div>';

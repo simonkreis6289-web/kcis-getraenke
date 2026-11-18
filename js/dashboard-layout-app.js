@@ -15,8 +15,19 @@
  }
  function duration(id,value,min,max,oninput){const input=element('input');input.type='number';input.id=id;input.min=String(min);input.max=String(max);input.step='1';input.value=String(value);input.disabled=busy;input.oninput=()=>oninput(input.value);return input;}
  function draw(){
-  const box=host();if(!box||!draft)return;const r=M.resolve(draft);draft=r.settings;box.replaceChildren();
-  box.append(element('h3','Dashboard-Anzeigen'),element('p','Anzeigen am selben Platz wechseln automatisch. Die Anzeigedauer gilt je Tabelle. Ist oben oder unten frei, nutzt der belegte Platz die ganze Höhe. Zwei aktivierte Tabellen stehen links.'));
+  const frame=host();if(!frame||!draft)return;const r=M.resolve(draft);draft=r.settings;
+  const open=new Set([...frame.querySelectorAll('details[open]')].map(panel=>panel.dataset.dashboardSection));
+  const firstDraw=!frame.firstChild;
+  frame.replaceChildren();
+  function section(key,title){
+   const panel=element('details',undefined,'dashboard-settings-section');
+   panel.dataset.dashboardSection=key;
+   panel.open=open.has(key)||(firstDraw&&key==='layout');
+   const content=element('div',undefined,'dashboard-settings-section-body');
+   panel.append(element('summary',title),content);frame.append(panel);return content;
+  }
+  let box=section('layout','Tabellen und Anordnung');
+  box.append(element('p','Anzeigen am selben Platz wechseln automatisch. Die Anzeigedauer gilt je Tabelle. Ist oben oder unten frei, nutzt der belegte Platz die ganze Höhe. Zwei aktivierte Tabellen stehen links.'));
   const rows=element('div',undefined,'dashboard-layout-options');
   for(const key of ['fines','drinks','gutters','seating']){
    const row=element('div',undefined,'dashboard-layout-option'),label=element('label'),check=element('input');check.type='checkbox';check.id='dashboard-show-'+key;check.checked=draft.panels[key].enabled;check.disabled=busy;check.onchange=()=>{draft.panels[key].enabled=check.checked;draw();};label.append(check,document.createTextNode(M.labels[key]));row.append(label);
@@ -26,9 +37,10 @@
    const dwell=element('label',undefined,'dashboard-dwell');dwell.hidden=!check.checked;const input=duration('dashboard-seconds-'+key,draft.panels[key].seconds,1,300,v=>draft.panels[key].seconds=v);input.setAttribute('aria-label','Anzeigedauer '+M.labels[key]+' in Sekunden');dwell.append(input,document.createTextNode('Sekunden'));row.append(dwell);rows.append(row);
   }box.append(rows,preview(r));
   const fadeLabel=element('label',undefined,'dashboard-popup-option');fadeLabel.htmlFor='dashboard-transition-seconds';const fade=element('input');fade.type='number';fade.id='dashboard-transition-seconds';fade.min='0';fade.max='3';fade.step='0.1';fade.value=String(draft.transitionSeconds);fade.disabled=busy;fade.oninput=()=>draft.transitionSeconds=fade.value;fadeLabel.append(document.createTextNode('Sanfter Tabellenwechsel · Übergangszeit '),fade,document.createTextNode(' Sekunden (0 = sofort, Standard 0,6 s)'));box.append(fadeLabel);
+  box=section('ticker','Laufschriften und eigene Texte');
   const tickerOptions=element('div',undefined,'dashboard-ticker-options');
   const showTicker=element('label',undefined,'dashboard-popup-option'),tickerCheck=element('input');tickerCheck.type='checkbox';tickerCheck.id='dashboard-ticker-enabled';tickerCheck.checked=draft.tickerEnabled;tickerCheck.disabled=busy;tickerCheck.onchange=()=>{draft.tickerEnabled=tickerCheck.checked;draw();};showTicker.append(tickerCheck,document.createTextNode('Laufschrift auf dem Dashboard anzeigen'));tickerOptions.append(showTicker);
-  const fontLabel=element('label',undefined,'dashboard-popup-option'),tickerFont=duration('dashboard-ticker-font-size',draft.tickerFontSize,12,30,v=>draft.tickerFontSize=v);fontLabel.htmlFor='dashboard-ticker-font-size';tickerFont.disabled=busy||!draft.tickerEnabled;fontLabel.append(document.createTextNode('Schriftgröße '),tickerFont,document.createTextNode(' px (12 bis 30, Standard 18)'));tickerOptions.append(fontLabel);box.append(element('h3','Laufschrift'),tickerOptions);
+  const fontLabel=element('label',undefined,'dashboard-popup-option'),tickerFont=duration('dashboard-ticker-font-size',draft.tickerFontSize,12,30,v=>draft.tickerFontSize=v);fontLabel.htmlFor='dashboard-ticker-font-size';tickerFont.disabled=busy||!draft.tickerEnabled;fontLabel.append(document.createTextNode('Schriftgröße '),tickerFont,document.createTextNode(' px (12 bis 30, Standard 18)'));tickerOptions.append(fontLabel);box.append(tickerOptions);
   const streamBox=element('div',undefined,'dashboard-ticker-stream-settings');
   streamBox.append(element('p','Club-Infos und Bundesliga haben eigene Laufbänder. Je Seite links/rechts positionieren. Liegen beide auf derselben Seite, wechseln sie nach ihren individuellen Anzeigedauern. Eine einzelne Laufschrift nutzt die volle verfügbare Breite.'));
   for(const [key,label] of [['club','🎳 Clubinfos, Termine und Geburtstage'],['football','⚽ Bundesliga-Ergebnisse']]){
@@ -59,6 +71,7 @@
    const remove=element('button','Löschen','secondary-btn');remove.type='button';remove.disabled=busy;remove.setAttribute('aria-label','Laufbandtext löschen');remove.onclick=()=>{draft.tickerMessages=draft.tickerMessages.filter(m=>m.id!==message.id);draw();};row.append(enabled,text,color,remove);messages.append(row);
   }
   const add=element('button','+ Text hinzufügen','secondary-btn');add.type='button';add.id='dashboard-ticker-add';add.disabled=busy||draft.tickerMessages.length>=20;add.onclick=()=>{draft.tickerMessages.push({id:'text-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),text:'',enabled:true,color:M.tickerPalette[draft.tickerMessages.length%M.tickerPalette.length]});draw();box.querySelector('.dashboard-ticker-message:last-child textarea')?.focus();};box.append(messages,add);
+  box=section('notifications','Wurfmeldungen und Toasts');
   box.append(element('h3','Wurf-Popups'));const popupLabel=element('label',undefined,'dashboard-popup-option');popupLabel.htmlFor='dashboard-popup-seconds';popupLabel.append(document.createTextNode('Gosse, Kranz und Alle Neune anzeigen für '),duration('dashboard-popup-seconds',draft.popupSeconds,0,30,v=>draft.popupSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(popupLabel);
   box.append(element('h3','Weitere TV-Toasts'),element('p','Neue Meldungen erscheinen erst nach einer tatsächlichen Änderung. Beim Öffnen des Dashboards werden alte Ereignisse nicht nachgespielt.'));
   for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam']]){
@@ -74,9 +87,10 @@
   }
   const eventDuration=element('label',undefined,'dashboard-popup-option');eventDuration.htmlFor='dashboard-event-toast-seconds';
   eventDuration.append(document.createTextNode('Diese Toasts anzeigen für '),duration('dashboard-event-toast-seconds',draft.eventToasts.seconds,0,30,v=>draft.eventToasts.seconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(eventDuration);
-  box.append(element('h3','⚽ Bundesliga Live-Ergebnisse'),element('p','OpenLigaDB: Spielstände im Laufband und Tor-Toasts. Daten können zeitverzögert sein.'));
+  box=section('football','Bundesliga');
+  box.append(element('p','OpenLigaDB liefert Spielstände und bestätigte Ereignisse. Die angezeigte Spielminute ist eine Schätzung.'));
   for(const [key,name] of [['bl1','1. Bundesliga'],['bl2','2. Bundesliga']]){const label=element('label',undefined,'dashboard-popup-option'),check=element('input');check.type='checkbox';check.checked=draft.football[key];check.disabled=busy;check.onchange=()=>draft.football[key]=check.checked;label.append(check,document.createTextNode(name+' im Laufband anzeigen'));box.append(label);}
-  const goalLabel=element('label',undefined,'dashboard-popup-option');goalLabel.append(document.createTextNode('Tor-Toast anzeigen für '),duration('dashboard-goal-seconds',draft.football.goalToastSeconds,0,30,v=>draft.football.goalToastSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(goalLabel);
+  const goalLabel=element('label',undefined,'dashboard-popup-option');goalLabel.append(document.createTextNode('Ereignismeldungen anzeigen für '),duration('dashboard-goal-seconds',draft.football.goalToastSeconds,0,30,v=>draft.football.goalToastSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(goalLabel);
   box.append(element('h3','Bundesliga-Ereignisse'),element('p','Tor, Halbzeit und Abpfiff aus erkannten Datenänderungen; Anstoßzeit nach Spielplan, nicht als offiziell bestätigter Anpfiff. Karten benötigen eine zusätzliche Live-Ereignisquelle.'));
   for(const [key,label,available] of [['goal','⚽ Tor',true],['kickoff','▶ Geplante Anstoßzeit erreicht',true],['halftime','⏸ Halbzeitstand eingetragen',true],['fulltime','■ Spielende bestätigt',true],['red','🟥 Rote Karte (Datenquelle fehlt)',false],['secondYellow','🟨🟥 Gelb-Rote Karte (Datenquelle fehlt)',false]]){
    const line=element('label',undefined,'dashboard-popup-option'),check=element('input');check.type='checkbox';check.checked=!!draft.football.events[key];check.disabled=busy||!available;check.setAttribute('aria-label',label);check.onchange=()=>draft.football.events[key]=check.checked;line.append(check,document.createTextNode(label));box.append(line);
@@ -92,7 +106,7 @@
    makeTestButton('■ Testspiel beenden','dashboard-demo-stop',()=>{draft.football.demo=null;});
   }
   box.append(demoRow);
-  const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');box.append(actions,status);
+  const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');frame.append(actions,status);
  }
  function render(){const box=host();if(!box)return;const value=typeof dashboardSettings==='undefined'?null:dashboardSettings,next=String(typeof ACTIVE_CLUB==='undefined'?'':ACTIVE_CLUB)+'|'+JSON.stringify(value);if(next===stamp&&draft)return;stamp=next;draft=M.resolve(value).settings;draw();}
  async function store(){

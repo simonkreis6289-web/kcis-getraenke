@@ -23,6 +23,7 @@
     const label=direct?'TV direkt verbunden · '+cloud:cloud;
     const indicator=el.querySelector('summary');
     indicator.title=label;
+    el.querySelector('.shared-sync-caption').textContent=direct?'TV direkt · '+cloud:cloud;
     indicator.setAttribute('aria-label','Cloud-Status: '+label);
     el.querySelector('.shared-sync-label').textContent=label;
     const detail=el.querySelector('.shared-sync-error-details');

@@ -37,3 +37,29 @@
 .dashboard-event-toast-color-row .dashboard-popup-option{flex:1;min-width:0}
 .dashboard-event-toast-color-row input[type=color]{flex:none;width:52px;height:38px;padding:3px;border-radius:7px;border:1px solid #aebdd2;background:#fff;cursor:pointer}
 .dashboard-event-toast-color-row input[type=color]:disabled{cursor:not-allowed;opacity:.55}
+
+.dashboard-layout-settings { width: 100%; max-width: 1050px; box-sizing: border-box; }
+.dashboard-settings-section {
+  border: 1px solid #d3dfef;
+  border-radius: 9px;
+  margin-bottom: 10px;
+}
+.dashboard-settings-section > summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  border-radius: inherit;
+  background: #edf2f9;
+  font-weight: 750;
+}
+.dashboard-settings-section-body { padding: 8px 14px 14px; }
+.dashboard-settings-section-body > label { min-height: 32px; }
+#main-verwaltung input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  padding: 0;
+  margin: 0 4px 0 0;
+  flex: none;
+  accent-color: #275c98;
+}
