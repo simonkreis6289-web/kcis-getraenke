@@ -41,6 +41,7 @@ test('after a browser disconnect Tiberius keeps accepting local throws and preve
  a.c.navigator.onLine=false;
  for(const pins of [0,9,0,9,0,9])await a.c.handleTiberiusThrow(pins);
  assert.equal(a.run('tiberiusState.throws.length'),6);assert.equal(a.run('tiberiusState.currentPlayerIndex'),0);
+ assert.equal(a.run("penaltyStatsLog.filter(entry=>entry.type==='gosse').length"),3);
  assert.equal(a.run('persons[0].strafen.gosse'),3);assert.equal(a.run('persons[0].strafen.nine'),3);
  assert.equal(await a.c.startNewKegelabend(),false);assert.equal(a.run('currentEveningStartedAt'),before.currentEveningStartedAt);
  assert.deepEqual(db.root(),before);
@@ -50,7 +51,10 @@ test('after a browser disconnect Tiberius keeps accepting local throws and preve
  await a.c.undoLastTiberiusThrow();assert.equal(a.run('persons[0].strafen.nine'),2);
  db.fail(false);assert(await a.c.KCSharedSync.reconnect());
  assert.equal(db.root().tiberiusState.throws.length,5);assert.equal(db.root().persons[0].strafen.gosse,3);
- assert.equal(db.root().persons[0].strafen.nine,2);assert.equal(db.root().penaltyStatsLog.length,2);
+ assert.equal(db.root().persons[0].strafen.nine,2);assert.equal(db.root().penaltyStatsLog.length,5);
+ await a.c.undoLastTiberiusThrow();assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(db.root().persons[0].strafen.gosse,2);
+ assert.equal(db.root().penaltyStatsLog.filter(entry=>entry.type==='gosse').length,2);
  assert(await a.c.startNewKegelabend());assert(await a.c.KCSharedSync.waitForUpload());
  assert.notEqual(db.root().currentEveningStartedAt,before.currentEveningStartedAt);
  assert.equal(db.root().persons[0].strafen.gosse,0);

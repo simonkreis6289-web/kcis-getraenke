@@ -20,7 +20,7 @@ test('Tiberius books exact and overrun targets, special throws and advances one 
  assert.equal(c.tiberiusState.penalties[1].mode,'over');
  assert.equal(c.tiberiusState.penalties[2].mode,'exact');
  assert.deepEqual(plain(c.tiberiusState.penalties[2].payers),['Peter','Simon']);
- assert.equal(stats.length,2);
+ assert.deepEqual(plain(stats.map(([type,name])=>[type,name])),[['9er','Peter'],['gosse','Simon'],['9er','Nico']]);
  await c.undoLastTiberiusThrow();
  assert.equal(c.tiberiusState.score,9);assert.equal(c.tiberiusState.currentPlayerIndex,2);assert.equal(people[0].strafen.special,0);
  await c.handleTiberiusThrow(1);assert.equal(c.tiberiusState.currentPlayerIndex,0);
