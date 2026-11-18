@@ -180,6 +180,11 @@ function renderIndividualBoard(s,options={}){
   body='<div class="ind-hurdle-split">'+(dashboard?renderHurdleCircuit(s,colors,current):'')+
    renderHurdleTables(s,rowPlayers,{dashboard,preview,colors,current})+'</div>';
  }
- const events=seven||dashboard?'':(s.events||[]).slice(-3).reverse().map(e=>'<div class="ind-event">'+indEscape(e.name)+' · '+(e.point??'')+' · '+indEscape(e.text)+'</div>').join('');
- return '<section class="ind-board'+(!seven?' ind-hindernis-board':'')+(dashboard?' ind-hurdle-tv':'')+'"><h2>'+head+'</h2>'+turn+(seven?'<p class="ind-help">'+indEuro(KCIndividual.sevenSettings(s.config?.seven).pinCents)+' je Pin Abstand · '+indEscape(KCIndividual.sevenKranzLabel(s.config?.seven))+'</p>':'')+(options.controls||'')+(seven||dashboard?'':renderHurdleTrack(s,name))+body+events+'</section>';
+ if(dashboard){
+  return '<div class="hurdle-tv-frame"><div class="hurdle-tv-header"><h2>'+head+'</h2>'+
+   '<div class="hurdle-tv-turn">'+turn+'</div></div><div class="hurdle-tv-fit" data-hurdle-game="'+indEscape(s.id)+'">'+
+   '<div class="tv-board ind-tv-board hurdle-tv-board"><section class="ind-board ind-hindernis-board ind-hurdle-tv">'+body+'</section></div></div></div>';
+ }
+ const events=seven?'':(s.events||[]).slice(-3).reverse().map(e=>'<div class="ind-event">'+indEscape(e.name)+' · '+(e.point??'')+' · '+indEscape(e.text)+'</div>').join('');
+ return '<section class="ind-board'+(!seven?' ind-hindernis-board':'')+'"><h2>'+head+'</h2>'+turn+(seven?'<p class="ind-help">'+indEuro(KCIndividual.sevenSettings(s.config?.seven).pinCents)+' je Pin Abstand · '+indEscape(KCIndividual.sevenKranzLabel(s.config?.seven))+'</p>':'')+(options.controls||'')+(seven?'':renderHurdleTrack(s,name))+body+events+'</section>';
 }
