@@ -92,6 +92,24 @@ async function applyFuchsjagdThrow(pins){
  }catch(e){console.error('Fuchsjagd',e);showToast('Wurf konnte nicht gespeichert werden','error');}
  finally{s.busy=false;}
 }
+async function fuchsjagdNextThrower(){
+ ensureFuchsjagdState();const s=fuchsjagdState;
+ if(!s.active||s.busy||s.finished)return false;
+ const who=fuchsjagdCurrentThrower();
+ if(!who)return false;
+ s.busy=true;
+ try{
+  const result=fuchsjagdApplyThrow(s,0,0,who,new Date().toISOString());
+  s.throws[s.throws.length-1].skipped=true;
+  if(result==='complete'&&!(await fuchsjagdFinalize(s))){
+   const last=s.throws.pop();fuchsjagdRestore(s,last.before);
+   showToast('Fuchsjagd konnte nicht abgeschlossen werden','error');return false;
+  }
+  renderFuchsjagdGame();persistState();
+  showToast('➡ '+who+' übersprungen · als Nächstes: '+(fuchsjagdCurrentThrower()||'Spielende'),'success');
+  return true;
+ }finally{s.busy=false;}
+}
 async function undoFuchsjagdThrow(){
  ensureFuchsjagdState();const s=fuchsjagdState;
  if(s.busy||!s.throws.length||s.finished){showToast('Rückgängig nach Spielabschluss nicht möglich','error');return;}
@@ -99,7 +117,7 @@ async function undoFuchsjagdThrow(){
  if(!last.before){showToast('Älterer Wurf kann nicht sicher zurückgenommen werden','error');return;}
  s.busy=true;
  try{
-  if(!(await changeSoloThrowPenalty(last.name,{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0},null)))return;
+  if(!last.skipped&&!(await changeSoloThrowPenalty(last.name,{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0},null)))return;
   s.throws.pop();fuchsjagdRestore(s,last.before);
   renderFuchsjagdGame();persistState();
  }finally{s.busy=false;}
