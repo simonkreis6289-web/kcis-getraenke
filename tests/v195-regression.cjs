@@ -93,7 +93,9 @@ test('both app and dashboard standings show accumulated cash hurdles and the aut
  assert(doc.querySelector('thead').textContent.includes('Strafen'));assert.equal(doc.querySelector('.ind-penalty').textContent,'0,75 €');
  s.index=0;s.scores.A=89;s.scores.B=70;const out=step(s,'throw',{kind:'pins',pins:1});doc=parseHTML(view.renderIndividualBoard(out.state)).document;
  const rows=[...doc.querySelector('.ind-hurdle-split table tbody').children];assert.equal(rows[0].querySelector('.ind-penalty').textContent,'0,75 €');assert.equal(rows[1].querySelector('.ind-penalty').textContent,'0,23 €');
- assert(doc.documentElement.textContent.includes('🏆 A'));assert(!doc.querySelector('.ind-turn'));assert(read('dashboard.html').includes('renderIndividualBoard(data)'));
+ assert(doc.documentElement.textContent.includes('🏆 A'));assert(!doc.querySelector('.ind-turn'));
+ const dashboard=parseHTML(view.renderIndividualBoard(out.state,{dashboard:true})).document;
+ assert.deepEqual([...dashboard.querySelectorAll('.hurdle-scores .ind-penalty')].map(cell=>cell.textContent),['0,75 €','0,23 €']);
 });
 
 test('hurdle charges are one summed item per member/evening, including multiple games, and undo lowers it',()=>{
