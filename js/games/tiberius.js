@@ -201,6 +201,7 @@ function startTiberiusGameFinal(starterName) {
   tiberiusState.finished = false;
   tiberiusState.score = 0;
   tiberiusState.throws = [];
+  tiberiusState.currentPlayerIndex=0;
     tiberiusState.undoStack = [];
   tiberiusState.penalties = {};
   tiberiusState.pendingHit = null;
@@ -466,93 +467,89 @@ function continueTiberiusAfterThrower(personName = '') {
   }
 }
 
-async function handleTiberiusThrow(value) {
-  ensureTiberiusState();
-  const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('tiberius'):value;if(scored===null)return;
-    
-    tiberiusState.undoStack.push({
-      score: tiberiusState.score,
-      throws: JSON.parse(JSON.stringify(tiberiusState.throws || [])),
-      penalties: JSON.parse(JSON.stringify(tiberiusState.penalties || {})),
-      pendingHit: tiberiusState.pendingHit
-        ? JSON.parse(JSON.stringify(tiberiusState.pendingHit))
-        : null,
-      personsStrafen: persons.map(p => ({
-        name: p.name,
-        strafen: JSON.parse(JSON.stringify(p.strafen || {}))
-      })),
-      penaltyStatsLog: JSON.parse(JSON.stringify(penaltyStatsLog || []))
-    });
-
-  const oldScore = parseInt(tiberiusState.score || 0, 10) || 0;
-  const newScore = oldScore + scored;
-
-  tiberiusState.score = newScore;
-
-  const throwEntry = {
-    value:scored,rawValue:value,
-    oldScore,
-    newScore,
-    createdAt: new Date().toISOString()
-  };
-
-  tiberiusState.throws.push(throwEntry);
-
-  closeTiberiusThrowModal();
-
-  tiberiusPendingThrower = {
-    ...throwEntry,value,
-    needsThrower: value === 0 || value === 9 || value === 12
-  };
-
-  if (tiberiusPendingThrower.needsThrower) {
-    openTiberiusThrowerModal();
-    return;
-  }
-
-  continueTiberiusAfterThrower();
+// Tiberius V253: Werferwechsel und Buchungen sind ein einzelner, wiederholbarer Ablauf.
+// Ein Sonderwurf darf weder ein altes Personen-Popup offenlassen noch den Zug blockieren.
+let tiberiusAutoBusy=false;
+function tiberiusThrower(){
+ ensureTiberiusState();
+ const names=Array.isArray(tiberiusState.playerOrder)&&tiberiusState.playerOrder.length?tiberiusState.playerOrder:getTiberiusPlayers().map(p=>p.name);
+ return names[(Math.max(0,Number(tiberiusState.currentPlayerIndex)||0))%names.length]||'';
 }
-
-function undoLastTiberiusThrow() {
-  ensureTiberiusState();
-
-  const last = tiberiusState.undoStack?.pop();
-
-  if (!last) {
-    showToast('Kein Tiberius-Wurf zum Rückgängig machen', 'error');
-    return;
-  }
-
-  tiberiusState.score = last.score || 0;
-  tiberiusState.throws = Array.isArray(last.throws) ? last.throws : [];
-  tiberiusState.penalties = last.penalties || {};
-  tiberiusState.pendingHit = last.pendingHit || null;
-
-  if (Array.isArray(last.personsStrafen)) {
-    last.personsStrafen.forEach(snapshot => {
-      const p = persons.find(x => x.name === snapshot.name);
-      if (p) {
-        p.strafen = snapshot.strafen || {};
-      }
-    });
-  }
-
-  penaltyStatsLog = Array.isArray(last.penaltyStatsLog)
-    ? last.penaltyStatsLog
-    : [];
-
-  tiberiusPendingThrower = null;
-
-  closeTiberiusThrowModal();
-  closeTiberiusThrowerModal();
-  closeTiberiusHitModal();
-
-  renderAll();
-  persistState();
-
-  showToast('↩️ Letzter Tiberius-Wurf rückgängig', 'success');
+function tiberiusNextThrower(){
+ ensureTiberiusState();
+ if(!tiberiusState.active||tiberiusAutoBusy||tiberiusState.pendingHit)return false;
+ const length=tiberiusState.playerOrder?.length||0;if(!length)return false;
+ tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+1)%length;
+ renderAll();persistState();return true;
 }
-
+async function handleTiberiusThrow(value){
+ ensureTiberiusState();
+ if(!tiberiusState.active||tiberiusState.finished||tiberiusAutoBusy)return;
+ const thrower=tiberiusThrower();
+ if(!thrower){showToast('Kein aktueller Werfer vorhanden','error');return;}
+ const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('tiberius'):value;
+ if(scored===null)return;
+ const oldScore=Number(tiberiusState.score)||0,newScore=oldScore+Number(scored);
+ const list=tiberiusState.playerOrder.slice();
+ const changes=[];
+ if(value===0){
+  const key=getGosseStrafeKey();if(!key){showToast('Gossen-Strafe nicht gefunden','error');return;}
+  changes.push({personName:thrower,category:'strafen',key,delta:1});
+ }else if(value===9||value===12){
+  const key=getKranzStrafeKey();if(!key){showToast('9er/Kranz-Strafe nicht gefunden','error');return;}
+  list.filter(name=>name!==thrower).forEach(personName=>changes.push({personName,category:'strafen',key,delta:1}));
+ }
+ const hits=(tiberiusState.targets||[]).map((target,colIndex)=>({target:Number(target),colIndex}))
+  .filter(({target,colIndex})=>target>0&&oldScore<target&&newScore>=target&&!tiberiusState.penalties?.[colIndex])
+  .sort((a,b)=>a.target-b.target);
+ const snapshots={
+  score:tiberiusState.score,throws:JSON.parse(JSON.stringify(tiberiusState.throws||[])),
+  penalties:JSON.parse(JSON.stringify(tiberiusState.penalties||{})),currentPlayerIndex:tiberiusState.currentPlayerIndex,
+  pendingHit:null,bookedChanges:changes.map(x=>({...x})),
+  penaltyStatsLog:JSON.parse(JSON.stringify(penaltyStatsLog||[]))
+ };
+ tiberiusAutoBusy=true;
+ try{
+  if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'🏛️ Tiberius: Sonderwurf')))return;
+  const createdAt=new Date().toISOString();
+  tiberiusState.score=newScore;
+  tiberiusState.throws.push({value:scored,rawValue:value,oldScore,newScore,thrower,createdAt});
+  for(const {target,colIndex} of hits){
+   const mode=newScore===target?'exact':'over',payers=mode==='exact'?list.filter(name=>name!==thrower):[thrower];
+   tiberiusState.penalties[colIndex]={target,colIndex,mode,thrower,payers,amount:target/100,createdAt};
+  }
+  tiberiusState.pendingHit=null;
+  tiberiusPendingThrower=null;
+  tiberiusState.currentPlayerIndex=(snapshots.currentPlayerIndex+1)%list.length;
+  (tiberiusState.undoStack||(tiberiusState.undoStack=[])).push(snapshots);
+  if((value===9||value===12)&&typeof addPenaltyStatsEntry==='function')
+   addPenaltyStatsEntry(value===9?'9er':'Kranz',thrower,changes.map(x=>x.personName));
+  closeTiberiusThrowModal();closeTiberiusThrowerModal();closeTiberiusHitModal();
+  renderAll();persistState();
+  showToast(hits.length?'🏛️ '+hits.map(x=>'Ziel '+x.target).join(', ')+' gebucht · '+thrower:'🎳 '+thrower+' · '+scored+' Holz','success');
+ }catch(error){showToast('Tiberius-Buchung fehlgeschlagen: '+(error?.message||error),'error');}
+ finally{tiberiusAutoBusy=false;renderTiberius();}
+}
+async function undoLastTiberiusThrow(){
+ ensureTiberiusState();
+ if(tiberiusAutoBusy||!tiberiusState.active)return;
+ const last=tiberiusState.undoStack?.at(-1);
+ if(!last){showToast('Kein Tiberius-Wurf zum Rückgängig machen','error');return;}
+ tiberiusAutoBusy=true;
+ try{
+  const changes=(last.bookedChanges||[]).map(x=>({...x,delta:-x.delta}));
+  if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'↩ Tiberius: Sonderwurf rückgängig')))return;
+  tiberiusState.undoStack.pop();
+  tiberiusState.score=last.score;
+  tiberiusState.throws=last.throws;
+  tiberiusState.penalties=last.penalties;
+  tiberiusState.currentPlayerIndex=last.currentPlayerIndex;
+  tiberiusState.pendingHit=null;tiberiusPendingThrower=null;
+  penaltyStatsLog=last.penaltyStatsLog||penaltyStatsLog;
+  closeTiberiusThrowModal();closeTiberiusThrowerModal();closeTiberiusHitModal();
+  renderAll();persistState();showToast('↩ Letzten Tiberius-Wurf zurückgenommen','success');
+ }finally{tiberiusAutoBusy=false;}
+}
 function getTiberiusHitForScore(oldScore, newScore) {
   ensureTiberiusState();
 
@@ -783,6 +780,7 @@ function renderTiberius() {
       `;
     }).join('');
 
+  const activeThrower=tiberiusThrower();
   const bodyRows = players.map(p => {
     const cells = targets.map((target, colIndex) => {
       const penalty = tiberiusState.penalties?.[colIndex];
@@ -803,7 +801,7 @@ function renderTiberius() {
     const live = getTiberiusPenaltyForPerson(p.name);
 
     return `
-      <tr>
+      <tr class="${p.name===activeThrower?'tiberius-current-row':''}">
         <td class="sticky-name">
           <strong>${p.name}</strong>
             <div class="game-name-amount">
