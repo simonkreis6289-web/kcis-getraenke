@@ -5,6 +5,40 @@ const src=read('tests/v215-shared-sync.cjs'),factory=src.slice(src.indexOf('func
 const {database,initial,apiClient,context,fullApp}=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath','FakeBroadcastChannel',factory+';return {database,initial,apiClient,context,fullApp};')(read,copy,assert,vm,parseHTML,require,evening,rootPath,personPath,FakeBroadcastChannel);
 const ds=read('tests/v185-regression.cjs'),start=ds.indexOf('function context(html){'),end=ds.indexOf('async function settle(',start),dashboard=new Function('read','vm','parseHTML','assert','require','let sequence=0;'+ds.slice(start,end)+';return dashboard;')(read,vm,parseHTML,assert,require);
 const tick=()=>new Promise(r=>setImmediate(r));
+test('the header fast buttons show throw popups over the direct link while Firebase cannot save',async()=>{
+ const root=initial(),now=Date.now();
+ root.penaltyStatsLog=Array.from({length:70},(_,i)=>({id:'old-'+i,type:'gosse',thrower:'B',eveningStartedAt:evening,createdAt:new Date(now-60000-i*1000).toISOString()}));
+ const db=database({[rootPath]:root}),a=fullApp(db);
+ await a.select();
+ const d=dashboard({root:()=>db.root(),subscribe:(_,fn)=>{fn(db.root());return ()=>{};}});
+ d.c.window.BroadcastChannel=FakeBroadcastChannel;
+ d.document.querySelector('main.dashboard .stage').getBoundingClientRect=()=>({left:0,width:800});
+ for(const name of ['dashboard-link','dashboard-layout','dashboard-layout-tv'])vm.runInContext(read('js/'+name+'.js'),d.c);
+ const tv=d.c.window.KCDashboardLayoutTV;
+ d.c.window.KCDashboardLayoutTV={apply(){},highlight(){},ticker(){},feed:tv.feed};
+ Object.defineProperty(d.document.getElementById('game-select'),'value',{value:'auto',writable:true});
+ d.c.window.dashboardTest.connect('club','Club');
+ try{
+  db.fail(true);
+  for(const [type,label] of [['gosse','Gosse'],['9er','Alle Neune'],['kranz','Kranz'],['durchgeworfen','Alle Neune']]){
+   const fastButton=a.document.querySelector(`.quick-penalty-bar button[onclick="openPenaltyQuick('${type}')"]`);
+   assert(fastButton);
+   a.run(fastButton.getAttribute('onclick'));
+   a.document.querySelector('.quick-penalty-person-btn[data-person-name="A"]').onclick();
+   await a.c.confirmQuickPenalty();
+   await tick();
+   assert.equal(a.run('penaltyStatsLog[0].type'),type,'tablet records the fast-button throw');
+   assert.equal(vm.runInContext('state.penaltyStatsLog[0].type',d.c),type,'TV receives the fast-button throw');
+   const popup=d.document.getElementById('dashboard-throw-popup');
+   assert(popup&&!popup.hidden);
+   assert.match(popup.textContent,new RegExp(label+'.*A'));
+  }
+  assert.equal(db.root().penaltyStatsLog.length,70);
+ }finally{
+  d.c.window.dashboardTest.unsubscribe();
+  a.c.KCTabletSync.begin('other');
+ }
+});
 test('direct display carries drinks, throws and timer pause while cloud upload is blocked; old cloud snapshots cannot undo it',{timeout:60000},async()=>{
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();let receive;const d=dashboard({root:()=>db.root(),subscribe:(_,fn)=>{receive=fn;fn(db.root());return ()=>{};}});d.c.window.BroadcastChannel=FakeBroadcastChannel;vm.runInContext(read('js/dashboard-link.js'),d.c);Object.defineProperty(d.document.getElementById('game-select'),'value',{value:'auto',writable:true});d.c.window.dashboardTest.connect('club','Club');
  db.fail(true);await a.c.changeDrink('A','beer',1);await tick();assert.equal(db.root().persons[0].drinks.beer,0);assert(d.document.getElementById('drinks-total').textContent.includes('2,00'));
