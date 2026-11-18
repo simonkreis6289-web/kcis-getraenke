@@ -6,11 +6,33 @@
   const id=()=> 'sync_'+crypto.randomUUID(),snapshot=()=>C.clean(getFirestoreState()),key=club=>'kcis_tablet_outbox_'+club;
   const toast=(text,type='error')=>typeof showToast==='function'&&showToast(text,type);
   function status(){
-    let el=document.getElementById('shared-sync-status');if(!el){const app=document.getElementById('app');if(!app)return;el=document.createElement('div');el.id='shared-sync-status';el.setAttribute('role','status');el.innerHTML='<span></span><button type="button" onclick="KCSharedSync.reconnect()">Übertragung erneut versuchen</button>';app.prepend(el);}
-    const pending=current?.inflight||current?.pending,direct=current?.linkStatus?.direct;
-    el.dataset.mode=!ready?'blocked':current?.error?'pending':pending?'saving':'ready';
-    el.querySelector('span').textContent=!ready?'Tablet lädt den gespeicherten Stand …':current?.error?(direct?'TV direkt verbunden · Cloudspeicherung ausstehend':'Auf Tablet gespeichert · Cloudspeicherung ausstehend'):pending?(direct?'TV direkt verbunden · Cloudspeicherung läuft …':'Auf Tablet gespeichert · Cloudspeicherung läuft …'):(direct?'TV direkt verbunden · Cloudspeicherung bestätigt':'Tablet bereit · Cloudspeicherung bestätigt · TV über Cloud');
-    el.querySelector('button').hidden=!current?.error;
+    let el=document.getElementById('shared-sync-status');
+    if(!el){
+      const app=document.getElementById('app');if(!app)return;
+      el=document.createElement('div');el.id='shared-sync-status';el.setAttribute('role','status');
+      const label=document.createElement('span'),retry=document.createElement('button'),detail=document.createElement('small'),copy=document.createElement('button');
+      label.className='shared-sync-label';detail.className='shared-sync-error-details';
+      retry.type='button';retry.textContent='Übertragung erneut versuchen';retry.onclick=()=>void window.KCSharedSync?.reconnect();
+      copy.type='button';copy.className='shared-sync-copy-error';copy.textContent='Fehler kopieren';
+      copy.onclick=()=>{
+       const message=JSON.stringify(window.KCSharedSync?.diagnostics?.()||{},null,2);
+       if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(message);
+       else if(typeof showToast==='function')showToast('Bitte den sichtbaren Fehlertext aus der Statuszeile kopieren','error');
+      };
+      el.append(label,detail,retry,copy);app.prepend(el);
+    }
+    const pending=!!(current?.inflight||current?.pending),direct=!!current?.linkStatus?.direct,problem=!!current?.error;
+    el.dataset.mode=!ready?'blocked':problem?'pending':pending?'saving':'ready';
+    el.querySelector('.shared-sync-label').textContent=!ready?'Tablet lädt den gespeicherten Stand …':problem
+      ?(direct?'TV direkt verbunden · Cloudspeicherung ausstehend':'Tablet lokal bereit · Cloudspeicherung ausstehend')
+      :pending?(direct?'TV direkt verbunden · Cloudspeicherung läuft …':'Tablet lokal bereit · Cloudspeicherung läuft …')
+      :(direct?'TV direkt verbunden · Cloudspeicherung bestätigt':'Tablet bereit · Cloudspeicherung bestätigt · TV über Cloud');
+    const detail=el.querySelector('.shared-sync-error-details');
+    const errorMessage=String(current?.error||'').slice(0,250);
+    detail.hidden=!problem;detail.textContent=problem?'Firebase: '+errorMessage+' · Ausstehende Buchungen bleiben lokal gespeichert.':'';
+    const retry=el.querySelector('button:not(.shared-sync-copy-error)');
+    retry.hidden=!problem;retry.disabled=!!current?.uploading;
+    el.querySelector('.shared-sync-copy-error').hidden=!problem;
   }
   function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight}));}
   function cache(){try{if(typeof syncCurrentClubToStore==='function'){syncCurrentClubToStore();saveClubSystem();}}catch{/* Die dauerhafte Übertragungswarteschlange bleibt maßgeblich. */}}
@@ -36,8 +58,8 @@
         try{
           const ctx={method:'commitTabletBatch',opId:batch.opId,eveningStartedAt:s.cloudEvening||'',base:{},sideOperations:[],metaBase:{}};
           await raw.commitTabletBatch(s.club,batch,ctx);
-          s.cloudEvening=batch.state.currentEveningStartedAt||'';s.inflight=null;s.error='';store(s);
-        }catch(error){s.error=error.message;break;}
+          s.cloudEvening=batch.state.currentEveningStartedAt||'';s.inflight=null;s.error='';s.retryFailures=0;s.nextRetryAt=0;store(s);
+        }catch(error){s.retryFailures=(s.retryFailures||0)+1;s.error=(error?.code?'['+error.code+'] ':'')+String(error?.message||error);s.nextRetryAt=Date.now()+Math.min(300000,5000*Math.pow(2,Math.min(6,s.retryFailures-1)));console.error('Tablet-Cloudspeicherung gescheitert (lokale Warteschlange bleibt erhalten):',error);break;}
       }
       if(s===current)status();return !s.inflight&&!s.pending;
     })().finally(()=>s.uploading=null);
@@ -106,7 +128,7 @@
   function persist(){if(!ready||unit)return;try{stage({...current.root,...snapshot()});}catch(error){toast(error.message);}}
   async function flush(){if(unit)return true;persist();return ready;}
   async function waitForUpload(){await localTail;if(!ready)return false;persist();return drain(current);}
-  async function reconnect(){if(!current)return false;if(!ready)return prepare(current.club,createEmptyClubData());current.error='';return drain(current);}
+  async function reconnect(){if(!current)return false;if(!ready)return prepare(current.club,createEmptyClubData());current.nextRetryAt=0;return drain(current);}
   function install(value){api=value;raw={...value};for(const name of Object.keys(api.__syncArity||{}))if(name!=='commitTabletBatch')api[name]=(...args)=>write(name,args);installActions();status();}
   function installActions(){
     const entries={
@@ -154,10 +176,10 @@
     }
   }
 
-  window.KCTabletSync=Object.freeze({install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},status,get server(){return C.clone(server);},get ready(){return ready;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;}});
+  window.KCTabletSync=Object.freeze({install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},status,get server(){return C.clone(server);},get ready(){return ready;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.root?.tabletSequence||0,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
   document.addEventListener('click',e=>{if(ready&&!unit)return;if(e.target?.closest?.('.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
   window.addEventListener('online',()=>void reconnect());
-  setInterval(()=>{for(const s of sessions.values())if(s.error||s.pending)void drain(s);},5000);
+  setInterval(()=>{for(const s of sessions.values())if((s.error||s.pending)&&Date.now()>=(s.nextRetryAt||0))void drain(s);},5000);
   // Zeitanker nur während laufender Countdowns auffrischen; Eingaben warten nicht darauf.
   setInterval(()=>{
     if(!ready||unit||!navigator.onLine)return;
