@@ -185,6 +185,13 @@
  }
  function advance(s){s.index++;if(s.index>=s.players.length){s.index=0;s.round++;}}
  function play(s,e){
+  if(e.action==='next'){
+   if(s.turn?.length||s.pendingArrange||s.gameKey==='poker'&&s.phase==='select')throw Error('Offenen Wurf oder Kartenwahl zuerst abschließen');
+   const len=s.gameKey==='parteienspiel'&&s.partyAlternating?2*Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length):s.players.length;
+   s.index=(s.index+1)%len;if(s.index===0)s.round++;
+   if(s.gameKey==='ballermann'&&s.participantTeams){const t=s.teamOrder[s.index%2],names=s.participantTeams[t]||[];if(names.length)s.teamIndexes[t]=((s.teamIndexes[t]||0)+1)%names.length;}
+   s.history.push(e);return;
+  }
   if(KCRoundGames.keys.includes(s.gameKey))return KCRoundGames.play(s,e);
   if(e.action==='throw'){
    if(s.gameKey==='guterschnitt'){
@@ -225,7 +232,9 @@
     else{
      if(s.readyToFinish||s.history.length>=2000)throw Error('Rundenende oder maximale Spiellänge erreicht.');
      const e={id:req.opId,action:req.action,name:current(s),at:ctx.now,atMs};
-     if(req.action==='throw'){
+     if(req.action==='next'){
+      if(s.turn?.length||s.pendingArrange)throw Error('Offene Wurfrunde zuerst abschließen');
+     }else if(req.action==='throw'){
       if(s.gameKey==='ballermann'){
        if(!s.timer.running)throw Error('Spielzeit zuerst starten.');
        if(remaining(s,atMs)<=0){if(s.timer.lastThrowUsed)throw Error('Der letzte Wurf nach Zeitablauf wurde bereits gebucht.');e.afterTime=true;}
