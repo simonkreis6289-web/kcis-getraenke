@@ -296,6 +296,7 @@ document.addEventListener('fullscreenchange',fullLabel); fullLabel();
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString('de-DE'),1000);$('clock').textContent=new Date().toLocaleTimeString('de-DE');
 function status(msg,ok=false){$('connection').textContent=msg;$('indicator').className='dot'+(ok?' ok':'');$('connection').title=msg;$('indicator').title=msg;$('indicator').setAttribute('aria-label',msg)}
 let lastReceived=0, firstSnapshot=false, connectStarted=0, fallbackBusy=false, fallbackTimer=null, connectionEpoch=0;
+let rootReconnectTimer=null,rootReconnectAttempts=0;
 function received(kind){lastReceived=Date.now();$('sync-time').textContent='Letzte Daten: '+new Date(lastReceived).toLocaleString('de-DE');if(directFrame)status('Tablet direkt · Cloudbestätigung ausstehend',true);else if(kind==='live')status('Live verbunden',true);else if(!firstSnapshot)status('Daten abrufbar · Live-Verbindung ausstehend',false)}
 function errorText(e){const code=e?.code||'';const msg=e?.message||String(e||'Unbekannter Fehler');return code?code+' · '+msg:msg}
 function fail(context,e){const msg=errorText(e);status(context+': '+msg);console.error(context,e)}
@@ -769,6 +770,7 @@ function stopLegacyChannels(){
  liveUnsub=null;seatingUnsub=null;gameUnsubs=[];liveGames={};livePersons={};seatingLive=null;
 }
 function unsubscribe(){
+ if(rootReconnectTimer!==null){clearTimeout(rootReconnectTimer);rootReconnectTimer=null;}
  dashboardLink?.close();dashboardLink=null;confirmedState=null;directFrame=null;
  dashboardSelectionSeen='';lastGamePaint='';
  window.KCCashDashboard?.reset();window.KCClubContentDashboard?.reset();
@@ -794,19 +796,27 @@ function connect(id,name){
  unsubscribe();lastRootReceived=0;const epoch=connectionEpoch;clubId=id;channelStatus();
  $('dashboard-club-title').textContent='🎳 '+(name||id);$('club-name').textContent=name+' · '+id;status('Verbinde mit Firebase …');connectStarted=Date.now();
 
- try{
-  unsub=api.subscribeToClubState(id,(data,metadata={})=>{
+ function retryRoot(){
+  if(rootReconnectTimer!==null||epoch!==connectionEpoch)return;
+  const delay=Math.min(60000,1200*Math.pow(2,Math.min(rootReconnectAttempts++,6)));
+  rootReconnectTimer=setTimeout(()=>{rootReconnectTimer=null;if(epoch!==connectionEpoch)return;if(navigator.onLine)attachRoot();else retryRoot();},delay);
+ }
+ function attachRoot(){
+  if(epoch!==connectionEpoch)return;
+  try{unsub?.();unsub=api.subscribeToClubState(id,(data,metadata={})=>{
    if(metadata.fromCache||metadata.pending){status('Gerätestand · Serverbestätigung ausstehend');return;}
    if(state?.syncProtocol&&Number(data?.syncRevision||0)<Number(state.syncRevision||0))return;
    if(epoch!==connectionEpoch)return;
    const unchanged=data?.syncProtocol&&Number(data.syncRevision)>0&&Number(data.syncRevision)===Number(state?.syncRevision);
    if(data?.syncProtocol){stopLegacyChannels();channels.persons=true;channels.games=true;}
-   firstSnapshot=true;lastRootReceived=Date.now();channels.state=!!data;channelStatus();
+   rootReconnectAttempts=0;firstSnapshot=true;lastRootReceived=Date.now();channels.state=!!data;channelStatus();
    if(unchanged){received('live');return;}
    if(!data){state=null;paintGame();window.KCCashDashboard?.reset();window.KCClubContentDashboard?.reset();KCGameRules.renderDashboard(null);status('Live verbunden · Noch kein aktueller Kegelabend',true);received('live');return}
    const oldOverviewRevision=Number(state?.dashboardGameOverview?.revision)||0;acceptConfirmed(data);window.KCSharedClock?.followTablet?.(state?.tabletClock);if(Number(data.dashboardGameOverview?.revision)>oldOverviewRevision){$('game-select').value='auto';localStorage.setItem('kc_dashboard_game','auto');}received('live');try{paint()}catch(e){fail('Anzeige-Fehler',e)}
-  },e=>{if(epoch===connectionEpoch){firstSnapshot=false;fail('Live-Verbindung fehlgeschlagen',e)}});
- }catch(e){fail('Live-Listener konnte nicht starten',e)}
+  },e=>{if(epoch===connectionEpoch){firstSnapshot=false;fail('Live-Verbindung fehlgeschlagen',e);retryRoot();}});
+  }catch(e){fail('Live-Listener konnte nicht starten',e);retryRoot();}
+ }
+ attachRoot();
  if(!state?.syncProtocol){
  try {
   seatingUnsub=api.subscribeToSeatingLive(id,data=>{
