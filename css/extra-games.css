@@ -106,3 +106,18 @@
 }
 .tv-loser-results strong { font-size: .86em; }
 .tv-loser-results span { font-weight: 700; overflow-wrap: anywhere; }
+
+.thousand-penalty-settings {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #c5d3e7;
+  border-radius: 8px;
+}
+.thousand-penalty-settings > label:not(.game-settings-field) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.thousand-penalty-settings input[type=checkbox] { width: 18px; height: 18px; }

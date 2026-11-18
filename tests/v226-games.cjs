@@ -6,7 +6,7 @@ function game(key,config={},players=['A','B']){let s=G.empty(key),last;const run
 function deal(g,hands){for(const hand of hands)for(const n of hand)g.roll(n,n===0?'gosse':'pins');}
 test('Poker uses the linked ranking, ignores zero combinations and puts a straight above four of a kind',()=>{
  const hand=ns=>core.KCRoundGames.pokerHand(ns.map(pins=>({pins})));assert.equal(hand([0,0,0,0,0]).level,0);assert.equal(hand([1,2,3,4,5]).level,6);assert.equal(hand([9,9,9,9,1]).level,5);assert.equal(hand([4,4,4,2,2]).level,4);assert.equal(hand([8,8,8,8,8]).level,7);assert.equal(hand([2,2,5,5,8]).value,5);
- const g=game('poker');deal(g,[[1,2,3,4,5],[9,9,9,9,1]]);g.run('exchange',{indices:[]});g.run('exchange',{indices:[]});assert(g.state.finished);assert.deepEqual(copy(g.state.winners),['A']);assert.equal(g.effects.changes.find(x=>x.key==='l1').personName,'B');
+ const g=game('poker');deal(g,[[1,2,3,4,5],[9,9,9,9,1]]);g.run('exchange',{indices:[]});g.run('exchange',{indices:[]});assert(g.state.finished);assert.deepEqual(copy(g.state.winners),['A']);assert.equal(g.effects.changes.find(x=>x.key==='l1').personName,'B');assert(!parseHTML(core.renderExtraGameBoard(g.state,{dashboard:true})).document.querySelector('h2'));
 });
 test('Poker enforces each exchange selection and undo restores its player phase',()=>{
  const g=game('poker',{maxExchange:1});deal(g,[[2,2,3,4,5],[3,3,4,6,8]]);assert.equal(g.state.phase,'select');assert.throws(()=>g.roll(4),/Auswahl/);assert.throws(()=>g.run('exchange',{indices:[0,1]}),/Tausch/);g.run('exchange',{indices:[]});assert.equal(g.state.phase,'select');g.run('exchange',{indices:[2]});assert.equal(g.state.phase,'redraw');assert.equal(G.current(g.state),'B');g.roll(3);assert(g.state.finished);assert.equal(g.state.hands.B[2].pins,3);g.run('undo');assert.equal(g.state.phase,'redraw');assert.equal(g.state.hands.B[2].pins,4);g.run('undo');assert.equal(g.state.phase,'select');assert.equal(G.current(g.state),'B');
@@ -79,4 +79,41 @@ test('actual 1000 arrangement, completion and undo keep all three digits and fin
 });
 test('1000 supports fixed zero and all fixed digit options without a twelve option',async()=>{
  const a=await app(),select=a.document.getElementById('kranz-rule-tausend');assert.deepEqual([...select.querySelectorAll('option')].map(o=>o.value),['0','1','2','3','4','5','6','7','8','9','choose']);for(const opt of select.querySelectorAll('option')){if(opt.value==='0')opt.setAttribute('selected','');else opt.removeAttribute('selected');}await a.c.KCKranzUI.save('tausend');await a.c.indStart('tausend');assert.equal(a.c.indGet('tausend').kranzRule.mode,'fixed');assert.equal(a.c.indGet('tausend').kranzRule.value,0);await a.c.extraThrow('tausend','kranz');assert.equal(a.c.indGet('tausend').history[0].pins,0);assert(!a.document.querySelector('.kc-kranz-backdrop'));await a.c.indAction('tausend','undo');assert.equal(a.c.indGet('tausend').history.length,0);
+});
+
+test('1000 charges the same positive distance above or below target, with an independent classic ranking',()=>{
+ for(const [classicLosers,distanceFee] of [[false,true],[true,true],[true,false],[false,false]]){
+  const g=game('tausend',{rounds:1,target:500,roundModes:['forward'],classicLosers,distanceFee,distanceRate:2},['A','B','C']);
+  for(const n of [4,5,6,5,4,4,5,0,0])g.roll(n,n?'pins':'miss');
+  assert.deepEqual(copy(g.state.scores),{A:456,B:544,C:500});
+  assert.deepEqual(copy(g.state.loserGroups),classicLosers?[{rank:1,names:['A','B']}]:[]);
+  assert.deepEqual(copy(g.effects.moneyAdded.map(b=>[b.personName,b.amountCents])),distanceFee?[['A',88],['B',88]]:[]);
+  const view=parseHTML(core.renderExtraGameBoard(g.state,{dashboard:true})).document;
+  assert(!view.querySelector('h2'));
+  assert.equal(view.querySelector('thead').textContent.includes('Strafe'),distanceFee);
+  g.run('undo');assert.equal(g.effects.moneyRemoved.length,distanceFee?2:0);
+ }
+});
+test('1000 saves fee options through its app settings and refunds the recorded amounts on undo',async()=>{
+ const a=await app(),d=a.document;
+ assert.equal(d.getElementById('round-tausend-classicLosers').checked,true);
+ assert.equal(d.getElementById('round-tausend-distanceFee').checked,false);
+ d.getElementById('round-tausend-classicLosers').checked=false;
+ d.getElementById('round-tausend-distanceFee').checked=true;
+ d.getElementById('round-tausend-distanceRate').value='2';
+ d.getElementById('round-tausend-rounds').value='1';
+ d.getElementById('round-tausend-target').value='500';
+ assert(await a.c.saveRoundSettings('tausend'));
+ await a.c.indStart('tausend');
+ for(const n of [4,5,6])await a.c.indAction('tausend','throw',{kind:'pins',pins:n});
+ await a.c.indAction('tausend','arrange',{order:[0,1,2]});
+ for(const n of [5,4,4])await a.c.indAction('tausend','throw',{kind:'pins',pins:n});
+ await a.c.indAction('tausend','arrange',{order:[0,1,2]});
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert.deepEqual(a.db.root().individualGameLedger.map(b=>[b.personName,b.amountCents]),[['A',88],['B',88]]);
+ assert.deepEqual(a.db.root().strafenHistory.find(e=>e.gameKey==='tausend').ranking,[]);
+ assert(a.db.root().persons.every(p=>p.strafen.loser===0));
+ await a.c.indAction('tausend','undo');
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(a.db.root().individualGameLedger.length,0);
 });
