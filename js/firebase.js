@@ -266,6 +266,7 @@ window.firestoreApi = {
       const makers={tannenbaum:'createTannenbaumState',darts:'createDartsState',lotterie:'createLotterieState',tiberius:'createTiberiusState',mensch:'createMenschState',plusminus:'createPlusminusState',haushoch:'createHausState',haustief:'createHausState',sichern:'createSichernState',fuchsjagd:'createFuchsjagdState',tor:'createTorState'};
       const empty=KCExtraGames.keys.includes(key)?KCExtraGames.empty(key):['siebener','hindernis'].includes(key)?KCIndividual.empty(key):['blackjack','gluecksspirale'].includes(key)?KCTableGames.empty(key):key==='sechstage'?KCSixDays.empty():window[makers[key]]();
       empty.revision=(Number(before.revision)||0)+1;empty.eveningStartedAt=current.currentEveningStartedAt||'';
+      if(Object.hasOwn(before,'stopwatch'))empty.stopwatch=null;
       tx.set(ref,{[field]:empty,dashboardActiveGame:null,dashboardGameOverview:{open:true,revision:Number(current.dashboardGameOverview?.revision||0)+1},dashboardDraw:null,dashboardRules:null,updatedAt:serverTimestamp()},{merge:true});
       return empty;
     });
@@ -586,9 +587,25 @@ window.firestoreApi = {
     });
   },
 
+  async setGameStopwatch(clubId,request={},syncContext=null) {
+    const key=request.gameKey,timer=window.KCGameStopwatch;
+    if(!clubId||!timer||!window.KCSharedCore?.games.includes(key))throw Error('Stoppuhr nicht verfügbar.');
+    const ref=doc(db,'clubs',clubId,'state','current'),field=key+'State';
+    const at=timer.now();
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const snap=await tx.get(ref),current=snap.exists()?snap.data():{},game=current[field];
+      if((current.currentEveningStartedAt||'')!==request.eveningStartedAt||
+         game?.eveningStartedAt&&game.eveningStartedAt!==request.eveningStartedAt)throw Error('Der Kegelabend wurde inzwischen gewechselt.');
+      const stopwatch=timer.toggle(key,game,current.teamStopwatchActive,request,at);
+      tx.set(ref,{[field]:{...game,stopwatch},updatedAt:serverTimestamp()},{merge:true});
+      return stopwatch;
+    });
+  },
+
   async transactSechsGame(clubId,request={}, syncContext = null) {
     if(!clubId||!window.KCSixDays)throw new Error('Rennspiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
+    const clockTime=window.KCGameStopwatch?.now();
     return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current.sechstageState?.eveningStartedAt||'');
@@ -627,6 +644,10 @@ window.firestoreApi = {
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
+      if(!result.repeat&&window.KCGameStopwatch){
+        const stopwatch=KCGameStopwatch.advance('sechstage',before,next,{at:clockTime,newRound:request.action==='start'});
+        if(stopwatch!==undefined)next.stopwatch=stopwatch;
+      }
       const resultHistory=window.KCGameResults?.append(current.strafenHistory,'sechstage',next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
@@ -643,6 +664,7 @@ window.firestoreApi = {
     const stateKey=gameKey+'State';
     if(!clubId||!window.KCTableGames)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
+    const clockTime=window.KCGameStopwatch?.now();
     return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
@@ -682,6 +704,10 @@ window.firestoreApi = {
           name:group.name,strafen:values,updatedAt:serverTimestamp()
         },{merge:true});
       }
+      if(!result.repeat&&window.KCGameStopwatch){
+        const stopwatch=KCGameStopwatch.advance(gameKey,before,next,{at:clockTime,newRound:request.action==='start'});
+        if(stopwatch!==undefined)next.stopwatch=stopwatch;
+      }
       const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
@@ -698,6 +724,7 @@ window.firestoreApi = {
     const stateKey=gameKey+'State',core=['siebener','hindernis'].includes(gameKey)?window.KCIndividual:window.KCExtraGames;
     if(!clubId||!core)throw new Error('Spiel ist noch nicht verfügbar');
     const ref=doc(db,'clubs',clubId,'state','current');
+    const clockTime=window.KCGameStopwatch?.now();
     return (typeof runSharedTransaction==='function'?runSharedTransaction.bind(null,clubId,syncContext):runTransaction)(db,async transaction=>{
       const snap=await transaction.get(ref),current=snap.exists()?snap.data():{};
       const existingEvening=String(current.currentEveningStartedAt||current[stateKey]?.eveningStartedAt||'');
@@ -738,6 +765,10 @@ window.firestoreApi = {
         },{merge:true});
       }
       const keptHistory=request.action==='undo'&&before.finished&&!next.finished?(current.strafenHistory||[]).filter(e=>e.id!==('game_result_'+gameKey+'_'+before.id)):current.strafenHistory;
+      if(!result.repeat&&window.KCGameStopwatch){
+        const stopwatch=KCGameStopwatch.advance(gameKey,before,next,{at:clockTime,newRound:request.action==='start'});
+        if(stopwatch!==undefined)next.stopwatch=stopwatch;
+      }
       const resultHistory=window.KCGameResults?.append(keptHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
@@ -2641,7 +2672,7 @@ async deleteLivePerson(
 };
 
 
-window.firestoreApi.__syncArity={"ensureCashStandingIncome":2,"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
+window.firestoreApi.__syncArity={"setGameStopwatch":2,"ensureCashStandingIncome":2,"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
 window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 

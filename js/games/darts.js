@@ -606,6 +606,10 @@ function confirmDartsScoreSetup() {
     parseInt(document.getElementById('darts-score-setup-t2')?.value || '0', 10) || 0
   );
 
+  if (!dartsState.active) {
+    dartsState.startedAt = new Date().toISOString();
+    dartsState.finished = false;
+  }
   dartsState.active = true;
   dartsState.winner = null;
   dartsState.scores.T1 = t1Value;
