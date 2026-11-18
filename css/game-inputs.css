@@ -55,3 +55,13 @@
 #main-spiele .darts-round-actions .save-prices-btn{flex:1 1 190px;min-width:0}
 #main-spiele .darts-round-actions #darts-undo-round{flex:1 1 190px;min-width:0;min-height:42px}
 #main-spiele #darts-undo-round:disabled{opacity:.5;cursor:not-allowed}
+
+/* V253: Die Spiel-Kopfzeile besitzt eine flexible Linie und zwei Aktionen rechts. */
+#main-spiele .game-title-with-actions{display:flex;align-items:center;flex-wrap:wrap;column-gap:10px;row-gap:6px;min-width:0}
+#main-spiele .game-title-with-actions::after{order:1;content:"";height:1px;flex:1 1 24px;min-width:12px;background:var(--border,#cbd5e1)}
+#main-spiele .game-title-with-actions>.game-dashboard-toolbar{order:2;display:flex;justify-content:flex-end;align-items:center;flex:0 0 auto;gap:8px;width:auto;min-height:0;margin:0;padding:0}
+#main-spiele .game-dashboard-toolbar .game-next-button{flex:0 0 auto;border:2px solid #21869f;border-radius:9px;background:#ccf4f5;color:#074c65;padding:8px 13px;font-weight:850;letter-spacing:0;text-transform:none;font-size:clamp(12px,1.05vw,16px);cursor:pointer}
+#main-spiele .game-dashboard-toolbar .game-next-button:hover:not(:disabled){background:#a8e9ec;box-shadow:0 2px 9px #137f9738}
+#main-spiele .game-dashboard-toolbar .game-next-button:disabled{opacity:.45;cursor:not-allowed}
+#main-spiele .game-title-with-actions .game-dashboard-button{font-size:clamp(12px,1vw,16px);letter-spacing:0;text-transform:none;padding:8px 12px}
+@media(max-width:800px){#main-spiele .game-title-with-actions>.game-dashboard-toolbar{gap:4px}#main-spiele .game-dashboard-toolbar .game-next-button,#main-spiele .game-title-with-actions .game-dashboard-button{font-size:12px;padding:7px 9px}}
