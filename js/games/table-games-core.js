@@ -53,6 +53,19 @@
   }
   function advanceSolo(s){s.currentIndex++;}
   function play(s,entry){
+    if(entry.action==='next'){
+      if(s.gameKey==='blackjack'){
+        if(blackjackPhase(s)!=='throwing')throw Error('Die Kartenphase kann nicht übersprungen werden');
+        const count=s.players.length;let next=(s.currentIndex+1)%count;
+        for(let i=0;i<count&&s.stopped.includes(s.players[next]);i++)next=(next+1)%count;
+        s.currentIndex=next;
+      }else{
+        if(s.turn?.pins?.length)throw Error('Angefangene Wurfrunde zuerst abschließen');
+        s.currentIndex=(s.currentIndex+1)%s.teams.length;
+        s.turn.playerIndex=0;
+      }
+      s.history.push(entry);return;
+    }
     if(s.gameKey==='blackjack'){
       const phase=blackjackPhase(s),name=currentName(s);
       if(entry.action==='card'){
@@ -128,6 +141,7 @@
             if(!Number.isInteger(pins)||pins<0||pins>(request.kind==='kranz'?12:9)||(request.kind==='pins'&&pins<1))throw Error('Bitte 1 bis 9 Holz, Gosse, Vorbei oder Kranz eingeben');
             Object.assign(entry,{kind:request.kind,pins});
           }else if(request.action==='card'){entry.value=request.value;entry.corrected=Object.hasOwn(s.cardValues,entry.name);}
+          else if(request.action==='next'){}
           else if(request.action!=='stand'||s.gameKey!=='blackjack')throw Error('Ungültige Spielaktion');
           if(s.history.length>=1000)throw Error('Maximale Spiellänge erreicht. Spiel abbrechen und neu starten.');
           play(s,entry);
