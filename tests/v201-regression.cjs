@@ -67,7 +67,7 @@ test('history records tied team loser ranks with frozen team/player names and no
 });
 test('real Darts and Fuchsjagd finishes add one named result and existing Mensch/Hausnummer/fast-button entries render',async()=>{
  const f=fixture(),c=f.c,g=resultModule(f);c.changeMultipleSyncedPersonCounters=async()=>true;c.getFirstLoserStrafeKey=()=> 'loser';c.startDartsGame();c.dartsState.scores.T1=1;c.dartsState.roundThrows.T1=[{hit:'2',value:2}];await c.finishDartsRound();assert.equal(c.strafenHistory.length,1);assert.deepEqual(plain(c.strafenHistory[0].ranking),[{rank:1,team:'TV',names:['C','Gast','D']}]);await c.finishDartsRound();assert.equal(c.strafenHistory.length,1);
- c.fuchsjagdState={active:true,fox:'A',hunters:['B','C'],startedAt:'unique'};await c.finishFuchsjagd(true,'');assert.deepEqual(plain(c.strafenHistory[0].ranking),[{rank:1,names:['B','C']}]);
+ c.fuchsjagdState={active:true,fox:'C',order:['A','B','C'],results:[{fox:'A',station:1},{fox:'B',station:2},{fox:'C',station:3}],startedAt:'unique'};await c.fuchsjagdFinalize(c.fuchsjagdState);assert.deepEqual(plain(c.strafenHistory[0].ranking),[{rank:1,names:['A']}]);
  for(const type of ['mensch','haushoch','haustief']){const html=g.markup({type,ranking:[{names:['A'],rank:1},{names:['B'],rank:2},{names:['C'],rank:3}]});for(const name of ['1. Verlierer','2. Verlierer','3. Verlierer'])assert(html.includes(name));}
  const html=g.markup({type:'teamspiel_strafe',spieltyp:'Darts',loser:'T1',teamName:'Wand',members:['A','<img>']});assert(html.includes('Wand · A, &lt;img&gt;'));assert(!parseHTML(html).document.querySelector('img'));
 });
