@@ -114,7 +114,10 @@
  }
  function play(s,e){
   const n=current(s);if(e.name!==n)throw Error('Spieler am Wurf wurde inzwischen geändert');
-  if(e.action==='throw'){
+  if(e.action==='next'){
+   if(s.pendingChoice||s.turn?.length)throw Error('Offene Würfe oder Auswahl zuerst abschließen oder rückgängig machen');
+   next(s);
+  }else if(e.action==='throw'){
    if(s.pendingChoice||s.gameKey==='siebener'&&s.turn.length===2)throw Error('Zuerst die offene Auswahl abschließen');
    if(s.gameKey==='siebener')s.turn.push(e.pins);else hurdle(s,e);
   }else if(e.action==='place'){
@@ -145,7 +148,9 @@
      if(s.readyToFinish||reachedTarget(s))throw Error('Das Ziel oder Rundenende ist erreicht. Abschließen oder zurücknehmen');
      if(s.history.length>=2000)throw Error('Maximale Spiellänge erreicht');
      const n=current(s),e={id:req.opId,name:n,action:req.action,at:ctx.now};
-     if(req.action==='throw'){
+     if(req.action==='next'){
+      if(s.pendingChoice||s.turn?.length)throw Error('Offene Würfe zuerst abschließen');
+     }else if(req.action==='throw'){
       if(!ctx.people.some(p=>p.name===n&&active(p)))throw Error('Der Werfer ist nicht mehr aktiv');if(!['pins','kranz','gosse','miss'].includes(req.kind))throw Error('Ungültiger Wurf');
       const config=sevenSettings(s.config?.seven);
       if(!s.kranzRule&&req.kind==='kranz'&&s.gameKey==='siebener'&&config.kranzMode==='choose'&&(!Number.isInteger(req.kranzValue)||req.kranzValue<1||req.kranzValue>12))throw Error('Kranzwert: eine ganze Zahl von 1 bis 12 wählen');
