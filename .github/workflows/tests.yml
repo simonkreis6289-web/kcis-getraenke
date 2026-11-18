@@ -27,4 +27,4 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node --test tests/v239-dashboard-layout.cjs tests/v240-dashboard-rotation.cjs
+      - run: node --test tests/v239-dashboard-layout.cjs tests/v240-dashboard-rotation.cjs tests/v253-tiberius-turns.cjs
