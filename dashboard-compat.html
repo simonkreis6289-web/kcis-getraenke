@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#4a4a4a">
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>KC Invaliden Schwadron · Live-Dashboard</title>
+<style>
+:root{--bg:#ffffff;--panel:#ffffff;--panel2:#f5f5f5;--line:#2e3350;--text:#000000;--muted:#50535c;--gold:#f5a623;--ok:#009844;--warn:#d62828;--header:#4a4a4a;--accent:#f5a623}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg)}
+.dashboard{height:100vh;height:100dvh;min-height:530px;padding:clamp(8px,1vw,18px);display:grid;grid-template-columns:minmax(190px,17%) minmax(0,1fr) minmax(190px,17%);grid-template-rows:100px minmax(0,1fr);gap:8px}
+header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px clamp(14px,2.4vw,32px);gap:15px;border-radius:10px;border-bottom:4px solid var(--accent)}
+.club{font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(23px,2.7vw,39px);font-weight:400;letter-spacing:.075em}.sub{font-size:11px;color:#ededed;margin-top:3px;line-height:1.35}.header-right{text-align:right;display:flex;align-items:center;gap:16px}.header-time{text-align:right}.fullscreen-btn{border:1px solid #fff;background:#f5a623;color:#111;border-radius:7px;padding:10px 13px;font:700 13px "DM Sans",sans-serif;cursor:pointer;white-space:nowrap}.fullscreen-btn:hover{background:#ffd075}.fullscreen-btn:focus-visible{outline:3px solid white;outline-offset:3px}.clock{font-size:clamp(24px,2.5vw,38px);font-weight:750;font-variant-numeric:tabular-nums}.state{font-size:12px;color:#f0f0f0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px}.dot.ok{background:#00c200}
+.side{min-height:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}.panel,.stage{background:var(--panel);border:2px solid var(--line);border-radius:10px;min-height:0;overflow:hidden}.panel{display:flex;flex-direction:column}.panel h2{font-size:clamp(14px,1.25vw,19px);margin:0;padding:15px 14px 11px;border-bottom:2px solid var(--line);border-left:6px solid var(--accent);background:var(--panel2);letter-spacing:.01em}.panel h2 span{margin-right:7px}.panel .contents{flex:1;padding:5px 10px;min-height:0;overflow:hidden;display:grid;align-content:stretch}.listrow{display:flex;align-items:center;justify-content:space-between;min-height:0;gap:5px;padding:1px 0;border-bottom:1px solid #dedede;font-size:var(--list-font,clamp(11px,1.05vw,16px));line-height:1.1}.listrow:last-child{border:0}.listrow.paid-guest{background:#edf3f0;color:#586b61;border-radius:5px;padding:3px 5px}.drinks-paid-total{padding:7px 12px;display:flex;justify-content:space-between;background:#e8f3eb;color:#285a3a;font-size:12px;border-top:1px solid #bad5c2}.drinks-paid-total strong{font-variant-numeric:tabular-nums}.listrow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.value{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.empty{font-size:14px;color:var(--muted);padding:15px 0;line-height:1.5}.total{margin-top:auto;border-top:2px solid var(--line);padding:12px;display:flex;justify-content:space-between;font-size:14px;background:#fffee0}.total strong{font-size:17px}
+.stage{position:relative;display:flex;flex-direction:column;background:#fff}.stage-title{background:var(--panel2);padding:13px 18px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:2px solid var(--line);border-left:6px solid var(--accent)}.stage-title h1{font-size:clamp(16px,1.7vw,24px);margin:0}.stage-title .tag{font-size:12px;color:var(--muted)}.stage-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:20px}.placeholder{text-align:center;color:var(--muted);max-width:600px}.placeholder .symbol{font-size:clamp(55px,8vw,115px)}.placeholder h3{font-size:clamp(23px,3vw,42px);color:var(--text);margin:5px 0}.placeholder p{line-height:1.65}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0;background:white}.game-data{width:min(100%,850px);text-align:center}.game-data h3{font-size:clamp(26px,4vw,54px);margin:12px 0}.game-data .desc{font-size:clamp(15px,1.7vw,24px);white-space:pre-wrap;line-height:1.6;color:var(--muted)}
+@media(max-width:850px){.dashboard{min-height:980px;height:auto;grid-template-columns:1fr 1fr;grid-template-rows:80px minmax(430px,1fr) minmax(340px,auto)}.stage{grid-column:1/-1;grid-row:2}.side{grid-row:3;grid-template-rows:1fr 1fr;min-height:340px}.side.left{grid-column:1}.side.right{grid-column:2}}
+@media(max-width:520px){.dashboard{grid-template-columns:1fr;grid-template-rows:78px 450px auto auto}.stage{grid-row:2}.side.left{grid-row:3;grid-column:1}.side.right{grid-row:4;grid-column:1}.side{min-height:380px}.club{font-size:22px}.clock{font-size:23px}header{padding:10px}.sub{font-size:10px}}
+
+/* Statuspunkte dürfen neben dem Namen Platz beanspruchen. */
+#gutters .listrow .name{font-size:clamp(10px,.8vw,14px)}
+/* TV-Spielbretter */
+.stage-body{align-items:stretch;justify-content:stretch;overflow:auto;padding:clamp(8px,1.2vw,18px)}
+.tv-board{width:100%;max-height:100%;overflow:auto;align-self:stretch}.tv-headline{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:clamp(23px,2.5vw,39px);text-align:center;margin:0 0 12px;color:#3e4359}
+.tv-table{border-collapse:separate;border-spacing:3px;width:100%;font-size:clamp(12px,1.4vw,22px)}.tv-table th{background:#eaeaf0;padding:9px 5px;white-space:nowrap;color:#2c3045}.tv-table td{background:#f7f7f9;padding:8px 4px;text-align:center}.tv-table .tv-name{text-align:left;font-weight:750;white-space:nowrap;padding:10px;position:sticky;left:0;background:#f5f5f5}.tv-cell{display:flex;justify-content:center;align-items:center;min-width:32px;min-height:38px;background:white;border:1px solid #ccd0dd;border-radius:8px;font-weight:800}.tv-cell.miss{background:#ffdade;color:#a01616;border-color:#e89ca6}.tv-cell.done{background:#d6f4db;color:#276539}.tv-cell.pending{color:#aaa}.tv-col-done{background:#dbf3e0!important}.tv-current{outline:3px solid #f5a623;outline-offset:-3px}
+.tree-board{display:flex;flex-direction:column;gap:5px;justify-content:center;min-height:100%}.tree-header,.tree-row{display:grid;grid-template-columns:minmax(40px,.6fr) minmax(0,3fr) 46px minmax(0,3fr) minmax(40px,.6fr);align-items:center;gap:7px;text-align:center}.tree-header{font-weight:800;color:#2e3350;background:#f2f2f5;border-radius:8px;padding:9px 0}.tree-row{padding:2px 0}.tree-number{font-family:'Bebas Neue',sans-serif;font-size:clamp(21px,2.2vw,37px);background:#4a4a4a;color:white;border-radius:7px}.tree-side{display:flex;gap:3px;align-items:center;justify-content:center;flex-wrap:wrap;min-height:43px}.tree-ball{border:2px solid #d3d7e1;border-radius:8px;min-width:clamp(24px,2.55vw,43px);height:clamp(30px,3vw,47px);display:flex;justify-content:center;align-items:center;background:#fff;font-weight:900;font-size:clamp(14px,1.7vw,27px)}.tree-ball.crossed{background:#e6e6ea;color:#9da0ab;text-decoration:line-through}.tree-ball.wand{border-color:#e9a437}.tree-ball.tv{border-color:#727cbe}.tree-strikes{font-size:clamp(13px,1.6vw,24px);color:#ba541e;font-weight:800;overflow:hidden}.tree-win{font-size:clamp(18px,3vw,43px)}.tv-stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 0 12px}.tv-stat{background:#fff6da;border:1px solid #e6ce90;padding:8px 18px;border-radius:10px;text-align:center;font-weight:700}.tv-stat strong{font-size:clamp(18px,2vw,28px);display:block}.tv-progress{height:18px;border-radius:15px;background:#e3e4e9;overflow:hidden;min-width:130px}.tv-progress span{height:100%;display:block;background:linear-gradient(90deg,#e4a43a,#ffca55);border-radius:15px}.tv-note{text-align:center;color:#666;font-size:13px;padding:10px}
+.dart-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(12px,3vw,42px);margin:3vh auto;max-width:1000px}.dart-card{border:3px solid #303652;border-radius:18px;background:linear-gradient(180deg,#f5f5f8,#fff);padding:clamp(20px,3vw,42px);text-align:center;box-shadow:0 8px 24px #2221}.dart-team{font-family:'Bebas Neue';font-size:clamp(27px,3vw,48px);letter-spacing:.04em}.dart-score{font-family:'Bebas Neue';font-size:clamp(85px,10vw,175px);line-height:1;color:#262d4b}.dart-start{font-size:clamp(13px,1.3vw,20px);color:#666}.dart-meter{height:22px;background:#e0e2e7;border-radius:12px;overflow:hidden;margin:25px 0 12px}.dart-meter span{display:block;height:100%;background:#f5a623;border-radius:12px}.dart-round{margin:12px auto 0;padding:10px 12px;border:2px solid #e5ae3f;border-radius:10px;background:#fff6dc;font-size:clamp(14px,1.4vw,21px);font-weight:600}.dart-round strong{font-size:1.5em;color:#303652}.dart-note{font-weight:700;font-size:clamp(15px,1.5vw,22px)}
+/* TV-Vollansicht: Das Spielfeld selbst darf niemals einen Scrollbalken erzeugen. */
+.stage-body:has(.tv-board){overflow:hidden;padding:clamp(4px,.6vw,10px)}
+.stage-body .tv-board{overflow:visible;max-height:none;min-height:0;align-self:flex-start;transform-origin:top left}
+.stage-body .tv-headline{margin:0 0 7px}
+.stage-body .tv-table{border-spacing:2px;table-layout:fixed}
+.stage-body .tv-table th{padding:5px 2px;overflow:hidden;text-overflow:ellipsis}
+.stage-body .tv-table td{padding:3px 2px}
+.stage-body .tv-table .tv-name{padding:4px 6px;overflow:hidden;text-overflow:ellipsis}
+.stage-body .tv-cell{min-width:0;min-height:27px;border-radius:6px;padding:2px}
+.stage-body .tv-stats{margin:0 0 7px}
+.stage-body .tv-stat{padding:4px 9px}
+
+/* V121: Lotterie und Tiberius: mehr Zeilenhöhe, volle Namen, kompakte Strafen. */
+.stage-body .tv-matrix-board .tv-table th:first-child,
+.stage-body .tv-matrix-board .tv-table td:first-child{width:17%;}
+.stage-body .tv-matrix-board .tv-table th:nth-child(2),
+.stage-body .tv-matrix-board .tv-table td:nth-child(2){width:9%;font-size:.78em;white-space:nowrap;letter-spacing:-.02em;}
+.stage-body .tv-matrix-board .tv-table .tv-name{font-size:.76em;white-space:nowrap;text-overflow:clip;overflow:visible;padding:6px 4px;font-weight:750;letter-spacing:-.02em;}
+.stage-body .tv-matrix-board .tv-table td{padding:5px 2px;}
+.stage-body .tv-matrix-board .tv-cell{min-height:35px;padding:4px 1px;}
+.stage-body .tv-matrix-board .tv-table th{padding:7px 2px;}
+/* V255: Tiberius aktuell am Wurf: die GANZE Tabellenzeile. */
+#game-body .tv-tiberius-board .tiberius-active-row>td{background:#ffde70!important;border-top:3px solid #e89d1b;border-bottom:3px solid #e89d1b;color:#42290a!important;box-shadow:inset 0 0 0 1px #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row>td:first-child{border-left:4px solid #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row>td:last-child{border-right:4px solid #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row .tv-cell{outline:2px solid #d79c29;box-shadow:0 0 12px #d79c2940}
+/* V255: Lotterie und Tiberius nutzen die gesamte verfügbare Dashboard-Höhe.
+   Diese Regeln gelten ausschließlich für die beiden Matrix-Spielbretter. */
+#game-body .tv-matrix-board{
+  display:flex;
+  flex-direction:column;
+  align-self:stretch;
+  width:100%;
+  height:100%;
+  min-height:0;
+  max-height:100%;
+  max-width:100%;
+  overflow:hidden;
+  gap:clamp(5px,.8vh,12px);
+}
+#game-body .tv-matrix-board .tv-headline{flex:0 0 auto;margin:0;font-size:clamp(26px,2.7vw,45px)}
+#game-body .tv-matrix-board .tv-table{
+  flex:1 1 0;
+  width:100%;
+  height:100%;
+  min-height:0;
+  table-layout:fixed;
+  border-spacing:clamp(2px,.25vw,5px);
+  font-size:clamp(18px,1.65vw,29px);
+  font-variant-numeric:tabular-nums;
+}
+#game-body .tv-matrix-board .tv-table th{padding:clamp(6px,1vh,12px) 3px;font-size:clamp(16px,1.4vw,25px);line-height:1.15}
+#game-body .tv-matrix-board .tv-table td{padding:clamp(3px,.5vh,9px) 3px;vertical-align:middle}
+#game-body .tv-matrix-board .tv-table th:first-child,
+#game-body .tv-matrix-board .tv-table td:first-child{width:14%}
+#game-body .tv-matrix-board .tv-table th:nth-child(2),
+#game-body .tv-matrix-board .tv-table td:nth-child(2){width:9%;font-size:clamp(14px,1.25vw,21px);letter-spacing:0}
+#game-body .tv-matrix-board .tv-table .tv-name{padding:4px 6px;font-size:clamp(15px,1.4vw,24px);font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#game-body .tv-matrix-board .tv-cell{display:flex;justify-content:center;align-items:center;width:100%;height:100%;min-height:0;padding:3px 1px;border-radius:8px;font-size:clamp(24px,2.35vw,41px);line-height:1.08;font-weight:900}
+#game-body .tv-matrix-board .tv-stats{
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  justify-content:stretch;
+  align-items:stretch;
+  width:100%;
+  gap:clamp(7px,.9vw,18px);
+  margin:0;
+}
+#game-body .tv-matrix-board .tv-stat{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  min-width:0;
+  width:100%;
+  padding:clamp(9px,1.4vh,20px) 8px;
+  border-width:2px;
+  border-radius:12px;
+  font-size:clamp(17px,1.5vw,27px);
+  line-height:1.14;
+}
+#game-body .tv-matrix-board .tv-stat strong{
+  margin-top:4px;
+  font-size:clamp(36px,4.3vw,76px);
+  line-height:1.05;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:860px){
+ #game-body .tv-matrix-board .tv-table th:first-child,
+ #game-body .tv-matrix-board .tv-table td:first-child{width:17%}
+ #game-body .tv-matrix-board .tv-table th:nth-child(2),
+ #game-body .tv-matrix-board .tv-table td:nth-child(2){width:10%}
+ #game-body .tv-matrix-board .tv-stat strong{font-size:clamp(30px,5vw,60px)}
+}
+/* End V255 matrix dashboard layout. */
+/* V134: dynamische Gruppenfarben und kompakter Tischplan */
+.fine-team-dot,.seat-team-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid #7776;background:var(--team-color,#aaa)}
+.fine-team-dot{margin-right:7px}
+.seating-tv{display:flex!important;flex-direction:column;justify-content:center;overflow:hidden!important;padding:7px!important}
+.tv-seats{display:grid;grid-template-columns:minmax(0,1fr) 20% minmax(0,1fr);grid-template-rows:repeat(var(--seat-rows,8),minmax(0,1fr));gap:3px;width:100%;height:100%;min-height:0}
+.tv-table-center{grid-column:2;grid-row:1 / span var(--seat-rows,8);border-radius:8px;background:#19222e;color:white;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;letter-spacing:.12em;font-weight:800;font-size:clamp(10px,1vw,15px)}
+.tv-seat{display:flex;align-items:center;gap:4px;min-width:0;min-height:0;padding:2px 4px;border:1px solid #d8dce1;border-radius:5px;background:#f7f8fa;font-size:clamp(9px,.82vw,13px)}
+.tv-seat.taken{background:#fffdf0;border-color:var(--team-color,#d8dce1)}
+.seat-avatar{position:relative;display:grid;place-items:center;flex:0 0 clamp(20px,2vw,30px);width:clamp(20px,2vw,30px);height:clamp(20px,2vw,30px);border-radius:50%;overflow:hidden;background:#e1e7f0;color:#243657;border:1px solid #9daac0;box-sizing:border-box}
+.seat-avatar-initials{font-size:clamp(9px,.9vw,13px);font-weight:800;line-height:1}.seat-avatar-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tv-seat .seat-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+@media(max-width:850px){.tv-seats{min-height:260px}}
+.dart-v137-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.85fr) minmax(0,1fr);align-items:stretch;gap:12px;margin:2vh auto;max-width:1250px}.dart-v137-layout .dart-card{padding:clamp(10px,2vw,24px)}.dart-v137-layout .dart-score{font-size:clamp(66px,8vw,142px)}.dart-v137-center{border:2px solid #d7a43a;border-radius:18px;background:#fff9e8;padding:clamp(12px,2vw,25px);text-align:center;display:flex;flex-direction:column;gap:12px;justify-content:center}.dart-center-heading{font-size:clamp(16px,2vw,26px);font-weight:800}.dart-center-total{font-size:clamp(25px,3vw,45px);color:#273452}.dart-round-team{display:flex;flex-direction:column;border-top:1px solid #e2d7b9;padding:8px 0;font-size:clamp(13px,1.5vw,20px)}.dart-round-team small{color:#555}.dart-center-buffer{font-weight:700}.dart-values{max-width:1200px;margin:10px auto;text-align:center;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fafafa}.dart-values>div{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 18px;margin-top:7px}.dart-values span{white-space:nowrap}@media(max-width:700px){.dart-v137-layout{grid-template-columns:1fr 1fr}.dart-v137-center{grid-column:1/-1;grid-row:2}.dart-v137-layout .dart-card{grid-row:1}.dart-v137-layout .dart-score{font-size:clamp(52px,10vw,85px)}}
+
+/* V138: Tannenbaum im Stil der Haupt-App, mit live geladenen Teamfarben. */
+.tree-v138{justify-content:flex-start;gap:12px}
+.tree-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%}
+.tree-summary-card{min-width:0;border:2px solid #303652;border-radius:13px;background:#fff;padding:8px 6px;text-align:center;box-shadow:0 2px 10px color-mix(in srgb,var(--team-color) 12%,transparent)}
+.tree-summary-label{font-size:clamp(10px,.8vw,14px);font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+.tree-summary-card strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:clamp(23px,2.5vw,43px);line-height:1.1}
+.tree-summary-team{font-size:clamp(11px,1vw,16px);font-weight:750;display:flex;gap:5px;align-items:center;justify-content:center}
+.tree-team-dot{width:11px;height:11px;border-radius:50%;background:var(--team-color);display:inline-block;flex:none}
+.tree-table-v138{border:2px solid #303652;border-radius:13px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0}
+.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:minmax(34px,.6fr) minmax(0,3fr) 48px minmax(0,3fr) minmax(34px,.6fr);gap:5px}
+.tree-v138 .tree-header{background:#fafafa;border-bottom:1px solid #dedee2;padding:7px 0}
+.tree-v138 .tree-row{flex:1;min-height:33px;border-bottom:1px solid #e6e6e8;padding:2px 0}
+.tree-v138 .tree-row:nth-child(odd){background:#f7f7f8}
+.tree-v138 .tree-row:last-child{border-bottom:0}
+.tree-v138 .tree-number{background:transparent;color:#111;font-size:clamp(23px,2.6vw,42px)}
+.tree-v138 .tree-ball{border-color:var(--ball-color);color:var(--ball-color);border-radius:9px}
+.tree-v138 .tree-ball.crossed{border-color:#b4b4b8;color:#a2a2a7;background:#f1f1f1}
+.tree-v138 .tree-strikes{color:#a6a8ae}
+@media(max-width:650px){.tree-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.tree-v138 .tree-header,.tree-v138 .tree-row{grid-template-columns:26px minmax(0,1fr) 30px minmax(0,1fr) 26px;gap:2px}.tree-v138 .tree-ball{min-width:18px;height:25px;font-size:12px}.tree-v138 .tree-side{min-height:25px}}
+.tor-tv{display:flex;flex-direction:column;gap:10px;justify-content:center}.tor-tv-scores{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:center;text-align:center}.tor-tv-team{border:3px solid #333;border-radius:15px;display:grid;padding:12px;gap:4px}.tor-tv-team strong{font-size:clamp(55px,7vw,110px)}.tor-tv-center{font-weight:800;font-size:clamp(12px,1.4vw,20px)}.tor-tv-turn{text-align:center;background:#fff8da;padding:12px;border-radius:10px;font-weight:800}.tor-tv-pins{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,46px);gap:5px;width:min(100%,330px);margin:5px auto}.tor-tv-pin[data-pin="9"]{grid-area:1/3}.tor-tv-pin[data-pin="8"]{grid-area:2/2}.tor-tv-pin[data-pin="7"]{grid-area:2/4}.tor-tv-pin[data-pin="4"]{grid-area:3/1}.tor-tv-pin[data-pin="5"]{grid-area:3/3}.tor-tv-pin[data-pin="6"]{grid-area:3/5}.tor-tv-pin[data-pin="2"]{grid-area:4/2}.tor-tv-pin[data-pin="3"]{grid-area:4/4}.tor-tv-pin[data-pin="1"]{grid-area:5/3}.tor-tv-pin{text-align:center;border:2px solid #164158;border-radius:5px;padding:0;background:#1b6383;color:#fff;font-size:clamp(17px,2vw,24px);display:flex;align-items:center;justify-content:center}.tor-tv-pin small{display:none}.tor-tv-down{opacity:.2}.tor-tv-footer{text-align:center;font-weight:700}
+
+/* V141: Kegel-Silhouetten in klassischer Raute */
+.tor-pin,.tor-tv-pin{position:relative;isolation:isolate;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible;display:flex;align-items:center;justify-content:center;color:#202b3d!important;font-weight:900;font-size:15px!important;opacity:1;min-width:0;min-height:0}
+.tor-pin::before,.tor-tv-pin::before{content:"";position:absolute;z-index:-1;width:63%;height:94%;left:18.5%;top:3%;background:linear-gradient(to bottom,#f6f7fa 0%,#fff 23%,#d92c44 24%,#d92c44 30%,#fff 31%,#f8f9fb 43%,#fff 100%);clip-path:polygon(40% 0,60% 0,72% 8%,77% 19%,70% 34%,67% 44%,81% 61%,91% 83%,88% 96%,75% 100%,25% 100%,12% 96%,9% 83%,19% 61%,33% 44%,30% 34%,23% 19%,28% 8%);filter:drop-shadow(0 1px 1px #333);border-radius:5px}
+.tor-pin::after,.tor-tv-pin::after{content:"";position:absolute;z-index:-2;width:56%;height:9%;bottom:0;background:#cdd3dc;border-radius:50%}
+.tor-pin.selected::before{background:linear-gradient(to bottom,#e7fff0 0%,#e7fff0 23%,#1a9b57 24%,#1a9b57 31%,#d4ffe2 32%,#e7fff0 100%)}
+.tor-pin.selected{color:#095d35!important;outline:2px solid #25a66b;outline-offset:-3px;border-radius:8px}
+.tor-pin.down,.tor-tv-down{opacity:.18!important}
+.tor-pin.down::before,.tor-tv-down::before{background:#aab2bd}
+.tor-tv-team{background:color-mix(in srgb,var(--tor-color) 12%,white)!important}
+.tor-tv-team.tor-tv-active{background:color-mix(in srgb,var(--tor-color) 22%,white)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--tor-color) 45%,transparent)!important}
+
+.tor-tv-turn{border:2px solid var(--turn-color,#d7ac4d);background:color-mix(in srgb,var(--turn-color,#d7ac4d) 17%,white);color:#172234}
+.tor-tv-team.tor-tv-active{outline:2px solid var(--team-color);outline-offset:2px}
+
+.tv-buy-indicators{display:inline-flex;gap:4px;vertical-align:middle;margin-right:7px;white-space:nowrap}.tv-buy-dot{display:inline-block;flex:0 0 13px;width:13px;height:13px;border-radius:50%;box-sizing:border-box;border:2px solid #164a2c;background:#20d26a}.tv-buy-used{border-color:#761e1e;background:#ed3535}
+</style>
+<style id="plusminus-tv-style">
+.tv-plusminus{width:100%;table-layout:fixed}
+.tv-plusminus th:first-child,.tv-plusminus td:first-child{width:18%}
+.tv-plusminus th:last-child,.tv-plusminus td:last-child{width:14%}
+.tv-slot{display:flex;align-items:center;justify-content:center;min-height:28px;border:1px solid #cbd2e2;border-radius:6px;background:white;font-weight:700}
+.tv-slot-filled{background:#edf1f8;color:#10213f}
+.tv-slot-selected{box-shadow:inset 0 0 0 2px #f4a01c}
+.tv-current .tv-name{background:#fff3cc}
+.tv-result{font-weight:800}
+</style>
+<style id="fox-tv-style">
+.fox-tv-board{display:flex;flex-direction:column;gap:10px}
+.fox-tv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fox-tv-card{border:2px solid #303650;border-radius:13px;padding:14px;text-align:center;background:#fffdf6;font-weight:700;font-size:clamp(14px,1.6vw,22px)}
+.fox-tv-card strong{display:block;font-size:clamp(26px,3.2vw,54px);line-height:1.3;overflow-wrap:anywhere}
+.fox-tv-score{background:#fff1c6;border-color:#f5a623}
+.fox-tv-phase{text-align:center;padding:12px;border-radius:9px;background:#e9eaf0;font-weight:800;font-size:clamp(16px,1.7vw,25px)}
+.fox-tv-result{text-align:center;background:#fff1c6;border:2px solid #f5a623;padding:12px;border-radius:10px;font-weight:800}
+.fox-race{padding:12px 14px;border:2px solid #91a4b9;border-radius:15px;background:linear-gradient(160deg,#f4f9fd,#eaf5ed);color:#193450;min-width:0}
+.fox-race-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:clamp(15px,1.7vw,25px);margin-bottom:12px}
+.fox-race-title span{font-size:clamp(13px,1.25vw,18px);font-weight:700}
+.fox-race-stations{position:relative;display:grid;grid-template-columns:repeat(var(--fox-stop-count),minmax(0,1fr));align-items:start;min-height:90px;padding:8px 2px 2px}
+.fox-race-stations:before{content:"";position:absolute;top:22px;left:calc(50% / var(--fox-stop-count));right:calc(50% / var(--fox-stop-count));height:8px;border-radius:8px;background:linear-gradient(90deg,#e1bb56,#248c52);box-shadow:0 2px 6px #142f3b42}
+.fox-race-stop{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;min-width:0;position:relative}
+.fox-race-dot{width:25px;height:25px;border:4px solid #fff;border-radius:50%;background:#a9bbcd;box-shadow:0 0 0 2px #587a8b,0 2px 6px #09284142;box-sizing:border-box;z-index:1}
+.fox-race-current .fox-race-dot{background:#f0a522;box-shadow:0 0 0 3px #f59d20,0 0 14px #f4c253}
+.fox-race-number{font-size:clamp(12px,1.3vw,19px);font-weight:900}
+.fox-race-occupants{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;min-width:0}
+.fox-race-runner{display:block;max-width:100%;box-sizing:border-box;border-radius:8px;border:1px solid #7d8d98;padding:4px 5px;font-size:clamp(10px,.92vw,15px);font-weight:800;background:#fff;color:#273645;overflow-wrap:anywhere}
+.fox-race-running{background:#fff1a2;color:#68430b;border:2px solid #dc9d26;box-shadow:0 0 0 2px #f6d56675}
+.fox-race-caught{background:#f8d3d3;color:#7b2222;border-color:#d96060}
+.fox-race-escaped{background:#c5ebd1;color:#135e33;border-color:#39a76a}
+.fox-race-legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.fox-race-summary{border-radius:999px;padding:4px 9px;border:1px solid #b9cbd0;background:white;font-size:clamp(11px,1vw,15px);font-weight:700}
+@media(max-width:850px){.fox-race{padding:8px}.fox-race-stations{min-height:78px}.fox-race-runner{font-size:10px;padding:3px}}
+.fox-tv-table{table-layout:fixed}.fox-tv-table td{padding:7px!important}.fox-tv-table th{padding:8px!important}
+</style>
+<style id="dashboard-live-events-v153">
+#tv-countdown{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;min-width:195px;text-align:center;border:2px solid #f7ba44;border-radius:16px;background:#202b40;color:#fff;padding:7px 18px;box-shadow:0 3px 15px #0005;z-index:2;pointer-events:none}
+#tv-countdown.active{display:block}#tv-countdown .timer-label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#f9d78c;font-weight:800}#tv-countdown .timer-time{font-family:'Bebas Neue',sans-serif;font-size:clamp(35px,3.6vw,62px);line-height:1.02;font-variant-numeric:tabular-nums}#tv-countdown.urgent{border-color:#ff5555;background:#5b1725}
+#tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
+</style>
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261118-v264">
+<link rel="stylesheet" href="css/dashboard-layout.css?v=20261118-v264">
+<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261118-v264">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261118-v264">
+<link rel="stylesheet" href="css/club-content.css?v=20261118-v264">
+<link rel="stylesheet" href="css/extra-games.css?v=20261118-v264">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261118-v264">
+</head>
+<body>
+<section id="club-content-dashboard" role="dialog" aria-modal="true" aria-labelledby="club-content-dashboard-title" hidden><div><h2 id="club-content-dashboard-title">Clubunterlagen</h2><p id="club-content-dashboard-help"></p></div><p id="club-content-dashboard-status" class="club-content-status" role="status"></p><div id="club-content-dashboard-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div></section>
+<section id="cash-dashboard-overlay" role="dialog" aria-modal="true" aria-labelledby="cash-dashboard-title" hidden>
+ <div class="cash-dashboard-heading"><h2 id="cash-dashboard-title">📊 Jahresübersicht &amp; Kasse</h2><p>In der App unter Abrechnung wieder schließen</p></div>
+ <p id="cash-dashboard-period"></p><div id="cash-dashboard-summary" class="cash-dashboard-summary"></div>
+ <div id="cash-dashboard-scroll" role="region" aria-label="Jahresübersicht aller Mitglieder" tabindex="0"></div>
+ <p class="cash-dashboard-note">Kassenstand = Soll aus Abschlüssen, Startbetrag und Ausgaben. Daueraufträge und „Offen nach Plan“ sind eine Planung bis heute, keine bestätigten Zahlungseingänge. Ein Guthaben wird je Mitglied separat ausgewiesen.</p>
+</section>
+<section id="dashboard-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="dashboard-rules-title" hidden>
+ <div class="dashboard-rules-sheet"><div class="dashboard-rules-heading"><h2 id="dashboard-rules-title">Spielregeln</h2><p>Die Anzeige wird in der App geschlossen.</p></div><div id="dashboard-rules-scroll" tabindex="0"><div id="dashboard-rules-content"></div></div></div>
+</section>
+<main class="dashboard">
+<header class="dashboard-header" aria-label="Dashboard-Kopfzeile">
+ <div class="header-identity"><div class="club" id="dashboard-club-title">🎳 KC Invaliden Schwadron</div></div>
+ <div id="tv-countdown" aria-live="off"><div class="timer-label">Countdown</div><div class="timer-time" id="tv-countdown-time">00:00</div></div>
+ <div class="header-tools"><div class="dashboard-clock-status"><div class="clock" id="clock" aria-label="Aktuelle Uhrzeit">--:--:--</div><span id="indicator" class="dot" role="img" aria-label="Verbindung wird vorbereitet" title="Verbindungsstatus"></span></div><div id="dashboard-lane" class="dashboard-lane" hidden></div></div>
+</header>
+<div id="tv-starter-draw" hidden aria-live="off"><div class="tv-draw-card"><div id="tv-draw-title"></div><div id="tv-draw-value"></div><div id="tv-draw-status"></div></div></div>
+<div id="tv-announcement" role="status" aria-live="polite"></div>
+<section class="side left"><article class="panel" id="dashboard-panel-drinks"><h2><span>🍻</span>Getränkestand</h2><div class="contents" id="drinks"></div><div class="total"><span>Gesamt</span><strong id="drinks-total">0,00 €</strong></div><div class="drinks-paid-total"><span>✓ Bereits bezahlt</span><strong id="drinks-paid-total">0,00 €</strong></div></article><article class="panel" id="dashboard-panel-fines"><h2><span>💶</span>Strafenstand</h2><div class="contents" id="fines"></div><div class="total"><span>Gesamt</span><strong id="fines-total">0,00 €</strong></div></article></section>
+<section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><span id="tv-game-stopwatch" class="game-stopwatch" role="group" aria-label="Stoppuhr" hidden><span aria-hidden="true">⏱</span><span data-stopwatch-label></span><time></time></span><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="siebener">🎲 7er-Spiel</option><option value="hindernis">🏃 Hindernislauf</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option><option value="bergundtal">🏔️ Berg und Tal</option><option value="ballermann">🏖️ Ballermann 6</option><option value="lattenzaun">🪵 Lattenzaun</option><option value="guterschnitt">✂️ Der gute Schnitt</option><option value="parteienspiel">⚖️ Parteienspiel</option><option value="dreieuro">💶 3-Euro-Spiel</option><option value="ebbeflut">🌊 Ebbe und Flut</option><option value="poker">Poker</option><option value="pfaelzer">Pfälzerspiel</option><option value="tausend">1000 in 9 Würfen</option><option value="hochsprung">🏅 Hochsprung</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div></section>
+<section class="side right"><article class="panel" id="dashboard-panel-gutters"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel" id="dashboard-panel-seating"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article></section>
+
+<footer class="dashboard-footer"><div class="dashboard-ticker-region" id="dashboard-ticker-region"><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-left"><div class="dashboard-ticker" id="dashboard-ticker" tabindex="0" aria-label="Clubtermine und Informationen · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-ticker-track"><div class="dashboard-ticker-copy"><span id="kc-next-birthdays"></span><span id="kc-next-tour"></span><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span></div></div></div></div><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-right"><div class="dashboard-ticker" id="dashboard-football-ticker" tabindex="0" aria-label="Bundesliga-Ergebnisse · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-football-ticker-track"><div class="dashboard-ticker-copy"><span>⚽ Bundesliga-Live</span></div></div></div></div></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</div><div id="version">Dashboard V239 · Update 16.11.2026, 21:20 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></footer>
+</main>
+<link rel="stylesheet" href="css/sechstage.css?v=20261118-v264">
+<link rel="stylesheet" href="css/table-games.css?v=20261118-v264">
+<link rel="stylesheet" href="css/individual-games.css?v=20261118-v264">
+<link rel="stylesheet" href="css/game-rules.css?v=20261118-v264">
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="css/starter-draw.css?v=20261118-v264">
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="css/game-overview.css?v=20261118-v264">
+
+
+
+
+
+
+
+
+<script src="tv-compat/polyfills.js?v=20261118-264"></script>
+<script src="tv-compat/firebase.js?v=20261118-264"></script>
+<script src="tv-compat/dashboard.js?v=20261118-264"></script>
+</body></html>

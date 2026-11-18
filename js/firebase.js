@@ -210,6 +210,29 @@ window.firestoreApi = {
   subscribeDashboardOffers(clubId,onData){return onSnapshot(collection(db,'clubs',clubId,'documents'),snap=>onData(snap.docs.filter(x=>x.id.startsWith('dashboard_link_')).map(x=>x.data()).filter(x=>x.kind==='dashboardLink'&&x.offer&&!x.answer)),()=>{});},
   subscribeDashboardAnswer(clubId,viewerId,onData){return onSnapshot(doc(db,'clubs',clubId,'documents','dashboard_link_'+viewerId),snap=>onData(snap.exists()?snap.data():null),()=>{});},
 
+  async sendDashboardDiagnostic(clubId,request){
+    if(!['presence','ping','pong'].includes(request.kind)||
+       !/^[a-zA-Z0-9_-]{1,80}$/.test(request.id||''))throw Error('Ungültiger Verbindungstest');
+    const rootRef=doc(db,'clubs',clubId,'state','current');
+    const target=doc(db,'clubs',clubId,'documents','dashboard_diagnostic_'+(request.kind==='presence'?'presence':'probe'));
+    const snap=await getDocFromServer(rootRef),base=snap.exists()?snap.data():{};
+    if(!base.syncProtocol)return false;
+    const context={method:'dashboardDiagnostic',opId:'sync_'+crypto.randomUUID(),base,eveningStartedAt:base.currentEveningStartedAt||'',sideOperations:[]};
+    return sharedTransport.transaction(clubId,context,async tx=>{
+      const previous=await tx.get(target),old=previous.exists()?previous.data():null;
+      const time=window.KCSharedClock?.now()??Date.now();
+      if(request.kind==='pong'&&(old?.kind!=='ping'||old.id!==request.id||old.expiresAt<time))return false;
+      tx.set(target,{kind:request.kind,id:request.id,webrtc:request.webrtc===true,
+        expiresAt:time+(request.kind==='presence'?95000:15000)});
+      return true;
+    });
+  },
+  subscribeDashboardDiagnostic(clubId,channel,onData){
+    if(!['presence','probe'].includes(channel))throw Error('Ungültiger Diagnosekanal');
+    return onSnapshot(doc(db,'clubs',clubId,'documents','dashboard_diagnostic_'+channel),
+      {includeMetadataChanges:true},snap=>{if(!snap.metadata?.fromCache&&!snap.metadata?.hasPendingWrites)onData(snap.exists()?snap.data():null);},()=>{});
+  },
+
   async readTabletDocument(clubId,path){
     if(typeof path!=='string'||(path!=='clubs/'+clubId&&!path.startsWith('clubs/'+clubId+'/'))||path.split('/').length%2)throw Error('Ungültiger Dokumentpfad');
     const snap=await getDocFromServer(doc(db,...path.split('/')));return snap.exists()?snap.data():null;
