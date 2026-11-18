@@ -332,14 +332,8 @@ function applyLoadedState(state) {
 
   ensureDartsState();
 
-  /*
-   * Wichtig:
-   * lotterieState wird hier absichtlich
-   * NICHT aus state/current übernommen.
-   *
-   * Der laufende Lotteriestand kommt separat
-   * aus clubs/{clubId}/liveGames/lotterie.
-   */
+  // Im geteilten Stand liegt Lotterie wie die übrigen Spiele in state/current.
+  if(state.syncProtocol)lotterieState=state.lotterieState||createLotterieState();
   ensureLotterieState();
 
   tiberiusState =
@@ -3480,9 +3474,14 @@ function updateTeamStopwatchDisplay() {
   }
 }
 
+function useCountdownForTannenbaum() {
+  if (teamStopwatchActive && tannenbaumState?.active) tannenbaumState.stopwatch = null;
+}
+
 function toggleTeamStopwatchActive() {
   const check = document.getElementById('team-stopwatch-active-check');
   teamStopwatchActive = !!check?.checked;
+  useCountdownForTannenbaum();
 
   if (!teamStopwatchActive) {
     teamStopwatchRunning = false;
@@ -3535,6 +3534,7 @@ async function startTeamStopwatch() {
     teamCountdownRemainingBefore = teamCountdownDuration;
   }
 
+  useCountdownForTannenbaum();
   teamStopwatchRunning = true;
   teamStopwatchStart = new Date(window.KCSharedClock?.now()??Date.now()).toISOString();
 
@@ -3578,6 +3578,7 @@ async function restartTeamStopwatch() {
   teamStopwatchStart = new Date(window.KCSharedClock?.now()??Date.now()).toISOString();
   teamStopwatchRunning = true;
   teamStopwatchActive = true;
+  useCountdownForTannenbaum();
 
   updateTeamStopwatchDisplay();
   persistState();
@@ -3737,6 +3738,7 @@ applyGroupTheme();
   updateStats();
   updateBahnDisplay();
   updateTeamStopwatchDisplay();
+  window.KCGameStopwatchApp?.render();
     renderPenaltyStats();
   renderTannenbaum();
   renderAnwesenheit();
@@ -5585,6 +5587,7 @@ function showSideTab(mainKey, subKey, el) {
 
   const activeNode = document.getElementById('tab-' + subKey);
   if (activeNode) activeNode.classList.remove('hidden');
+  window.KCGameStopwatchApp?.show(mainKey==='spiele'?subKey:'');
   if(['getraenke-statistik','spiele-statistik'].includes(subKey)){refreshCashHistory();window.KCReportApp?.render();}
   if (subKey === 'termine') {kcRenderTermine();kcEnsureKegelSeries();}
   if (subKey === 'termingruende') kcRenderTerminGruende();

@@ -289,3 +289,31 @@
   .hurdle-circuit-stop small { font-size: 9px; }
   .hurdle-circuit-dots { grid-template-columns: repeat(3, max-content); }
 }
+
+.game-stopwatch {
+  display: inline-flex;
+  align-items: center;
+  gap: .45em;
+  padding: .3em .65em;
+  border: 1px solid #bbcee6;
+  border-radius: 8px;
+  background: #edf4fd;
+  color: #244569;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.game-stopwatch[hidden], .game-stopwatch button[hidden] { display: none; }
+.game-stopwatch time { font-variant-numeric: tabular-nums; }
+.game-stopwatch.is-paused { background: #fff1cc; border-color: #deb355; color: #65430c; }
+.game-stopwatch-app { margin-block: 0 10px; }
+.game-stopwatch-app button {
+  margin-inline-start: .5em;
+  padding: .35em .65em;
+  border: 1px solid #8fa9c7;
+  border-radius: 5px;
+  background: #fff;
+  color: #203858;
+  font: inherit;
+  cursor: pointer;
+}
+#tv-game-stopwatch { margin-inline: auto; }

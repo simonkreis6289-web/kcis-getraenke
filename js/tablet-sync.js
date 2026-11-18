@@ -142,7 +142,7 @@
   function legacyAction(key,fn,args,self){
     if(unit)return fn.apply(self,args);
     return local(async()=>{if(!ready)return;const action={session:current,before:{...current.root,...snapshot()},promises:[],messages:[],opened:new Set()};action.preview=preview(action.before);unit=action;
-      try{const result=await fn.apply(self,args);let n=0;while(n<action.promises.length){const chunk=action.promises.slice(n);n=action.promises.length;await Promise.all(chunk);}window.KCKranzUI?.freeze(key,action.before);finish(action,snapshot());for(const msg of action.messages.slice(-2))sharedOriginalToast?.(...msg);return result;}
+      try{const result=await fn.apply(self,args);let n=0;while(n<action.promises.length){const chunk=action.promises.slice(n);n=action.promises.length;await Promise.all(chunk);}window.KCKranzUI?.freeze(key,action.before);const after=snapshot();finish(action,window.KCGameStopwatch?.updateLegacy(key,action.before,after)||after);for(const msg of action.messages.slice(-2))sharedOriginalToast?.(...msg);return result;}
       catch(error){if(current===action.session)project(action.before,true);sharedOriginalToast?.(error.message,'error');return undefined;}finally{unit=null;status();}
     });
   }
@@ -202,11 +202,12 @@
   window.addEventListener('online',()=>{status();void reconnect();});
   window.addEventListener('offline',()=>{if(current?.pending||current?.inflight)current.error='Tablet ist offline';status();});
   setInterval(()=>{for(const s of sessions.values())if((s.error||s.pending)&&Date.now()>=(s.nextRetryAt||0))void drain(s);},5000);
-  // Zeitanker nur während laufender Countdowns auffrischen; Eingaben warten nicht darauf.
+  // Zeitanker für laufende Spieluhren auffrischen.
   setInterval(()=>{
     if(!ready||unit||!navigator.onLine)return;
     const state={...current.root,...snapshot()},now=window.KCSharedClock?.now()??Date.now(),ball=state.ballermannState;
-    if(!state.teamStopwatchRunning&&!(ball?.active&&ball.timer?.running&&ball.timer.endsAt>now))return;
+    const running=C.games.some(key=>state[key+'State']?.active&&window.KCGameStopwatch?.clock(key,state[key+'State'],state.teamStopwatchActive)?.runningSince!=null);
+    if(!running&&!state.teamStopwatchRunning&&!(ball?.active&&ball.timer?.running&&ball.timer.endsAt>now))return;
     try{stage({...state,tabletClock:{time:now}});}catch(error){toast(error.message);}
   },10000);
 })();

@@ -341,7 +341,8 @@
           await Promise.all(batch);
         }
         window.KCKranzUI?.freeze(key,before);
-        const after=snapshot(),messages=unit.messages,opened=unit.opened;
+        const state=snapshot();
+        const after=window.KCGameStopwatch?.updateLegacy(key,before,state)||state,messages=unit.messages,opened=unit.opened;
         unit=null;
         working=false;
         const operations=C.diff(before,after,{
