@@ -1,7 +1,8 @@
 /* Bundesliga 1+2: sparsames OpenLigaDB-Polling ohne API-Schluessel. */
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
- const state=new Map(),seen=new Map();let settings=null,timer=null,busy=false,lastGroup=0,initialized=false,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
+ const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set();
+ let settings=null,timer=null,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{
   const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),12000);
@@ -62,11 +63,11 @@
  }
  const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
-  const now=Date.now(),list=Array.isArray(matches)?matches:[];state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
-  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);if(old&&initialized&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);
+  const now=Date.now(),list=matches;state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
+  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);
    seen.set(id,next);
    const previous=seenPhases.get(id),current=phase(m);
-   if(previous&&initialized&&enabled(league)){
+   if(previous&&initialized.has(league)&&enabled(league)){
     if(!previous.finished&&current.finished)announceStatus(m,'fulltime');
     else if(!previous.half&&current.half)announceStatus(m,'halftime');
    }
@@ -81,42 +82,31 @@
    if(start<=now&&now-start<=90000){seenKickoffs.add(id);if(!m.matchIsFinished)announceStatus(m,'kickoff');}
   }
  }
- async function refresh(){
-  if(busy||!settings||!leagues.some(enabled)||document.hidden)return;
-  busy=true;
-  const now=Date.now();
+ async function refreshLeague(league,now){
+  if(refreshing.has(league)||now<retryAfter(league))return;
+  refreshing.add(league);
   try{
-   for(const league of leagues){
-    if(!enabled(league)||now<retryAfter(league))continue;
-    try{
-     const current=state.get(league)||[];
-     let group=window['kcGroup_'+league];
-     if(!group||now-lastGroup>300000){
-      const result=await fetchJSON('/getcurrentgroup/'+league);
-      group=Number(result?.groupOrderID??result?.groupOrderId??result?.groupOrder??0);
-      if(group)window['kcGroup_'+league]=group;
-     }
-     if(!group)throw Error('Aktueller Spieltag konnte nicht ermittelt werden');
-     // Kein Alles-oder-Nichts: schlägt der Änderungszeitpunkt-Endpunkt fehl,
-     // weiterhin den eigentlichen Spieltag abrufen.
-     let changed=null,shouldFetch=!current.length;
-     try{
-      const stamp=await fetchJSON('/getlastchangedate/'+league+'/'+season()+'/'+group);
-      changed=JSON.stringify(stamp);
-      shouldFetch=shouldFetch||window['kcStamp_'+league]!==changed;
-     }catch(error){
-      shouldFetch=true;
-     }
-     if(shouldFetch){
-      const matches=await fetchJSON('/getmatchdata/'+league+'/'+season()+'/'+group);
-      ingest(league,matches);
-      if(changed!==null)window['kcStamp_'+league]=changed;
-     }
-     recover(league);
-    }catch(error){fail(league,error,now);}
+   if(!groups.has(league)||now-groups.get(league).checkedAt>=300000){
+    const result=await fetchJSON('/getcurrentgroup/'+league);
+    const group=Number(result?.groupOrderID??result?.groupOrderId??result?.groupOrder??0);
+    if(!Number.isInteger(group)||group<1)throw Error('Aktueller Spieltag konnte nicht ermittelt werden');
+    groups.set(league,{group,checkedAt:now});
    }
-   lastGroup=now;initialized=true;checkKickoffs(now);
-  }finally{busy=false;}
+   const matchday=league+'/'+season()+'/'+groups.get(league).group;
+   const changed=await fetchJSON('/getlastchangedate/'+matchday).then(stamp=>matchday+':'+JSON.stringify(stamp),()=>null);
+   if(changed===null||stamps.get(league)!==changed){
+    const matches=await fetchJSON('/getmatchdata/'+matchday);
+    if(!Array.isArray(matches))throw Error('Ungültige Spieltagsdaten');
+    ingest(league,matches);
+    stamps.set(league,changed);
+   }
+   initialized.add(league);recover(league);
+  }catch(error){fail(league,error,Date.now());}
+  finally{refreshing.delete(league);checkKickoffs();}
+ }
+ async function refresh(){
+  if(!settings||document.hidden)return;
+  await Promise.all(leagues.filter(enabled).map(league=>refreshLeague(league,Date.now())));
  }
  function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:demoTeams?.bvb||''},team2:{teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:demoTeams?.schalke||''},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,goalGetterName:'Testtor'}]:[],matchResults:[]};}
  async function loadDemoCrests(){
@@ -142,7 +132,7 @@
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
   const demoChanged=JSON.stringify(settings?.demo??null)!==JSON.stringify(next.demo??null);
   settings=next;if(!timer)timer=setInterval(refresh,30000);
-  if(sourceChanged){initialized=false;seen.clear();seenPhases.clear();seenKickoffs.clear();state.clear();failures.clear();refresh();}
+  if(sourceChanged)void refresh();
   if(demoChanged)syncDemo(next.demo);
  }
  function ticker(){if(!settings)return [];const live=leagues.filter(enabled).flatMap(league=>(state.get(league)||[]).map(m=>['football-'+league+'-'+m.matchID,'⚽ '+label(m)]));if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);return live;}

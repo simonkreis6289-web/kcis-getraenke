@@ -37,15 +37,31 @@ test('Tiberius blocks booking when cloud sync is unavailable, without mutating s
  await c.handleTiberiusThrow(0);
  assert.equal(c.tiberiusState.score,0);assert.equal(c.tiberiusState.throws.length,0);assert.match(messages.join(' '),/Firebase/);
 });
+test('old Tiberius uploads with oversized undo snapshots are compacted without dropping throws, results or statistics',()=>{
+ const c=engine('js/shared-sync-core.js'),core=c.KCSharedCore;
+ const penaltyStatsLog=Array.from({length:425},(_,i)=>({id:'stat_'+i,thrower:'A',type:'9er',punished:['B','C','D','E','F','G','H','I'],createdAt:'2026-11-18T08:00:00.000Z',club:'Kegelclub Stammdaten',note:'x'.repeat(300)}));
+ const playerOrder=['A','B','C','D','E','F','G','H','I'],throws=playerOrder.slice(0,6).map((_,i)=>({rawValue:3,value:3,oldScore:i*3,newScore:i*3+3,createdAt:'2026-11-18T08:01:00.000Z'}));
+ const tiberiusState={active:true,playerOrder,throws,penalties:{},undoStack:throws.map((_,i)=>({score:i*3,throws:throws.slice(0,i),penalties:{},personsStrafen:[],penaltyStatsLog:plain(penaltyStatsLog)}))};
+ const queued={opId:'sync_existing',sequence:8,state:{tiberiusState,penaltyStatsLog}};
+ assert(Buffer.byteLength(JSON.stringify(queued.state))>1048576);
+ const fixed=plain(core.normalizeGameData(queued));
+ assert(Buffer.byteLength(JSON.stringify(fixed.state))<250000);
+ assert.equal(fixed.opId,queued.opId);assert.equal(fixed.sequence,8);
+ assert.deepEqual(fixed.state.penaltyStatsLog,penaltyStatsLog);
+ assert.deepEqual(fixed.state.tiberiusState.throws,throws);
+ assert.equal(fixed.state.tiberiusState.currentPlayerIndex,6);
+ assert.deepEqual(fixed.state.tiberiusState.undoStack.map(u=>u.throwCount),[0,1,2,3,4,5]);
+ assert.deepEqual(plain(core.normalizeGameData(fixed)),fixed);
+});
 test('server authoritative skip actions do not charge scores or penalties and can be undone',()=>{
  const people=['A','B','C','D'].map(name=>({name,present:true,tisch:name<'C'?'T1':'T2'})),catalog=[{key:'gosse',label:'Gosse'},{key:'special',label:'9er / Kranz'},{key:'loser',label:'1. Verlierer'}],ctx={people,catalog,now:'2026-11-18T08:00:00Z',eveningStartedAt:'2026-11-18T07:00:00Z'};
  for(const [file,key,config] of [['js/games/individual-core.js','hindernis',null],['js/games/extra-core.js','pfaelzer',null]]){
   const global=engine(file),g=file.includes('individual-core')?global.KCIndividual:global.KCExtraGames;
   let sequence=0,s=g.empty(key);const send=(action,fields={})=>{const req={gameKey:key,gameId:s.id||'indgame_nexttest',expectedRevision:s.revision,opId:'ind_nexttest_'+(++sequence),action,...fields};s=g.command(s,req,ctx).state;return s;};
   send('start',{players:['A','B','C'],config:{...g.defaults(key),...(key==='pfaelzer'?{rounds:2}:{} )}});
-  const original=plain(s.scores),before=s.index;
-  send('next');assert.equal(s.index,(before+1)%3,file);assert.deepEqual(plain(s.scores),original);
-  assert.equal(s.history.at(-1).action,'next');send('undo');assert.equal(s.index,before,file);
+  const original=plain(s.scores),before=g.current(s);
+  send('next');assert.notEqual(g.current(s),before,file);assert.deepEqual(plain(s.scores),original);
+  assert.equal(s.history.at(-1).action,'next');send('undo');assert.equal(g.current(s),before,file);
   assert.deepEqual(plain(s.scores),original);assert.deepEqual(plain(s.bookings),[]);
  }
 });

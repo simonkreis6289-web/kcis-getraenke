@@ -391,7 +391,7 @@ async function undoDartsRound(){
   try{
     if(dartsState.finished&&dartsState.finishPenalties?.length){
       const reverse=dartsState.finishPenalties.map(({personName,key,delta})=>({personName,key,category:'strafen',delta:-delta}));
-      if(!(await changeMultipleSyncedPersonCounters(reverse,'↩ Darts: Verlierer-Strafen zurückgenommen'))){
+      if(!(await changeMultipleSyncedPersonCounters(reverse,'↩ Darts: Verlierer-Strafen zurückgenommen',{reverse:true}))){
         showToast('Verlierer-Strafen konnten nicht zurückgenommen werden. Runde bleibt abgeschlossen.','error');return;
       }
     }

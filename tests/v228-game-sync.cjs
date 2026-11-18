@@ -13,6 +13,11 @@ async function modern(key,players=['A','B','C','D']){
  async function run(action,fields={}){const s=state(),req={gameKey:key,action,opId:(six?'six_':table?'table_':'ind_')+'audit_'+(++seq),expectedRevision:s.revision,gameId:(table?'game_':'indgame_')+'audit',raceId:'race_audit',eveningStartedAt:evening,...fields};await c.firestoreApi[method]('club',req,context(db,method));return req;}
  const config=c.KCExtraGames.keys.includes(key)?{...c.KCExtraGames.defaults(key),...({bergundtal:{rounds:1},lattenzaun:{slats:3},guterschnitt:{targets:[3]},parteienspiel:{rounds:1},dreieuro:{throws:1},ebbeflut:{rounds:1},hochsprung:{targets:[12]},pfaelzer:{rounds:1,strichCents:10,tieThrows:1},tausend:{rounds:1}}[key]||{})}:key==='hindernis'?{target:20,baseCents:100,rules:[]}:{};
  await run('start',{players,teams:[{players:['A','B']},{players:['C','D']}],cards:false,target:10,config,startTeam:'T1'});
+ const current=()=>six?engine.thrower(state()):table?engine.currentName(state()):engine.current(state());
+ const first=current(),counters=copy(db.root().persons),scores=copy(state().scores),ledger=copy(db.root().individualGameLedger);
+ await run('next');assert.notEqual(current(),first,key+' moves to the next eligible thrower');
+ assert.deepEqual(db.root().persons,counters);assert.deepEqual(state().scores,scores);assert.deepEqual(db.root().individualGameLedger,ledger);
+ await run(six?'next':'undo');assert.equal(current(),first,key+' restores the original turn');
  const roll=pins=>run('throw',{kind:'pins',pins});
  if(six){for(let i=0;i<60&&!state().readyToFinish;i++)await roll(state().teamIndex===0?2:1);await run('finish');}
  else if(key==='blackjack'){for(let i=0;i<players.length;i++){await roll(3+i);await run('stand');}for(const name of players)await run('card',{playerName:name,value:2});await run('finish');}
@@ -70,9 +75,34 @@ const legacyCases={
  haushoch:async a=>{await a.c.startHausGame('hoch');for(let i=0;i<12;i++)await a.c.hausThrow('hoch',1+i%4,false,Math.floor(i/4));},
  haustief:async a=>{await a.c.startHausGame('tief');for(let i=0;i<12;i++)await a.c.hausThrow('tief',1+i%4,false,Math.floor(i/4));},
  sichern:async a=>{await a.c.startSichernGame();a.run('sichernState.secured.A=sichernState.target');await a.c.finishSichernGame('A');},
- fuchsjagd:async a=>{await a.c.startFuchsjagdGame();const s=a.c.fuchsjagdState;s.results=s.order.map((fox,i)=>({fox,station:i+1,escaped:i===s.order.length-1}));await a.c.fuchsjagdFinalize(s);a.c.persistState();},
+ fuchsjagd:async a=>{await a.c.startFuchsjagdGame();for(let i=0;i<4;i++){await a.c.applyFuchsjagdThrow(1);await a.c.applyFuchsjagdThrow(1);await a.c.applyFuchsjagdThrow(3);}},
  tor:async a=>{await a.c.startTorGame();a.run('Object.assign(torState,{coinPending:false,current:"T1",standing:[1],selected:[1],scores:{T1:4,T2:0}})');await a.c.torThrow('pins');}
 };
+test('legacy game header buttons switch the actual turn without adding penalties or throws',{timeout:60000},async()=>{
+ const db=database({[rootPath]:roster()}),a=fullApp(db);await a.select();
+ const starts={tannenbaum:['startTannenbaumSetup()','tannenbaumState.currentTeam'],darts:['startDartsGame()','dartsState.currentTeam'],
+  lotterie:['startLotterieGameFinal("A")','gameInputTarget()?.name'],tiberius:['startTiberiusGameFinal("A")','tiberiusThrower()'],
+  mensch:['startMenschGameFinal("A")','menschState.currentIndex'],plusminus:['startPlusminusGame()','plusminusState.currentPlayerIndex'],
+  haushoch:['startHausGame("hoch")','haushochState.currentPlayerIndex'],haustief:['startHausGame("tief")','haustiefState.currentPlayerIndex'],
+  sichern:['startSichernGame()','sichernCurrent()'],fuchsjagd:['startFuchsjagdGame()','fuchsjagdCurrentThrower()'],tor:['startTorGame()','torState.current']};
+ a.run('tiberiusState.columnCount=1');
+ for(const [key,[start,turn]] of Object.entries(starts)){
+  await a.run(start);
+  if(key==='tor')a.run('torState.coinPending=false');
+  if(key==='fuchsjagd'){await a.c.applyFuchsjagdThrow(4);await a.c.applyFuchsjagdThrow(4);}
+  if(key==='lotterie')a.run('if(!lotterieState.columns.length)lotterieState.columns=[1]');
+  a.c.renderAll();const previous=a.run(turn),before=copy(a.run('getFirestoreState()'));
+  const button=a.document.querySelector('#tab-'+key+' [data-game-next]');
+  assert(!button.disabled,key);assert.equal(await button.onclick(),true,key);
+  const after=copy(a.run('getFirestoreState()'));
+  assert.notEqual(a.run(turn),previous,key);assert.deepEqual(after.persons,before.persons,key);
+  assert.deepEqual(after.strafenHistory,before.strafenHistory,key);
+  for(const field of ['throws','throwHistory','roundThrows','history'])assert.deepEqual(after[key+'State'][field],before[key+'State'][field],key+' '+field);
+ }
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(db.root().tiberiusState.currentPlayerIndex,1);
+ assert.equal(db.root().fuchsjagdState.throws.length,2);
+});
 for(const [key,complete] of Object.entries(legacyCases))test(key+': legacy completion, tablet upload, TV result and subsequent booking stay connected', {timeout:60000},async()=>{
  const db=database({[rootPath]:roster()}),a=fullApp(db);await a.select();await complete(a);const s=a.c.gameSetupState(key);assert(!s.active||key==='tannenbaum',key+' completes');assert(await a.c.KCSharedSync.waitForUpload());const root=db.root();assert(root.strafenHistory.some(e=>e.gameKey===key||e.type===key),key+' has a final result');const saved=copy(root.strafenHistory);await a.c.changeDrink('A','beer',1);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().persons[0].drinks.beer,1);assert.deepEqual(db.root().strafenHistory,saved);audit(db,key);assertDashboard(db,key);
 });

@@ -146,6 +146,32 @@ Der allgemeine Countdown und Ballermann verwenden diese gemeinsame Zeit. Neue St
 
 Referenz: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/batchGet
 
+### V256: Tiberius-Würfe und die Tablet-Warteschlange
+
+Ein fehlgeschlagener Browser-Commit enthielt einen Clubstand von rund 1,21 MB.
+Davon entfielen rund 0,91 MB auf die Tiberius-Rückgängig-Daten. Bereits nach sechs
+Würfen lagen im gleichen Dokument sechs vollständige Kopien der vorhandenen
+Strafstatistik. Das Firestore-Dokumentlimit liegt bei 1 MiB.
+
+V256 speichert beim Rückgängig nur den vorherigen Punktestand, die Wurfanzahl,
+betroffene Zielspalten, Zähleränderungen und die ID des Statistikereignisses.
+Die App verdichtet vorhandene Tiberius-Sicherungen beim Einlesen auf dem Tablet,
+auch in ausstehenden Übertragungen. Die ursprüngliche Übertragungs-ID bleibt
+für den Abgleich mit dem ursprünglichen Firestore-Beleg erhalten. Würfe,
+gebuchte Beträge und die gemeinsame Strafstatistik bleiben erhalten. Bei älteren
+Würfen ohne gespeicherten Werferindex setzt die App die Wurfreihenfolge anhand
+der Anzahl vorhandener Würfe fort.
+
+Bei ausbleibender Cloud-Antwort endet der Wartevorgang nach 30 Sekunden. Das
+Tablet behält die Buchungen und dieselbe Übertragungs-ID für den nächsten
+Versuch. Ein gleicher oder höherer Cloud-Zähler ist allein kein Beleg für diese
+Übertragung. Bei einem erkannten Konflikt bleibt die lokale Warteschlange
+erhalten. Der Wechsel des Kegelabends prüft offene Buchungen vor dem Zurücksetzen
+und erneut innerhalb der lokalen Buchungswarteschlange.
+
+Die Fehlerbehebung verwendet die bestehenden Firestore-Regeln. Bei der
+Überprüfung der produktiven Datenbank wurden nur Statusfelder gelesen.
+
 
 ### V220: Ein führendes Tablet und ein Anzeige-TV
 

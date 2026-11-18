@@ -122,7 +122,7 @@ function tableConfirmAssignment(){
 function tableCloseAssignment(){tableAssignment=null;document.getElementById('table-assignment-modal')?.classList.add('hidden');}
 async function tableRun(key,action,fields={}){
   if(!TABLE_GAME_KEYS.includes(key)||tableBusy[key]||!ACTIVE_CLUB)return;
-  if(!navigator.onLine||!window.firestoreApi?.transactTableGame){showToast('Zum Spielen bitte eine Verbindung herstellen','error');return;}
+  if((!navigator.onLine&&!window.KCTabletSync?.ready)||!window.firestoreApi?.transactTableGame){showToast('Zum Spielen bitte eine Verbindung herstellen','error');return;}
   const club=ACTIVE_CLUB,evening=currentEveningStartedAt||'';
   if(tablePending[key]?.club!==club)tablePending[key]=null;
   if(!tablePending[key])tablePending[key]={club,request:{action,...fields,gameKey:key,gameId:fields.gameId||tableGameGet(key).id,expectedRevision:Number(tableGameGet(key).revision)||0,opId:'table_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),now:new Date().toISOString(),eveningStartedAt:evening,clubName:club}};
