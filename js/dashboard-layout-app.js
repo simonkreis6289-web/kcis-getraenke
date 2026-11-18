@@ -36,6 +36,12 @@
    for(const slot of positions){const option=element('option',r.count===1?(slot.startsWith('left')?'Links · volle Höhe':'Rechts · volle Höhe'):slotNames[slot]);option.value=slot;option.selected=slot===draft.panels[key].position;select.append(option);}select.value=draft.panels[key].position;select.onchange=()=>{draft=M.move(draft,key,select.value);draw();};row.append(select);
    const dwell=element('label',undefined,'dashboard-dwell');dwell.hidden=!check.checked;const input=duration('dashboard-seconds-'+key,draft.panels[key].seconds,1,300,v=>draft.panels[key].seconds=v);input.setAttribute('aria-label','Anzeigedauer '+M.labels[key]+' in Sekunden');dwell.append(input,document.createTextNode('Sekunden'));row.append(dwell);rows.append(row);
   }box.append(rows,preview(r));
+  for(const [side,title] of [['left','links'],['right','rechts']]){
+   const id='dashboard-table-width-'+side,label=element('label',undefined,'dashboard-popup-option');
+   label.htmlFor=id;
+   label.append(document.createTextNode('Tabellenbreite '+title+' '),duration(id,draft.tableWidth[side],10,35,v=>draft.tableWidth[side]=v),document.createTextNode(' % der Dashboardbreite'));
+   box.append(label);
+  }
   const fadeLabel=element('label',undefined,'dashboard-popup-option');fadeLabel.htmlFor='dashboard-transition-seconds';const fade=element('input');fade.type='number';fade.id='dashboard-transition-seconds';fade.min='0';fade.max='3';fade.step='0.1';fade.value=String(draft.transitionSeconds);fade.disabled=busy;fade.oninput=()=>draft.transitionSeconds=fade.value;fadeLabel.append(document.createTextNode('Sanfter Tabellenwechsel · Übergangszeit '),fade,document.createTextNode(' Sekunden (0 = sofort, Standard 0,6 s)'));box.append(fadeLabel);
   box=section('ticker','Laufschriften und eigene Texte');
   const tickerOptions=element('div',undefined,'dashboard-ticker-options');

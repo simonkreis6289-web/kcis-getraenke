@@ -90,8 +90,6 @@
 .round-page-tools{display:flex;gap:8px;justify-content:flex-end;margin:0 0 10px}.round-settings-fields{display:grid;gap:12px}.round-targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}.round-tide{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;margin:10px 0;background:#e9f2ff;border:1px solid #aec6e4;border-radius:10px}.round-tide-ebbe{background:#f5efd9}.round-tide-flut{background:#dceeff}.round-tide span{font-size:13px}.round-game-board .extra-team-card span{display:block}.round-jump-cleared{background:#e5f4e9!important}.round-jump-failed{background:#fce8ec!important}.round-rules-modal{max-width:850px;max-height:85vh;overflow:auto}.round-game-board .ind-table small{display:block;margin-top:4px;color:#526783;font-size:.74em}.round-settings-fields input,.round-settings-fields select{min-height:40px;padding:8px;border:1px solid #b0c1dc;border-radius:8px;font:inherit}.round-settings-fields .game-settings-field{display:grid;gap:5px}.round-settings-fields>button{justify-self:start}
 .poker-cards{display:flex;gap:8px;margin:10px 0}.poker-cards label{display:grid;gap:5px;justify-items:center;cursor:pointer}.poker-cards span{display:grid;place-items:center;border:1px solid #bdcde3;border-radius:9px;background:#f3f6fc;width:54px;height:64px;font-size:26px;font-weight:800}.poker-cards input:checked+span{background:#ffe5a1;border-color:#dc9d18}.poker-exchanged{background:#fff0c7!important}.thousand-arrange>div{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.thousand-arrange button{padding:12px 24px;border:1px solid #b6c8e1;border-radius:10px;background:#edf3fc;color:#243d63;font:800 22px 'DM Sans',sans-serif;cursor:pointer}.classic-tie{padding:10px;border:1px solid #dfbd5d;background:#fff5d7;border-radius:10px;margin-top:12px}
 
-.ind-drawn-starter{padding:7px 12px;margin:5px 0;border:1px solid #d7af42;border-radius:8px;background:#fff0bc;color:#694309;font-size:14px}
-
 .hurdle-track { margin: 8px 0 12px; }
 .hurdle-track ol {
   display: grid;
@@ -151,10 +149,13 @@
 #game-body .ind-hurdle-tv .ind-hurdle-split {
   flex: 1 0 auto;
   position: relative;
-  --hurdle-side: clamp(116px, 10vw, 158px);
+  --hurdle-rail-inset: clamp(48px, 4vw, 62px);
+  --hurdle-side: min(calc(var(--hurdle-rail-inset) + clamp(120px, 10vw, 156px)), 27%);
+  box-sizing: border-box;
+  min-height: var(--hurdle-track-min-height, 0);
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: 12px;
-  padding: 70px var(--hurdle-side) 0;
+  padding: var(--hurdle-top-space, 70px) var(--hurdle-side) 0;
 }
 #game-body .ind-hurdle-tv .ind-hurdle-split > :is(.hurdle-scores, .hurdle-rules) {
   display: flex;
@@ -202,7 +203,7 @@
 }
 .hurdle-circuit-rail {
   position: absolute;
-  inset: 26px 62px 12px;
+  inset: 26px min(var(--hurdle-rail-inset), 12%) 12px;
   border: 2px solid #90a8c8;
   border-bottom: 0;
 }
@@ -251,8 +252,36 @@
   transform: translateX(-50%);
 }
 .hurdle-circuit-mark[data-side="top"] .hurdle-circuit-stop small { margin-inline-start: 5px; }
-.hurdle-circuit-players { display: flex; align-items: center; gap: 4px; }
-.hurdle-circuit-dots { display: grid; grid-template-columns: repeat(4, max-content); gap: 4px; padding: 2px; }
+.hurdle-circuit-players {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background: #edf4fd;
+}
+.hurdle-circuit-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px 10px;
+}
+.hurdle-circuit-player {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.hurdle-circuit-player .hurdle-player-dot {
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+}
 .hurdle-circuit-mark[data-side="left"] .hurdle-circuit-players {
   left: 9px;
   transform: translateY(calc(-50% + var(--shift, 0px)));
@@ -263,10 +292,12 @@
   transform: translateY(calc(-50% + var(--shift, 0px)));
 }
 .hurdle-circuit-mark[data-side="top"] .hurdle-circuit-players {
-  top: 9px;
+  top: calc(9px + var(--drop, 0px));
   transform: translateX(calc(-50% + var(--shift, 0px)));
 }
-.hurdle-circuit-mark[data-side="top"] .hurdle-circuit-dots { display: flex; }
+.hurdle-circuit-mark[data-side="top"] .hurdle-circuit-names {
+  flex-flow: row wrap;
+}
 .hurdle-circuit-pointer {
   position: absolute;
   height: 1px;
@@ -283,11 +314,8 @@
 .hurdle-next-throws span { background: #fffaf0; border-radius: 4px; padding: 3px 6px; }
 
 @media (max-width: 760px) {
-  #game-body .ind-hurdle-tv .ind-hurdle-split { --hurdle-side: 103px; }
-  .hurdle-circuit-rail { inset-inline: 48px; }
   .hurdle-circuit-stop { font-size: 10px; }
   .hurdle-circuit-stop small { font-size: 9px; }
-  .hurdle-circuit-dots { grid-template-columns: repeat(3, max-content); }
 }
 
 .game-stopwatch {
@@ -306,14 +334,39 @@
 .game-stopwatch time { font-variant-numeric: tabular-nums; }
 .game-stopwatch.is-paused { background: #fff1cc; border-color: #deb355; color: #65430c; }
 .game-stopwatch-app { margin-block: 0 10px; }
-.game-stopwatch-app button {
-  margin-inline-start: .5em;
-  padding: .35em .65em;
-  border: 1px solid #8fa9c7;
-  border-radius: 5px;
-  background: #fff;
-  color: #203858;
-  font: inherit;
-  cursor: pointer;
-}
 #tv-game-stopwatch { margin-inline: auto; }
+
+.hurdle-circuit-ranges { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.hurdle-circuit-ranges path { fill:none; stroke:#507cbd; stroke-width:7px; stroke-linecap:round; opacity:.75; }
+.hurdle-rule-title { min-width:0; }
+.hurdle-rule-title select { width:100%; max-width:100%; font:inherit; }
+.hurdle-scores .hurdle-penalty-preview, #game-body .hurdle-scores .hurdle-penalty-preview { font-size:.8em; color:#486789; }
+.hurdle-circuit-player .hurdle-dot-current {
+  animation:hurdle-active-pulse 2.4s ease-in-out infinite;
+  transform:scale(1.3);
+  outline:2px solid #fff0b8;
+  outline-offset:1px;
+}
+.hurdle-circuit-player:has(.hurdle-dot-current) { background:#fff0b8; border-radius:3px; }
+@keyframes hurdle-active-pulse {
+  50% { transform:scale(1.65); outline-color:#d38b21; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .hurdle-circuit-player .hurdle-dot-current { animation:none; }
+}
+
+#game-body .tv-board:has(.jump-tv-board),
+#game-body .jump-tv-board { display:flex; flex-direction:column; box-sizing:border-box; }
+#game-body .tv-board:has(.jump-tv-board) { flex:none; }
+#game-body .jump-tv-board { flex:1 0 auto; }
+.jump-tv-stage { display:grid; grid-template-columns:clamp(80px,10vw,135px) minmax(0,1fr); gap:12px; flex:1 0 auto; }
+.jump-tv-stage > .ind-table-scroll { display:flex; overflow:visible; }
+.jump-tv-stage .ind-table { table-layout:fixed; }
+.jump-tv-stage .ind-table :is(th, td) { overflow-wrap:anywhere; position:static; }
+.jump-tv-stage .ind-help { display:none; }
+.jump-tv-meter { display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 4px; text-align:center; background:#edf4fd; border:1px solid #bed0e8; border-radius:7px; }
+.jump-tv-scale { width:24px; flex:1 0 100px; position:relative; border-radius:4px; background:#cdddf1; margin:12px 0 6px; }
+.jump-tv-fill { position:absolute; inset:auto 0 0; height:var(--jump-height); background:#3979b9; border-radius:4px 4px 0 0; }
+.jump-tv-bar { position:absolute; bottom:var(--jump-bar); left:50%; transform:translate(-50%, 50%); padding:2px 4px; width:max-content; border-bottom:3px solid #d58a28; color:#694318; background:#fff4d5; font-size:11px; font-weight:800; }
+
+.hurdle-player-choice { flex-direction:column; align-items:stretch; }

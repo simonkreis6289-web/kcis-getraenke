@@ -93,3 +93,6 @@
   height:36px;min-height:36px;padding:0 9px;font-size:12px;
  }
 }
+
+#main-spiele .game-dashboard-toolbar .game-pause-button { background:#fff1cc; border-color:#d6ad60; color:#634515; }
+#main-spiele .game-dashboard-toolbar .game-pause-button:hover:not(:disabled) { background:#ffe7a3; }

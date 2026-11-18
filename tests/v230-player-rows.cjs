@@ -26,7 +26,11 @@ for(const key of keys)test(key+': real app and TV move rows with the actual turn
  else await roll(4);
  await check(a,d,key,['B','C','D','A']);
  if(key==='lattenzaun'){for(const doc of [a.document,d.document])assert.equal(doc.querySelector('.extra-fence-last b').textContent,'6 Holz');}
- if(key==='hochsprung'){for(const n of [2,2,2])await roll(n);await check(a,d,key,['C','D','A','B']);assert.equal(a.c.indGet(key).jumps.B.feeCents,120);await a.c.indAction(key,'undo');await check(a,d,key,['B','C','D','A']);assert.equal(a.c.indGet(key).jumps.B.feeCents,0);for(let i=0;i<3;i++)await a.c.indAction(key,'undo');}
+ if(key==='hochsprung'){
+  assert.match(d.document.querySelector('.jump-tv-meter').textContent,/12 Holz.*Latte · 12/);
+  await roll(2);assert(await a.c.KCSharedSync.waitForUpload());d.update();
+  assert.match(d.document.querySelector('.jump-tv-meter').textContent,/^2 Holz.*Latte · 12/);
+  for(const n of [2,2])await roll(n);await check(a,d,key,['C','D','A','B']);assert.equal(a.c.indGet(key).jumps.B.feeCents,120);await a.c.indAction(key,'undo');await check(a,d,key,['B','C','D','A']);assert.equal(a.c.indGet(key).jumps.B.feeCents,0);for(let i=0;i<3;i++)await a.c.indAction(key,'undo');}
  else if(key==='mensch')await a.c.undoMenschThrow();
  else if(key==='plusminus'){const first=a.document.querySelector('#tab-plusminus tbody tr');assert.equal(first.querySelector('td').textContent,'B');const free=[...first.querySelectorAll('.game-slot')].filter(x=>!x.disabled);assert.equal(free.length,5);assert(!a.document.querySelectorAll('#tab-plusminus tbody tr')[3].querySelector('.game-slot:not(.filled):not([disabled])'));await a.c.undoPlusminusThrow();}
  else if(key==='sichern')await a.c.undoSichernThrow();

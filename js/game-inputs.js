@@ -159,6 +159,7 @@ function renderGameDashboardButton(key,panel,s){
  let next=toolbar.querySelector('[data-game-next]');
  if(!next){next=document.createElement('button');next.type='button';next.className='game-next-button';next.dataset.gameNext=key;next.textContent='➡ Nächster Werfer';next.onclick=()=>gameNextThrower(key);}
  if(next.parentElement!==toolbar)toolbar.insertBefore(next,dashboard);
+ window.KCGameStopwatchApp?.attach(toolbar,next,key,s);
  const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
  dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false&&!window.KCTabletSync?.directConnected;
  dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
