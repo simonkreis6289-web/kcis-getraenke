@@ -488,11 +488,12 @@ function tiberiusThrower(){
  const names=Array.isArray(tiberiusState.playerOrder)&&tiberiusState.playerOrder.length?tiberiusState.playerOrder:getTiberiusPlayers().map(p=>p.name);
  return names[(Math.max(0,Number(tiberiusState.currentPlayerIndex)||0))%names.length]||'';
 }
-function tiberiusNextThrower(){
+function tiberiusMoveThrower(step){
  ensureTiberiusState();
- if(!tiberiusState.active||tiberiusAutoBusy||tiberiusState.pendingHit)return false;
+ const sync=window.KCSharedSync;
+ if(!tiberiusState.active||tiberiusState.finished||tiberiusAutoBusy||tiberiusState.pendingHit||sync&&(!sync.ready||sync.inUnit))return false;
  const length=tiberiusState.playerOrder?.length||0;if(!length)return false;
- tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+1)%length;
+ tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+length+step)%length;
  renderAll();persistState();return true;
 }
 async function handleTiberiusThrow(value){

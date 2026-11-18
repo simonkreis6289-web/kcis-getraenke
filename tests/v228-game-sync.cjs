@@ -93,6 +93,16 @@ test('legacy game header buttons switch the actual turn without adding penalties
   if(key==='lotterie')a.run('if(!lotterieState.columns.length)lotterieState.columns=[1]');
   a.c.renderAll();const previous=a.run(turn),before=copy(a.run('getFirestoreState()'));
   const button=a.document.querySelector('#tab-'+key+' [data-game-next]');
+  if(key==='tiberius'){
+   const back=a.document.querySelector('#tab-tiberius [data-game-previous]');
+   assert(back&&!back.disabled);
+   assert.equal(back.onclick(),true);
+   assert.equal(a.run(turn),a.run('tiberiusState.playerOrder.at(-1)'));
+   assert.equal(a.run('tiberiusState.throws.length'),before.tiberiusState.throws.length);
+   assert.deepEqual(copy(a.run('getFirestoreState().persons')),before.persons);
+   assert.equal(await button.onclick(),true);
+   assert.equal(a.run(turn),previous);
+  }
   assert(!button.disabled,key);assert.equal(await button.onclick(),true,key);
   const after=copy(a.run('getFirestoreState()'));
   assert.notEqual(a.run(turn),previous,key);assert.deepEqual(after.persons,before.persons,key);

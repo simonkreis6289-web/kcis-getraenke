@@ -22,6 +22,17 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 .dashboard-side-full .listrow{font-size:clamp(14px,calc(var(--list-font,16px) * 1.3),24px)}
 .dashboard-side-full .panel h2{font-size:clamp(16px,1.3vw,22px)}
 .dashboard-side-full .total{font-size:17px}.dashboard-side-full .total strong{font-size:22px}
+#gutters .listrow{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) auto;gap:4px}
+#gutters .gutter-leader{background:#fff4dc;border-radius:5px}
+#gutters .gutter-leader .name{font-weight:800}
+#gutters .gutter-tally{display:flex;align-items:center;gap:1px;min-width:0}
+#gutters .gutter-tally>span{flex:1 1 4px;max-width:5px;height:.62em;border-radius:2px;background:#bd3148}
+#gutters .gutter-tally>span:nth-child(5n+1):not(:first-child){margin-left:2px}
+.dashboard-side-full #gutters .listrow{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-content:center;column-gap:6px;row-gap:2px}
+.dashboard-side-full #gutters .listrow .name{font-size:1.1em;font-weight:700}
+.dashboard-side-full #gutters .gutter-tally{grid-column:1/-1;grid-row:2;gap:2px}
+.dashboard-side-full #gutters .gutter-tally:empty{display:none}
+.dashboard-side-full #gutters .value{grid-column:2;grid-row:1}
 .dashboard-header .clock,.dashboard-header #dashboard-lane{font-variant-numeric:tabular-nums;text-align:left;white-space:nowrap}
 .dashboard-throw-popup{position:fixed;left:50%;bottom:clamp(58px,9vh,125px);top:auto;right:auto;z-index:1500;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:clamp(125px,18vh,210px);max-width:calc(100vw - 24px);padding:22px 28px;border:4px solid #e33c55;border-radius:22px;background:linear-gradient(135deg,#ffccd5,#ff637d);color:#691324;box-shadow:0 18px 55px #160b1b8c,0 0 0 4px #fff9;pointer-events:none;text-align:center;opacity:0;transform:translate(-50%,calc(100% + 180px)) scale(.94);transition:transform 420ms cubic-bezier(.2,.8,.2,1),opacity 340ms ease;will-change:transform,opacity}
 .dashboard-throw-popup.toast-visible{opacity:1;transform:translate(-50%,0) scale(1)}
