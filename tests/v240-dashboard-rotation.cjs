@@ -7,6 +7,30 @@ function setup(){
  for(const f of ['birthdays','dashboard-layout','dashboard-layout-tv'])vm.runInContext(read('js/'+f+'.js'),c);
  return {c,document,timers,model:c.KCDashboardLayout,tv:c.KCDashboardLayoutTV,now:()=>now,advance(ms){now+=ms;const due=[...timers].filter(([,v])=>v.at<=now);for(const [n,v] of due){if(timers.delete(n))v.fn();}}};
 }
+test('direct TV link retains fresh throw popups in a long mixed-order log',()=>{
+ const f=setup();
+ vm.runInContext(read('js/dashboard-link.js'),f.c);
+ const link=f.c.KCDashboardLink,club='club',evening='2026-11-16T19:00:00Z';
+ const event=(id,type,at=f.now())=>({id,type,thrower:'Marius',eveningStartedAt:evening,createdAt:new Date(at).toISOString()});
+ const old=Array.from({length:70},(_,index)=>event('old-'+index,'gosse',f.now()-40000-index*1000));
+ const cloud={currentEveningStartedAt:evening,tabletSequence:10,dashboardSettings:{popupSeconds:3},penaltyStatsLog:old};
+ f.tv.feed(cloud,club,f.now());
+ let log=[...old],sequence=10;
+ for(const [type,label] of [['gosse','Gosse'],['kranz','Kranz'],['9er','Alle Neune']]){
+  f.advance(100);
+  const latest=event(type,type);
+  log=type==='kranz'?[...log,latest]:[latest,...log];
+  const state=link.project({...cloud,penaltyStatsLog:log});
+  assert.equal(state.penaltyStatsLog.length,64);
+  assert.equal(state.penaltyStatsLog[0].id,type);
+  const direct=link.reconcile(cloud,{sequence:++sequence,baseEvening:evening,state});
+  f.tv.feed(direct,club,f.now());
+  const popup=f.document.getElementById('dashboard-throw-popup');
+  assert.equal(popup.hidden,false);
+  assert(popup.textContent.includes(label));
+ }
+ assert.equal(cloud.penaltyStatsLog.length,70);
+});
 test('settings migrate old values and normalize durations and safe bounded custom messages',()=>{
  const {model:M}=setup(),s=M.normalize({panels:{drinks:{seconds:0},fines:{seconds:1000},gutters:{seconds:'bad'}},popupSeconds:-5,tickerMessages:[{id:'<bad>',text:'  Hi\n there <img>  ',enabled:false},{id:'<bad>',text:'x'.repeat(600)}]});
  assert.equal(s.panels.drinks.seconds,1);assert.equal(s.panels.fines.seconds,300);assert.equal(s.panels.gutters.seconds,5);assert.equal(s.popupSeconds,0);assert.equal(s.tickerMessages[0].text,'Hi there <img>');assert.equal(s.tickerMessages[1].text.length,500);assert.equal(s.tickerMessages[0].enabled,false);assert.notEqual(s.tickerMessages[0].id,s.tickerMessages[1].id);

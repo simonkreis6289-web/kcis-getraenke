@@ -22,10 +22,18 @@
   }
  }
  function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;for(const kind of ['notes','statutes','penalties']){const stage=$('club-'+kind+'-stage');if(!stage||!stage.getClientRects().length)continue;const height=Math.max(200,window.innerHeight-stage.getBoundingClientRect().top-32)+'px';if(stage.style.height!==height)stage.style.height=height;if(typeof ResizeObserver!=='function'){readers[kind]?.schedule();editors[kind]?.schedule();}}});}
+ function dashboardControl(){
+  const local=window.KCTabletSync?.clubContentView(club);
+  return local===undefined?{view,available:viewReady&&navigator.onLine}:{view:local,available:true};
+ }
+ function renderDashboardControls(kind){
+  const control=dashboardControl(),open=!!(control.view?.open&&control.view.kind===kind),button=$('club-'+kind+'-dashboard');if(!button)return;
+  button.textContent=open?'📺 Auf Dashboard schließen':'📺 Auf Dashboard anzeigen';button.setAttribute('aria-pressed',String(open));button.disabled=busy||!control.available;
+  const remote=$('club-'+kind+'-remote');remote.hidden=!open;for(const b of remote.querySelectorAll('button'))b.disabled=busy||!control.available;
+ }
+ function refreshDashboardControls(){for(const kind of ['notes','statutes','penalties'])renderDashboardControls(kind);}
  function renderButtons(kind){
-  const open=!!(view?.open&&view.kind===kind),button=$('club-'+kind+'-dashboard');if(!button)return;
-  button.textContent=open?'📺 Auf Dashboard schließen':'📺 Auf Dashboard anzeigen';button.setAttribute('aria-pressed',String(open));button.disabled=busy||!viewReady||!navigator.onLine;
-  const remote=$('club-'+kind+'-remote');remote.hidden=!open;for(const b of remote.querySelectorAll('button'))b.disabled=busy||!viewReady||!navigator.onLine;
+  renderDashboardControls(kind);
   const save=$('club-'+kind+'-save'),length=editors[kind]?.text.length||0,limit=kind==='notes'?10000:100000;
   if(save)save.disabled=busy||!ready[kind]||!navigator.onLine||length>limit||kind==='notes'&&!editors[kind]?.text.trim();
   const count=$('club-'+kind+'-characters');if(count)count.textContent=length.toLocaleString('de-DE')+' / '+limit.toLocaleString('de-DE')+' Zeichen';
@@ -49,7 +57,7 @@
  }
  function render(){initialize();connect();renderPanels();}
  async function request(method,kind,fields,revision){
-  if(busy||!club||!navigator.onLine||!window.firestoreApi?.[method])return false;
+  if(busy||!club||!(method==='setClubContentDashboard'?dashboardControl().available:navigator.onLine)||!window.firestoreApi?.[method])return false;
   const target=club,token=epoch,key=method+'|'+kind+'|'+JSON.stringify(fields);let req=pending.get(key);
   if(!req){req={...fields,kind,expectedRevision:revision,opId:id('content_')};pending.set(key,req);}
   busy=true;message='';renderPanels();
@@ -65,8 +73,8 @@
  }
  async function done(noteId,checked){if(!ready.notes)return false;return request('updateClubContent','notes',{action:'done',id:noteId,done:checked},model.value('notes',data.notes).revision);}
  async function remove(noteId){if(!ready.notes||busy||!confirm('Diese Notiz wirklich löschen?'))return false;return request('updateClubContent','notes',{action:'delete',id:noteId},model.value('notes',data.notes).revision);}
- function toggle(kind){return request('setClubContentDashboard',kind,{action:view?.open&&view.kind===kind?'close':'open'},Number(view?.revision)||0);}
- function turn(kind,delta){return request('setClubContentDashboard',kind,{action:'turn',delta},Number(view?.revision)||0);}
+ function toggle(kind){const current=dashboardControl().view;return request('setClubContentDashboard',kind,{action:current?.open&&current.kind===kind?'close':'open'},Number(current?.revision)||0);}
+ function turn(kind,delta){return request('setClubContentDashboard',kind,{action:'turn',delta},Number(dashboardControl().view?.revision)||0);}
  function infoTab(key){if(key==='dashboard'){showSideTab('verwaltung','dashboard');return;}const keys=['statutes','penalties'];if(!keys.includes(key))return;for(const value of keys){const panel=$('club-info-'+value);if(panel)panel.hidden=value!==key;}for(const b of document.querySelectorAll('[data-club-info]')){const selected=b.dataset.clubInfo===key;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;}render();}
  document.addEventListener('keydown',event=>{if(!event.target.matches('[data-club-info]')||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const keys=['statutes','penalties'],index=keys.indexOf(event.target.dataset.clubInfo),key=keys[event.key==='Home'?0:event.key==='End'?1:1-index];infoTab(key);document.querySelector('[data-club-info='+key+']').focus();});
  document.addEventListener('change',event=>{if(event.target.matches('[data-note-done]')){const input=event.target;input.checked=!input.checked;void done(input.dataset.noteDone,!input.checked);}});
@@ -79,5 +87,5 @@
   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
  });
  window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);window.addEventListener('online',render);window.addEventListener('offline',renderPanels);
- window.KCClubContentApp=Object.freeze({render,stop,edit,cancel,save,done,remove,toggle,turn,infoTab,schedule});
+ window.KCClubContentApp=Object.freeze({render,stop,edit,cancel,save,done,remove,toggle,turn,infoTab,schedule,refreshDashboardControls});
 })();

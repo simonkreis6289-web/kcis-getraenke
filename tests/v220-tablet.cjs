@@ -41,6 +41,7 @@ test('after a browser disconnect Tiberius keeps accepting local throws and preve
  a.c.navigator.onLine=false;
  for(const pins of [0,9,0,9,0,9])await a.c.handleTiberiusThrow(pins);
  assert.equal(a.run('tiberiusState.throws.length'),6);assert.equal(a.run('tiberiusState.currentPlayerIndex'),0);
+ assert.equal(a.run("penaltyStatsLog.filter(entry=>entry.type==='gosse').length"),3);
  assert.equal(a.run('persons[0].strafen.gosse'),3);assert.equal(a.run('persons[0].strafen.nine'),3);
  assert.equal(await a.c.startNewKegelabend(),false);assert.equal(a.run('currentEveningStartedAt'),before.currentEveningStartedAt);
  assert.deepEqual(db.root(),before);
@@ -50,7 +51,10 @@ test('after a browser disconnect Tiberius keeps accepting local throws and preve
  await a.c.undoLastTiberiusThrow();assert.equal(a.run('persons[0].strafen.nine'),2);
  db.fail(false);assert(await a.c.KCSharedSync.reconnect());
  assert.equal(db.root().tiberiusState.throws.length,5);assert.equal(db.root().persons[0].strafen.gosse,3);
- assert.equal(db.root().persons[0].strafen.nine,2);assert.equal(db.root().penaltyStatsLog.length,2);
+ assert.equal(db.root().persons[0].strafen.nine,2);assert.equal(db.root().penaltyStatsLog.length,5);
+ await a.c.undoLastTiberiusThrow();assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(db.root().persons[0].strafen.gosse,2);
+ assert.equal(db.root().penaltyStatsLog.filter(entry=>entry.type==='gosse').length,2);
  assert(await a.c.startNewKegelabend());assert(await a.c.KCSharedSync.waitForUpload());
  assert.notEqual(db.root().currentEveningStartedAt,before.currentEveningStartedAt);
  assert.equal(db.root().persons[0].strafen.gosse,0);
@@ -62,6 +66,27 @@ test('a competing tablet sequence retains both tablets’ bookings instead of re
  assert.equal(db.root().persons[0].drinks.beer,1);assert.equal(db.root().persons[1].drinks.beer,0);
  const failed=JSON.parse(b.storage.get('kcis_tablet_outbox_club')).inflight;
  assert(failed);assert.match(b.c.KCSharedSync.diagnostics().error,/sync-conflict/);
+ const backup=b.document.querySelector('.shared-sync-backup');
+ assert.equal(backup.hidden,false);
+ assert.match(b.document.querySelector('.shared-sync-error-details').textContent,/bis zum Abgleich nicht erneut eingeben/);
+ const beforeBackup=copy(db.root()),outbox=b.storage.get('kcis_tablet_outbox_club');
+ let backupFile,downloadName;
+ b.c.Blob=Blob;
+ b.c.URL={createObjectURL(file){backupFile=file;return 'blob:tablet-backup';},revokeObjectURL(){}};
+ const createElement=b.document.createElement.bind(b.document);
+ b.document.createElement=(tag,...args)=>{
+  const element=createElement(tag,...args);
+  if(tag==='a')element.click=()=>{downloadName=element.download;};
+  return element;
+ };
+ await backup.onclick();
+ assert.match(downloadName,/^kegelclub-tablet-abgleich-\d{4}-\d{2}-\d{2}\.json$/);
+ const report=JSON.parse(await backupFile.text());
+ assert.deepEqual(report.tabletOutbox,JSON.parse(outbox));
+ assert.deepEqual(report.firebaseState.value,beforeBackup);
+ assert.deepEqual(report.receipts,[{opId:failed.opId,status:'ok',value:null}]);
+ assert.deepEqual(db.root(),beforeBackup);
+ assert.equal(b.storage.get('kcis_tablet_outbox_club'),outbox);
  const c=fullApp(db);for(const [k,v] of b.storage)c.storage.set(k,v);await c.select();
  assert.equal(await c.c.KCSharedSync.waitForUpload(),false);
  assert.equal(JSON.parse(c.storage.get('kcis_tablet_outbox_club')).inflight.opId,failed.opId);

@@ -416,11 +416,9 @@ async function confirmTiberiusThrower() {
       const success = await changeMultipleSyncedPersonCounters(changes);
       if (!success) return; // Dialog offen lassen; keine doppelte Buchung
     }
-    if (value === 9 || value === 12) {
-      if (typeof addPenaltyStatsEntry === 'function') {
-        addPenaltyStatsEntry(value === 9 ? '9er' : 'Kranz', personName,
-          changes.map(change => change.personName));
-      }
+    const eventType = tiberiusThrowEventType(value);
+    if (eventType && typeof addPenaltyStatsEntry === 'function') {
+      addPenaltyStatsEntry(eventType, personName, changes.map(change => change.personName));
     }
     if (Array.isArray(tiberiusState.throws) && tiberiusState.throws.length) {
       tiberiusState.throws[tiberiusState.throws.length - 1].thrower = personName;
@@ -475,6 +473,15 @@ function tiberiusFunnyName(name){
  const text=String(name||'');if(text.length<3)return text+'h';
  const chars=Array.from(text),idx=chars.findIndex((x,i)=>i>0&&i<chars.length-1&&/[a-zäöü]/i.test(x)&&/[a-zäöü]/i.test(chars[i+1])&&x!==chars[i+1]);
  if(idx<0)return text+'h';[chars[idx],chars[idx+1]]=[chars[idx+1],chars[idx]];return chars.join('');
+}
+function tiberiusThrowEventType(value){
+ switch(value){
+  case 0:return 'gosse';
+  case 9:return '9er';
+  case 12:return 'Kranz';
+  case 'durchgeworfen':return value;
+  default:return '';
+ }
 }
 function tiberiusThrower(){
  ensureTiberiusState();
@@ -536,8 +543,9 @@ async function handleTiberiusThrow(value){
   tiberiusState.pendingHit=null;
   tiberiusPendingThrower=null;
   tiberiusState.currentPlayerIndex=(undo.currentPlayerIndex+1)%list.length;
-  if((value===9||value===12||value==='durchgeworfen')&&typeof addPenaltyStatsEntry==='function')
-   undo.penaltyStatId=addPenaltyStatsEntry(value===9?'9er':value===12?'Kranz':'durchgeworfen',thrower,changes.map(x=>x.personName))?.id||null;
+  const eventType=tiberiusThrowEventType(value);
+  if(eventType&&typeof addPenaltyStatsEntry==='function')
+   undo.penaltyStatId=addPenaltyStatsEntry(eventType,thrower,changes.map(x=>x.personName))?.id||null;
   (tiberiusState.undoStack||(tiberiusState.undoStack=[])).push(undo);
   closeTiberiusThrowModal();closeTiberiusThrowerModal();closeTiberiusHitModal();
   renderAll();persistState();

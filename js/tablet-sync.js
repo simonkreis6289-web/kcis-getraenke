@@ -79,11 +79,46 @@
       if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(message).catch(manual);
       else manual();
     };
+    const backup=el.querySelector('.shared-sync-backup');
+    backup.hidden=!count||!error;
+    backup.onclick ||= async ()=>{
+      backup.disabled=true;
+      try{
+        const data=await collectConflictBackup();
+        const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+        const download=document.createElement('a');
+        download.href=url;
+        download.download='kegelclub-tablet-abgleich-'+data.exportedAt.slice(0,10)+'.json';
+        document.body.append(download);
+        try{download.click();}finally{download.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+        toast(data.firebaseState.status==='ok'?'Abgleichdatei mit Tablet- und Firebase-Stand erstellt.':'Lokale Warteschlange gesichert. Firebase-Stand war nicht abrufbar.','success');
+      }catch(error){
+        toast('Abgleichdatei konnte nicht erstellt werden: '+error.message);
+      }finally{backup.disabled=false;}
+    };
+  }
+  async function collectConflictBackup(){
+    const s=current;
+    if(!s)throw Error('Kein Club ausgewählt.');
+    const tabletOutbox=JSON.parse(localStorage.getItem(key(s.club))||'null');
+    const batches=[tabletOutbox?.inflight,tabletOutbox?.pending].filter(Boolean);
+    if(!batches.length)throw Error('Keine offenen Übertragungen vorhanden.');
+    const read=async request=>{
+      try{return {status:'ok',value:await cloudRequest(request())};}
+      catch(error){return {status:'unavailable',error:String(error?.code||error?.message||error)};}
+    };
+    const exportedAt=new Date().toISOString();
+    const [firebaseState,...receipts]=await Promise.all([
+      read(()=>raw.readTabletDocument(s.club,'clubs/'+s.club+'/state/current')),
+      ...batches.map(batch=>read(()=>raw.getSharedReceipt(s.club,batch.opId)))
+    ]);
+    return {exportedAt,tabletOutbox,firebaseState,receipts:batches.map((batch,index)=>({opId:batch.opId,...receipts[index]}))};
   }
   function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight,lastConfirmedAt:s.lastConfirmedAt||null}));}
   function cache(){try{if(typeof syncCurrentClubToStore==='function'){syncCurrentClubToStore();saveClubSystem();}}catch{/* Die dauerhafte Übertragungswarteschlange bleibt maßgeblich. */}}
   function project(state,render=false){
     const old=isApplyingRemoteState;try{isApplyingRemoteState=true;const previousPeople=new Map(persons.map(p=>[C.norm(p.name),p]));applyLoadedState(C.clone(state));persons=persons.map(p=>{const old=previousPeople.get(C.norm(p.name));if(!old)return p;for(const k of Object.keys(old))if(!Object.hasOwn(p,k))delete old[k];return Object.assign(old,p);});livePersonCounters.clear();for(const p of state.persons||[])livePersonCounters.set(p.name,C.clone(p));liveCountersReady=true;if(render)renderAll();cache();}finally{isApplyingRemoteState=old;}
+    window.KCClubContentApp?.refreshDashboardControls();
   }
   function publish(s){
     const content={};
@@ -124,7 +159,10 @@
           s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
         }catch(error){
           s.retryFailures=(s.retryFailures||0)+1;
-          s.error=(error?.code?'['+error.code+'] ':'')+String(error?.message||error);
+          const message=error?.code==='sync-conflict'&&error.path?.[0]==='Tablet-Warteschlange'
+            ?'Tablet und Firebase haben unterschiedliche Speicherstände. Bitte Abgleichdatei sichern und Buchungen bis zum Abgleich nicht erneut eingeben.'
+            :String(error?.message||error);
+          s.error=(error?.code?'['+error.code+'] ':'')+message;
           s.retryStopped=['permission-denied','unauthenticated','sync-conflict','invalid-argument','failed-precondition'].includes(error?.code);
           s.nextRetryAt=s.retryStopped?0:Date.now()+Math.min(300000,5000*Math.pow(2,Math.min(6,s.retryFailures-1)));
           console.error('Tablet-Cloudspeicherung gescheitert (lokale Warteschlange bleibt erhalten):',error);
@@ -280,7 +318,7 @@
     }
   }
 
-  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
+  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},clubContentView(club){return ready&&current?.club===club?C.clone(current.root.dashboardClubContent||null):undefined;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
   document.addEventListener('click',e=>{if(ready&&!unit)return;if(e.target?.closest?.('#shared-sync-status,.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
   window.addEventListener('online',()=>{status();void reconnect();});
   window.addEventListener('offline',()=>{if(current?.pending||current?.inflight)current.error='Tablet ist offline';status();});

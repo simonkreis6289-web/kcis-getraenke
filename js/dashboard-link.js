@@ -4,7 +4,15 @@
  const fields=['dashboardSettings','persons','DRINKS','prices','STRAFEN','strafPrices','STRAFEN_LIMIT','timePenaltySettings','wurfSettings','TANNENBAUM_BASE','hausnummerSettings','seatingOrder','groupSettings','clubCalendarData','clubTermine','clubKegelSerie','dashboardActiveGame','dashboardGameOverview','dashboardCashView','dashboardClubContent','dashboardRules','dashboardDraw','dashboardRandomDraw','dashboardAnnouncement','gameOptions','bahnTimerStart','bahnTimerRunning','bahnElapsedSeconds','bahnPreisProStunde','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore','currentEveningStartedAt','eveningResetRevision',...games.map(k=>k+'State')];
  const clone=x=>JSON.parse(JSON.stringify(x)),uid=()=>typeof crypto.randomUUID==='function'?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),n=>('0'+n.toString(16)).slice(-2)).join(''),stamp=()=>window.KCSharedClock?.now()??Date.now();
  function lean(value){if(Array.isArray(value))return value.map(lean);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([k])=>!['undoStack','commands','receipts'].includes(k)).map(([k,v])=>[k,lean(v)]));return value;}
- function project(state){const out={};for(const k of fields)if(state[k]!==undefined)out[k]=lean(state[k]);out.penaltyStatsLog=lean((state.penaltyStatsLog||[]).slice(-64));return out;}
+ function project(state){
+  const out={};
+  for(const key of fields)if(state[key]!==undefined)out[key]=lean(state[key]);
+  const log=Array.isArray(state.penaltyStatsLog)?state.penaltyStatsLog:[];
+  // Quick bookings prepend entries, while some game transactions append them.
+  const recent=log.map(event=>({event,at:Date.parse(event?.createdAt)||0})).sort((a,b)=>b.at-a.at).slice(0,64);
+  out.penaltyStatsLog=lean(recent.map(({event})=>event));
+  return out;
+ }
  function valid(frame,club){return frame?.v===1&&frame.club===club&&typeof frame.source==='string'&&frame.source.length<100&&Number.isSafeInteger(frame.sequence)&&frame.sequence>=0&&frame.state&&typeof frame.state==='object'&&!Array.isArray(frame.state)&&typeof frame.baseEvening==='string';}
  function reconcile(base,frame){
   if(!base||!frame||frame.sequence<=Number(base.tabletSequence||0))return base;
