@@ -6,7 +6,10 @@
   function gameClock(gameKey,game){
     if(!game?.active||game.finished||game.eveningStartedAt&&game.eveningStartedAt!==currentEveningStartedAt)return null;
     if(gameKey==='tannenbaum'&&teamStopwatchActive)return {running:teamStopwatchRunning,mode:'team',started:teamStopwatchRunning||teamCountdownRemainingBefore<teamCountdownDuration};
-    if(gameKey==='ballermann')return {running:game.timer.running,mode:'ball',started:game.timer.endsAt>0,expired:game.timer.running&&window.KCExtraGames.remaining(game)===0};
+    if(gameKey==='ballermann'){
+      if(!game.timer)return null;
+      return {running:game.timer.running,mode:'ball',started:game.timer.endsAt>0,expired:game.timer.running&&window.KCExtraGames.remaining(game)===0};
+    }
     const watch=timer.clock(gameKey,game,teamStopwatchActive);
     return watch&&!watch.finished?{running:watch.runningSince!==null,watch}:null;
   }
