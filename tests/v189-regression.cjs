@@ -52,6 +52,19 @@ test('Tannenbaum and Darts route special throws through the existing player/pena
 test('TV bought-throw indicators use bordered DOM circles for both colors and retain safe player text',()=>{
  const {document}=parseHTML('<div id="gutters"></div>'),html=read('dashboard.html'),listLine=html.split('\n').find(l=>l.startsWith('function list(')),env={document,state:{wurfSettings:{maxBuys:3}},$:id=>document.getElementById(id)};const f=new Function('env','with(env){'+extract(html,'buyThrowIndicators')+'\n'+listLine+';return {buyThrowIndicators,list};}')(env),p={boughtThrows:1},box=f.buyThrowIndicators(p);assert.equal(box.querySelectorAll('.tv-buy-free').length,2);assert.equal(box.querySelectorAll('.tv-buy-used').length,1);assert.equal(box.getAttribute('aria-label'),'1 von 3 Würfen gekauft');assert(!box.textContent.includes('🟢'));f.list('gutters',[{name:'<img onerror=x>',person:p}],()=> '1 ×','Leer');assert(!document.querySelector('img'));assert(document.getElementById('gutters').textContent.includes('<img onerror=x>'));env.state.wurfSettings.maxBuys=0;assert.equal(f.buyThrowIndicators(p).children.length,0);
 });
+test('TV gutter tally retains the exact count, limits marks to 15 and highlights tied leaders',()=>{
+ const {document}=parseHTML('<div id="gutters"></div>'),html=read('dashboard.html');
+ const listLine=html.split('\n').find(line=>line.startsWith('function list('));
+ const env={document,$:id=>document.getElementById(id)};
+ const {list,decorateGutterRows}=new Function('env','with(env){'+listLine+'\n'+extract(html,'decorateGutterRows')+';return {list,decorateGutterRows};}')(env);
+ const scores=[{name:'A',count:19},{name:'B',count:19},{name:'C',count:5},{name:'D',count:0},{name:'E',count:-1}];
+ list('gutters',scores,row=>row.count+' ×','Leer');
+ decorateGutterRows(scores,['A','B']);
+ const lines=[...document.querySelectorAll('.listrow')];
+ assert.deepEqual(lines.map(line=>line.querySelector('.gutter-tally').children.length),[15,15,5,0,0]);
+ assert.deepEqual(lines.map(line=>line.querySelector('.value').textContent),['19 ×','19 ×','5 ×','0 ×','-1 ×']);
+ assert.deepEqual(lines.filter(line=>line.classList.contains('gutter-leader')).map(line=>line.querySelector('.name').textContent),['A','B']);
+});
 test('TV Blackjack active styling covers every cell and overrides the white TV table cells',()=>{
  const css=read('css/table-games.css'),rule=[...parse(css).cssRules].find(r=>r.selectorText?.includes('.tg-tv-board .tg-board .tg-current>th'));assert(rule);assert.equal(rule.style.getPropertyValue('background'),'#f6b900');const {document}=parseHTML('<div class="tg-tv-board"><div class="tg-board"><table><tbody><tr class="tg-current"><th>A</th><td>2</td><td>3</td><td>5</td><td>Am Wurf</td></tr><tr><th>B</th><td>0</td></tr></tbody></table></div></div>');assert.equal(document.querySelectorAll(rule.selectorText).length,5);assert(!document.querySelector('tr:not(.tg-current)>td').matches(rule.selectorText));
 });
