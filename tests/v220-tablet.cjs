@@ -62,6 +62,27 @@ test('a competing tablet sequence retains both tablets’ bookings instead of re
  assert.equal(db.root().persons[0].drinks.beer,1);assert.equal(db.root().persons[1].drinks.beer,0);
  const failed=JSON.parse(b.storage.get('kcis_tablet_outbox_club')).inflight;
  assert(failed);assert.match(b.c.KCSharedSync.diagnostics().error,/sync-conflict/);
+ const backup=b.document.querySelector('.shared-sync-backup');
+ assert.equal(backup.hidden,false);
+ assert.match(b.document.querySelector('.shared-sync-error-details').textContent,/bis zum Abgleich nicht erneut eingeben/);
+ const beforeBackup=copy(db.root()),outbox=b.storage.get('kcis_tablet_outbox_club');
+ let backupFile,downloadName;
+ b.c.Blob=Blob;
+ b.c.URL={createObjectURL(file){backupFile=file;return 'blob:tablet-backup';},revokeObjectURL(){}};
+ const createElement=b.document.createElement.bind(b.document);
+ b.document.createElement=(tag,...args)=>{
+  const element=createElement(tag,...args);
+  if(tag==='a')element.click=()=>{downloadName=element.download;};
+  return element;
+ };
+ await backup.onclick();
+ assert.match(downloadName,/^kegelclub-tablet-abgleich-\d{4}-\d{2}-\d{2}\.json$/);
+ const report=JSON.parse(await backupFile.text());
+ assert.deepEqual(report.tabletOutbox,JSON.parse(outbox));
+ assert.deepEqual(report.firebaseState.value,beforeBackup);
+ assert.deepEqual(report.receipts,[{opId:failed.opId,status:'ok',value:null}]);
+ assert.deepEqual(db.root(),beforeBackup);
+ assert.equal(b.storage.get('kcis_tablet_outbox_club'),outbox);
  const c=fullApp(db);for(const [k,v] of b.storage)c.storage.set(k,v);await c.select();
  assert.equal(await c.c.KCSharedSync.waitForUpload(),false);
  assert.equal(JSON.parse(c.storage.get('kcis_tablet_outbox_club')).inflight.opId,failed.opId);

@@ -79,6 +79,40 @@
       if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(message).catch(manual);
       else manual();
     };
+    const backup=el.querySelector('.shared-sync-backup');
+    backup.hidden=!count||!error;
+    backup.onclick ||= async ()=>{
+      backup.disabled=true;
+      try{
+        const data=await collectConflictBackup();
+        const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+        const download=document.createElement('a');
+        download.href=url;
+        download.download='kegelclub-tablet-abgleich-'+data.exportedAt.slice(0,10)+'.json';
+        document.body.append(download);
+        try{download.click();}finally{download.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+        toast(data.firebaseState.status==='ok'?'Abgleichdatei mit Tablet- und Firebase-Stand erstellt.':'Lokale Warteschlange gesichert. Firebase-Stand war nicht abrufbar.','success');
+      }catch(error){
+        toast('Abgleichdatei konnte nicht erstellt werden: '+error.message);
+      }finally{backup.disabled=false;}
+    };
+  }
+  async function collectConflictBackup(){
+    const s=current;
+    if(!s)throw Error('Kein Club ausgewählt.');
+    const tabletOutbox=JSON.parse(localStorage.getItem(key(s.club))||'null');
+    const batches=[tabletOutbox?.inflight,tabletOutbox?.pending].filter(Boolean);
+    if(!batches.length)throw Error('Keine offenen Übertragungen vorhanden.');
+    const read=async request=>{
+      try{return {status:'ok',value:await cloudRequest(request())};}
+      catch(error){return {status:'unavailable',error:String(error?.code||error?.message||error)};}
+    };
+    const exportedAt=new Date().toISOString();
+    const [firebaseState,...receipts]=await Promise.all([
+      read(()=>raw.readTabletDocument(s.club,'clubs/'+s.club+'/state/current')),
+      ...batches.map(batch=>read(()=>raw.getSharedReceipt(s.club,batch.opId)))
+    ]);
+    return {exportedAt,tabletOutbox,firebaseState,receipts:batches.map((batch,index)=>({opId:batch.opId,...receipts[index]}))};
   }
   function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight,lastConfirmedAt:s.lastConfirmedAt||null}));}
   function cache(){try{if(typeof syncCurrentClubToStore==='function'){syncCurrentClubToStore();saveClubSystem();}}catch{/* Die dauerhafte Übertragungswarteschlange bleibt maßgeblich. */}}
@@ -124,7 +158,10 @@
           s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
         }catch(error){
           s.retryFailures=(s.retryFailures||0)+1;
-          s.error=(error?.code?'['+error.code+'] ':'')+String(error?.message||error);
+          const message=error?.code==='sync-conflict'&&error.path?.[0]==='Tablet-Warteschlange'
+            ?'Tablet und Firebase haben unterschiedliche Speicherstände. Bitte Abgleichdatei sichern und Buchungen bis zum Abgleich nicht erneut eingeben.'
+            :String(error?.message||error);
+          s.error=(error?.code?'['+error.code+'] ':'')+message;
           s.retryStopped=['permission-denied','unauthenticated','sync-conflict','invalid-argument','failed-precondition'].includes(error?.code);
           s.nextRetryAt=s.retryStopped?0:Date.now()+Math.min(300000,5000*Math.pow(2,Math.min(6,s.retryFailures-1)));
           console.error('Tablet-Cloudspeicherung gescheitert (lokale Warteschlange bleibt erhalten):',error);
