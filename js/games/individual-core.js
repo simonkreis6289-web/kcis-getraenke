@@ -91,10 +91,15 @@
    const n=current(s);if(!s.skip[n])return;s.skip[n]=false;s.events.push({name:n,text:'Setzt diesen Zug aus',round:s.round});s.index++;
   }
  }
+ function hurdleLanding(s,name,{kind,pins}){
+  const old=s.scores[name],minus=!!s.subtract[name],wood=minus&&kind==='gosse'?9:pins;
+  const score=Math.max(0,old+(minus?-1:1)*wood*(s.double[name]?2:1));
+  const rule=s.config.rules.find(r=>r.enabled&&score>=r.from&&score<=r.to&&(score!==old||old===0&&pins===0));
+  return {score,rule};
+ }
  function hurdle(s,e){
-  const n=e.name,old=s.scores[n],factor=s.double[n]?2:1,minus=!!s.subtract[n],wood=minus&&e.kind==='gosse'?9:e.pins;s.double[n]=false;s.subtract[n]=false;
-  s.scores[n]=Math.max(0,old+(minus?-1:1)*wood*factor);s.lastRules=[];let again=false;
-  const r=s.config.rules.find(r=>r.enabled&&s.scores[n]>=r.from&&s.scores[n]<=r.to&&(s.scores[n]!==old||old===0&&e.pins===0));
+  const n=e.name,{score,rule:r}=hurdleLanding(s,n,e);
+  s.double[n]=false;s.subtract[n]=false;s.scores[n]=score;s.lastRules=[];let again=false;
   if(r){
    s.lastRules=[r.id];const point=s.scores[n];
    if(r.kind==='start')s.scores[n]=0;
@@ -172,5 +177,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({sevenColumns,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({hurdleLanding,sevenColumns,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();
