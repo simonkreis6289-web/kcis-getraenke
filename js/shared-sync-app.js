@@ -10,19 +10,17 @@
     if(typeof showToast==='function')showToast(m,t);
   };
   function status(){
-    let box=document.getElementById('shared-sync-status');
-    if(!box){
-      const app=document.getElementById('app');
-      if(!app)return;
-      box=document.createElement('div');
-      box.id='shared-sync-status';
-      box.setAttribute('role','status');
-      box.innerHTML='<span></span><button type="button" onclick="KCSharedSync.reconnect()">Erneut verbinden</button>';
-      app.prepend(box);
-    }
-    box.dataset.mode=!navigator.onLine?'offline':working?'saving':!ready?'blocked':pending.length?'pending':'ready';
-    box.querySelector('span').textContent=!navigator.onLine?'Offline · Nur ansehen':working?'Änderung wird bestätigt …':!ready?(lastError||'Serverstand wird geladen · Nur ansehen'):pending.length?'Änderungen werden übertragen …':'Live synchronisiert';
-    box.querySelector('button').hidden=ready||working;
+    const box=document.getElementById('shared-sync-status');
+    if(!box)return;
+    box.dataset.mode=!navigator.onLine?'offline':working?'saving':lastError?'error':!ready?'blocked':pending.length?'pending':'ready';
+    const label=!navigator.onLine?'Offline · Nur ansehen':working?'Änderung wird bestätigt …':lastError||(!ready?'Serverstand wird geladen · Nur ansehen':pending.length?'Änderungen werden übertragen …':'Live synchronisiert');
+    box.querySelector('.shared-sync-label').textContent=label;
+    const indicator=box.querySelector('summary');
+    indicator.title=label;
+    indicator.setAttribute('aria-label','Cloud-Status: '+label);
+    const retry=box.querySelector('.shared-sync-retry');
+    retry.hidden=working||(ready&&!lastError);
+    retry.onclick ||= ()=>void window.KCSharedSync?.reconnect();
   }
   function cache(){
     if(typeof syncCurrentClubToStore==='function'){
@@ -533,7 +531,7 @@
     if(unit&&event.target?.closest?.('.tor-person-backdrop,.kc-kranz-backdrop'))return;
     if(ready&&!working&&navigator.onLine)return;
     const target=event.target?.closest?.('button,input,select,textarea,[onclick]');
-    if(!target||target.closest('#club-start-screen'))return;
+    if(!target||target.closest('#club-start-screen,#shared-sync-status'))return;
     const code=target.getAttribute('onclick')||'';
     if(/^(showMainTab|showSideTab|goToClubSelection|toggleSideMenu|close[A-Z]|kcClose[A-Z]|KCSharedSync\.reconnect)/.test(code)||target.matches('[data-main],a'))return;
     event.preventDefault();

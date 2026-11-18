@@ -13,6 +13,28 @@ test('unconfirmed tablet entries survive a reload and incoming server snapshots 
 test('a lost acknowledgement retries the same tablet batch without adding a drink twice',async()=>{
  const {a,db}=await fixture();await a.c.changeDrink('A','beer',1);db.lose();assert.equal(await a.c.KCSharedSync.waitForUpload(),false);assert.equal(db.root().persons[0].drinks.beer,1);assert(await a.c.KCSharedSync.reconnect());assert.equal(db.root().persons[0].drinks.beer,1);
 });
+test('the cloud status stays next to the version while the indicator and status details update',async()=>{
+ const {a,db}=await fixture(),status=a.document.getElementById('shared-sync-status');
+ const dot=status.querySelector('summary'),label=status.querySelector('.shared-sync-label');
+ assert.equal(status.nextElementSibling.id,'versionInfo');
+ assert.equal(status.closest('header'),a.document.querySelector('#app > header'));
+ assert.equal(status.hasAttribute('open'),false);
+ assert.equal(await a.c.KCSharedSync.waitForUpload(),true);
+ assert.equal(status.dataset.mode,'ready');
+ await a.c.changeDrink('A','beer',1);
+ assert.equal(status.dataset.mode,'saving');
+ assert.match(dot.getAttribute('aria-label'),/Cloudspeicherung läuft/);
+ status.setAttribute('open','');
+ assert.match(status.querySelector('.shared-sync-error-details').textContent,/lokal gespeichert/);
+ db.fail(true);assert.equal(await a.c.KCSharedSync.waitForUpload(),false);
+ assert.equal(status.dataset.mode,'error');assert.match(label.textContent,/Cloudspeicherung ausstehend/);
+ assert.equal(status.querySelector('.shared-sync-retry').hidden,false);
+ db.fail(false);assert(await a.c.KCSharedSync.reconnect());
+ assert.equal(status.dataset.mode,'ready');assert.equal(status.hasAttribute('open'),true);
+ a.c.navigator.onLine=false;a.c.KCSharedSync.status();
+ assert.equal(status.dataset.mode,'offline');assert.match(dot.getAttribute('aria-label'),/offline/i);
+ assert.equal(a.document.querySelectorAll('#shared-sync-status').length,1);
+});
 test('after a browser disconnect Tiberius keeps accepting local throws and prevents an evening reset until Firebase confirms',async()=>{
  const {a,db}=await fixture();a.run('tiberiusState.targets=[9];tiberiusState.columnCount=1;tiberiusState.targetsGenerated=true');await a.c.startTiberiusGameFinal('A');
  assert(await a.c.KCSharedSync.waitForUpload());const before=copy(db.root());

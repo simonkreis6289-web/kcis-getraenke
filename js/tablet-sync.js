@@ -14,33 +14,33 @@
     }finally{clearTimeout(deadline);}
   }
   function status(){
-    let el=document.getElementById('shared-sync-status');
-    if(!el){
-      const app=document.getElementById('app');if(!app)return;
-      el=document.createElement('div');el.id='shared-sync-status';el.setAttribute('role','status');
-      const label=document.createElement('span'),retry=document.createElement('button'),detail=document.createElement('small'),copy=document.createElement('button');
-      label.className='shared-sync-label';detail.className='shared-sync-error-details';
-      retry.type='button';retry.textContent='Übertragung erneut versuchen';retry.onclick=()=>void window.KCSharedSync?.reconnect();
-      copy.type='button';copy.className='shared-sync-copy-error';copy.textContent='Fehler kopieren';
-      copy.onclick=()=>{
-       const message=JSON.stringify(window.KCSharedSync?.diagnostics?.()||{},null,2);
-       if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(message);
-       else if(typeof showToast==='function')showToast('Bitte den sichtbaren Fehlertext aus der Statuszeile kopieren','error');
-      };
-      el.append(label,detail,retry,copy);app.prepend(el);
-    }
-    const count=Number(!!current?.inflight)+Number(!!current?.pending),pending=count>0,direct=!!current?.linkStatus?.direct,problem=!!current?.error;
-    el.dataset.mode=!ready?'blocked':problem?'pending':pending?'saving':'ready';
-    el.querySelector('.shared-sync-label').textContent=!ready?'Tablet lädt den gespeicherten Stand …':problem
-      ?(direct?'TV direkt verbunden · Cloudspeicherung ausstehend':'Tablet lokal bereit · Cloudspeicherung ausstehend')
-      :pending?(direct?'TV direkt verbunden · Cloudspeicherung läuft …':'Tablet lokal bereit · Cloudspeicherung läuft …')
-      :(direct?'TV direkt verbunden · Cloudspeicherung bestätigt':'Tablet bereit · Cloudspeicherung bestätigt · TV über Cloud');
+    const el=document.getElementById('shared-sync-status');
+    if(!el)return;
+    const count=Number(!!current?.inflight)+Number(!!current?.pending),direct=!!current?.linkStatus?.direct;
+    const offline=!navigator.onLine,error=String(current?.error||'');
+    el.dataset.mode=offline?'offline':error?'error':!ready?'blocked':count?'saving':'ready';
+    const cloud=offline?'Cloud offline':error?'Cloudspeicherung ausstehend':!ready?'Tablet lädt den gespeicherten Stand …':count?'Cloudspeicherung läuft …':'Cloudspeicherung bestätigt';
+    const label=direct?'TV direkt verbunden · '+cloud:cloud;
+    const indicator=el.querySelector('summary');
+    indicator.title=label;
+    indicator.setAttribute('aria-label','Cloud-Status: '+label);
+    el.querySelector('.shared-sync-label').textContent=label;
     const detail=el.querySelector('.shared-sync-error-details');
-    const errorMessage=String(current?.error||'').slice(0,250);
-    detail.hidden=!problem&&!pending;detail.textContent=[problem?'Firebase: '+errorMessage:'',pending?`${count} ausstehende Übertragung${count===1?'':'en'} · lokal gespeichert`:''].filter(Boolean).join(' · ');
-    const retry=el.querySelector('button:not(.shared-sync-copy-error)');
-    retry.hidden=!problem;retry.disabled=!!current?.uploading;
-    el.querySelector('.shared-sync-copy-error').hidden=!problem;
+    detail.textContent=[error?'Firebase: '+error.slice(0,250):'',count?`${count} ausstehende Übertragung${count===1?'':'en'} · lokal gespeichert`:''].filter(Boolean).join(' · ');
+    detail.hidden=!detail.textContent;
+    const retry=el.querySelector('.shared-sync-retry');
+    retry.textContent='Übertragung erneut versuchen';
+    retry.hidden=!error&&!offline;
+    retry.disabled=offline||!!current?.uploading;
+    retry.onclick ||= ()=>void window.KCSharedSync?.reconnect();
+    const copy=el.querySelector('.shared-sync-copy-error');
+    copy.hidden=!error;
+    copy.onclick ||= ()=>{
+      const message=JSON.stringify(window.KCSharedSync?.diagnostics?.()||{},null,2);
+      const manual=()=>showToast('Bitte den sichtbaren Fehlertext aus den Cloud-Details kopieren','error');
+      if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(message).catch(manual);
+      else manual();
+    };
   }
   function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight}));}
   function cache(){try{if(typeof syncCurrentClubToStore==='function'){syncCurrentClubToStore();saveClubSystem();}}catch{/* Die dauerhafte Übertragungswarteschlange bleibt maßgeblich. */}}
@@ -198,7 +198,7 @@
 
   window.KCTabletSync=Object.freeze({install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},status,get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
   document.addEventListener('click',e=>{if(ready&&!unit)return;if(e.target?.closest?.('#shared-sync-status,.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
-  window.addEventListener('online',()=>void reconnect());
+  window.addEventListener('online',()=>{status();void reconnect();});
   window.addEventListener('offline',()=>{if(current?.pending||current?.inflight)current.error='Tablet ist offline';status();});
   setInterval(()=>{for(const s of sessions.values())if((s.error||s.pending)&&Date.now()>=(s.nextRetryAt||0))void drain(s);},5000);
   // Zeitanker nur während laufender Countdowns auffrischen; Eingaben warten nicht darauf.
