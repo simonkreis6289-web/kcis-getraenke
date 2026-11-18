@@ -1,6 +1,6 @@
 /* KC Invaliden Schwadron – Fuchsjagd. Würfe werden im gemeinsamen Clubzustand gespeichert. */
 function createFuchsjagdState(){
- return {active:false,finished:false,fox:'',hunters:[],order:[],foxIndex:0,results:[],score:0,phase:'start',startThrows:0,hunterIndex:0,round:0,throws:[],result:'',penaltiesBooked:false,startedAt:''};
+ return {active:false,finished:false,fox:'',hunters:[],order:[],foxIndex:0,results:[],score:0,phase:'start',startThrows:0,hunterIndex:0,round:0,throws:[],result:'',penaltiesBooked:false,startedAt:'',tableStartIndex:0,visibleHunterFoxIndex:-1,visibleHunterIndex:-1};
 }
 function ensureFuchsjagdState(){
  if(!fuchsjagdState||typeof fuchsjagdState!=='object')fuchsjagdState=createFuchsjagdState();
@@ -37,6 +37,13 @@ function fuchsjagdSnapshot(s){
 function fuchsjagdRestore(s,before){for(const key of Object.keys(s))if(!['throws','busy'].includes(key))delete s[key];Object.assign(s,JSON.parse(JSON.stringify(before)));}
 function fuchsjagdApplyThrow(s,pins,scored,thrower,at){
  const before=fuchsjagdSnapshot(s),delta=s.phase==='hunt'?-scored:scored;
+ // Die Tabelle beginnt mit dem ERSTEN Wurf eines neuen Jaegers neu.
+ // Wuerfe bleiben vollständig gespeichert fuer Undo, Statistik und Verliererwertung.
+ if(s.phase==='hunt'&&(s.visibleHunterFoxIndex!==s.foxIndex||s.visibleHunterIndex!==s.hunterIndex)){
+  s.tableStartIndex=s.throws.length;
+  s.visibleHunterFoxIndex=s.foxIndex;
+  s.visibleHunterIndex=s.hunterIndex;
+ }
  s.score+=delta;
  s.throws.push({name:thrower,fox:s.fox,foxIndex:s.foxIndex,pins:scored,rawPins:pins,delta,score:s.score,at,before});
  let outcome=null;
@@ -131,7 +138,8 @@ function renderFuchsjagdGame(){
  const phase=s.phase==='start'?`Startwurf ${s.startThrows+1}/2`:s.phase==='hunt'?'Jäger zieht ab':s.phase==='fox'?'Fuchs addiert':'Spiel beendet';
  const ranking=s.results.map(r=>`<li><strong>${escapeFuchs(r.fox)}</strong> · Station ${r.station}/${s.order.length} ${r.escaped?'🏁 durchgelaufen':'🦊 erlegt von '+escapeFuchs(r.caughtBy)}</li>`).join('');
  const progress=s.order.length?`<div class="fox-game-progress"><strong>Fuchs ${s.foxIndex+1} von ${s.order.length}</strong><ol>${ranking}</ol></div>`:'';
- const rows=s.throws.slice().reverse().map((x,i)=>`<tr><td>${s.throws.length-i}</td><td>${escapeFuchs(x.name)}</td><td>${(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':x.pins===0?'Gosse':x.pins}</td><td class="${x.delta>=0?'fox-plus':'fox-minus'}">${x.delta>0?'+':''}${x.delta}</td><td><strong>${x.score}</strong></td></tr>`).join('');
+ const visible=s.throws.slice(Math.min(s.throws.length,Math.max(0,Number(s.tableStartIndex)||0)));
+ const rows=visible.slice().reverse().map((x,i)=>`<tr><td>${visible.length-i}</td><td>${escapeFuchs(x.name)}</td><td>${(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':x.pins===0?'Gosse':x.pins}</td><td class="${x.delta>=0?'fox-plus':'fox-minus'}">${x.delta>0?'+':''}${x.delta}</td><td><strong>${x.score}</strong></td></tr>`).join('');
  const actions=s.active?`<div class="fox-actions">${Array.from({length:9},(_,i)=>`<button class="btn" type="button" onclick="applyFuchsjagdThrow(${i+1})">${i+1}</button>`).join('')}<button class="btn fox-special fox-gosse" type="button" onclick="applyFuchsjagdThrow(0)">💀 Gosse</button><button class="btn fox-special" type="button" onclick="applyFuchsjagdThrow(12)">🎳 Kranz</button><button class="secondary-btn fox-undo" type="button" onclick="undoFuchsjagdThrow()" ${s.throws.length?'':'disabled'}>↩ Rückgängig</button></div>`:'';
  el.innerHTML=`<div class="fox-layout"><div class="fox-top"><div class="fox-stat"><small>🦊 Fuchs</small><strong>${escapeFuchs(s.fox||'Noch keiner')}</strong></div><div class="fox-stat fox-score"><small>Aktueller Vorsprung</small><strong>${s.score} Holz</strong></div><div class="fox-stat"><small>Am Wurf</small><strong>${escapeFuchs(turn)}</strong></div></div>${s.active?`<div class="fox-turn">${escapeFuchs(phase)} · ${s.phase==='hunt'?`Jäger ${s.hunterIndex+1} von ${s.hunters.length}`:`${s.hunters.length} Jäger insgesamt`}</div>`:''}${s.result?`<div class="fox-result">🏁 ${escapeFuchs(s.result)}</div>`:''}${actions}${progress}<div class="fox-table-wrap"><table class="fox-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Noch keine Würfe</td></tr>'}</tbody></table></div></div>`;
 }
