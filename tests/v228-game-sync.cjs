@@ -95,5 +95,5 @@ test('legacy Pfälzerspiel groups are normalized but new games finish without St
  assert.deepEqual(copy(s.loserGroups),[]);
  assert.equal(s.tieRound,0);
  s=legacyGroups(s);
- assert.deepEqual(copy(s.rankingGroups),[{names:['A','B']}]);
+ assert.deepEqual(copy(s.rankingGroups),[['A','B']]);
 });
