@@ -1,44 +1,84 @@
-#shared-sync-status {
-  display: flex;
+.app-version-row {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 5px 16px;
-  background: #eaf5ef;
-  color: #246441;
-  border-bottom: 1px solid #c9e3d3;
-  font-size: 12px;
-  font-weight: 650;
+  gap: 4px;
+  max-width: 100%;
+  margin-top: 4px;
 }
-#shared-sync-status span::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 7px;
-  border-radius: 50%;
-  background: currentColor;
+
+#shared-sync-status {
+  --sync-dot: #facc15;
+  flex: none;
 }
-#shared-sync-status[data-mode='saving'],
-#shared-sync-status[data-mode='pending'] {
-  background: #fff6dc;
-  border-color: #ead496;
-  color: #825c13;
-}
+
+#shared-sync-status[data-mode='ready'] { --sync-dot: #4ade80; }
 #shared-sync-status[data-mode='offline'],
-#shared-sync-status[data-mode='blocked'] {
-  background: #fff0ef;
-  border-color: #ecc9c5;
-  color: #943d36;
+#shared-sync-status[data-mode='error'] { --sync-dot: #ff6369; }
+
+.shared-sync-indicator {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  list-style: none;
 }
-#shared-sync-status button {
+
+.shared-sync-indicator::-webkit-details-marker { display: none; }
+
+.shared-sync-indicator::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sync-dot);
+  box-shadow: 0 0 0 2px #ffffff26;
+}
+
+.shared-sync-indicator:hover,
+#shared-sync-status[open] .shared-sync-indicator { background: #ffffff20; }
+
+.shared-sync-indicator:focus-visible { outline: 2px solid var(--title_fc); }
+
+.shared-sync-panel {
+  position: absolute;
+  z-index: 50;
+  inset: calc(100% + 6px) 0 auto auto;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 40px));
+  padding: 12px;
+  border: 1px solid #ced5dd;
+  border-radius: 10px;
+  background: #fff;
+  color: #26364a;
+  box-shadow: 0 8px 20px #0003;
+  font-size: 0.8rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+#shared-sync-status:not([open]) .shared-sync-panel { display: none; }
+
+.shared-sync-error-details { margin: 6px 0 0; }
+
+.shared-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shared-sync-actions button {
   min-height: 30px;
+  margin-top: 8px;
   padding: 4px 10px;
-  border: 1px solid currentColor;
-  border-radius: 7px;
-  background: transparent;
+  border: 1px solid #99a7b6;
+  border-radius: 6px;
+  background: #f5f8fb;
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
-#shared-sync-status button[hidden] { display: none; }
+
+.shared-sync-actions button[hidden] { display: none; }
