@@ -13,13 +13,13 @@
     const box=document.getElementById('shared-sync-status');
     if(!box)return;
     box.dataset.mode=!navigator.onLine?'offline':working?'saving':lastError?'error':!ready?'blocked':pending.length?'pending':'ready';
-    const label=!navigator.onLine?'Offline · Nur ansehen':working?'Änderung wird bestätigt …':!ready?(lastError||'Serverstand wird geladen · Nur ansehen'):pending.length?'Änderungen werden übertragen …':'Live synchronisiert';
+    const label=!navigator.onLine?'Offline · Nur ansehen':working?'Änderung wird bestätigt …':lastError||(!ready?'Serverstand wird geladen · Nur ansehen':pending.length?'Änderungen werden übertragen …':'Live synchronisiert');
     box.querySelector('.shared-sync-label').textContent=label;
     const indicator=box.querySelector('summary');
     indicator.title=label;
     indicator.setAttribute('aria-label','Cloud-Status: '+label);
     const retry=box.querySelector('.shared-sync-retry');
-    retry.hidden=ready||working;
+    retry.hidden=working||(ready&&!lastError);
     retry.onclick ||= ()=>void window.KCSharedSync?.reconnect();
   }
   function cache(){
