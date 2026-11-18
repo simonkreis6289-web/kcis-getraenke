@@ -134,7 +134,34 @@
 }
 .hurdle-current { background: #ffe29a; color: #503300; }
 
-#game-body .ind-tv-board:has(.ind-hurdle-tv) {
+#game-body .hurdle-tv-frame {
+  flex: 1 1 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.hurdle-tv-header { flex: none; color: #17233d; }
+.hurdle-tv-header h2 {
+  font: 700 22px/1.3 sans-serif;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hurdle-tv-turn { height: 62px; }
+.hurdle-tv-turn .ind-turn {
+  height: 100%;
+  margin: 0;
+  padding: 6px 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hurdle-tv-turn .hurdle-next-throws { flex-wrap: nowrap; overflow: hidden; }
+.hurdle-tv-fit { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+#game-body .hurdle-tv-board {
   display: flex;
   flex: none;
   flex-direction: column;
