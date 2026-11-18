@@ -331,6 +331,7 @@ function openTiberiusThrowModal() {
   kranzBtn.textContent = window.KCKranzUI?KCKranzUI.label('tiberius'):'Kranz / 12';
   kranzBtn.onclick = () => handleTiberiusThrow(12);
   grid.appendChild(kranzBtn);
+  const throughBtn=document.createElement('button');throughBtn.type='button';throughBtn.className='darts-number-btn';throughBtn.textContent='🎳 Durchgeworfen';throughBtn.onclick=()=>handleTiberiusThrow('durchgeworfen');grid.appendChild(throughBtn);
 
   document.getElementById('tiberius-throw-modal').classList.remove('hidden');
 }
@@ -502,7 +503,7 @@ async function handleTiberiusThrow(value){
  }
  const thrower=tiberiusThrower();
  if(!thrower){showToast('Kein aktueller Werfer vorhanden','error');return;}
- const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('tiberius'):value;
+ const scored=value==='durchgeworfen'?0:value===12&&window.KCKranzUI?await KCKranzUI.select('tiberius'):value;
  if(scored===null)return;
  const oldScore=Number(tiberiusState.score)||0,newScore=oldScore+Number(scored);
  const list=tiberiusState.playerOrder.slice();
@@ -510,7 +511,7 @@ async function handleTiberiusThrow(value){
  if(value===0){
   const key=getGosseStrafeKey();if(!key){showToast('Gossen-Strafe nicht gefunden','error');return;}
   changes.push({personName:thrower,category:'strafen',key,delta:1});
- }else if(value===9||value===12){
+ }else if(value===9||value===12||value==='durchgeworfen'){
   const key=getKranzStrafeKey();if(!key){showToast('9er/Kranz-Strafe nicht gefunden','error');return;}
   list.filter(name=>name!==thrower).forEach(personName=>changes.push({personName,category:'strafen',key,delta:1}));
  }
@@ -537,8 +538,8 @@ async function handleTiberiusThrow(value){
   tiberiusPendingThrower=null;
   tiberiusState.currentPlayerIndex=(snapshots.currentPlayerIndex+1)%list.length;
   (tiberiusState.undoStack||(tiberiusState.undoStack=[])).push(snapshots);
-  if((value===9||value===12)&&typeof addPenaltyStatsEntry==='function')
-   addPenaltyStatsEntry(value===9?'9er':'Kranz',thrower,changes.map(x=>x.personName));
+  if((value===9||value===12||value==='durchgeworfen')&&typeof addPenaltyStatsEntry==='function')
+   addPenaltyStatsEntry(value===9?'9er':value===12?'Kranz':'durchgeworfen',thrower,changes.map(x=>x.personName));
   closeTiberiusThrowModal();closeTiberiusThrowerModal();closeTiberiusHitModal();
   renderAll();persistState();
   showToast(hits.length?'🏛️ '+hits.map(x=>'Ziel '+x.target).join(', ')+' gebucht · '+thrower:'🎳 '+thrower+' · '+scored+' Holz','success');
