@@ -1,0 +1,57 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const src=fs.readFileSync(path.join(__dirname,'../js/football-live.js'),'utf8');
+const instant=()=>({matchID:1,matchDateTimeUTC:new Date().toISOString(),leagueShortcut:'bl2',team1:{shortName:'B'},team2:{shortName:'C'},matchResults:[],goals:[]});
+function fixture(fetch){
+ const events=[];
+ const ctx={window:{},document:{hidden:false},Date,Event:class{constructor(type){this.type=type;}},AbortController,setTimeout:(fn)=>42,clearTimeout(){},setInterval:()=>31,
+ fetch,console:{warn:(...args)=>events.push(args)},};
+ ctx.window=ctx;ctx.dispatchEvent=()=>{};vm.createContext(ctx);vm.runInContext(src,ctx);
+ return {app:ctx.KCFootballLive,events};
+}
+test('Bulndesliga: failed league retries do not prevent the other league from loading',async()=>{
+ const calls=[];
+ const f=fixture(async url=>{
+  calls.push(url);
+  if(url.includes('/getcurrentgroup/bl1'))throw TypeError('Failed to fetch');
+  if(url.includes('/getcurrentgroup/bl2'))return {ok:true,json:async()=>({groupOrderID:10})};
+  if(url.includes('/getlastchangedate/bl2'))return {ok:true,json:async()=>('2026-11-18')};
+  if(url.includes('/getmatchdata/bl2'))return {ok:true,json:async()=>[instant()]};
+  throw Error('Unexpected URL '+url);
+ });
+ f.app.configure({bl1:true,bl2:true});
+ for(let i=0;i<10&&!f.app.ticker().length;i++)await new Promise(r=>setImmediate(r));
+ assert.equal(f.app.ticker().length,1);
+ assert.match(f.app.ticker()[0][1],/2\. BL/);
+ assert.equal(f.app.status().bl1.tries,1);
+ assert.equal(f.app.status().bl2,undefined);
+});
+test('Bundesliga: change-date failure falls back to the matchday endpoint',async()=>{
+ const urls=[];
+ const f=fixture(async url=>{
+  urls.push(url);
+  if(url.includes('/getcurrentgroup'))return {ok:true,json:async()=>({groupOrderID:10})};
+  if(url.includes('/getlastchangedate'))throw TypeError('Failed to fetch');
+  if(url.includes('/getmatchdata'))return {ok:true,json:async()=>[instant()]};
+  throw Error('unknown endpoint');
+ });
+ f.app.configure({bl2:true});
+ for(let i=0;i<10&&!f.app.ticker().length;i++)await new Promise(r=>setImmediate(r));
+ assert.equal(f.app.ticker().length,1);
+ assert.equal(f.app.status().bl2,undefined);
+ assert(urls.some(x=>x.includes('/getmatchdata/bl2')));
+});
+test('Bundesliga: rate-limited warnings, exponential retry and recovery status',async()=>{
+ let fail=true,calls=0;
+ const f=fixture(async url=>{
+  calls++;
+  if(fail)throw TypeError('Failed to fetch');
+  if(url.includes('getcurrentgroup'))return {ok:true,json:async()=>({groupOrderID:10})};
+  if(url.includes('getlastchangedate'))return {ok:true,json:async()=>('stamp')};
+  return {ok:true,json:async()=>[instant()]};
+ });
+ f.app.configure({bl2:true});
+ for(let i=0;i<10&&!f.app.status().bl2;i++)await new Promise(r=>setImmediate(r));
+ assert.equal(f.app.status().bl2.tries,1);
+ await f.app.refresh();assert.equal(f.app.status().bl2.tries,1);
+ assert.equal(f.events.length,1);
+});

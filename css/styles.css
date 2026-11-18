@@ -4711,3 +4711,8 @@ body.view-only #clubBackBtn {
 
 #tab-teamspiele .team-btn.pair-team.active{border-color:var(--accent2);background:#e5ecfa;color:var(--text)}
 #tab-teamspiele .team-btn:disabled{opacity:.45;cursor:default}
+
+/* V253: Tiberius zeigt den aktuellen Werfer in der gesamten App-Tabellenzeile. */
+#tab-tiberius #tiberius-board .tiberius-current-row>td{background:#ffe18a!important;border-top:2px solid #d89a28;border-bottom:2px solid #d89a28;color:#49300c!important}
+#tab-tiberius #tiberius-board .tiberius-current-row>td:first-child{border-left:4px solid #d89a28}
+#tab-tiberius #tiberius-board .tiberius-current-row>td:last-child{border-right:3px solid #d89a28}

@@ -46,7 +46,12 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .stage-body .tv-matrix-board .tv-table td{padding:5px 2px;}
 .stage-body .tv-matrix-board .tv-cell{min-height:35px;padding:4px 1px;}
 .stage-body .tv-matrix-board .tv-table th{padding:7px 2px;}
-/* V252: Lotterie und Tiberius nutzen die gesamte verfügbare Dashboard-Höhe.
+/* V253: Tiberius aktuell am Wurf: die GANZE Tabellenzeile. */
+#game-body .tv-tiberius-board .tiberius-active-row>td{background:#ffde70!important;border-top:3px solid #e89d1b;border-bottom:3px solid #e89d1b;color:#42290a!important;box-shadow:inset 0 0 0 1px #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row>td:first-child{border-left:4px solid #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row>td:last-child{border-right:4px solid #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row .tv-cell{outline:2px solid #d79c29;box-shadow:0 0 12px #d79c2940}
+/* V253: Lotterie und Tiberius nutzen die gesamte verfügbare Dashboard-Höhe.
    Diese Regeln gelten ausschließlich für die beiden Matrix-Spielbretter. */
 #game-body .tv-matrix-board{
   display:flex;
@@ -116,7 +121,7 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
  #game-body .tv-matrix-board .tv-table td:nth-child(2){width:10%}
  #game-body .tv-matrix-board .tv-stat strong{font-size:clamp(30px,5vw,60px)}
 }
-/* End V252 matrix dashboard layout. */
+/* End V253 matrix dashboard layout. */
 /* V134: dynamische Gruppenfarben und kompakter Tischplan */
 .fine-team-dot,.seat-team-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid #7776;background:var(--team-color,#aaa)}
 .fine-team-dot{margin-right:7px}
@@ -211,13 +216,13 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261117-v252">
-<link rel="stylesheet" href="css/dashboard-layout.css?v=20261117-v252">
-<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261117-v252">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261117-v252">
-<link rel="stylesheet" href="css/club-content.css?v=20261117-v252">
-<link rel="stylesheet" href="css/extra-games.css?v=20261117-v252">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261117-v252">
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261118-v253">
+<link rel="stylesheet" href="css/dashboard-layout.css?v=20261118-v253">
+<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261118-v253">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261118-v253">
+<link rel="stylesheet" href="css/club-content.css?v=20261118-v253">
+<link rel="stylesheet" href="css/extra-games.css?v=20261118-v253">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261118-v253">
 </head>
 <body>
 <section id="club-content-dashboard" role="dialog" aria-modal="true" aria-labelledby="club-content-dashboard-title" hidden><div><h2 id="club-content-dashboard-title">Clubunterlagen</h2><p id="club-content-dashboard-help"></p></div><p id="club-content-dashboard-status" class="club-content-status" role="status"></p><div id="club-content-dashboard-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div></section>
@@ -244,40 +249,40 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 
 <footer class="dashboard-footer"><div class="dashboard-ticker-region" id="dashboard-ticker-region"><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-left"><div class="dashboard-ticker" id="dashboard-ticker" tabindex="0" aria-label="Clubtermine und Informationen · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-ticker-track"><div class="dashboard-ticker-copy"><span id="kc-next-birthdays"></span><span id="kc-next-tour"></span><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span></div></div></div></div><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-right"><div class="dashboard-ticker" id="dashboard-football-ticker" tabindex="0" aria-label="Bundesliga-Ergebnisse · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-football-ticker-track"><div class="dashboard-ticker-copy"><span>⚽ Bundesliga-Live</span></div></div></div></div></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</div><div id="version">Dashboard V239 · Update 16.11.2026, 21:20 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></footer>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261117-v252">
-<link rel="stylesheet" href="css/table-games.css?v=20261117-v252">
-<link rel="stylesheet" href="css/individual-games.css?v=20261117-v252">
-<link rel="stylesheet" href="css/game-rules.css?v=20261117-v252">
-<script src="js/shared-clock.js?v=20261117-v252"></script>
-<script src="js/dashboard-layout.js?v=20261117-v252"></script>
-<script src="js/dashboard-link.js?v=20261117-v252"></script>
-<script src="js/kranz-policy.js?v=20261117-v252"></script>
-<script src="js/game-player-rows.js?v=20261117-v252"></script>
-<script src="js/games/extra-core.js?v=20261117-v252"></script><script src="js/games/extra-view.js?v=20261117-v252"></script>
-<script src="js/games/individual-core.js?v=20261117-v252"></script><script src="js/games/individual-view.js?v=20261117-v252"></script>
-<script src="js/game-rules.js?v=20261117-v252"></script>
-<link rel="stylesheet" href="css/starter-draw.css?v=20261117-v252"><script src="js/starter-draw.js?v=20261117-v252"></script>
-<script src="js/birthdays.js?v=20261117-v252"></script>
-<script src="js/games/sechstage-core.js?v=20261117-v252"></script>
-<script src="js/games/table-games-core.js?v=20261117-v252"></script>
-<script src="js/dashboard-sounds.js?v=20261117-v252"></script>
-<script src="js/cash-book.js?v=20261117-v252"></script>
-<script src="js/payment-visibility.js?v=20261117-v252"></script><script src="js/cash-overview.js?v=20261117-v252"></script>
-<script src="js/penalty-table.js?v=20261117-v252"></script>
-<script src="js/club-content.js?v=20261117-v252"></script><script src="js/club-content-pager.js?v=20261117-v252"></script><script src="js/club-content-dashboard.js?v=20261117-v252"></script>
-<script src="js/penalty-statistics.js?v=20261117-v252"></script><script src="js/activity-reports.js?v=20261117-v252"></script>
-<script src="js/cash-dashboard.js?v=20261117-v252"></script>
-<link rel="stylesheet" href="css/game-overview.css?v=20261117-v252"><script src="js/game-overview.js?v=20261117-v252"></script>
-<script src="js/table-alignment.js?v=20261117-v252"></script>
-<script src="js/shared-sync-core.js?v=20261117-v252"></script>
-<script src="js/shared-sync-transport.js?v=20261117-v252"></script>
-<script src="js/football-live.js?v=20261117-v252"></script>
-<script src="js/dashboard-event-toasts.js?v=20261117-v252"></script>
-<script src="js/dashboard-layout-tv.js?v=20261117-v252"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261118-v253">
+<link rel="stylesheet" href="css/table-games.css?v=20261118-v253">
+<link rel="stylesheet" href="css/individual-games.css?v=20261118-v253">
+<link rel="stylesheet" href="css/game-rules.css?v=20261118-v253">
+<script src="js/shared-clock.js?v=20261118-v253"></script>
+<script src="js/dashboard-layout.js?v=20261118-v253"></script>
+<script src="js/dashboard-link.js?v=20261118-v253"></script>
+<script src="js/kranz-policy.js?v=20261118-v253"></script>
+<script src="js/game-player-rows.js?v=20261118-v253"></script>
+<script src="js/games/extra-core.js?v=20261118-v253"></script><script src="js/games/extra-view.js?v=20261118-v253"></script>
+<script src="js/games/individual-core.js?v=20261118-v253"></script><script src="js/games/individual-view.js?v=20261118-v253"></script>
+<script src="js/game-rules.js?v=20261118-v253"></script>
+<link rel="stylesheet" href="css/starter-draw.css?v=20261118-v253"><script src="js/starter-draw.js?v=20261118-v253"></script>
+<script src="js/birthdays.js?v=20261118-v253"></script>
+<script src="js/games/sechstage-core.js?v=20261118-v253"></script>
+<script src="js/games/table-games-core.js?v=20261118-v253"></script>
+<script src="js/dashboard-sounds.js?v=20261118-v253"></script>
+<script src="js/cash-book.js?v=20261118-v253"></script>
+<script src="js/payment-visibility.js?v=20261118-v253"></script><script src="js/cash-overview.js?v=20261118-v253"></script>
+<script src="js/penalty-table.js?v=20261118-v253"></script>
+<script src="js/club-content.js?v=20261118-v253"></script><script src="js/club-content-pager.js?v=20261118-v253"></script><script src="js/club-content-dashboard.js?v=20261118-v253"></script>
+<script src="js/penalty-statistics.js?v=20261118-v253"></script><script src="js/activity-reports.js?v=20261118-v253"></script>
+<script src="js/cash-dashboard.js?v=20261118-v253"></script>
+<link rel="stylesheet" href="css/game-overview.css?v=20261118-v253"><script src="js/game-overview.js?v=20261118-v253"></script>
+<script src="js/table-alignment.js?v=20261118-v253"></script>
+<script src="js/shared-sync-core.js?v=20261118-v253"></script>
+<script src="js/shared-sync-transport.js?v=20261118-v253"></script>
+<script src="js/football-live.js?v=20261118-v253"></script>
+<script src="js/dashboard-event-toasts.js?v=20261118-v253"></script>
+<script src="js/dashboard-layout-tv.js?v=20261118-v253"></script>
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V252";
+const DASH_VERSION="V253";
 const DASH_RELEASE="16.11.2026, 21:55 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
@@ -291,6 +296,7 @@ document.addEventListener('fullscreenchange',fullLabel); fullLabel();
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString('de-DE'),1000);$('clock').textContent=new Date().toLocaleTimeString('de-DE');
 function status(msg,ok=false){$('connection').textContent=msg;$('indicator').className='dot'+(ok?' ok':'');$('connection').title=msg;$('indicator').title=msg;$('indicator').setAttribute('aria-label',msg)}
 let lastReceived=0, firstSnapshot=false, connectStarted=0, fallbackBusy=false, fallbackTimer=null, connectionEpoch=0;
+let rootReconnectTimer=null,rootReconnectAttempts=0;
 function received(kind){lastReceived=Date.now();$('sync-time').textContent='Letzte Daten: '+new Date(lastReceived).toLocaleString('de-DE');if(directFrame)status('Tablet direkt · Cloudbestätigung ausstehend',true);else if(kind==='live')status('Live verbunden',true);else if(!firstSnapshot)status('Daten abrufbar · Live-Verbindung ausstehend',false)}
 function errorText(e){const code=e?.code||'';const msg=e?.message||String(e||'Unbekannter Fehler');return code?code+' · '+msg:msg}
 function fail(context,e){const msg=errorText(e);status(context+': '+msg);console.error(context,e)}
@@ -552,7 +558,7 @@ function chosenGame(){
 function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly).map(p=>p.name);const allowed=new Set(names);const ordered=Array.isArray(order)?order.filter(name=>allowed.has(name)):[];return [...new Set([...ordered,...names])].filter(Boolean)}
-function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function makeTable(headers,rows,cellFormatter=String,rowClass=()=> ''){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row,i)=>`<tr class="${safe(rowClass(row,i))}">${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
 function renderTree(d){
  const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};
  const teams=d.teams||{};
@@ -579,7 +585,20 @@ function renderTree(d){
  ${Object.keys(base).map(n=>`<div class="tree-row"><div class="tree-lane tree-lane-left" data-team="T2"><div class="tree-side tree-side-left">${balls(t1,n,'T2')}</div>${strikeList(t1,n)}</div><div class="tree-number">${safe(n)}</div><div class="tree-lane tree-lane-right" data-team="T1"><div class="tree-side tree-side-right">${balls(t2,n,'T1')}</div>${strikeList(t2,n)}</div></div>`).join('')}</div></div>`;
 }
 function renderLottery(d){const columns=d.columns||[],names=activeNames(d.playerOrder);if(!columns.length)return null;const complete=columns.map((_,i)=>names.length>0&&names.every(n=>d.throws?.[n]?.[i]!=null));const losers=columns.map((_,i)=>{const arr=names.map(n=>({n,raw:d.throws?.[n]?.[i]})).filter(x=>x.raw!==null&&x.raw!==undefined&&x.raw!=='').map(x=>({n:x.n,v:Number(x.raw)})).filter(x=>Number.isFinite(x.v));const min=Math.min(...arr.map(x=>x.v));return arr.filter(x=>x.v===min).map(x=>x.n)});const heads=['Spieler','Strafen',...columns.map((c,i)=>`${fmt.format(Number(c)||0)}${complete[i]?' ✓':''}`)];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'lotterie',true)),...columns.map((_,i)=>({v:d.throws?.[n]?.[i],done:complete[i],lose:losers[i].includes(n)}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🎰 Lotterie</h2>${makeTable(heads,rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.lose?'miss':v.done?'done':v.v==null?'pending':''}">${v.v==null?'–':v.v===12?'K':safe(v.v)}</div>`)}</div>`}
-function renderTiberiusBoard(d){const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;const score=Number(d.score)||0;const next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🏛️ Tiberius</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`)}</div>`}
+function tiberiusFunnyName(name){
+ const text=String(name||'');if(text.length<3)return text+'h';
+ const letters=Array.from(text),at=letters.findIndex((v,i)=>i>0&&i<letters.length-1&&/[a-zäöü]/i.test(v)&&/[a-zäöü]/i.test(letters[i+1])&&v!==letters[i+1]);
+ if(at<0)return text+'h';
+ [letters[at],letters[at+1]]=[letters[at+1],letters[at]];
+ return letters.join('');
+}
+function renderTiberiusBoard(d){
+ const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;
+ const score=Number(d.score)||0,next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];
+ const current=names[(Math.max(0,Number(d.currentPlayerIndex)||0))%names.length]||'';
+ const rows=names.map(n=>[tiberiusFunnyName(n),fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);
+ return `<div class="tv-board tv-matrix-board tv-tiberius-board"><h2 class="tv-headline">🏛️ Tiberius · Am Wurf: ${safe(tiberiusFunnyName(current))}</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`,(row,i)=>names[i]===current&&d.active?'tiberius-active-row':'')}</div>`;
+}
 function plusminusSlotValue(idx,slot,partial,smart){
  if(!slot)return null;
  if(!slot.isGosse)return Number.parseInt(slot.kranzValue??slot.value??0,10)||0;
@@ -751,6 +770,7 @@ function stopLegacyChannels(){
  liveUnsub=null;seatingUnsub=null;gameUnsubs=[];liveGames={};livePersons={};seatingLive=null;
 }
 function unsubscribe(){
+ if(rootReconnectTimer!==null){clearTimeout(rootReconnectTimer);rootReconnectTimer=null;}
  dashboardLink?.close();dashboardLink=null;confirmedState=null;directFrame=null;
  dashboardSelectionSeen='';lastGamePaint='';
  window.KCCashDashboard?.reset();window.KCClubContentDashboard?.reset();
@@ -776,19 +796,27 @@ function connect(id,name){
  unsubscribe();lastRootReceived=0;const epoch=connectionEpoch;clubId=id;channelStatus();
  $('dashboard-club-title').textContent='🎳 '+(name||id);$('club-name').textContent=name+' · '+id;status('Verbinde mit Firebase …');connectStarted=Date.now();
 
- try{
-  unsub=api.subscribeToClubState(id,(data,metadata={})=>{
+ function retryRoot(){
+  if(rootReconnectTimer!==null||epoch!==connectionEpoch)return;
+  const delay=Math.min(60000,1200*Math.pow(2,Math.min(rootReconnectAttempts++,6)));
+  rootReconnectTimer=setTimeout(()=>{rootReconnectTimer=null;if(epoch!==connectionEpoch)return;if(navigator.onLine)attachRoot();else retryRoot();},delay);
+ }
+ function attachRoot(){
+  if(epoch!==connectionEpoch)return;
+  try{unsub?.();unsub=api.subscribeToClubState(id,(data,metadata={})=>{
    if(metadata.fromCache||metadata.pending){status('Gerätestand · Serverbestätigung ausstehend');return;}
    if(state?.syncProtocol&&Number(data?.syncRevision||0)<Number(state.syncRevision||0))return;
    if(epoch!==connectionEpoch)return;
    const unchanged=data?.syncProtocol&&Number(data.syncRevision)>0&&Number(data.syncRevision)===Number(state?.syncRevision);
    if(data?.syncProtocol){stopLegacyChannels();channels.persons=true;channels.games=true;}
-   firstSnapshot=true;lastRootReceived=Date.now();channels.state=!!data;channelStatus();
+   rootReconnectAttempts=0;firstSnapshot=true;lastRootReceived=Date.now();channels.state=!!data;channelStatus();
    if(unchanged){received('live');return;}
    if(!data){state=null;paintGame();window.KCCashDashboard?.reset();window.KCClubContentDashboard?.reset();KCGameRules.renderDashboard(null);status('Live verbunden · Noch kein aktueller Kegelabend',true);received('live');return}
    const oldOverviewRevision=Number(state?.dashboardGameOverview?.revision)||0;acceptConfirmed(data);window.KCSharedClock?.followTablet?.(state?.tabletClock);if(Number(data.dashboardGameOverview?.revision)>oldOverviewRevision){$('game-select').value='auto';localStorage.setItem('kc_dashboard_game','auto');}received('live');try{paint()}catch(e){fail('Anzeige-Fehler',e)}
-  },e=>{if(epoch===connectionEpoch){firstSnapshot=false;fail('Live-Verbindung fehlgeschlagen',e)}});
- }catch(e){fail('Live-Listener konnte nicht starten',e)}
+  },e=>{if(epoch===connectionEpoch){firstSnapshot=false;fail('Live-Verbindung fehlgeschlagen',e);retryRoot();}});
+  }catch(e){fail('Live-Listener konnte nicht starten',e);retryRoot();}
+ }
+ attachRoot();
  if(!state?.syncProtocol){
  try {
   seatingUnsub=api.subscribeToSeatingLive(id,data=>{

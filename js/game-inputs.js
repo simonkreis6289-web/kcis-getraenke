@@ -8,11 +8,12 @@ function gameInputCurrentTeam(key){if(key==='tannenbaum'){ensureTannenbaumState(
 function gameInputTeam(key,team){if(!['T1','T2'].includes(team)||gameInputBusy[key])return;gameInputTeams[key]=team;if(key==='tannenbaum'){ensureTannenbaumState();tannenbaumState.currentTeam=team;persistState();}if(key==='darts'){ensureDartsState();dartsState.currentTeam=team;persistState();}applyGameInputLayout(key);}
 function gameInputPlace(mode,place){const s=ensureHausState(mode),name=s.playerOrder[s.currentPlayerIndex];if(!s.active||s.rows[name]?.[place])return;gameInputPlaces[mode]=place;applyGameInputLayout(hausId(mode));}
 function gameInputTarget(){
- const s=lotterieState,names=getLotteriePlayers().map(p=>p.name);
- // Pro Spalte startet derselbe ausgeloste Spieler, danach im eingefrorenen Tischumlauf.
- for(let col=0;col<s.columns.length;col++)for(const name of names)if(s.throws[name]?.[col]===null||s.throws[name]?.[col]===undefined)return {name,col};
- return null;
+ const s=lotterieState,names=getLotteriePlayers().map(p=>p.name),remaining=[];
+ for(let col=0;col<(s.columns||[]).length;col++)for(const name of names)
+  if(s.throws[name]?.[col]===null||s.throws[name]?.[col]===undefined)remaining.push({name,col});
+ return remaining.length?remaining[(Math.max(0,Number(s.manualCursor)||0))%remaining.length]:null;
 }
+
 async function gameInputThrow(key,pins,gosse=false){
  const s=gameSetupState(key);if(!s?.active||s.busy||gameInputBusy[key])return;
  gameInputBusy[key]=true;applyGameInputLayout(key);
@@ -44,7 +45,7 @@ function legacyGameInput(key){
  }else if(key==='lotterie'){
   const target=gameInputTarget();if(!target)return '<p>'+(s.columns.length?'Alle Würfe erfasst – Lotterie abschließen.':'Spaltenbeträge festlegen, um Würfe einzutragen.')+'</p>';
   context=giEscape(target.name)+' · Spalte '+(target.col+1);
- }else if(key==='tiberius')context='Tiberius · '+Number(s.score||0)+' Punkte';
+ }else if(key==='tiberius')context=giEscape(typeof tiberiusThrower==='function'?tiberiusFunnyName(tiberiusThrower()):'Tiberius')+' · '+Number(s.score||0)+' Punkte';
  else{
   const mode=key==='haushoch'?'hoch':'tief',name=s.playerOrder[s.currentPlayerIndex],row=s.rows[name]||[],free=row.map((v,i)=>v?null:i).filter(v=>v!==null);
   if(!free.length)return '';
@@ -53,6 +54,7 @@ function legacyGameInput(key){
  }
  numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',12,window.KCKranzUI?KCKranzUI.label(key,s):null);
  if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputCurrentTeam('darts');openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
+ if(key==='tiberius')numbers+=gameInputButton('Durchgeworfen',"handleTiberiusThrow('durchgeworfen')");
  return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(['tannenbaum','darts'].includes(key)?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
 }
 function buildGameThrowKeypad(buttons){
@@ -98,23 +100,66 @@ async function showGameOnDashboard(key){
  }catch(error){if(ACTIVE_CLUB===club)showToast(error.message||'Dashboard konnte nicht umgeschaltet werden.','error');return false;}
  finally{gameDashboardBusy.delete(key);if(ACTIVE_CLUB===club)applyGameInputLayout(key);}
 }
-function renderGameDashboardButton(key,panel,s){
- // Einheitlicher Platz bei ALLEN Spielen: eigene Leiste rechts oben,
- // nicht abhängig von der jeweiligen Überschrift oder Spielvorbereitung.
- const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];
- let button=buttons.shift();buttons.forEach(b=>b.remove());
- let toolbar=panel.querySelector(':scope > .game-dashboard-toolbar');
- if(!toolbar){toolbar=document.createElement('div');toolbar.className='game-dashboard-toolbar';panel.prepend(toolbar);}
- if(!button){
-  button=document.createElement('button');button.type='button';
-  button.className='secondary-btn game-dashboard-button';button.dataset.gameDashboard=key;
-  button.textContent='📺 Auf Dashboard anzeigen';button.onclick=()=>showGameOnDashboard(key);
- }
- if(button.parentElement!==toolbar)toolbar.append(button);
- const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
- button.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false;
- button.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
+const GAME_NEXT_SERVER=new Set(['blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend']);
+async function gameNextThrower(key){
+ const s=gameSetupState(key);if(!s?.active||s.finished){showToast('Zuerst das Spiel starten','error');return false;}
+ if(window.KCSharedSync&&!window.KCSharedSync.ready){showToast('Verbindung nicht bestätigt. Bitte zuerst synchronisieren.','error');return false;}
+ try{
+  if(GAME_NEXT_SERVER.has(key))return ['blackjack','gluecksspirale'].includes(key)?tableAction(key,'next'):indAction(key,'next');
+  if(key==='sechstage')return sechsRun('next');
+  if(key==='tiberius')return tiberiusNextThrower();
+  if(['tannenbaum','darts'].includes(key)){
+   const next=gameInputCurrentTeam(key)==='T1'?'T2':'T1';
+   gameInputTeam(key,next);return true;
+  }
+  if(key==='lotterie'){
+   const names=getLotteriePlayers().map(p=>p.name),left=[];
+   for(let col=0;col<(s.columns||[]).length;col++)for(const name of names)if(s.throws[name]?.[col]==null)left.push({name,col});
+   if(left.length<2){showToast('Kein weiterer offener Werfer','error');return false;}
+   s.manualCursor=((Number(s.manualCursor)||0)+1)%left.length;
+  }else if(key==='mensch'){
+   if(!s.playerOrder?.length)return false;s.currentIndex=((Number(s.currentIndex)||0)+1)%s.playerOrder.length;
+  }else if(key==='plusminus'){
+   if(!s.playerOrder?.length)return false;
+   if(s.currentThrowIndex>0&&s.currentThrowIndex<5){showToast('Die angefangene Fünfer-Reihe zuerst abschließen oder rückgängig machen','error');return false;}
+   s.currentPlayerIndex=((Number(s.currentPlayerIndex)||0)+1)%s.playerOrder.length;
+  }else if(['haushoch','haustief'].includes(key)){
+   const mode=key==='haushoch'?'hoch':'tief';hausNextPlayer(mode);
+  }else if(key==='sichern'){
+   if(s.turnThrows?.length){showToast('Angefangene Wurfrunde zuerst sichern oder rückgängig machen','error');return false;}
+   if(!s.order?.length)return false;s.currentIndex=((Number(s.currentIndex)||0)+1)%s.order.length;
+  }else if(key==='tor'){
+   if(s.coinPending||s.busy){showToast('Erst die Auslosung oder Buchung abschließen','error');return false;}
+   s.selected=[];s.current=s.current==='T1'?'T2':'T1';
+  }else if(key==='fuchsjagd')return fuchsjagdNextThrower();
+  else{showToast('Spiel unterstützt noch kein sicheres manuelles Weiterschalten','error');return false;}
+  persistState();renderAll();return true;
+ }catch(error){showToast('Nächster Werfer: '+(error?.message||error),'error');return false;}
 }
+function renderGameDashboardButton(key,panel,s){
+ const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');
+ const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];
+ let dashboard=buttons.shift();buttons.forEach(el=>el.remove());
+ let toolbar=panel.querySelector('.game-dashboard-toolbar');
+ if(!toolbar){toolbar=document.createElement('div');toolbar.className='game-dashboard-toolbar';}
+ if(title){title.classList.add('game-title-with-actions');if(toolbar.parentElement!==title)title.append(toolbar);}
+ else if(toolbar.parentElement!==panel)panel.prepend(toolbar);
+ if(!dashboard){
+  dashboard=document.createElement('button');dashboard.type='button';
+  dashboard.className='secondary-btn game-dashboard-button';dashboard.dataset.gameDashboard=key;
+  dashboard.textContent='📺 Auf Dashboard anzeigen';dashboard.onclick=()=>showGameOnDashboard(key);
+ }
+ if(dashboard.parentElement!==toolbar)toolbar.append(dashboard);
+ let next=toolbar.querySelector('[data-game-next]');
+ if(!next){next=document.createElement('button');next.type='button';next.className='game-next-button';next.dataset.gameNext=key;next.textContent='➡ Nächster Werfer';next.onclick=()=>gameNextThrower(key);}
+ if(next.parentElement!==toolbar)toolbar.insertBefore(next,dashboard);
+ const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
+ dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false;
+ dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
+ next.disabled=!s?.active||!!s?.finished||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
+ next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';
+}
+
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
  const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);renderGameDashboardButton(key,panel,s);

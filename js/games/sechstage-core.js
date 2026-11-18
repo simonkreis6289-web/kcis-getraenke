@@ -71,6 +71,12 @@
         if(request.action==='select'){
           if(state.readyToFinish||!Number.isInteger(request.playerIndex)||request.playerIndex<0||request.playerIndex>=team(state).players.length||state.turn.used[request.playerIndex]>=quota(team(state)))throw new Error(team(state).players.length===1?'Ein Einzelteam darf höchstens viermal werfen':'Jeder Partner darf höchstens zweimal werfen');
           state.turn.playerIndex=request.playerIndex;
+        }else if(request.action==='next'){
+          if(state.readyToFinish)throw new Error('Alle sechs Tage sind gespielt');
+          const current=team(state),players=current.players,index=state.turn.playerIndex;
+          const other=players.findIndex((name,i)=>i!==index&&state.turn.used[i]<quota(current));
+          if(other<0)throw new Error('Für dieses Team ist kein anderer Werfer mit freien Würfen verfügbar');
+          state.turn.playerIndex=other;
         }else if(request.action==='throw'){
           if(state.readyToFinish)throw new Error('Alle sechs Tage sind gespielt');
           const name=thrower(state),person=context.people.find(p=>p.name===name);

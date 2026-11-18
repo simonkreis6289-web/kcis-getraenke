@@ -70,7 +70,7 @@ const legacyCases={
  haushoch:async a=>{await a.c.startHausGame('hoch');for(let i=0;i<12;i++)await a.c.hausThrow('hoch',1+i%4,false,Math.floor(i/4));},
  haustief:async a=>{await a.c.startHausGame('tief');for(let i=0;i<12;i++)await a.c.hausThrow('tief',1+i%4,false,Math.floor(i/4));},
  sichern:async a=>{await a.c.startSichernGame();a.run('sichernState.secured.A=sichernState.target');await a.c.finishSichernGame('A');},
- fuchsjagd:async a=>{await a.c.startFuchsjagdGame();await a.c.finishFuchsjagd(true);},
+ fuchsjagd:async a=>{await a.c.startFuchsjagdGame();const s=a.c.fuchsjagdState;s.results=s.order.map((fox,i)=>({fox,station:i+1,escaped:i===s.order.length-1}));await a.c.fuchsjagdFinalize(s);a.c.persistState();},
  tor:async a=>{await a.c.startTorGame();a.run('Object.assign(torState,{coinPending:false,current:"T1",standing:[1],selected:[1],scores:{T1:4,T2:0}})');await a.c.torThrow('pins');}
 };
 for(const [key,complete] of Object.entries(legacyCases))test(key+': legacy completion, tablet upload, TV result and subsequent booking stay connected', {timeout:60000},async()=>{
@@ -95,5 +95,5 @@ test('legacy Pfälzerspiel groups are normalized but new games finish without St
  assert.deepEqual(copy(s.loserGroups),[]);
  assert.equal(s.tieRound,0);
  s=legacyGroups(s);
- assert.deepEqual(copy(s.rankingGroups),[{names:['A','B']}]);
+ assert.deepEqual(copy(s.rankingGroups),[['A','B']]);
 });
