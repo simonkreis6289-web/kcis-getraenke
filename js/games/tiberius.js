@@ -470,6 +470,11 @@ function continueTiberiusAfterThrower(personName = '') {
 // Tiberius V253: Werferwechsel und Buchungen sind ein einzelner, wiederholbarer Ablauf.
 // Ein Sonderwurf darf weder ein altes Personen-Popup offenlassen noch den Zug blockieren.
 let tiberiusAutoBusy=false;
+function tiberiusFunnyName(name){
+ const text=String(name||'');if(text.length<3)return text+'h';
+ const chars=Array.from(text),idx=chars.findIndex((x,i)=>i>0&&i<chars.length-1&&/[a-zäöü]/i.test(x)&&/[a-zäöü]/i.test(chars[i+1])&&x!==chars[i+1]);
+ if(idx<0)return text+'h';[chars[idx],chars[idx+1]]=[chars[idx+1],chars[idx]];return chars.join('');
+}
 function tiberiusThrower(){
  ensureTiberiusState();
  const names=Array.isArray(tiberiusState.playerOrder)&&tiberiusState.playerOrder.length?tiberiusState.playerOrder:getTiberiusPlayers().map(p=>p.name);
@@ -803,7 +808,7 @@ function renderTiberius() {
     return `
       <tr class="${p.name===activeThrower?'tiberius-current-row':''}">
         <td class="sticky-name">
-          <strong>${p.name}</strong>
+          <strong title="${p.name}">${tiberiusFunnyName(p.name)}</strong>
             <div class="game-name-amount">
               ${euros(live)}
             </div>
