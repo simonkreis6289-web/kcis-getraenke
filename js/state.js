@@ -1,4 +1,4 @@
-const APP_VERSION = '20261118-265';
+const APP_VERSION = '20261118-266';
 const APPVersionSelf = 'V266 © SK';
 const APP_LAST_UPDATE = '18.11.2026, 22:01 Uhr';
 
