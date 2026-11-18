@@ -490,6 +490,16 @@ function tiberiusNextThrower(){
 async function handleTiberiusThrow(value){
  ensureTiberiusState();
  if(!tiberiusState.active||tiberiusState.finished||tiberiusAutoBusy)return;
+ if(window.KCSharedSync&&!window.KCSharedSync.ready){showToast('Firebase nicht bestätigt. Bitte zuerst Verbindung wiederherstellen.','error');return;}
+ if(tiberiusState.pendingHit){
+  // Ein im alten Popup offengebliebener Zieltreffer darf nicht still überschrieben werden.
+  const pending=tiberiusState.pendingHit,last=tiberiusState.throws?.at(-1),who=last?.thrower;
+  if(!who||!tiberiusState.playerOrder.includes(who)){showToast('Alter Zieltreffer ohne sicheren Werfer. Bitte den letzten Wurf rückgängig machen und erneut buchen.','error');return;}
+  tiberiusState.penalties[pending.colIndex]={...pending,thrower:who,payers:pending.mode==='exact'?tiberiusState.playerOrder.filter(n=>n!==who):[who],amount:Number(pending.target)/100};
+  tiberiusState.pendingHit=null;
+  tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+1)%tiberiusState.playerOrder.length;
+  closeTiberiusHitModal();renderAll();persistState();showToast('🏛️ Offenen Zieltreffer übernommen. Bitte den nächsten Wurf jetzt eingeben.','success');return;
+ }
  const thrower=tiberiusThrower();
  if(!thrower){showToast('Kein aktueller Werfer vorhanden','error');return;}
  const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('tiberius'):value;
