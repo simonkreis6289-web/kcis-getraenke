@@ -46,6 +46,11 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 .stage-body .tv-matrix-board .tv-table td{padding:5px 2px;}
 .stage-body .tv-matrix-board .tv-cell{min-height:35px;padding:4px 1px;}
 .stage-body .tv-matrix-board .tv-table th{padding:7px 2px;}
+/* V253: Tiberius aktuell am Wurf: die GANZE Tabellenzeile. */
+#game-body .tv-tiberius-board .tiberius-active-row>td{background:#ffde70!important;border-top:3px solid #e89d1b;border-bottom:3px solid #e89d1b;color:#42290a!important;box-shadow:inset 0 0 0 1px #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row>td:first-child{border-left:4px solid #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row>td:last-child{border-right:4px solid #e89d1b}
+#game-body .tv-tiberius-board .tiberius-active-row .tv-cell{outline:2px solid #d79c29;box-shadow:0 0 12px #d79c2940}
 /* V252: Lotterie und Tiberius nutzen die gesamte verfügbare Dashboard-Höhe.
    Diese Regeln gelten ausschließlich für die beiden Matrix-Spielbretter. */
 #game-body .tv-matrix-board{
@@ -552,7 +557,7 @@ function chosenGame(){
 function node(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function activeNames(order){const names=(state?.persons||[]).filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly).map(p=>p.name);const allowed=new Set(names);const ordered=Array.isArray(order)?order.filter(name=>allowed.has(name)):[];return [...new Set([...ordered,...names])].filter(Boolean)}
-function makeTable(headers,rows,cellFormatter=String){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function makeTable(headers,rows,cellFormatter=String,rowClass=()=> ''){return `<table class="tv-table"><thead><tr>${headers.map(h=>`<th>${safe(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row,i)=>`<tr class="${safe(rowClass(row,i))}">${row.map((v,i)=>i===0?`<td class="tv-name">${safe(v)}</td>`:`<td>${cellFormatter(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
 function renderTree(d){
  const base=state?.TANNENBAUM_BASE||{1:1,2:2,3:3,4:4,5:5,6:4,7:3,8:2,9:1};
  const teams=d.teams||{};
@@ -579,7 +584,20 @@ function renderTree(d){
  ${Object.keys(base).map(n=>`<div class="tree-row"><div class="tree-lane tree-lane-left" data-team="T2"><div class="tree-side tree-side-left">${balls(t1,n,'T2')}</div>${strikeList(t1,n)}</div><div class="tree-number">${safe(n)}</div><div class="tree-lane tree-lane-right" data-team="T1"><div class="tree-side tree-side-right">${balls(t2,n,'T1')}</div>${strikeList(t2,n)}</div></div>`).join('')}</div></div>`;
 }
 function renderLottery(d){const columns=d.columns||[],names=activeNames(d.playerOrder);if(!columns.length)return null;const complete=columns.map((_,i)=>names.length>0&&names.every(n=>d.throws?.[n]?.[i]!=null));const losers=columns.map((_,i)=>{const arr=names.map(n=>({n,raw:d.throws?.[n]?.[i]})).filter(x=>x.raw!==null&&x.raw!==undefined&&x.raw!=='').map(x=>({n:x.n,v:Number(x.raw)})).filter(x=>Number.isFinite(x.v));const min=Math.min(...arr.map(x=>x.v));return arr.filter(x=>x.v===min).map(x=>x.n)});const heads=['Spieler','Strafen',...columns.map((c,i)=>`${fmt.format(Number(c)||0)}${complete[i]?' ✓':''}`)];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'lotterie',true)),...columns.map((_,i)=>({v:d.throws?.[n]?.[i],done:complete[i],lose:losers[i].includes(n)}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🎰 Lotterie</h2>${makeTable(heads,rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.lose?'miss':v.done?'done':v.v==null?'pending':''}">${v.v==null?'–':v.v===12?'K':safe(v.v)}</div>`)}</div>`}
-function renderTiberiusBoard(d){const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;const score=Number(d.score)||0;const next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];const rows=names.map(n=>[n,fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);return `<div class="tv-board tv-matrix-board"><h2 class="tv-headline">🏛️ Tiberius</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`)}</div>`}
+function tiberiusFunnyName(name){
+ const text=String(name||'');if(text.length<3)return text+'h';
+ const letters=Array.from(text),at=letters.findIndex((v,i)=>i>0&&i<letters.length-1&&/[a-zäöü]/i.test(v)&&/[a-zäöü]/i.test(letters[i+1])&&v!==letters[i+1]);
+ if(at<0)return text+'h';
+ [letters[at],letters[at+1]]=[letters[at+1],letters[at]];
+ return letters.join('');
+}
+function renderTiberiusBoard(d){
+ const targets=d.targets||[],names=activeNames(d.playerOrder);if(!targets.length)return null;
+ const score=Number(d.score)||0,next=targets.map(Number).filter(v=>v>score).sort((a,b)=>a-b)[0];
+ const current=names[(Math.max(0,Number(d.currentPlayerIndex)||0))%names.length]||'';
+ const rows=names.map(n=>[tiberiusFunnyName(n),fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);
+ return `<div class="tv-board tv-matrix-board tv-tiberius-board"><h2 class="tv-headline">🏛️ Tiberius · Am Wurf: ${safe(tiberiusFunnyName(current))}</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong>${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong>${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`,(row,i)=>names[i]===current&&d.active?'tiberius-active-row':'')}</div>`;
+}
 function plusminusSlotValue(idx,slot,partial,smart){
  if(!slot)return null;
  if(!slot.isGosse)return Number.parseInt(slot.kranzValue??slot.value??0,10)||0;
