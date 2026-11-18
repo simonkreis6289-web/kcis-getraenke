@@ -95,3 +95,47 @@ test('finished game board renders persistent booked loser ranks and the obstacle
  assert.equal(runners[1].querySelector('.hurdle-current strong').textContent,'Am Zug');
  assert.match(runners[2].textContent,/Im Ziel 40/);
 });
+
+test('TV hurdles show individual runner boxes, the two tables and actual one-throw targets without event rows',()=>{
+ const f=ui();
+ for(const file of ['kranz-policy','games/individual-core','games/individual-view'])vm.runInContext(read('js/'+file+'.js'),f);
+ const s=f.KCIndividual.empty('hindernis');
+ Object.assign(s,{id:'indgame_preview',active:true,players:['Daniel','Peter','Cora','Mara','Nico'],scores:{Daniel:12,Peter:0,Cora:17,Mara:17,Nico:0},history:[...['Daniel','Peter','Cora','Mara'].map(name=>({name,action:'throw'})),{name:'Nico',action:'next'}],config:{target:24,baseCents:100,rules:[
+  {id:'start',from:0,to:0,kind:'start',enabled:true},
+  {id:'pause',from:15,to:15,kind:'skip',enabled:true},
+  {id:'pay11',from:17,to:18,kind:'pay',value:100,enabled:true},
+  {id:'pay35',from:22,to:22,kind:'pay',value:100,enabled:true},
+  {id:'leader',from:23,to:23,kind:'leader',enabled:false}
+ ]},bookings:[{personName:'Peter',amountCents:100}],events:[{name:'Peter',point:17,text:'1,00 € in die Kasse'}]});
+ const root=f.document.createElement('div');root.innerHTML=f.renderIndividualBoard(s,{dashboard:true});
+ assert.deepEqual([...root.querySelector('.ind-hurdle-split').children].map(x=>x.className),['hurdle-track-vertical','hurdle-scores','hurdle-rules']);
+ assert.match(root.querySelector('.hurdle-track-vertical li').textContent,/Ziel.*24/);
+ assert.match(root.querySelector('.hurdle-track-vertical li:last-child').textContent,/Hürde 0.*Peter/);
+ assert.equal(root.querySelectorAll('.hurdle-track-vertical li').length,25);
+ assert.equal(root.querySelectorAll('.hurdle-track-vertical .hurdle-runner').length,4);
+ assert.equal(root.querySelector('.hurdle-track-vertical .hurdle-position-shared .hurdle-position-runners').children.length,2);
+ assert(!root.querySelector('.hurdle-track-vertical').textContent.includes('Nico'));
+ assert.match(root.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt.*15 Pkt.*3 Holz.*17 Pkt.*5 Holz.*Ziel.*Kranz/);
+ assert.deepEqual([...root.querySelectorAll('.ind-rule-reachable th')].map(x=>x.textContent),['15','17–18']);
+ assert.match(root.querySelectorAll('.hurdle-scores .ind-penalty')[1].textContent,/1,00/);
+ assert.equal(root.querySelectorAll('.ind-event').length,0);
+ s.double.Daniel=true;
+ const twice=f.hurdleThrowPreview(s,'Daniel');
+ assert.equal(twice.hits.has('pause'),false);
+ assert.deepEqual(Array.from(twice.hits.get('pay35')),['5 Holz']);
+ s.double.Daniel=false;
+ s.subtract.Daniel=true;
+ assert.equal(f.hurdleThrowPreview(s,'Daniel').hits.size,1,'Kranz with subtraction can reach zero');
+});
+
+test('the dense hurdle board fits the available width and height as one block',()=>{
+ const html=read('dashboard.html');
+ const fit=new Function('getComputedStyle',html.slice(html.indexOf('function fitHurdleBoard'),html.indexOf('function fitTvBoard'))+';return fitHurdleBoard;')(()=>({paddingLeft:'9px',paddingRight:'9px',paddingTop:'8px',paddingBottom:'8px'}));
+ const board={style:{},dataset:{},offsetHeight:950};
+ fit({clientWidth:900,clientHeight:620},board);
+ const zoom=Number(board.style.zoom);
+ assert(zoom<1&&board.offsetHeight*zoom<=602);
+ assert(Math.abs(parseFloat(board.style.width)*zoom-880)<0.01);
+ assert(Math.abs(parseFloat(board.style.minHeight)*zoom-602)<0.01);
+ assert.match(read('css/individual-games.css'),/\.ind-hurdle-tv \.ind-table-scroll\s*\{\s*overflow: visible/);
+});
