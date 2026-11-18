@@ -3,7 +3,25 @@
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
  const state=new Map(),seen=new Map();let settings=null,timer=null,busy=false,lastGroup=0,initialized=false,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
- const fetchJSON=async path=>{const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),9000);try{const response=await fetch(base+path,{signal:ctrl.signal,cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);return await response.json();}finally{clearTimeout(timeout);}};
+ const fetchJSON=async path=>{
+  const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),12000);
+  try{
+   const response=await fetch(base+path,{signal:ctrl.signal,cache:'no-store',mode:'cors'});
+   if(!response.ok)throw Error('HTTP '+response.status+' bei '+path);
+   return await response.json();
+  }finally{clearTimeout(timeout);}
+ };
+ const failures=new Map(),lastWarning=new Map(),backoff=[30000,60000,120000,300000,600000];
+ const retryAfter=league=>(failures.get(league)?.next||0);
+ const recover=league=>{if(failures.has(league)){failures.delete(league);window.dispatchEvent(new Event('kc-football-updated'));}};
+ const fail=(league,error,now)=>{
+  const prev=failures.get(league),tries=(prev?.tries||0)+1;
+  failures.set(league,{tries,next:now+backoff[Math.min(tries-1,backoff.length-1)],message:String(error?.message||error)});
+  if(!lastWarning.has(league)||now-lastWarning.get(league)>300000){
+   console.warn('Bundesliga '+league+': Datenquelle zeitweise nicht erreichbar. Automatischer Wiederholungsversuch.',error);
+   lastWarning.set(league,now);
+  }
+ };
  const enabled=league=>settings?.[league]===true;
  const score=m=>{
   const results=Array.isArray(m.matchResults)?m.matchResults:[],goals=Array.isArray(m.goals)?m.goals:[];
@@ -64,15 +82,41 @@
   }
  }
  async function refresh(){
-  if(busy||!settings||!leagues.some(enabled)||document.hidden)return;busy=true;
-  try{const now=Date.now();for(const league of leagues){if(!enabled(league))continue;
-    const current=state.get(league)||[];let group=window['kcGroup_'+league];
-    if(!group||now-lastGroup>300000){const g=await fetchJSON('/getcurrentgroup/'+league);group=Number(g?.groupOrderID??g?.groupOrderId??g?.groupOrder??0);if(group)window['kcGroup_'+league]=group;}
-    if(!group)continue;
-    const stamp=await fetchJSON('/getlastchangedate/'+league+'/'+season()+'/'+group),changed=JSON.stringify(stamp),key='kcStamp_'+league;
-    if(!current.length||window[key]!==changed){const matches=await fetchJSON('/getmatchdata/'+league+'/'+season()+'/'+group);ingest(league,matches);window[key]=changed;}
-   }lastGroup=now;initialized=true;checkKickoffs(now);
-  }catch(e){console.warn('Bundesliga-Live-Daten momentan nicht erreichbar',e);}finally{busy=false;}
+  if(busy||!settings||!leagues.some(enabled)||document.hidden)return;
+  busy=true;
+  const now=Date.now();
+  try{
+   for(const league of leagues){
+    if(!enabled(league)||now<retryAfter(league))continue;
+    try{
+     const current=state.get(league)||[];
+     let group=window['kcGroup_'+league];
+     if(!group||now-lastGroup>300000){
+      const result=await fetchJSON('/getcurrentgroup/'+league);
+      group=Number(result?.groupOrderID??result?.groupOrderId??result?.groupOrder??0);
+      if(group)window['kcGroup_'+league]=group;
+     }
+     if(!group)throw Error('Aktueller Spieltag konnte nicht ermittelt werden');
+     // Kein Alles-oder-Nichts: schlägt der Änderungszeitpunkt-Endpunkt fehl,
+     // weiterhin den eigentlichen Spieltag abrufen.
+     let changed=null,shouldFetch=!current.length;
+     try{
+      const stamp=await fetchJSON('/getlastchangedate/'+league+'/'+season()+'/'+group);
+      changed=JSON.stringify(stamp);
+      shouldFetch=shouldFetch||window['kcStamp_'+league]!==changed;
+     }catch(error){
+      shouldFetch=true;
+     }
+     if(shouldFetch){
+      const matches=await fetchJSON('/getmatchdata/'+league+'/'+season()+'/'+group);
+      ingest(league,matches);
+      if(changed!==null)window['kcStamp_'+league]=changed;
+     }
+     recover(league);
+    }catch(error){fail(league,error,now);}
+   }
+   lastGroup=now;initialized=true;checkKickoffs(now);
+  }finally{busy=false;}
  }
  function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:demoTeams?.bvb||''},team2:{teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:demoTeams?.schalke||''},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,goalGetterName:'Testtor'}]:[],matchResults:[]};}
  async function loadDemoCrests(){
@@ -98,9 +142,9 @@
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
   const demoChanged=JSON.stringify(settings?.demo??null)!==JSON.stringify(next.demo??null);
   settings=next;if(!timer)timer=setInterval(refresh,30000);
-  if(sourceChanged){initialized=false;seen.clear();seenPhases.clear();seenKickoffs.clear();state.clear();refresh();}
+  if(sourceChanged){initialized=false;seen.clear();seenPhases.clear();seenKickoffs.clear();state.clear();failures.clear();refresh();}
   if(demoChanged)syncDemo(next.demo);
  }
  function ticker(){if(!settings)return [];const live=leagues.filter(enabled).flatMap(league=>(state.get(league)||[]).map(m=>['football-'+league+'-'+m.matchID,'⚽ '+label(m)]));if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);return live;}
- window.KCFootballLive=Object.freeze({configure,ticker,refresh});
+ window.KCFootballLive=Object.freeze({configure,ticker,refresh,status:()=>Object.fromEntries([...failures].map(([league,v])=>[league,{tries:v.tries,retryAt:new Date(v.next).toISOString(),message:v.message}]))});
 })();
