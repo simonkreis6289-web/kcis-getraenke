@@ -9,17 +9,21 @@
 
 #shared-sync-status {
   --sync-dot: #facc15;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
 }
+.app-version-row .version-info { flex: none; white-space: nowrap; }
 
 #shared-sync-status[data-mode='ready'] { --sync-dot: #4ade80; }
 #shared-sync-status[data-mode='offline'],
 #shared-sync-status[data-mode='error'] { --sync-dot: #ff6369; }
 
 .shared-sync-indicator {
-  display: grid;
-  place-items: center;
-  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding-inline: 6px;
   height: 24px;
   border-radius: 6px;
   cursor: pointer;
@@ -28,9 +32,9 @@
 
 .shared-sync-indicator::-webkit-details-marker { display: none; }
 
-.shared-sync-indicator::before {
+.shared-sync-indicator::after {
   content: '';
-  width: 10px;
+  flex: 0 0 10px;
   height: 10px;
   border-radius: 50%;
   background: var(--sync-dot);
@@ -82,3 +86,14 @@
 }
 
 .shared-sync-actions button[hidden] { display: none; }
+
+.shared-sync-caption {
+  color: var(--title_fc);
+  font-size: .66rem;
+  font-weight: 500;
+  min-width: 0;
+  max-width: min(35vw, 235px);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}

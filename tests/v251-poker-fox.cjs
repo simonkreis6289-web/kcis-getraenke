@@ -68,6 +68,21 @@ test('Poker rankings match engine strength ordering, rendered in app and dashboa
  assert.equal(wrap.querySelectorAll('.classic-table-and-ranking>.poker-ranking-panel').length,1);
 });
 
+test('Poker displays the current combination before exchange and shows only previously replaced numbers below the new ones',()=>{
+ const {document}=parseHTML('<html><body></body></html>'),context={window:{},document,setInterval(){},addEventListener(){}};
+ context.window=context;vm.createContext(context);
+ for(const file of ['extra-core','extra-view','extra-ui'])vm.runInContext(read('js/games/'+file+'.js'),context);
+ const card=(pins,phase)=>({pins,kind:'pins',phase});
+ const original=[3,4,5,5,5].map(pins=>card(pins,'deal'));
+ const s={gameKey:'poker',phase:'select',players:['A'],index:0,hands:{A:original.slice()},rows:{A:original.slice()},exchanges:{},config:{maxExchange:5}};
+ const wrap=document.createElement('div');wrap.innerHTML=context.classicGameControls('poker',s,'');
+ assert.equal(wrap.querySelector('.poker-current-hand strong').textContent,'Drilling');
+ s.exchanges.A=[0,1];s.hands.A[0]=card(5,'redraw');s.rows.A.push(s.hands.A[0]);
+ wrap.innerHTML='<table><tr>'+context.pokerTableCards(s,'A')+'</tr></table>';
+ assert.equal(wrap.querySelectorAll('.poker-old-card').length,1);
+ assert.equal(wrap.querySelector('.poker-old-card').textContent,'3');
+});
+
 
 test('Fuchsjagd clears visible throws on FIRST throw of each new hunter in app and TV, retains whole history and supports undo',async()=>{
  const {c,document}=fixture();c.startFuchsjagdGame();

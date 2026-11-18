@@ -1,8 +1,9 @@
 /* Bundesliga 1+2: sparsames OpenLigaDB-Polling ohne API-Schluessel. */
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
- const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set();
- let settings=null,timer=null,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
+ const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set(),clocks=new Map();
+ let settings=null,timer=null,clockTimer=null,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
+ const minuteMs=60000,breakMs=15*minuteMs;
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{
   const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),12000);
@@ -34,7 +35,38 @@
   if(valid(full))return [Number(full.pointsTeam1),Number(full.pointsTeam2)];
   return [0,0];
  };
- // Keine Spielminute erraten: OpenLigaDB liefert lediglich Minuten einzelner Tore.
+ const kickoff=m=>Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');
+ function observeClock(previous,match,now){
+  const start=kickoff(match);
+  if(!Number.isFinite(start))return null;
+  const half=(match.matchResults||[]).find(result=>result.resultTypeID===1);
+  const goals=(match.goals||[]).filter(goal=>Number(goal.matchMinute)>0&&Number(goal.matchMinute)<=125);
+  const goalTotal=goal=>(Number(goal.scoreTeam1)||0)+(Number(goal.scoreTeam2)||0);
+  const goalKey=goal=>[goal.goalID??goal.goalId,goal.matchMinute,goal.scoreTeam1,goal.scoreTeam2].join('/');
+  const secondHalf=goal=>!!half&&Number(goal.scoreTeam1)+Number(goal.scoreTeam2)>Number(half.pointsTeam1)+Number(half.pointsTeam2);
+  const sameMatch=previous?.start===start?previous:null;
+  const latest=goals.reduce((last,goal)=>!last||goalTotal(goal)>=goalTotal(last)?goal:last,null);
+  const halfAt=half?(sameMatch?.halfAt??(sameMatch?now:Math.min(now,start+45*minuteMs))):null;
+  let anchor=sameMatch?.anchor||null;
+  if(latest&&goalKey(latest)!==sameMatch?.goal){
+   const minute=Number(latest.matchMinute),second=secondHalf(latest);
+   const observedAt=sameMatch?now:Math.min(now,start+(minute+(second?15:0))*minuteMs);
+   if(!anchor||second||!anchor.second)anchor={minute,at:observedAt,second};
+  }
+  return {start,halfAt,anchor,goal:latest?goalKey(latest):null};
+ }
+ function clockLabel(match,clock,now=Date.now()){
+  if(match.matchIsFinished||!clock||now<clock.start)return '';
+  const {start,halfAt,anchor}=clock,second=anchor?.second||halfAt!==null&&now>=halfAt+breakMs;
+  if(halfAt!==null&&!second)return 'Halbzeit';
+  const base=second?Math.max(start+45*minuteMs,halfAt+breakMs):start;
+  const usable=anchor&&anchor.second===!!second;
+  const minute=Math.max(1,usable?anchor.minute+Math.floor(Math.max(0,now-anchor.at)/minuteMs):Math.floor(Math.max(0,now-base)/minuteMs)+(second?46:1));
+  const limit=second?90:45;
+  // Die laufende Uhr ist geschätzt. Ohne bestätigte Halbzeit wird kein Wiederanpfiff unterstellt.
+  if(minute>limit)return minute>limit+15?'≈'+limit+'′+':'≈'+limit+'+'+(minute-limit)+'′';
+  return '≈'+minute+'′';
+ }
  const label=(m)=>{const s=score(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(m.matchIsFinished?' (Ende)':'');};
  function announce(m,old,next){
   if(!settings?.goalToastSeconds||!settings.events?.goal||document.hidden)return;
@@ -64,7 +96,7 @@
  const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
   const now=Date.now(),list=matches;state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
-  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);
+  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);
    seen.set(id,next);
    const previous=seenPhases.get(id),current=phase(m);
    if(previous&&initialized.has(league)&&enabled(league)){
@@ -132,9 +164,12 @@
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
   const demoChanged=JSON.stringify(settings?.demo??null)!==JSON.stringify(next.demo??null);
   settings=next;if(!timer)timer=setInterval(refresh,30000);
+  if(!clockTimer)clockTimer=setInterval(()=>{
+   if(!document.hidden&&leagues.some(league=>enabled(league)&&state.get(league)?.length))window.dispatchEvent(new Event('kc-football-clock'));
+  },5000);
   if(sourceChanged)void refresh();
   if(demoChanged)syncDemo(next.demo);
  }
- function ticker(){if(!settings)return [];const live=leagues.filter(enabled).flatMap(league=>(state.get(league)||[]).map(m=>['football-'+league+'-'+m.matchID,'⚽ '+label(m)]));if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);return live;}
- window.KCFootballLive=Object.freeze({configure,ticker,refresh,status:()=>Object.fromEntries([...failures].map(([league,v])=>[league,{tries:v.tries,retryAt:new Date(v.next).toISOString(),message:v.message}]))});
+ function ticker(now=Date.now()){if(!settings)return [];const live=leagues.filter(enabled).flatMap(league=>(state.get(league)||[]).map(m=>['football-'+league+'-'+m.matchID,'⚽ '+label(m),clockLabel(m,clocks.get(league+':'+m.matchID),now)]));if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);return live;}
+ window.KCFootballLive=Object.freeze({configure,ticker,refresh,observeClock,clockLabel,status:()=>Object.fromEntries([...failures].map(([league,v])=>[league,{tries:v.tries,retryAt:new Date(v.next).toISOString(),message:v.message}]))});
 })();

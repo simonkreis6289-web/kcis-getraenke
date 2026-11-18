@@ -8,6 +8,27 @@ function fixture(fetch){
  ctx.window=ctx;ctx.dispatchEvent=()=>{};vm.createContext(ctx);vm.runInContext(src,ctx);
  return {app:ctx.KCFootballLive,events};
 }
+test('Bundesliga: the estimate follows kickoff, re-anchors on a new goal, pauses at halftime and stops at fulltime',()=>{
+ const {app}=fixture(),start=Date.parse('2026-11-21T14:30:00Z'),at=min=>start+min*60000;
+ const match={...instant(),matchDateTimeUTC:new Date(start).toISOString()};
+ let clock=app.observeClock(null,match,at(-1));
+ assert.equal(app.clockLabel(match,clock,at(-1)),'');
+ assert.equal(app.clockLabel(match,clock,at(30)),'≈31′');
+ match.goals=[{goalID:1,matchMinute:25,scoreTeam1:1,scoreTeam2:0}];
+ clock=app.observeClock(clock,match,at(31));
+ assert.equal(app.clockLabel(match,clock,at(31)),'≈25′');
+ clock=app.observeClock(clock,match,at(33));
+ assert.equal(app.clockLabel(match,clock,at(33)),'≈27′');
+ match.matchResults=[{resultTypeID:1,pointsTeam1:1,pointsTeam2:0}];
+ clock=app.observeClock(clock,match,at(47));
+ assert.equal(app.clockLabel(match,clock,at(60)),'Halbzeit');
+ assert.equal(app.clockLabel(match,clock,at(62)),'≈46′');
+ match.goals=[...match.goals,{goalID:2,matchMinute:52,scoreTeam1:1,scoreTeam2:1}];
+ clock=app.observeClock(clock,match,at(65));
+ assert.equal(app.clockLabel(match,clock,at(67)),'≈54′');
+ match.matchIsFinished=true;
+ assert.equal(app.clockLabel(match,clock,at(107)),'');
+});
 test('Bundesliga: a pending league request does not prevent the other league from loading',async()=>{
  const calls=[];
  let rejectFirstLeague;

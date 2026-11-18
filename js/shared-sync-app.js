@@ -17,6 +17,7 @@
     box.querySelector('.shared-sync-label').textContent=label;
     const indicator=box.querySelector('summary');
     indicator.title=label;
+    box.querySelector('.shared-sync-caption').textContent=lastError&&!working&&navigator.onLine?'Cloudfehler':label;
     indicator.setAttribute('aria-label','Cloud-Status: '+label);
     const retry=box.querySelector('.shared-sync-retry');
     retry.hidden=working||(ready&&!lastError);

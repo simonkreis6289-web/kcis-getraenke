@@ -52,3 +52,46 @@ test('footer keeps all three existing controls while the header retains only a c
 test('ticker safely handles year rollover, ongoing tours, empty calendars and untrusted notes',()=>{
  const now=new Date('2026-12-30T12:00:00Z'),root={persons:[{name:'New Year <img>',birthDate:'1990-01-01'},{name:'Later',birthDate:'1990-01-05'}],clubTermine:[{type:'tour',date:'2026-12-29',endDate:'2027-01-02',note:'<script>Tour</script>'},{type:'kegeln',date:'2027-01-03',time:'20:00'}]},up=M.upcoming(root,now);assert.deepEqual(copy(up.birthdays.map(x=>x.note)),['New Year <img>']);assert.equal(up.tour.date,'2026-12-29');const f=ui();vm.runInContext(read('js/dashboard-layout-tv.js'),f);f.KCDashboardLayoutTV.ticker(root,now);assert(!f.document.querySelector('#dashboard-ticker script,#dashboard-ticker img'));assert(f.document.getElementById('dashboard-ticker').textContent.includes('<script>Tour</script>'));f.KCDashboardLayoutTV.ticker({},now);assert(f.document.getElementById('dashboard-ticker').textContent.includes('Noch kein nächster Kegeltermin'));
 });
+
+test('Dashboard settings, club documents and general settings have separate navigation',async()=>{
+ const a=await app(),d=a.document;
+ a.c.showSideTab('verwaltung','dashboard');
+ assert(!d.getElementById('tab-dashboard').classList.contains('hidden'));
+ assert(d.getElementById('tab-info').classList.contains('hidden'));
+ assert(d.getElementById('tab-dashboard').contains(d.getElementById('kc-dashboard-link')));
+ const sections=[...d.querySelectorAll('#dashboard-layout-settings [data-dashboard-section]')];
+ assert.deepEqual(sections.map(x=>x.dataset.dashboardSection),['layout','ticker','notifications','football']);
+ a.c.showSideTab('verwaltung','info');
+ assert(d.getElementById('tab-dashboard').classList.contains('hidden'));
+ a.c.KCClubContentApp.infoTab('penalties');
+ assert(!d.getElementById('club-info-penalties').hidden);
+ assert(d.getElementById('club-info-statutes').hidden);
+ a.c.showSideTab('verwaltung','einstellungen');
+ assert.equal(d.querySelectorAll('#tab-einstellungen > .kc-general-setting').length,6);
+});
+
+test('finished game board renders persistent booked loser ranks and the obstacle track places every player',()=>{
+ const f=ui();
+ for(const file of ['game-results','games/individual-view'])vm.runInContext(read('js/'+file+'.js'),f);
+ const ranking=[{rank:1,names:['Anna & Ben','Cora']},{rank:2,team:'Wand',names:['Dani']},{rank:3,names:['Edda']}];
+ const game={id:'match-new',finished:true};
+ const history=[{gameKey:'poker',gameId:'match-old',ranking:[{rank:1,names:['Old']}]},{gameKey:'poker',gameId:'match-new',ranking}];
+ const root=f.document.createElement('div');
+ root.innerHTML=f.KCGameResults.dashboardMarkup(f.KCGameResults.dashboardRanking('poker',game,history,{}));
+ assert.match(root.textContent,/🥇 1\. VerliererAnna & Ben · Cora/);
+ assert.match(root.textContent,/🥈 2\. VerliererWand · Dani/);
+ assert.match(root.textContent,/🥉 3\. VerliererEdda/);
+ assert(!root.textContent.includes('Old'));
+ assert.equal(f.KCGameResults.dashboardRanking('poker',{...game,finished:false},history,{}).length,0);
+ root.innerHTML=f.renderHurdleTrack({
+  config:{target:40,rules:[{enabled:true,from:20,to:22},{enabled:true,from:8,to:8},{enabled:false,from:15,to:15}]},
+  active:true,players:['Start','Am Zug','Im Ziel'],scores:{Start:2,'Am Zug':21,'Im Ziel':40}
+ },'Am Zug');
+ const stations=[...root.querySelectorAll('.hurdle-track li')];
+ const runners=[...root.querySelectorAll('.hurdle-runners')];
+ assert.equal(stations.length,4);
+ assert.match(runners[0].textContent,/Start 2/);
+ assert.match(stations[2].textContent,/20–22/);
+ assert.equal(runners[1].querySelector('.hurdle-current strong').textContent,'Am Zug');
+ assert.match(runners[2].textContent,/Im Ziel 40/);
+});
