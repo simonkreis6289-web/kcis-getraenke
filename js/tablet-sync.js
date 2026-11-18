@@ -89,7 +89,7 @@
   async function localCall(method,args){
     if(method==='saveClubState')return null;
     const filled=args.slice(),count=api.__syncArity[method];while(filled.length<count)filled.push(undefined);filled[count]={preview:unit.preview,base:C.clone(unit.before),eveningStartedAt:unit.before.currentEveningStartedAt||''};
-    const result=Promise.resolve(raw[method](...filled));unit.promises.push(result);return result;
+    const result=Promise.resolve().then(()=>raw[method](...filled));unit.promises.push(result);return result;
   }
   function finish(action,globals,method){
     if(current!==action.session)throw Error('Club wurde gewechselt. Eingabe verworfen.');
