@@ -38,6 +38,8 @@ test('the cloud status stays next to the version while the indicator and status 
 test('after a browser disconnect Tiberius keeps accepting local throws and prevents an evening reset until Firebase confirms',async()=>{
  const {a,db}=await fixture();a.run('tiberiusState.targets=[9];tiberiusState.columnCount=1;tiberiusState.targetsGenerated=true');await a.c.startTiberiusGameFinal('A');
  assert(await a.c.KCSharedSync.waitForUpload());const before=copy(db.root());
+ const undo=a.document.querySelector('#tab-tiberius .game-dashboard-toolbar [data-game-undo]');
+ assert(undo?.disabled);
  a.c.navigator.onLine=false;
  for(const pins of [0,9,0,9,0,9])await a.c.handleTiberiusThrow(pins);
  assert.equal(a.run('tiberiusState.throws.length'),6);assert.equal(a.run('tiberiusState.currentPlayerIndex'),0);
@@ -48,11 +50,13 @@ test('after a browser disconnect Tiberius keeps accepting local throws and preve
  a.c.navigator.onLine=true;db.fail(true);
  assert.equal(await a.c.startNewKegelabend(),false);
  assert.equal(a.c.KCSharedSync.diagnostics().cloudSequence,before.tabletSequence);
- await a.c.undoLastTiberiusThrow();assert.equal(a.run('persons[0].strafen.nine'),2);
+ assert(!undo.disabled);
+ await Promise.all([undo.onclick(),undo.onclick()]);
+ assert.equal(a.run('persons[0].strafen.nine'),2);
  db.fail(false);assert(await a.c.KCSharedSync.reconnect());
  assert.equal(db.root().tiberiusState.throws.length,5);assert.equal(db.root().persons[0].strafen.gosse,3);
  assert.equal(db.root().persons[0].strafen.nine,2);assert.equal(db.root().penaltyStatsLog.length,5);
- await a.c.undoLastTiberiusThrow();assert(await a.c.KCSharedSync.waitForUpload());
+ await undo.onclick();assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(db.root().persons[0].strafen.gosse,2);
  assert.equal(db.root().penaltyStatsLog.filter(entry=>entry.type==='gosse').length,2);
  assert(await a.c.startNewKegelabend());assert(await a.c.KCSharedSync.waitForUpload());

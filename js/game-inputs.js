@@ -108,7 +108,7 @@ async function gameNextThrower(key){
  try{
   if(GAME_NEXT_SERVER.has(key))return ['blackjack','gluecksspirale'].includes(key)?tableAction(key,'next'):indAction(key,'next');
   if(key==='sechstage')return sechsRun('next');
-  if(key==='tiberius')return tiberiusMoveThrower(1);
+  if(key==='tiberius')return tiberiusNextThrower();
   if(['tannenbaum','darts'].includes(key)){
    if(key==='darts'&&(pendingDartsPenalty||dartsPenaltyBusy)||key==='tannenbaum'&&(pendingTannenbaumPenaltyThrow||pendingTannenbaumKranzChoice)){
     showToast('Erst die offene Wurfauswahl abschließen.','error');return false;
@@ -166,14 +166,19 @@ function renderGameDashboardButton(key,panel,s){
  next.disabled=!s?.active||!!s?.finished||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
  next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';
  if(key==='tiberius'){
-  let previous=toolbar.querySelector('[data-game-previous]');
-  if(!previous){
-   previous=document.createElement('button');previous.type='button';previous.className='game-next-button';
-   previous.dataset.gamePrevious=key;previous.textContent='⬅ Vorheriger Werfer';previous.onclick=()=>tiberiusMoveThrower(-1);
-   toolbar.insertBefore(previous,toolbar.querySelector('[data-game-pause]')||next);
+  let undo=toolbar.querySelector('[data-game-undo]');
+  if(!undo){
+   undo=document.createElement('button');undo.type='button';undo.className='game-next-button';
+   undo.dataset.gameUndo=key;undo.textContent='↩ Letzten Wurf rückgängig';
+   undo.onclick=async()=>{
+    if(undo.disabled||gameInputBusy[key]||window.KCSharedSync?.inUnit)return;
+    gameInputBusy[key]=true;applyGameInputLayout(key);
+    try{await undoLastTiberiusThrow();}
+    finally{gameInputBusy[key]=false;applyGameInputLayout(key);}
+   };
+   toolbar.insertBefore(undo,toolbar.querySelector('[data-game-pause]')||next);
   }
-  previous.disabled=next.disabled||!!s?.pendingHit;
-  previous.title='Ohne Wurf zum vorherigen Spieler wechseln';
+  undo.disabled=next.disabled||!s?.undoStack?.length;
  }
 }
 

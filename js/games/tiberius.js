@@ -488,12 +488,12 @@ function tiberiusThrower(){
  const names=Array.isArray(tiberiusState.playerOrder)&&tiberiusState.playerOrder.length?tiberiusState.playerOrder:getTiberiusPlayers().map(p=>p.name);
  return names[(Math.max(0,Number(tiberiusState.currentPlayerIndex)||0))%names.length]||'';
 }
-function tiberiusMoveThrower(step){
+function tiberiusNextThrower(){
  ensureTiberiusState();
  const sync=window.KCSharedSync;
  if(!tiberiusState.active||tiberiusState.finished||tiberiusAutoBusy||tiberiusState.pendingHit||sync&&(!sync.ready||sync.inUnit))return false;
  const length=tiberiusState.playerOrder?.length||0;if(!length)return false;
- tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+length+step)%length;
+ tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+1)%length;
  renderAll();persistState();return true;
 }
 async function handleTiberiusThrow(value){
