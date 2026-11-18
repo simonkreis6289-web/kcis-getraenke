@@ -2761,7 +2761,14 @@ async function archiveEvent(snapshot) {
 
 async function startNewKegelabend() {
   if(!ACTIVE_CLUB||!navigator.onLine||!window.firestoreApi?.startNewEvening){showToast('Zum Starten eines neuen Kegelabends bitte verbinden.','error');return false;}
-  if(window.KCSharedSync&&!(await (window.KCSharedSync.waitForUpload?window.KCSharedSync.waitForUpload():window.KCSharedSync.flush()))){showToast('Bitte zuerst die Verbindung und offene Änderungen prüfen.','error');return false;}
+  // Ein Abendwechsel ist erst sicher, wenn die komplette Tablet-Warteschlange
+  // in Firebase bestätigt ist. Das gilt ausdrücklich auch bei direkter TV-Verbindung.
+  if(window.KCSharedSync&&!(await (window.KCSharedSync.waitForUpload?window.KCSharedSync.waitForUpload():window.KCSharedSync.flush()))){
+    const details=window.KCSharedSync.diagnostics?.()||{};
+    const code=details.error?' Firebase: '+details.error:'';
+    showToast('Neuer Kegelabend gesperrt: '+(details.inflightSequence||details.pendingSequence?'Buchungen warten auf Cloudbestätigung.':'Cloudspeicherung noch nicht bestätigt.')+code,'error');
+    return false;
+  }
   if(window.kcEveningResetBusy)return false;window.kcEveningResetBusy=true;
   const club=ACTIVE_CLUB,previous=currentEveningStartedAt||'',backup=JSON.parse(JSON.stringify(getSerializableState())),opId='evening_'+crypto.randomUUID();
   try{

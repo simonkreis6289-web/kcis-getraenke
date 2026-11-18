@@ -65,3 +65,31 @@
 #main-spiele .game-dashboard-toolbar .game-next-button:disabled{opacity:.45;cursor:not-allowed}
 #main-spiele .game-title-with-actions .game-dashboard-button{font-size:clamp(12px,1vw,16px);letter-spacing:0;text-transform:none;padding:8px 12px}
 @media(max-width:800px){#main-spiele .game-title-with-actions>.game-dashboard-toolbar{gap:4px}#main-spiele .game-dashboard-toolbar .game-next-button,#main-spiele .game-title-with-actions .game-dashboard-button{font-size:12px;padding:7px 9px}}
+
+/* V254: zwei gleich hohe, unaufdringliche Aktionen in der Spieltitelzeile. */
+#main-spiele .game-title-with-actions>.game-dashboard-toolbar{
+ display:flex;align-items:stretch;gap:8px;min-height:38px
+}
+#main-spiele .game-title-with-actions .game-dashboard-toolbar .game-next-button,
+#main-spiele .game-title-with-actions .game-dashboard-toolbar .game-dashboard-button{
+ display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+ flex:0 0 auto;min-height:38px;height:38px;min-width:0;margin:0;
+ padding:0 14px;border-radius:8px;border-width:1px;border-style:solid;
+ font-family:inherit;font-size:clamp(12px,1vw,15px);line-height:1.15;
+ font-weight:500!important;letter-spacing:0!important;text-transform:none!important;
+ box-shadow:none;white-space:nowrap;transition:background-color .15s,border-color .15s;
+}
+#main-spiele .game-title-with-actions .game-dashboard-toolbar .game-next-button{
+ background:#def4f2;color:#146065;border-color:#83c9c8;
+}
+#main-spiele .game-title-with-actions .game-dashboard-toolbar .game-next-button:hover:not(:disabled){background:#c9ebe8;box-shadow:none}
+#main-spiele .game-title-with-actions .game-dashboard-toolbar .game-dashboard-button{
+ background:#eaf0fb;color:#243b65;border-color:#a8bad8;
+}
+#main-spiele .game-title-with-actions .game-dashboard-toolbar .game-dashboard-button:hover:not(:disabled){background:#dae6f8;box-shadow:none}
+@media(max-width:800px){
+ #main-spiele .game-title-with-actions .game-dashboard-toolbar .game-next-button,
+ #main-spiele .game-title-with-actions .game-dashboard-toolbar .game-dashboard-button{
+  height:36px;min-height:36px;padding:0 9px;font-size:12px;
+ }
+}

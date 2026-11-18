@@ -66,3 +66,32 @@ test('Poker rankings match engine strength ordering, rendered in app and dashboa
  assert.deepEqual(items.map(x=>x.querySelector('strong').textContent),['Fünfling','Straße','Vierling','Full House','Drilling','Doppelzwilling','Zwilling','Nichts']);
  assert.equal(wrap.querySelectorAll('.classic-table-and-ranking>.poker-ranking-panel').length,1);
 });
+
+
+test('Fuchsjagd clears visible throws on FIRST throw of each new hunter in app and TV, retains whole history and supports undo',async()=>{
+ const {c,document}=fixture();c.startFuchsjagdGame();
+ await c.applyFuchsjagdThrow(6);await c.applyFuchsjagdThrow(6);
+ assert.equal(c.fuchsjagdState.throws.length,2);
+ assert.equal(c.fuchsjagdState.tableStartIndex,0);
+ await c.applyFuchsjagdThrow(1); // hunter B starts
+ assert.equal(c.fuchsjagdState.tableStartIndex,2);
+ assert.equal(c.fuchsjagdState.throws.length,3);
+ assert.equal(document.querySelectorAll('#fuchs-board tbody tr').length,1);
+ assert.equal(document.querySelector('#fuchs-board tbody tr td:nth-child(2)').textContent,'B');
+ assert.equal(c.fuchsjagdState.phase,'fox');
+ await c.applyFuchsjagdThrow(3); // fox A continues; table stays visible
+ assert.equal(document.querySelectorAll('#fuchs-board tbody tr').length,2);
+ assert.equal(c.fuchsjagdState.tableStartIndex,2);
+ await c.applyFuchsjagdThrow(1); // new hunter C clears again
+ assert.equal(c.fuchsjagdState.tableStartIndex,4);
+ assert.equal(c.fuchsjagdState.throws.length,5);
+ assert.equal(document.querySelectorAll('#fuchs-board tbody tr').length,1);
+ await c.undoFuchsjagdThrow(); // recover prior displayed section
+ assert.equal(c.fuchsjagdState.throws.length,4);
+ assert.equal(c.fuchsjagdState.tableStartIndex,2);
+ assert.equal(document.querySelectorAll('#fuchs-board tbody tr').length,2);
+ const tv=read('dashboard.html');
+ const m=tv.slice(tv.indexOf('function renderFuchsjagdBoard('),tv.indexOf('function sichernDashboardThrower('));
+ assert.match(m,/visibleThrows=\(d\.throws\|\|\[\]\)\.slice/);
+ assert.match(m,/d\.tableStartIndex/);
+});
