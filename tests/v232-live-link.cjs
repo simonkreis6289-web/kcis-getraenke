@@ -33,9 +33,76 @@ test('data-channel negotiation, chunk reassembly and backpressure send the lates
  class Channel{constructor(){this.readyState='connecting';this.bufferedAmount=0;}send(data){assert.equal(this.readyState,'open');sent.push(data.length);queueMicrotask(()=>this.other?.onmessage?.({data}));}close(){if(this.readyState==='closed')return;this.readyState='closed';this.onclose?.();}}
  class Peer{constructor(){this.id=String(++id);pcs.set(this.id,this);this.connectionState='new';this.iceGatheringState='complete';}createDataChannel(){return this.channel=new Channel();}async createOffer(){return {type:'offer',sdp:this.id};}async createAnswer(){return {type:'answer',sdp:this.id};}async setLocalDescription(d){this.localDescription=d;}async setRemoteDescription(d){this.remoteDescription=d;this.partner=pcs.get(d.sdp);if(d.type==='offer'){this.channel=new Channel();this.channel.other=this.partner.channel;this.partner.channel.other=this.channel;this.ondatachannel({channel:this.channel});}else{this.channel.readyState=this.partner.channel.readyState='open';this.connectionState=this.partner.connectionState='connected';this.channel.onopen?.();this.partner.channel.onopen?.();}}close(){if(this.connectionState==='closed')return;this.connectionState='closed';this.channel?.close();this.onconnectionstatechange?.();}}
  const w={RTCPeerConnection:Peer},module=new Function('window','crypto','setInterval','clearInterval',read('js/dashboard-link.js')+';return window.KCDashboardLink;')(w,require('node:crypto').webcrypto,fn=>{const key=++id;timers.set(key,fn);return key;},key=>timers.delete(key));let offers,answers,record;const writes=[],api={subscribeDashboardOffers:(_,fn)=>{offers=fn;return ()=>{};},subscribeDashboardAnswer:(_,who,fn)=>{answers=fn;return ()=>{};},sendDashboardSignal:async(_,r)=>{writes.push(r);record=r.action==='offer'?{...r,offer:r.description,expiresAt:Date.now()+120000}:{...record,answer:r.description};if(r.action==='offer')offers([record]);else await answers(record);return true;}};
- const publisher=module.create({role:'publisher',club:'club',api}),frames=[],viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1}),onFrame:f=>frames.push(f)});publisher.publish({persons:[{name:'A'}],currentEveningStartedAt:evening},1,evening);for(const fn of [...timers.values()])fn();for(let n=0;n<8;n++)await tick();assert.equal(frames.at(-1)?.sequence,1);assert.equal(writes.length,2);
+ const publisher=module.create({role:'publisher',club:'club',api}),frames=[],viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1}),onFrame:f=>frames.push(f)});publisher.publish({persons:[{name:'A'}],currentEveningStartedAt:evening},1,evening);for(const fn of [...timers.values()])fn();for(let n=0;n<8;n++)await tick();assert.equal(frames.at(-1)?.sequence,1);assert.equal(writes.length,2);const measurement=await publisher.test();assert.equal(measurement.via,'webrtc');assert(measurement.ms>=0);
  const sending=[...pcs.values()].find(p=>p.remoteDescription?.type==='offer').channel;sending.bufferedAmount=300000;publisher.publish({persons:[{name:'A',avatarData:'x'.repeat(200000)}]},2,evening);publisher.publish({persons:[{name:'A',avatarData:'y'.repeat(200000)}],teamStopwatchRunning:false,menschState:{scores:{A:7}}},3,evening);await tick();assert.equal(frames.at(-1).sequence,1);sending.bufferedAmount=0;sending.onbufferedamountlow();for(let n=0;n<5;n++)await tick();assert.equal(frames.at(-1).sequence,3);assert.equal(frames.at(-1).state.persons[0].avatarData.length,200000);assert.equal(frames.at(-1).state.teamStopwatchRunning,false);assert.equal(frames.at(-1).state.menschState.scores.A,7);assert(sent.length>20);assert(Math.max(...sent)<50000);assert.equal(writes.length,2,'throws and pauses never enter the signaling transaction queue');publisher.close();viewer.close();assert.equal(timers.size,0);
 });
 test('an unavailable peer implementation leaves the existing cloud path usable without an unhandled rejection',async()=>{
  const timers=[],w={RTCPeerConnection:class{constructor(){throw Error('TV does not support peer channels');}}},module=new Function('window','crypto','setInterval','clearInterval',read('js/dashboard-link.js')+';return window.KCDashboardLink;')(w,require('node:crypto').webcrypto,fn=>{timers.push(fn);return timers.length;},()=>{});let offers;const api={subscribeDashboardOffers:(_,fn)=>{offers=fn;return ()=>{};},subscribeDashboardAnswer:()=>()=>{},sendDashboardSignal:async()=>{throw Error('must not write a broken offer');}};const publisher=module.create({role:'publisher',club:'club',api}),viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1})});publisher.publish({persons:[]},1,evening);offers([{viewerId:'viewer',connectionId:'connection',expiresAt:Date.now()+10000,offer:{type:'offer',sdp:'x'}}]);for(const fn of timers)fn();await tick();publisher.close();viewer.close();
+});
+
+test('without WebRTC the TV reports Firebase presence and echoes a real round-trip probe',async()=>{
+ const listeners=new Map(),intervals=new Set(),writes=[];
+ let elapsed=0;
+ const api={
+  subscribeDashboardDiagnostic(club,channel,fn){
+   assert.equal(club,'club');
+   if(!listeners.has(channel))listeners.set(channel,new Set());
+   listeners.get(channel).add(fn);
+   return ()=>listeners.get(channel).delete(fn);
+  },
+  async sendDashboardDiagnostic(club,request){
+   assert.equal(club,'club');
+   writes.push(request.kind);
+   if(request.kind==='pong')elapsed+=37;
+   const channel=request.kind==='presence'?'presence':'probe';
+   for(const fn of listeners.get(channel)||[])fn({...request,expiresAt:Date.now()+15000});
+   return true;
+  }
+ };
+ const window={navigator:{onLine:true},performance:{now:()=>elapsed}};
+ const link=new Function('window','crypto','setInterval','clearInterval',read('js/dashboard-link.js')+';return window.KCDashboardLink;')(
+  window,require('node:crypto').webcrypto,fn=>{intervals.add(fn);return fn;},fn=>intervals.delete(fn));
+ const statuses=[],base=()=>({syncProtocol:1,tabletSequence:0});
+ const publisher=link.create({role:'publisher',club:'club',api,getBase:base,onStatus:value=>statuses.push(value)});
+ const viewer=link.create({role:'viewer',club:'club',api,getBase:base});
+ try{
+  for(const poll of intervals)poll();
+  await tick();
+  assert.equal(statuses.at(-1).mode,'firebase');
+  assert.equal(statuses.at(-1).tvWebrtc,false);
+  assert.equal(statuses.at(-1).direct,false);
+  assert.deepEqual(await publisher.test(),{via:'firebase',route:null,ms:37});
+  assert.deepEqual(writes,['presence','ping','pong']);
+ }finally{publisher.close();viewer.close();}
+});
+
+test('offline reload opens the durable queue and can accept the next booking before Firebase returns',async()=>{
+ const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();
+ db.fail(true);
+ await a.c.changeDrink('A','beer',1);
+ assert.equal(await a.c.KCSharedSync.waitForUpload(),false);
+ const b=fullApp(db);
+ for(const [key,value] of a.storage)b.storage.set(key,value);
+ b.c.navigator.onLine=false;
+ await b.select();
+ assert.equal(b.c.KCSharedSync.ready,true);
+ assert.equal(b.run('persons[0].drinks.beer'),1);
+ await b.c.changeDrink('A','beer',1);
+ assert.equal(b.run('persons[0].drinks.beer'),2);
+ assert.equal(db.root().persons[0].drinks.beer,0);
+ db.fail(false);b.c.navigator.onLine=true;
+ assert(await b.c.KCSharedSync.reconnect());
+ assert.equal(db.root().persons[0].drinks.beer,2);
+ assert(Number.isFinite(b.c.KCSharedSync.diagnostics().lastConfirmedAt));
+});
+
+test('older TV build has the same dashboard shell and parses as an ES2018 application',()=>{
+ const {parse}=require('acorn'),modern=read('dashboard.html'),older=read('dashboard-compat.html');
+ const withoutScripts=html=>html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace(/\s+/g,' ').trim();
+ assert.equal(withoutScripts(older),withoutScripts(modern));
+ for(const name of ['polyfills','firebase','dashboard']){
+  assert.match(older,new RegExp('src="tv-compat/'+name+'\\.js'));
+  assert.doesNotThrow(()=>parse(read('tv-compat/'+name+'.js'),{ecmaVersion:2018}));
+ }
+ assert.match(modern,/dashboard-compat\.html/);
 });

@@ -97,3 +97,25 @@
   text-overflow: ellipsis;
   overflow: hidden;
 }
+
+#shared-sync-status { --tv-dot:#cbd5e1; }
+#shared-sync-status[data-tv-mode='direct'] { --tv-dot:#4ade80; }
+#shared-sync-status[data-tv-mode='firebase'],
+#shared-sync-status[data-tv-mode='relay'] { --tv-dot:#facc15; }
+#shared-sync-status[data-tv-mode='disconnected'] { --tv-dot:#ff6369; }
+.shared-sync-indicator::before {
+  content: '';
+  flex: 0 0 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tv-dot);
+  box-shadow: 0 0 0 2px #ffffff26;
+}
+.dashboard-connection-diagnostics {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 5px 18px;
+  margin: 0 0 12px;
+}
+.dashboard-connection-diagnostics dt { font-weight: 600; }
+.dashboard-connection-diagnostics dd { margin: 0; }

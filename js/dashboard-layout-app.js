@@ -112,6 +112,18 @@
    makeTestButton('■ Testspiel beenden','dashboard-demo-stop',()=>{draft.football.demo=null;});
   }
   box.append(demoRow);
+  box=section('connection','Verbindungsdiagnose');
+  const diagnostics=element('dl',undefined,'dashboard-connection-diagnostics');
+  for(const [field,label] of [['transport','Übertragungsweg'],['tablet','WebRTC am Tablet'],['tv','WebRTC am TV'],
+   ['path','Netzwerkpfad'],['cloud','Firebase'],['pending','Ausstehende Schreibvorgänge'],['confirmed','Letzte bestätigte Speicherung']]){
+   const value=element('dd','—');value.dataset.syncDiagnostic=field;diagnostics.append(element('dt',label),value);
+  }
+  const test=element('button','Verbindung testen','secondary-btn');
+  test.id='dashboard-connection-test';test.type='button';test.disabled=true;
+  test.onclick=()=>window.KCTabletSync?.testConnection();
+  const measurement=element('p','Noch nicht gemessen.');measurement.id='dashboard-connection-result';measurement.setAttribute('role','status');
+  box.append(diagnostics,test,measurement);
+  window.KCTabletSync?.status();
   const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');frame.append(actions,status);
  }
  function render(){const box=host();if(!box)return;const value=typeof dashboardSettings==='undefined'?null:dashboardSettings,next=String(typeof ACTIVE_CLUB==='undefined'?'':ACTIVE_CLUB)+'|'+JSON.stringify(value);if(next===stamp&&draft)return;stamp=next;draft=M.resolve(value).settings;draw();}

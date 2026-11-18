@@ -13,18 +13,55 @@
       })]);
     }finally{clearTimeout(deadline);}
   }
+  const tvLabels={direct:'TV direkt verbunden',relay:'TV über WebRTC-Relay verbunden',firebase:'TV über Firebase verbunden',connecting:'TV verbindet …',disconnected:'TV nicht verbunden'};
+  const tvMode=()=>current?.linkStatus?.mode||'connecting';
+  const pendingWrites=s=>[s?.inflight,s?.pending].reduce((count,batch)=>count+(batch?1+batch.documents.length:0),0);
+  let connectionMeasurement=null;
+  function updateDiagnostic(cloud){
+    const link=current?.linkStatus;
+    const support=value=>value===true?'Verfügbar':value===false?'Nicht verfügbar':'Noch unbekannt';
+    const routes={local:'Lokaler WebRTC-Pfad',peer:'WebRTC über einen Netzwerkpfad',relay:'WebRTC über Relay',unknown:'WebRTC-Pfad nicht ermittelbar',browser:'Direkt im selben Browser'};
+    const data={
+      transport:tvLabels[tvMode()],tablet:support(typeof window.RTCPeerConnection==='function'),
+      tv:support(link?.tvWebrtc),path:routes[link?.route]||(tvMode()==='firebase'?'Firebase':'—'),
+      cloud,pending:String(pendingWrites(current)),
+      confirmed:current?.lastConfirmedAt?new Date(current.lastConfirmedAt).toLocaleString('de-DE'):'—'
+    };
+    for(const [key,value] of Object.entries(data)){
+      const field=document.querySelector('[data-sync-diagnostic="'+key+'"]');
+      if(field&&field.textContent!==value)field.textContent=value;
+    }
+    const button=document.getElementById('dashboard-connection-test');
+    if(!button)return;
+    button.disabled=!current?.link?.test||connectionMeasurement?.running===true;
+    const result=document.getElementById('dashboard-connection-result');
+    const message=connectionMeasurement?.message||'Noch nicht gemessen.';
+    if(result&&result.textContent!==message)result.textContent=message;
+  }
+  async function testConnection(){
+    const session=current;
+    if(!session?.link?.test||connectionMeasurement?.running)return;
+    const measurement={running:true,message:'Warte auf Antwort vom TV …'};connectionMeasurement=measurement;status();
+    const result=await session.link.test().catch(()=>null);
+    if(session!==current||connectionMeasurement!==measurement)return;
+    const names={webrtc:'WebRTC',browser:'gleicher Browser',firebase:'Firebase'};
+    connectionMeasurement={running:false,message:result?Math.round(result.ms)+' ms hin und zurück · '+names[result.via]:'Keine Antwort vom TV erhalten.'};
+    status();
+  }
   function status(){
     const el=document.getElementById('shared-sync-status');
     if(!el)return;
-    const count=Number(!!current?.inflight)+Number(!!current?.pending),direct=!!current?.linkStatus?.direct;
+    const count=Number(!!current?.inflight)+Number(!!current?.pending),tv=tvLabels[tvMode()];
     const offline=!navigator.onLine,error=String(current?.error||'');
     el.dataset.mode=offline?'offline':error?'error':!ready?'blocked':count?'saving':'ready';
     const cloud=offline?'Cloud offline':error?'Cloudspeicherung ausstehend':!ready?'Tablet lädt den gespeicherten Stand …':count?'Cloudspeicherung läuft …':'Cloudspeicherung bestätigt';
-    const label=direct?'TV direkt verbunden · '+cloud:cloud;
+    el.dataset.tvMode=tvMode();
+    updateDiagnostic(cloud);
+    const label=tv+' · '+cloud;
     const indicator=el.querySelector('summary');
     indicator.title=label;
-    el.querySelector('.shared-sync-caption').textContent=direct?'TV direkt · '+cloud:cloud;
-    indicator.setAttribute('aria-label','Cloud-Status: '+label);
+    el.querySelector('.shared-sync-caption').textContent=label;
+    indicator.setAttribute('aria-label',label);
     el.querySelector('.shared-sync-label').textContent=label;
     const detail=el.querySelector('.shared-sync-error-details');
     detail.textContent=[error?'Firebase: '+error.slice(0,250):'',count?`${count} ausstehende Übertragung${count===1?'':'en'} · lokal gespeichert`:''].filter(Boolean).join(' · ');
@@ -43,10 +80,19 @@
       else manual();
     };
   }
-  function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight}));}
+  function store(s){localStorage.setItem(key(s.club),JSON.stringify({seq:s.seq,pending:s.pending,inflight:s.inflight,lastConfirmedAt:s.lastConfirmedAt||null}));}
   function cache(){try{if(typeof syncCurrentClubToStore==='function'){syncCurrentClubToStore();saveClubSystem();}}catch{/* Die dauerhafte Übertragungswarteschlange bleibt maßgeblich. */}}
   function project(state,render=false){
     const old=isApplyingRemoteState;try{isApplyingRemoteState=true;const previousPeople=new Map(persons.map(p=>[C.norm(p.name),p]));applyLoadedState(C.clone(state));persons=persons.map(p=>{const old=previousPeople.get(C.norm(p.name));if(!old)return p;for(const k of Object.keys(old))if(!Object.hasOwn(p,k))delete old[k];return Object.assign(old,p);});livePersonCounters.clear();for(const p of state.persons||[])livePersonCounters.set(p.name,C.clone(p));liveCountersReady=true;if(render)renderAll();cache();}finally{isApplyingRemoteState=old;}
+  }
+  function publish(s){
+    const content={};
+    for(const batch of [s.inflight,s.pending])for(const row of batch?.documents||[]){
+      const prefix='clubs/'+s.club+'/documents/';
+      const kind=row.path.startsWith(prefix)?row.path.slice(prefix.length):'';
+      if(['notes','statutes','penalties'].includes(kind))content[kind]=row.deleted?null:row.value;
+    }
+    s.link?.publish(s.root,s.seq,s.cloudEvening,content);
   }
   function stage(state,docs=[]){
     const s=current;if(!ready||!s)return false;
@@ -56,12 +102,12 @@
     const predecessor=s.inflight;
     s.seq++;s.root={...state,tabletSequence:s.seq};s.pending={sequence:s.seq,opId:id(),baseSequence:predecessor?.sequence??s.cloudSequence,expectedEvening:predecessor?predecessor.state.currentEveningStartedAt||'':s.cloudEvening,state:C.clean(s.root),documents:[...merged.values()]};
     try{store(s);}catch(error){s.seq=previous.seq;s.pending=previous.pending;s.root=previous.root;throw Error('Tablet-Speicher voll. Buchung wurde nicht übernommen.');}
-    server=s.root;s.link?.publish(s.root,s.seq,s.cloudEvening);cache();status();clearTimeout(timer);
-    timer=setTimeout(()=>{if(Date.now()>=(s.nextRetryAt||0))void drain(s);},40);return true;
+    server=s.root;publish(s);cache();status();clearTimeout(timer);
+    timer=setTimeout(()=>{if(!s.retryStopped&&Date.now()>=(s.nextRetryAt||0))void drain(s);},40);return true;
   }
   async function drain(s,force=false){
     if(s.uploading)return s.uploading;
-    if(!force&&Date.now()<(s.nextRetryAt||0))return false;
+    if(!force&&(s.retryStopped||Date.now()<(s.nextRetryAt||0)))return false;
     s.uploading=Promise.resolve().then(async()=>{
       while(s.inflight||s.pending){
         if(!navigator.onLine){s.error='Tablet ist offline';break;}
@@ -73,27 +119,64 @@
           const ctx={method:'commitTabletBatch',opId:batch.opId,eveningStartedAt:batch.expectedEvening??s.cloudEvening??'',base:{},sideOperations:[],metaBase:{}};
           const confirmed=await cloudRequest(raw.commitTabletBatch(s.club,batch,ctx));
           if(confirmed?.sequence!==batch.sequence)throw Error('Firebase hat diese Übertragung nicht bestätigt.');
-          s.inflight=null;
-          try{store(s);}catch(error){s.inflight=batch;throw error;}
-          s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.retryFailures=0;s.nextRetryAt=0;
-        }catch(error){s.retryFailures=(s.retryFailures||0)+1;s.error=(error?.code?'['+error.code+'] ':'')+String(error?.message||error);s.nextRetryAt=Date.now()+Math.min(300000,5000*Math.pow(2,Math.min(6,s.retryFailures-1)));console.error('Tablet-Cloudspeicherung gescheitert (lokale Warteschlange bleibt erhalten):',error);break;}
+          const previousConfirmedAt=s.lastConfirmedAt;s.inflight=null;s.lastConfirmedAt=Date.now();
+          try{store(s);}catch(error){s.inflight=batch;s.lastConfirmedAt=previousConfirmedAt;throw error;}
+          s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
+        }catch(error){
+          s.retryFailures=(s.retryFailures||0)+1;
+          s.error=(error?.code?'['+error.code+'] ':'')+String(error?.message||error);
+          s.retryStopped=['permission-denied','unauthenticated','sync-conflict','invalid-argument','failed-precondition'].includes(error?.code);
+          s.nextRetryAt=s.retryStopped?0:Date.now()+Math.min(300000,5000*Math.pow(2,Math.min(6,s.retryFailures-1)));
+          console.error('Tablet-Cloudspeicherung gescheitert (lokale Warteschlange bleibt erhalten):',error);
+          break;
+        }
       }
       return !s.inflight&&!s.pending;
     }).finally(()=>{s.uploading=null;if(s===current)status();});
     return s.uploading;
   }
-  function begin(club){current?.link?.close();ready=false;current=sessions.get(club)||{club,root:null,seq:0,pending:null,inflight:null,uploading:null,error:'',docCache:new Map()};sessions.set(club,current);unit=null;status();}
+  function begin(club){
+    current?.link?.close();ready=false;connectionMeasurement=null;
+    current=sessions.get(club)||{club,root:null,seq:0,pending:null,inflight:null,uploading:null,error:'',docCache:new Map()};
+    sessions.set(club,current);current.linkStatus=null;unit=null;status();
+  }
+  function activate(s,root){
+    s.root={...C.clone(root),syncProtocol:1};server=s.root;ready=true;
+    for(const batch of [s.inflight,s.pending])for(const row of batch?.documents||[])s.docCache.set(row.path,row.deleted?null:C.clone(row.value));
+    s.link?.close();
+    s.link=window.KCDashboardLink?.create({role:'publisher',club:s.club,api:raw,getBase:()=>s.root,onStatus:value=>{s.linkStatus=value;if(current===s)status();}});
+    publish(s);
+    project(s.root,true);
+  }
   async function prepare(club,defaults){
-    if(current?.club!==club)begin(club);const s=current;
+    if(current?.club!==club)begin(club);
+    const s=current;
+    let outbox;
     try{
-      const saved=C.normalizeGameData(await cloudRequest(raw.initializeSharedState(club,defaults,id())));if(current!==s)return false;
+      outbox=C.normalizeGameData(JSON.parse(localStorage.getItem(key(club))||'null'));
+      if(!navigator.onLine)throw Error('Tablet ist offline');
+      const saved=C.normalizeGameData(await cloudRequest(raw.initializeSharedState(club,defaults,id())));
+      if(current!==s)return false;
       s.cloudEvening=saved.currentEveningStartedAt||'';s.cloudSequence=Number(saved.tabletSequence)||0;
-      const outbox=C.normalizeGameData(JSON.parse(localStorage.getItem(key(club))||'null'));
       s.seq=Math.max(s.cloudSequence,Number(outbox?.seq)||0);
+      s.lastConfirmedAt=outbox?.lastConfirmedAt||null;
       if(!s.uploading){s.inflight=outbox?.inflight||null;s.pending=outbox?.pending||null;}
-      for(const batch of [s.inflight,s.pending])for(const row of batch?.documents||[])s.docCache.set(row.path,row.deleted?null:C.clone(row.value));
-      s.root=C.clone(s.pending?.state||s.inflight?.state||saved);server=s.root;ready=true;s.link?.close();s.link=window.KCDashboardLink?.create({role:'publisher',club,api:raw,getBase:()=>s.root,onStatus:value=>{s.linkStatus=value;if(current===s)status();}});s.link?.publish(s.root,s.seq,s.cloudEvening);project(s.root,true);store(s);s.error='';status();void drain(s);return true;
-    }catch(error){if(current!==s)return false;s.error=error.message;ready=false;status();toast('Gespeicherter Stand konnte nicht geladen werden: '+error.message);return false;}
+      s.error='';activate(s,s.pending?.state||s.inflight?.state||saved);store(s);status();void drain(s);return true;
+    }catch(error){
+      if(current!==s)return false;
+      s.error=error.message;
+      const batch=outbox?.pending||outbox?.inflight;
+      if(!ready&&batch?.state&&Number.isSafeInteger(batch.sequence)&&batch.sequence>0&&Array.isArray(batch.documents)){
+        s.pending=outbox.pending||null;s.inflight=outbox.inflight||null;
+        const first=s.inflight||s.pending;
+        s.cloudSequence=first.baseSequence||0;s.cloudEvening=first.expectedEvening||'';
+        s.seq=Math.max(batch.sequence,Number(outbox.seq)||0);
+        s.lastConfirmedAt=outbox.lastConfirmedAt||null;
+        activate(s,batch.state);
+        status();void drain(s);return true;
+      }
+      ready=false;status();toast('Gespeicherter Stand konnte nicht geladen werden: '+error.message);return false;
+    }
   }
   function preview(before){
     const targetClub=current.club,knownDocs=current.docCache,root='clubs/'+targetClub+'/state/current',data=new Map([[root,C.clone(before)]]),writes=new Map();
@@ -197,11 +280,11 @@
     }
   }
 
-  window.KCTabletSync=Object.freeze({install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},status,get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
+  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
   document.addEventListener('click',e=>{if(ready&&!unit)return;if(e.target?.closest?.('#shared-sync-status,.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
   window.addEventListener('online',()=>{status();void reconnect();});
   window.addEventListener('offline',()=>{if(current?.pending||current?.inflight)current.error='Tablet ist offline';status();});
-  setInterval(()=>{for(const s of sessions.values())if((s.error||s.pending)&&Date.now()>=(s.nextRetryAt||0))void drain(s);},5000);
+  setInterval(()=>{for(const s of sessions.values())if(!s.retryStopped&&(s.error||s.pending)&&Date.now()>=(s.nextRetryAt||0))void drain(s);},5000);
   // Zeitanker für laufende Spieluhren auffrischen.
   setInterval(()=>{
     if(!ready||unit||!navigator.onLine)return;
