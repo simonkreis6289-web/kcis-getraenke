@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const src=fs.readFileSync(path.join(__dirname,'../js/football-live.js'),'utf8');
-const instant=()=>({matchID:1,matchDateTimeUTC:new Date().toISOString(),leagueShortcut:'bl2',team1:{shortName:'B'},team2:{shortName:'C'},matchResults:[],goals:[]});
+const instant=()=>({matchID:1,matchDateTimeUTC:new Date(Date.now()+60000).toISOString(),leagueShortcut:'bl2',team1:{shortName:'B'},team2:{shortName:'C'},matchResults:[],goals:[]});
 function fixture(fetch){
  const events=[];
  const ctx={window:{},document:{hidden:false},Date,Event:class{constructor(type){this.type=type;}},AbortController,setTimeout:(fn)=>42,clearTimeout(){},setInterval:()=>31,
@@ -8,11 +8,12 @@ function fixture(fetch){
  ctx.window=ctx;ctx.dispatchEvent=()=>{};vm.createContext(ctx);vm.runInContext(src,ctx);
  return {app:ctx.KCFootballLive,events};
 }
-test('Bulndesliga: failed league retries do not prevent the other league from loading',async()=>{
+test('Bundesliga: a pending league request does not prevent the other league from loading',async()=>{
  const calls=[];
+ let rejectFirstLeague;
  const f=fixture(async url=>{
   calls.push(url);
-  if(url.includes('/getcurrentgroup/bl1'))throw TypeError('Failed to fetch');
+  if(url.includes('/getcurrentgroup/bl1'))return new Promise((_,reject)=>{rejectFirstLeague=reject;});
   if(url.includes('/getcurrentgroup/bl2'))return {ok:true,json:async()=>({groupOrderID:10})};
   if(url.includes('/getlastchangedate/bl2'))return {ok:true,json:async()=>('2026-11-18')};
   if(url.includes('/getmatchdata/bl2'))return {ok:true,json:async()=>[instant()]};
@@ -22,6 +23,9 @@ test('Bulndesliga: failed league retries do not prevent the other league from lo
  for(let i=0;i<10&&!f.app.ticker().length;i++)await new Promise(r=>setImmediate(r));
  assert.equal(f.app.ticker().length,1);
  assert.match(f.app.ticker()[0][1],/2\. BL/);
+ assert.equal(f.app.status().bl1,undefined);
+ rejectFirstLeague(TypeError('Failed to fetch'));
+ await new Promise(r=>setImmediate(r));
  assert.equal(f.app.status().bl1.tries,1);
  assert.equal(f.app.status().bl2,undefined);
 });

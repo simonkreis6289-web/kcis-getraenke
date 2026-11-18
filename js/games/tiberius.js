@@ -497,6 +497,8 @@ async function handleTiberiusThrow(value){
   const pending=tiberiusState.pendingHit,last=tiberiusState.throws?.at(-1),who=last?.thrower;
   if(!who||!tiberiusState.playerOrder.includes(who)){showToast('Alter Zieltreffer ohne sicheren Werfer. Bitte den letzten Wurf rückgängig machen und erneut buchen.','error');return;}
   tiberiusState.penalties[pending.colIndex]={...pending,thrower:who,payers:pending.mode==='exact'?tiberiusState.playerOrder.filter(n=>n!==who):[who],amount:Number(pending.target)/100};
+  const undo=tiberiusState.undoStack?.at(-1);
+  if(undo?.hitColumns&&!undo.hitColumns.includes(pending.colIndex))undo.hitColumns.push(pending.colIndex);
   tiberiusState.pendingHit=null;
   tiberiusState.currentPlayerIndex=((Number(tiberiusState.currentPlayerIndex)||0)+1)%tiberiusState.playerOrder.length;
   closeTiberiusHitModal();renderAll();persistState();showToast('🏛️ Offenen Zieltreffer übernommen. Bitte den nächsten Wurf jetzt eingeben.','success');return;
@@ -518,12 +520,9 @@ async function handleTiberiusThrow(value){
  const hits=(tiberiusState.targets||[]).map((target,colIndex)=>({target:Number(target),colIndex}))
   .filter(({target,colIndex})=>target>0&&oldScore<target&&newScore>=target&&!tiberiusState.penalties?.[colIndex])
   .sort((a,b)=>a.target-b.target);
- const snapshots={
-  score:tiberiusState.score,throws:JSON.parse(JSON.stringify(tiberiusState.throws||[])),
-  penalties:JSON.parse(JSON.stringify(tiberiusState.penalties||{})),currentPlayerIndex:tiberiusState.currentPlayerIndex,
-  pendingHit:null,bookedChanges:changes.map(x=>({...x})),
-  penaltyStatsLog:JSON.parse(JSON.stringify(penaltyStatsLog||[]))
- };
+ const undo={score:oldScore,throwCount:tiberiusState.throws.length,
+  hitColumns:hits.map(hit=>hit.colIndex),currentPlayerIndex:Number(tiberiusState.currentPlayerIndex)||0,
+  bookedChanges:changes};
  tiberiusAutoBusy=true;
  try{
   if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'🏛️ Tiberius: Sonderwurf')))return;
@@ -536,10 +535,10 @@ async function handleTiberiusThrow(value){
   }
   tiberiusState.pendingHit=null;
   tiberiusPendingThrower=null;
-  tiberiusState.currentPlayerIndex=(snapshots.currentPlayerIndex+1)%list.length;
-  (tiberiusState.undoStack||(tiberiusState.undoStack=[])).push(snapshots);
+  tiberiusState.currentPlayerIndex=(undo.currentPlayerIndex+1)%list.length;
   if((value===9||value===12||value==='durchgeworfen')&&typeof addPenaltyStatsEntry==='function')
-   addPenaltyStatsEntry(value===9?'9er':value===12?'Kranz':'durchgeworfen',thrower,changes.map(x=>x.personName));
+   undo.penaltyStatId=addPenaltyStatsEntry(value===9?'9er':value===12?'Kranz':'durchgeworfen',thrower,changes.map(x=>x.personName))?.id||null;
+  (tiberiusState.undoStack||(tiberiusState.undoStack=[])).push(undo);
   closeTiberiusThrowModal();closeTiberiusThrowerModal();closeTiberiusHitModal();
   renderAll();persistState();
   showToast(hits.length?'🏛️ '+hits.map(x=>'Ziel '+x.target).join(', ')+' gebucht · '+thrower:'🎳 '+thrower+' · '+scored+' Holz','success');
@@ -551,17 +550,24 @@ async function undoLastTiberiusThrow(){
  if(tiberiusAutoBusy||!tiberiusState.active)return;
  const last=tiberiusState.undoStack?.at(-1);
  if(!last){showToast('Kein Tiberius-Wurf zum Rückgängig machen','error');return;}
+ if(last.legacyUnverified){showToast('Die Strafe dieses alten Wurfs lässt sich nicht eindeutig zuordnen. Der Spielstand bleibt erhalten.','error');return;}
  tiberiusAutoBusy=true;
  try{
   const changes=(last.bookedChanges||[]).map(x=>({...x,delta:-x.delta}));
-  if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'↩ Tiberius: Sonderwurf rückgängig')))return;
+  if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'↩ Tiberius: Sonderwurf rückgängig',{reverse:true})))return;
   tiberiusState.undoStack.pop();
   tiberiusState.score=last.score;
-  tiberiusState.throws=last.throws;
-  tiberiusState.penalties=last.penalties;
+  if(Number.isInteger(last.throwCount)){
+   tiberiusState.throws.length=last.throwCount;
+   for(const column of last.hitColumns)delete tiberiusState.penalties[column];
+  }else{
+   tiberiusState.throws=last.throws;
+   tiberiusState.penalties=last.penalties;
+  }
   tiberiusState.currentPlayerIndex=last.currentPlayerIndex;
   tiberiusState.pendingHit=null;tiberiusPendingThrower=null;
-  penaltyStatsLog=last.penaltyStatsLog||penaltyStatsLog;
+  if(last.penaltyStatId)penaltyStatsLog=penaltyStatsLog.filter(entry=>entry.id!==last.penaltyStatId);
+  else if(last.penaltyStatsLog)penaltyStatsLog=last.penaltyStatsLog;
   closeTiberiusThrowModal();closeTiberiusThrowerModal();closeTiberiusHitModal();
   renderAll();persistState();showToast('↩ Letzten Tiberius-Wurf zurückgenommen','success');
  }finally{tiberiusAutoBusy=false;}

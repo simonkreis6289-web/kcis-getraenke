@@ -18,7 +18,7 @@ function indToggle(key,index){if(indBusy[key]||indPending[key])return;const name
 function indMove(key,index,delta){if(indBusy[key]||indPending[key])return;const d=indDraft(key),next=index+delta;if(next<0||next>=d.names.length)return;[d.names[index],d.names[next]]=[d.names[next],d.names[index]];renderIndividualGame(key);}
 async function indRun(key,action,fields={}){
  if(!IND_KEYS.includes(key)||indBusy[key]||!ACTIVE_CLUB)return;
- if(!navigator.onLine||!window.firestoreApi?.transactIndividualGame){showToast('Zum Spielen bitte verbinden','error');return;}
+ if((!navigator.onLine&&!window.KCTabletSync?.ready)||!window.firestoreApi?.transactIndividualGame){showToast('Zum Spielen bitte verbinden','error');return;}
  const club=ACTIVE_CLUB;if(indPending[key]?.club!==club)indPending[key]=null;
  if(!indPending[key])indPending[key]={club,request:{gameKey:key,gameId:fields.gameId||indGet(key).id,expectedRevision:indGet(key).revision,opId:'ind_'+crypto.randomUUID(),now:new Date().toISOString(),eveningStartedAt:currentEveningStartedAt||'',clubName:club,action,...fields,...(action==='start'?{onTop:window.KCGameOptionsApp?.selected(key)===true}:{})}};
  const pending=indPending[key];indBusy[key]=true;renderIndividualGame(key);let rejected=false;

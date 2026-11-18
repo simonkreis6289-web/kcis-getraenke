@@ -17,7 +17,7 @@ test('fox race: each participant runs once, killed fox stays at station, only sh
  assert.deepEqual([...c.fuchsjagdState.order],['A','B','C']);
  assert.equal(c.fuchsjagdState.fox,'A');
  // Fox A begins with 1+1, hunter B catches with 3 -> station 1.
- await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(3);await c.applyFuchsjagdThrow(9);
+ await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(3);
  assert.equal(c.fuchsjagdState.fox,'B');assert.equal(c.fuchsjagdState.results[0].station,1);
  // Fox B survives A, then is caught by C -> station 2.
  await c.applyFuchsjagdThrow(4);await c.applyFuchsjagdThrow(4);await c.applyFuchsjagdThrow(1);
@@ -25,9 +25,9 @@ test('fox race: each participant runs once, killed fox stays at station, only sh
  await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(9);
  assert.equal(c.fuchsjagdState.fox,'C');assert.equal(c.fuchsjagdState.results[1].station,2);
  // Fox C survives both hunters.
- await c.applyFuchsjagdThrow(9);await c.applyFuchsjagdThrow(9);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);
+ await c.applyFuchsjagdThrow(9);await c.applyFuchsjagdThrow(9);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);
  assert(c.fuchsjagdState.finished);assert.deepEqual(JSON.parse(JSON.stringify(c.fuchsjagdState.results.map(r=>r.station))),[1,2,3]);
- assert.deepEqual(c.finalCharges.map(x=>x.personName),['A']);
+ assert.deepEqual(Array.from(c.finalCharges,x=>x.personName),['A']);
  assert.equal(c.finalCharges[0].key,'loser');
  assert.equal(c.result.key,'fuchsjagd');
 });
@@ -35,7 +35,8 @@ test('fox race undo across fox change restores prior fox, previous score and spe
  const {c,reverse}=fixture();c.startFuchsjagdGame();
  await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(1);await c.applyFuchsjagdThrow(0);
  assert.equal(c.fuchsjagdState.fox,'A');
- await c.applyFuchsjagdThrow(3);
+ await c.applyFuchsjagdThrow(1); // fox adds before the next hunter
+ await c.applyFuchsjagdThrow(4);
  assert.equal(c.fuchsjagdState.fox,'B');
  await c.undoFuchsjagdThrow();
  assert.equal(c.fuchsjagdState.fox,'A');

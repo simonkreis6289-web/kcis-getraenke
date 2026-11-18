@@ -30,6 +30,35 @@
     for(const [k,v] of Object.entries(x))out[k]=k==='rankingGroups'&&Array.isArray(v)
       ?v.map(group=>Array.isArray(group)?{names:normalizeGameData(group)}:normalizeGameData(group))
       :normalizeGameData(v);
+    const tiberius=out.tiberiusState;
+    if(Array.isArray(tiberius?.undoStack)&&Array.isArray(tiberius.throws)&&Array.isArray(out.penaltyStatsLog)){
+      const stack=tiberius.undoStack,players=tiberius.playerOrder?.length||1;
+      if(tiberius.active&&!Number.isInteger(tiberius.currentPlayerIndex))tiberius.currentPlayerIndex=tiberius.throws.length%players;
+      tiberius.undoStack=stack.map((undo,index)=>{
+        if(!Array.isArray(undo.throws)||!Array.isArray(undo.penaltyStatsLog)||!undo.penalties)return undo;
+        const roll=tiberius.throws[undo.throws.length];
+        if(!roll)return undo;
+        const {throws,penalties,penaltyStatsLog,personsStrafen,...rest}=undo;
+        if(!equal(throws,tiberius.throws.slice(0,throws.length)))return undo;
+        const laterPenalties=stack[index+1]?.penalties||tiberius.penalties||{};
+        const hitColumns=Object.keys(laterPenalties).filter(column=>!own(penalties,column)).map(Number);
+        const laterLog=stack[index+1]?.penaltyStatsLog||out.penaltyStatsLog;
+        const priorIds=new Set(penaltyStatsLog.map(entry=>entry.id));
+        const type=({9:'9er',12:'Kranz',durchgeworfen:'durchgeworfen'})[roll.rawValue];
+        const special=!!type||roll.rawValue===0;
+        const stat=type&&laterLog.findLast(entry=>!priorIds.has(entry.id)&&entry.type===type&&entry.thrower===roll.thrower&&entry.createdAt>=roll.createdAt&&(!undo.bookedChanges||equal(entry.punished,undo.bookedChanges.map(change=>change.personName))));
+        let bookedChanges=undo.bookedChanges,legacyUnverified=false;
+        if(special&&!bookedChanges){
+          const key=out.STRAFEN?.find(x=>type?/9er|kranz|durchgeworfen/i.test(x.label):/gosse|pudel/i.test(x.label)&&!/könig|koenig/i.test(x.label))?.key;
+          const names=type?stat?.punished:[roll.thrower];
+          const laterPeople=stack[index+1]?.personsStrafen||out.persons;
+          if(key&&names?.every(name=>name&&Number(laterPeople?.find(p=>p.name===name)?.strafen?.[key]||0)>Number(personsStrafen?.find(p=>p.name===name)?.strafen?.[key]||0)))
+            bookedChanges=names.map(personName=>({personName,category:'strafen',key,delta:1}));
+          else legacyUnverified=!!roll.thrower;
+        }
+        return {...rest,throwCount:throws.length,hitColumns,penaltyStatId:stat?.id||null,bookedChanges:bookedChanges||[],currentPlayerIndex:undo.currentPlayerIndex??throws.length%players,...(legacyUnverified?{legacyUnverified}:{})};
+      });
+    }
     return out;
   }
   function identity(list,path){

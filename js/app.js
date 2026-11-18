@@ -2761,6 +2761,10 @@ async function archiveEvent(snapshot) {
 
 async function startNewKegelabend() {
   if(!ACTIVE_CLUB||!navigator.onLine||!window.firestoreApi?.startNewEvening){showToast('Zum Starten eines neuen Kegelabends bitte verbinden.','error');return false;}
+  if(window.kcEveningResetBusy)return false;
+  window.kcEveningResetBusy=true;
+  const club=ACTIVE_CLUB;
+  try{
   // Ein Abendwechsel ist erst sicher, wenn die komplette Tablet-Warteschlange
   // in Firebase bestätigt ist. Das gilt ausdrücklich auch bei direkter TV-Verbindung.
   if(window.KCSharedSync&&!(await (window.KCSharedSync.waitForUpload?window.KCSharedSync.waitForUpload():window.KCSharedSync.flush()))){
@@ -2769,8 +2773,8 @@ async function startNewKegelabend() {
     showToast('Neuer Kegelabend gesperrt: '+(details.inflightSequence||details.pendingSequence?'Buchungen warten auf Cloudbestätigung.':'Cloudspeicherung noch nicht bestätigt.')+code,'error');
     return false;
   }
-  if(window.kcEveningResetBusy)return false;window.kcEveningResetBusy=true;
-  const club=ACTIVE_CLUB,previous=currentEveningStartedAt||'',backup=JSON.parse(JSON.stringify(getSerializableState())),opId='evening_'+crypto.randomUUID();
+  if(ACTIVE_CLUB!==club)return false;
+  const previous=currentEveningStartedAt||'',backup=JSON.parse(JSON.stringify(getSerializableState())),opId='evening_'+crypto.randomUUID();
   try{
     // Vor allen Löschungen den abgeschlossenen Abend für die Statistik sichern.
     archiveCurrentKegelabendForStats();
@@ -2789,9 +2793,9 @@ async function startNewKegelabend() {
     if(ACTIVE_CLUB===club&&result?.state)applyLoadedState(result.state);
     if(ACTIVE_CLUB!==club)return true;
     for(const p of persons)livePersonCounters.set(p.name,{drinks:{...p.drinks},strafen:{...p.strafen},rounds:[],freeStrafen:[],...getLivePersonStatusPayload(p)});
-    localStorage.removeItem(getBahnStoppedKey());renderAll();persistState();showToast('🆕 Neuer Kegelabend gestartet · alle Spiele geleert','success');return true;
-  }catch(error){if(ACTIVE_CLUB===club){try{const confirmed=await window.firestoreApi.loadClubState(getClubFirestoreId(club));if(confirmed?.eveningResetOp===opId){applyLoadedState(confirmed);renderAll();persistState();showToast('🆕 Neuer Kegelabend gestartet · alle Spiele geleert','success');return true;}}catch{}applyLoadedState(backup);renderAll();persistState();showToast('Kegelabend konnte nicht gestartet werden: '+error.message,'error');}return false;}
-  finally{window.kcEveningResetBusy=false;}
+    localStorage.removeItem(getBahnStoppedKey());renderAll();persistState();showToast(window.KCTabletSync?'🆕 Neuer Kegelabend lokal gestartet · Cloud-Abgleich läuft':'🆕 Neuer Kegelabend gestartet · alle Spiele geleert','success');return true;
+  }catch(error){if(ACTIVE_CLUB===club){if(!window.KCTabletSync){try{const confirmed=await window.firestoreApi.loadClubState(getClubFirestoreId(club));if(confirmed?.eveningResetOp===opId){applyLoadedState(confirmed);renderAll();persistState();showToast('🆕 Neuer Kegelabend gestartet · alle Spiele geleert','success');return true;}}catch{}}applyLoadedState(window.KCTabletSync?.server||backup);renderAll();persistState();showToast('Kegelabend konnte nicht gestartet werden: '+error.message,'error');}return false;}
+  }finally{window.kcEveningResetBusy=false;}
 }
 
 function openBuyThrowModal() {

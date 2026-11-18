@@ -51,14 +51,18 @@
     if(s.kranzRule?.mode==='fixed')s.kranzValue=s.kranzRule.value;
     return {...s,gameFineFrozen:true,onTop:request.onTop===true,gameFineOnTop:request.onTop===true,id:request.gameId,active:true,startedAt:context.now,eveningStartedAt:context.eveningStartedAt};
   }
-  function advanceSolo(s){s.currentIndex++;}
+  function advanceSolo(s){
+    for(let offset=1;offset<=s.players.length;offset++){
+      const next=(s.currentIndex+offset)%s.players.length;
+      if(!s.stopped.includes(s.players[next])){s.currentIndex=next;return;}
+    }
+    s.currentIndex=s.players.length;
+  }
   function play(s,entry){
     if(entry.action==='next'){
       if(s.gameKey==='blackjack'){
         if(blackjackPhase(s)!=='throwing')throw Error('Die Kartenphase kann nicht übersprungen werden');
-        const count=s.players.length;let next=(s.currentIndex+1)%count;
-        for(let i=0;i<count&&s.stopped.includes(s.players[next]);i++)next=(next+1)%count;
-        s.currentIndex=next;
+        advanceSolo(s);
       }else{
         if(s.turn?.pins?.length)throw Error('Angefangene Wurfrunde zuerst abschließen');
         s.currentIndex=(s.currentIndex+1)%s.teams.length;

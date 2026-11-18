@@ -39,10 +39,11 @@ function fuchsjagdApplyThrow(s,pins,scored,thrower,at){
  const before=fuchsjagdSnapshot(s),delta=s.phase==='hunt'?-scored:scored;
  // Die Tabelle beginnt mit dem ERSTEN Wurf eines neuen Jaegers neu.
  // Wuerfe bleiben vollständig gespeichert fuer Undo, Statistik und Verliererwertung.
- if(s.phase==='hunt'&&(s.visibleHunterFoxIndex!==s.foxIndex||s.visibleHunterIndex!==s.hunterIndex)){
+ if(s.phase==='hunt'&&(s.visibleHunterFoxIndex!==s.foxIndex||s.visibleHunterIndex!==s.hunterIndex||s.visibleHunter!==thrower)){
   s.tableStartIndex=s.throws.length;
   s.visibleHunterFoxIndex=s.foxIndex;
   s.visibleHunterIndex=s.hunterIndex;
+  s.visibleHunter=thrower;
  }
  s.score+=delta;
  s.throws.push({name:thrower,fox:s.fox,foxIndex:s.foxIndex,pins:scored,rawPins:pins,delta,score:s.score,at,before});
@@ -99,23 +100,14 @@ async function applyFuchsjagdThrow(pins){
  }catch(e){console.error('Fuchsjagd',e);showToast('Wurf konnte nicht gespeichert werden','error');}
  finally{s.busy=false;}
 }
-async function fuchsjagdNextThrower(){
+function fuchsjagdNextThrower(){
  ensureFuchsjagdState();const s=fuchsjagdState;
  if(!s.active||s.busy||s.finished)return false;
- const who=fuchsjagdCurrentThrower();
- if(!who)return false;
- s.busy=true;
- try{
-  const result=fuchsjagdApplyThrow(s,0,0,who,new Date().toISOString());
-  s.throws[s.throws.length-1].skipped=true;
-  if(result==='complete'&&!(await fuchsjagdFinalize(s))){
-   const last=s.throws.pop();fuchsjagdRestore(s,last.before);
-   showToast('Fuchsjagd konnte nicht abgeschlossen werden','error');return false;
-  }
-  renderFuchsjagdGame();persistState();
-  showToast('➡ '+who+' übersprungen · als Nächstes: '+(fuchsjagdCurrentThrower()||'Spielende'),'success');
-  return true;
- }finally{s.busy=false;}
+ if(s.phase!=='hunt'||s.hunterIndex+1>=s.hunters.length){
+  showToast(s.phase==='hunt'?'Kein weiterer Jäger verfügbar.':'Zuerst ist der Fuchs am Wurf.','error');return false;
+ }
+ s.hunters.push(...s.hunters.splice(s.hunterIndex,1));
+ renderFuchsjagdGame();persistState();return true;
 }
 async function undoFuchsjagdThrow(){
  ensureFuchsjagdState();const s=fuchsjagdState;

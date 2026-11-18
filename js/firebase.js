@@ -219,7 +219,11 @@ window.firestoreApi = {
     const target=doc(db,'clubs',clubId,'state','current');
     return runSharedTransaction(clubId,syncContext,db,async tx=>{
       const snap=await tx.get(target),current=snap.exists()?snap.data():{};
-      if(Number(current.tabletSequence||0)>=batch.sequence)return {sequence:current.tabletSequence};
+      const cloudSequence=Number(current.tabletSequence)||0;
+      // The transaction checks the command receipt before reaching this handler.
+      // The sequence alone cannot prove that this tablet's batch was accepted.
+      if(cloudSequence>=batch.sequence||batch.baseSequence!==undefined&&batch.baseSequence!==cloudSequence)
+        throw window.KCSharedCore.conflict(['Tablet-Warteschlange']);
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       await Promise.all(docs.map(row=>tx.get(row.ref)));
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};

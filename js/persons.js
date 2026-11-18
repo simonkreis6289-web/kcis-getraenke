@@ -2182,7 +2182,7 @@ async function changeSyncedPersonCounter(
     return false;
   }
 
-  if (!navigator.onLine) {
+  if (!navigator.onLine && !window.KCTabletSync?.ready) {
     showToast(
       '📴 Live-Buchungen sind offline nicht möglich',
       'error'
@@ -2230,7 +2230,8 @@ async function changeSyncedPersonCounter(
 
 async function changeMultipleSyncedPersonCounters(
   changes = [],
-  successMessage = ''
+  successMessage = '',
+  {reverse=false} = {}
 ) {
   if (
     !ACTIVE_CLUB ||
@@ -2247,7 +2248,7 @@ async function changeMultipleSyncedPersonCounters(
     return false;
   }
 
-  if (!navigator.onLine) {
+  if (!navigator.onLine && !window.KCTabletSync?.ready) {
     showToast(
       '📴 Live-Buchungen sind offline nicht möglich',
       'error'
@@ -2277,6 +2278,8 @@ async function changeMultipleSyncedPersonCounters(
             change.personName
         );
 
+      if(reverse)return !!person&&Number(change.delta)<0;
+
       if (
         !person ||
         person.left
@@ -2294,7 +2297,7 @@ async function changeMultipleSyncedPersonCounters(
       return true;
     });
 
-  if (!validChanges.length) {
+  if (!validChanges.length || reverse&&validChanges.length!==changes.length) {
     showToast(
       'Keine gültigen Buchungen vorhanden',
       'error'

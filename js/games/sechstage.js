@@ -50,7 +50,7 @@ function sechsConfirmAssignment(){
 function sechsCloseAssignment(){sechsAssignment=null;document.getElementById('sechs-assignment-modal')?.classList.add('hidden');}
 async function sechsRun(action,fields={}){
   if(sechsBusy||!ACTIVE_CLUB)return;
-  if(!navigator.onLine||!window.firestoreApi?.transactSechsGame){showToast('Für das Rennen bitte eine Verbindung herstellen.','error');return;}
+  if((!navigator.onLine&&!window.KCTabletSync?.ready)||!window.firestoreApi?.transactSechsGame){showToast('Für das Rennen bitte eine Verbindung herstellen.','error');return;}
   const club=ACTIVE_CLUB;
   if(sechsPending&&sechsPending.club!==club)sechsPending=null;
   if(!sechsPending)sechsPending={club,request:{action,...fields,raceId:fields.raceId||sechstageState.id,expectedRevision:Number(sechstageState.revision)||0,opId:'six_'+(crypto.randomUUID?.()||Date.now()+'_'+Math.random().toString(36).slice(2)),now:new Date().toISOString(),eveningStartedAt:currentEveningStartedAt||'',clubName:club}};

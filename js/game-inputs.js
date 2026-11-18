@@ -91,7 +91,7 @@ const gameDashboardBusy=new Set();
 async function showGameOnDashboard(key){
  if(gameDashboardBusy.has(key)||!ACTIVE_CLUB||!window.KCGameOverview?.catalog.some(g=>g.key===key))return false;
  const s=gameSetupState(key);if(!s||!s.active&&!s.finished&&!s.id&&!s.startedAt&&!s.history?.length)return false;
- if(!navigator.onLine||!window.firestoreApi?.setDashboardGameOverview){showToast('Zum Anzeigen auf dem Dashboard bitte verbinden.','error');return false;}
+ if((!navigator.onLine&&!window.KCTabletSync?.directConnected)||!window.firestoreApi?.setDashboardGameOverview){showToast('Zum Anzeigen auf dem Dashboard bitte verbinden.','error');return false;}
  const club=ACTIVE_CLUB;gameDashboardBusy.add(key);applyGameInputLayout(key);
  try{
   const state=window.KCSharedSync?.server||getFirestoreState();
@@ -104,19 +104,25 @@ const GAME_NEXT_SERVER=new Set(['blackjack','gluecksspirale','siebener','hindern
 async function gameNextThrower(key){
  const s=gameSetupState(key);if(!s?.active||s.finished){showToast('Zuerst das Spiel starten','error');return false;}
  if(window.KCSharedSync&&!window.KCSharedSync.ready){showToast('Verbindung nicht bestätigt. Bitte zuerst synchronisieren.','error');return false;}
+ if(s.busy||s.closing||gameInputBusy[key]||window.KCSharedSync?.inUnit){showToast('Erst die laufende Wurfaktion abschließen.','error');return false;}
  try{
   if(GAME_NEXT_SERVER.has(key))return ['blackjack','gluecksspirale'].includes(key)?tableAction(key,'next'):indAction(key,'next');
   if(key==='sechstage')return sechsRun('next');
   if(key==='tiberius')return tiberiusNextThrower();
   if(['tannenbaum','darts'].includes(key)){
+   if(key==='darts'&&(pendingDartsPenalty||dartsPenaltyBusy)||key==='tannenbaum'&&(pendingTannenbaumPenaltyThrow||pendingTannenbaumKranzChoice)){
+    showToast('Erst die offene Wurfauswahl abschließen.','error');return false;
+   }
    const next=gameInputCurrentTeam(key)==='T1'?'T2':'T1';
    gameInputTeam(key,next);return true;
   }
   if(key==='lotterie'){
    const names=getLotteriePlayers().map(p=>p.name),left=[];
    for(let col=0;col<(s.columns||[]).length;col++)for(const name of names)if(s.throws[name]?.[col]==null)left.push({name,col});
-   if(left.length<2){showToast('Kein weiterer offener Werfer','error');return false;}
-   s.manualCursor=((Number(s.manualCursor)||0)+1)%left.length;
+   const cursor=(Number(s.manualCursor)||0)%Math.max(1,left.length);
+   const offset=left.slice(cursor+1).concat(left.slice(0,cursor)).findIndex(turn=>turn.name!==left[cursor]?.name);
+   if(offset<0){showToast('Kein weiterer offener Werfer','error');return false;}
+   s.manualCursor=(cursor+offset+1)%left.length;
   }else if(key==='mensch'){
    if(!s.playerOrder?.length)return false;s.currentIndex=((Number(s.currentIndex)||0)+1)%s.playerOrder.length;
   }else if(key==='plusminus'){
@@ -154,7 +160,7 @@ function renderGameDashboardButton(key,panel,s){
  if(!next){next=document.createElement('button');next.type='button';next.className='game-next-button';next.dataset.gameNext=key;next.textContent='➡ Nächster Werfer';next.onclick=()=>gameNextThrower(key);}
  if(next.parentElement!==toolbar)toolbar.insertBefore(next,dashboard);
  const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
- dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false;
+ dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false&&!window.KCTabletSync?.directConnected;
  dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
  next.disabled=!s?.active||!!s?.finished||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
  next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';

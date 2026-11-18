@@ -13,6 +13,49 @@ test('unconfirmed tablet entries survive a reload and incoming server snapshots 
 test('a lost acknowledgement retries the same tablet batch without adding a drink twice',async()=>{
  const {a,db}=await fixture();await a.c.changeDrink('A','beer',1);db.lose();assert.equal(await a.c.KCSharedSync.waitForUpload(),false);assert.equal(db.root().persons[0].drinks.beer,1);assert(await a.c.KCSharedSync.reconnect());assert.equal(db.root().persons[0].drinks.beer,1);
 });
+test('after a browser disconnect Tiberius keeps accepting local throws and prevents an evening reset until Firebase confirms',async()=>{
+ const {a,db}=await fixture();a.run('tiberiusState.targets=[9];tiberiusState.columnCount=1;tiberiusState.targetsGenerated=true');await a.c.startTiberiusGameFinal('A');
+ assert(await a.c.KCSharedSync.waitForUpload());const before=copy(db.root());
+ a.c.navigator.onLine=false;
+ for(const pins of [0,9,0,9,0,9])await a.c.handleTiberiusThrow(pins);
+ assert.equal(a.run('tiberiusState.throws.length'),6);assert.equal(a.run('tiberiusState.currentPlayerIndex'),0);
+ assert.equal(a.run('persons[0].strafen.gosse'),3);assert.equal(a.run('persons[0].strafen.nine'),3);
+ assert.equal(await a.c.startNewKegelabend(),false);assert.equal(a.run('currentEveningStartedAt'),before.currentEveningStartedAt);
+ assert.deepEqual(db.root(),before);
+ a.c.navigator.onLine=true;db.fail(true);
+ assert.equal(await a.c.startNewKegelabend(),false);
+ assert.equal(a.c.KCSharedSync.diagnostics().cloudSequence,before.tabletSequence);
+ await a.c.undoLastTiberiusThrow();assert.equal(a.run('persons[0].strafen.nine'),2);
+ db.fail(false);assert(await a.c.KCSharedSync.reconnect());
+ assert.equal(db.root().tiberiusState.throws.length,5);assert.equal(db.root().persons[0].strafen.gosse,3);
+ assert.equal(db.root().persons[0].strafen.nine,2);assert.equal(db.root().penaltyStatsLog.length,2);
+ assert(await a.c.startNewKegelabend());assert(await a.c.KCSharedSync.waitForUpload());
+ assert.notEqual(db.root().currentEveningStartedAt,before.currentEveningStartedAt);
+ assert.equal(db.root().persons[0].strafen.gosse,0);
+});
+test('a competing tablet sequence retains both tablets’ bookings instead of reporting a false acknowledgement',async()=>{
+ const {a,db}=await fixture(),b=fullApp(db);await b.select();
+ assert(await a.c.changeDrink('A','beer',1));assert(await b.c.changeDrink('B','beer',1));
+ assert(await a.c.KCSharedSync.waitForUpload());assert.equal(await b.c.KCSharedSync.waitForUpload(),false);
+ assert.equal(db.root().persons[0].drinks.beer,1);assert.equal(db.root().persons[1].drinks.beer,0);
+ const failed=JSON.parse(b.storage.get('kcis_tablet_outbox_club')).inflight;
+ assert(failed);assert.match(b.c.KCSharedSync.diagnostics().error,/sync-conflict/);
+ const c=fullApp(db);for(const [k,v] of b.storage)c.storage.set(k,v);await c.select();
+ assert.equal(await c.c.KCSharedSync.waitForUpload(),false);
+ assert.equal(JSON.parse(c.storage.get('kcis_tablet_outbox_club')).inflight.opId,failed.opId);
+ assert.equal(c.run('persons[1].drinks.beer'),1);
+});
+test('a stalled SDK request releases the upload, preserves its receipt ID and can be retried',async()=>{
+ const {a,db,hold,release,entered}=await fixture();await a.c.changeDrink('A','beer',1);hold();
+ const waiting=a.c.KCSharedSync.waitForUpload();for(let i=0;i<10&&!entered();i++)await tick();assert(entered());
+ const deadline=[...a.timers.values()].find(timer=>timer.ms===30000);assert(deadline);deadline.fn();
+ assert.equal(await waiting,false);assert.match(a.c.KCSharedSync.diagnostics().error,/deadline-exceeded/);
+ assert.equal(a.c.KCSharedSync.diagnostics().uploading,false);
+ const first=JSON.parse(a.storage.get('kcis_tablet_outbox_club')).inflight;assert(first);
+ release();await tick();
+ assert(await a.c.KCSharedSync.reconnect());assert.equal(db.root().persons[0].drinks.beer,1);
+ assert(db.data.has('clubs/club/syncCommands/'+first.opId));
+});
 test('legacy throws remain locally available without waiting for the previous upload',async()=>{
  const {a,db}=await fixture();await a.c.startMenschGameFinal('A');await a.c.applyMenschThrow(4);await a.c.applyMenschThrow(5);assert.equal(a.run('menschState.scores.A'),4);assert.equal(a.run('menschState.scores.B'),5);assert.equal(db.root().menschState,undefined);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().menschState.scores.A,4);assert.equal(db.root().menschState.scores.B,5);
 });

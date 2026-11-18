@@ -186,10 +186,25 @@
  function advance(s){s.index++;if(s.index>=s.players.length){s.index=0;s.round++;}}
  function play(s,e){
   if(e.action==='next'){
-   if(s.turn?.length||s.pendingArrange||s.gameKey==='poker'&&s.phase==='select')throw Error('Offenen Wurf oder Kartenwahl zuerst abschließen');
-   const len=s.gameKey==='parteienspiel'&&s.partyAlternating?2*Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length):s.players.length;
-   s.index=(s.index+1)%len;if(s.index===0)s.round++;
-   if(s.gameKey==='ballermann'&&s.participantTeams){const t=s.teamOrder[s.index%2],names=s.participantTeams[t]||[];if(names.length)s.teamIndexes[t]=((s.teamIndexes[t]||0)+1)%names.length;}
+   const key=s.gameKey;
+   if(s.turn?.length||s.pendingArrange||key==='poker'&&(s.phase!=='deal'||s.hands[e.name]?.length))throw Error('Offenen Wurf oder Kartenwahl zuerst abschließen');
+   if(key==='ballermann'){
+    const side=team(s),players=s.participantTeams[side];
+    if(players.length<2)throw Error('In der laufenden Spielzeit steht kein anderer Teamspieler zur Verfügung.');
+    s.teamIndexes[side]++;
+   }else if(KCRoundGames.keys.includes(key)||key==='bergundtal'){
+    if(key==='parteienspiel'&&s.partyAlternating){
+     const slots=2*Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length);
+     if(s.index+1>=slots)throw Error('Den letzten Mannschaftswurf der Runde zuerst abschließen.');
+     s.index++;
+    }else{
+     const roster=s.phase==='tiebreak'?s.tiePlayers:s.players;
+     const next=roster.findIndex((name,i)=>i>s.index&&(key!=='hochsprung'||!s.jumps[name].eliminated));
+     if(next<0)throw Error('Den letzten Pflichtwurf des Durchgangs zuerst abschließen.');
+     if(roster===s.players&&!s.originalPlayerOrder)s.originalPlayerOrder=s.players.slice();
+     [roster[s.index],roster[next]]=[roster[next],roster[s.index]];
+    }
+   }else advance(s);
    s.history.push(e);return;
   }
   if(KCRoundGames.keys.includes(s.gameKey))return KCRoundGames.play(s,e);
@@ -220,7 +235,7 @@
    if(req.action==='reset'){s=empty(req.gameKey);s.eveningStartedAt=ctx.eveningStartedAt;}
    else if(req.action==='undo'){
     if(!s.history.length||s.finished&&!['lattenzaun','guterschnitt',...KCRoundGames.keys].includes(s.gameKey))throw Error('Keine Aktion zum Zurücknehmen.');
-    const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0]},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
+    const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.originalPlayerOrder||s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0]},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
     // Vor V225 gestartete Parteien behalten ihre Wurfreihenfolge auch bei Rückgängig.
     if(s.gameKey==='poker'){if(!s.pokerSequential)delete base.pokerSequential;if(!s.pokerSharedRanks)delete base.pokerSharedRanks;}
     if(s.gameKey==='parteienspiel'&&!s.partyAlternating){delete base.partyAlternating;base.teamOrder=[];}
