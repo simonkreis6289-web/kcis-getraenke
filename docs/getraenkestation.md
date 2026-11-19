@@ -37,3 +37,12 @@ Ein Abschluss der Getränkeabrechnung sperrt die Station für den aktuellen Aben
 - `npm run test:station-rules` prüft echte Firestore-Regeln mit emulierten Identitäten, einschließlich Ablauf, Einmaligkeit, Freigabe, widerrufener Geräte, unberechtigter Direktzugriffe und Abendsperre.
 - `node --test tests/v270-station.cjs` prüft UI-Zustände, die PWA-Dateien und den gemeinsamen Buchungsweg mit den lokalen Firestore-Testdoubles.
 - Der Android-Installationsdialog und die Verbindung zwischen dem tatsächlichen Tablet, TV und Smartphone werden beim ersten Aufbau vor Ort geprüft.
+
+## Ausstehende Tablet-Buchungen nach dem Update auf V271
+
+1. Am ursprünglichen Tablet im bisherigen Browser auf derselben App-Adresse den Status neben der Versionsnummer öffnen. Ist **Abgleichdatei herunterladen** sichtbar, die Datei vor dem Update lokal sichern. Sie kann echte Buchungsdaten enthalten.
+2. Die App auf V271 neu laden und den betroffenen Club öffnen. Browserdaten und die lokale Warteschlange behalten. Unter **Verwaltung → Getränkestation** die Anmeldung als Spielleitung prüfen.
+3. Die App versucht die gespeicherten Übertragungen erneut. Falls der Status weiter **Cloudspeicherung ausstehend** zeigt, unter dem Status auf **Übertragung erneut versuchen** drücken. Erfolgreich bestätigte Übertragungen werden anhand ihrer ursprünglichen Beleg-ID erkannt. Auf **Cloudspeicherung bestätigt** achten und die Buchungen in der Abrechnung kontrollieren.
+4. Bleibt ein Berechtigungsfehler oder ein Konflikt stehen, **Fehler kopieren** wählen und die Buchungen bis zum Abgleich nicht erneut eingeben. Die Diagnose enthält die Sequenzen, den Anmeldestatus und bei einer Schreibablehnung die beteiligten Dokumentpfade. Bei einem abgelehnten Lesezugriff enthält sie den abgelehnten Pfad. Bestätigte Cloud-Stände werden bei einem Sequenzkonflikt geschützt.
+
+Für die Korrektur in V271 ist bei bereits veröffentlichten V270-Regeln kein Regel-Deployment erforderlich.

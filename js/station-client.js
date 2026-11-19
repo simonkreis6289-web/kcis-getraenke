@@ -7,6 +7,15 @@ import {collection, doc, getDocFromServer, getFirestore, limit, onSnapshot, orde
 export const validClub=club=>/^[a-zA-Z0-9_-]{1,120}$/.test(club||'');
 export const validCode=code=>/^[a-f0-9]{64}$/.test(code||'');
 const challenge=()=>[...crypto.getRandomValues(new Uint8Array(32))].map(n=>n.toString(16).padStart(2,'0')).join('');
+// The main app and its Firestore connection use the same default Firebase app.
+export async function tabletFirebaseAuth(){
+ const app=getApp(),auth=getAuth(app);
+ await auth.authStateReady();
+ const identity=auth.currentUser;
+ const token=identity?await identity.getIdTokenResult():null;
+ return {projectId:app.options.projectId,authenticated:!!identity,kcOperator:token?.claims.kcOperator===true};
+}
+
 const confirmed=(listener,snapshot)=>{if(!snapshot.metadata.fromCache&&!snapshot.metadata.hasPendingWrites)listener(snapshot);};
 
 export function stationClient(device=false){

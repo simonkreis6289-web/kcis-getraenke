@@ -12,8 +12,18 @@
     const transact=handler=>runTransaction(db,handler,{maxAttempts:10});
     async function confirmedCommand(club,context,handler){
       for(let attempt=0;attempt<4;attempt++){
-        let observedRevision=null;
-        try{return await transact(async tx=>handler(tx,revision=>{observedRevision=revision;}));}
+        let observedRevision=null,failedRead=null,planned=[];
+        try{return await transact(async tx=>{
+          observedRevision=null;failedRead=null;planned=[];
+          return handler({
+            async get(target){
+              try{return await tx.get(target);}
+              catch(error){failedRead=path(target);throw error;}
+            },
+            set(target,value){planned.push({path:path(target),operation:'set'});return tx.set(target,value);},
+            delete(target){planned.push({path:path(target),operation:'delete'});return tx.delete(target);}
+          },revision=>{observedRevision=revision;});
+        });}
         catch(error){
           const code=String(error.code||'').replace(/^firestore\//,''),transient=['aborted','unavailable','deadline-exceeded'].includes(code);
           if(!context||!transient&&code!=='permission-denied')throw error;
@@ -30,7 +40,15 @@
           }
           // A permission failure with an unchanged root is a real denial, not
           // evidence of a race. Never weaken rules or retry it indefinitely.
-          if(attempt===3||!transient&&!advanced)throw error;
+          if(attempt===3||!transient&&!advanced){
+            if(code==='permission-denied')context.permissionDiagnostic={
+              phase:failedRead?'read':'commit',
+              ...(failedRead?{deniedPath:failedRead}:{}),
+              observedRevision,operationCount:planned.length,
+              operations:planned.slice(0,60)
+            };
+            throw error;
+          }
           await delay(60*Math.pow(2,attempt)+Math.floor(Math.random()*50));
         }
       }
