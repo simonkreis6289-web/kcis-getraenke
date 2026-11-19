@@ -14,11 +14,11 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260318-v13">
   <link rel="apple-touch-icon" href="icon-512.png?v=20260318-v13">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261119-v274">
-  <link rel="stylesheet" href="css/sechstage.css?v=20261119-v274">
-  <link rel="stylesheet" href="css/table-games.css?v=20261119-v274">
-  <link rel="stylesheet" href="css/individual-games.css?v=20261119-v274">
-<link rel="stylesheet" href="css/game-rules.css?v=20261119-v274">
+  <link rel="stylesheet" href="css/styles.css?v=20261119-v275">
+  <link rel="stylesheet" href="css/sechstage.css?v=20261119-v275">
+  <link rel="stylesheet" href="css/table-games.css?v=20261119-v275">
+  <link rel="stylesheet" href="css/individual-games.css?v=20261119-v275">
+<link rel="stylesheet" href="css/game-rules.css?v=20261119-v275">
 
 <style id="fuchsjagd-ui-v124">
 #tab-fuchsjagd .fox-setup{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--surface,#fff);padding:16px;border:1px solid var(--border,#ced2df);border-radius:12px;margin-bottom:14px}
@@ -131,21 +131,21 @@
 .kc-icon-delete:hover:not(:disabled){background:#ffe3e3}
 .kc-icon-delete:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:800px){#tab-einstellungen{grid-template-columns:1fr}.kc-admin-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.kc-admin-tab{font-size:13px;padding:10px}}
-</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261119-v274">
-<link rel="stylesheet" href="css/game-starts.css?v=20261119-v274">
-<link rel="stylesheet" href="css/game-settings.css?v=20261119-v274">
-  <link rel="stylesheet" href="css/calendar-stats.css?v=20261119-v274">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261119-v274">
-<link rel="stylesheet" href="css/historical-evenings.css?v=20261119-v274">
-<link rel="stylesheet" href="css/club-content.css?v=20261119-v274">
-<link rel="stylesheet" href="css/extra-games.css?v=20261119-v274">
-<link rel="stylesheet" href="css/station.css?v=20261119-v274">
-<link rel="stylesheet" href="css/dashboard-layout-settings.css?v=20261119-v274">
-<link rel="stylesheet" href="css/game-fine-policy.css?v=20261119-v274">
-<link rel="stylesheet" href="css/game-overview.css?v=20261119-v274">
-<link rel="stylesheet" href="css/kranz.css?v=20261119-v274">
-<link rel="stylesheet" href="css/shared-sync.css?v=20261119-v274">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261119-v274">
+</style>  <link rel="stylesheet" href="css/game-inputs.css?v=20261119-v275">
+<link rel="stylesheet" href="css/game-starts.css?v=20261119-v275">
+<link rel="stylesheet" href="css/game-settings.css?v=20261119-v275">
+  <link rel="stylesheet" href="css/calendar-stats.css?v=20261119-v275">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261119-v275">
+<link rel="stylesheet" href="css/historical-evenings.css?v=20261119-v275">
+<link rel="stylesheet" href="css/club-content.css?v=20261119-v275">
+<link rel="stylesheet" href="css/extra-games.css?v=20261119-v275">
+<link rel="stylesheet" href="css/station.css?v=20261119-v275">
+<link rel="stylesheet" href="css/dashboard-layout-settings.css?v=20261119-v275">
+<link rel="stylesheet" href="css/game-fine-policy.css?v=20261119-v275">
+<link rel="stylesheet" href="css/game-overview.css?v=20261119-v275">
+<link rel="stylesheet" href="css/kranz.css?v=20261119-v275">
+<link rel="stylesheet" href="css/shared-sync.css?v=20261119-v275">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261119-v275">
 </head>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -830,6 +830,10 @@
 <div class="game-hub-card" onclick="showSideTab('spiele','ebbeflut')"><div class="icon">🌊</div><div class="title">Ebbe und Flut</div><div class="desc">3: Ebbe · 5: normal · 7: Flut. Wasserstand und halbe Punkte zählen mit.</div></div>
 <div class="game-hub-card" onclick="showSideTab('spiele','hochsprung')"><div class="icon">🏅</div><div class="title">Hochsprung</div><div class="desc">0–7 frei belegbare Hürden, je höchstens drei Würfe und einstellbarer Fehlbetrag.</div></div>
 <div class="game-hub-card" onclick="showSideTab('spiele','guterschnitt')"><div class="icon">✂️</div><div class="title">Der gute Schnitt</div><div class="desc">Zahlenfolge treffen · steigende Versuche</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','abschreibung')"><div class="icon">📉</div><div class="title">Abschreibung</div><div class="desc">Punkte beim Vordermann abziehen · Platz × Einsatz beim Ausscheiden</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','lottokoenig')"><div class="icon">🍀</div><div class="title">Lottokönig</div><div class="desc">Sechs Glückszahlen · 13 Würfe reihum</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','tageskurs')"><div class="icon">💶</div><div class="title">Tageskurs</div><div class="desc">Neun Kegelwerte · ein Wurf · stehende Kegel bestimmen den Betrag</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','swingerclub')"><div class="icon">🤝</div><div class="title">Swinger Club</div><div class="desc">Zweierteams · Partnerwechsel · persönliche Gesamtpunkte</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','tannenbaum')"><div class="icon">🌲</div><div class="title">Tannenbaum</div><div class="desc">Teamspiel mit Strafboxen, Strikes und Live-Übersicht.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','darts')"><div class="icon">🎯</div><div class="title">Darts</div><div class="desc">Klassisches Countdown-Spiel für zwei Teams.</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','lotterie')"><div class="icon">🎰</div><div class="title">Lotterie</div><div class="desc">Mit Startspieler-Auslosung, Sitzreihenfolge und Spaltenbeträgen.</div></div>
@@ -1355,11 +1359,46 @@
 <div id="tab-poker" class="hidden"><div class="section-title">🃏 Poker</div><div class="ind-actions"><button type="button" onclick="openRoundRules('poker')">ℹ️ Regeln</button><button type="button" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('poker')">⚙️ Einstellungen</button></div><div id="poker-setup" class="ind-setup gs-start-card"></div><div id="poker-board"></div></div>
 <div id="tab-pfaelzer" class="hidden"><div class="section-title">🎯 Pfälzerspiel</div><div class="ind-actions"><button type="button" onclick="openRoundRules('pfaelzer')">ℹ️ Regeln</button><button type="button" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('pfaelzer')">⚙️ Einstellungen</button></div><div id="pfaelzer-setup" class="ind-setup gs-start-card"></div><div id="pfaelzer-board"></div></div>
 <div id="tab-tausend" class="hidden"><div class="section-title">🔢 1000 in 9 Würfen</div><div class="ind-actions"><button type="button" onclick="openRoundRules('tausend')">ℹ️ Regeln</button><button type="button" onclick="showSideTab('spiele','spiele-einstellungen');showGameProperty('tausend')">⚙️ Einstellungen</button></div><div id="tausend-setup" class="ind-setup gs-start-card"></div><div id="tausend-board"></div></div>
+<div id="tab-abschreibung" class="hidden">
+ <div class="tg-page-title"><h2 class="section-title">📉 Abschreibung</h2><button type="button" class="tg-info-button" onclick="openIndividualRules('abschreibung')" aria-label="Spielregeln für Abschreibung">ℹ️</button></div>
+ <div id="abschreibung-setup" class="game-start-card"></div><div id="abschreibung-board"></div>
+</div>
+<div id="tab-lottokoenig" class="hidden">
+ <div class="tg-page-title"><h2 class="section-title">🍀 Lottokönig</h2><button type="button" class="tg-info-button" onclick="openIndividualRules('lottokoenig')" aria-label="Spielregeln für Lottokönig">ℹ️</button></div>
+ <div id="lottokoenig-setup" class="game-start-card"></div><div id="lottokoenig-board"></div>
+</div>
+<div id="tab-tageskurs" class="hidden">
+ <div class="tg-page-title"><h2 class="section-title">💶 Tageskurs</h2><button type="button" class="tg-info-button" onclick="openIndividualRules('tageskurs')" aria-label="Spielregeln für Tageskurs">ℹ️</button></div>
+ <div id="tageskurs-setup" class="game-start-card"></div><div id="tageskurs-board"></div>
+</div>
+<div id="tab-swingerclub" class="hidden">
+ <div class="tg-page-title"><h2 class="section-title">🤝 Swinger Club</h2><button type="button" class="tg-info-button" onclick="openIndividualRules('swingerclub')" aria-label="Spielregeln für Swinger Club">ℹ️</button></div>
+ <div id="swingerclub-setup" class="game-start-card"></div><div id="swingerclub-board"></div>
+</div>
 <div id="tab-spiele-einstellungen" class="hidden">
  <h2 class="section-title">⚙️ Spiel-Einstellungen</h2>
  <p class="game-settings-intro">Vorgaben für diesen Club. Spielregeln gelten ab dem nächsten Spielstart; OnTop gilt für den aktuellen Kegelabend.</p>
 <nav class="game-properties-tabs" id="game-properties-tabs" role="tablist" aria-label="Spiel-Eigenschaften" onkeydown="gamePropertyKeydown(event)"><button type="button" role="tab" id="game-property-tab-general" data-game-property-tab="general" aria-controls="game-property-general" aria-selected="false" tabindex="-1" onclick="showGameProperty('general')">⚙️ Allgemein</button><button type="button" role="tab" id="game-property-tab-siebener" data-game-property-tab="siebener" aria-controls="game-property-siebener" aria-selected="false" tabindex="-1" onclick="showGameProperty('siebener')">🎲 7er-Spiel</button><button type="button" role="tab" id="game-property-tab-hindernis" data-game-property-tab="hindernis" aria-controls="game-property-hindernis" aria-selected="true" tabindex="0" onclick="showGameProperty('hindernis')">🏃 Hindernislauf</button><button type="button" role="tab" id="game-property-tab-blackjack" data-game-property-tab="blackjack" aria-controls="game-property-blackjack" aria-selected="false" tabindex="-1" onclick="showGameProperty('blackjack')">🃏 17 + 4</button><button type="button" role="tab" id="game-property-tab-gluecksspirale" data-game-property-tab="gluecksspirale" aria-controls="game-property-gluecksspirale" aria-selected="false" tabindex="-1" onclick="showGameProperty('gluecksspirale')">🌀 Glücksspirale</button><button type="button" role="tab" id="game-property-tab-haushoch" data-game-property-tab="haushoch" aria-controls="game-property-haushoch" aria-selected="false" tabindex="-1" onclick="showGameProperty('haushoch')">🔢 Hohe Hausnummer</button><button type="button" role="tab" id="game-property-tab-haustief" data-game-property-tab="haustief" aria-controls="game-property-haustief" aria-selected="false" tabindex="-1" onclick="showGameProperty('haustief')">🔽 Tiefe Hausnummer</button><button type="button" role="tab" id="game-property-tab-tannenbaum" data-game-property-tab="tannenbaum" aria-controls="game-property-tannenbaum" aria-selected="false" tabindex="-1" onclick="showGameProperty('tannenbaum')">🌲 Tannenbaum</button><button type="button" role="tab" id="game-property-tab-lotterie" data-game-property-tab="lotterie" aria-controls="game-property-lotterie" aria-selected="false" tabindex="-1" onclick="showGameProperty('lotterie')">🎰 Lotterie</button><button type="button" role="tab" id="game-property-tab-tiberius" data-game-property-tab="tiberius" aria-controls="game-property-tiberius" aria-selected="false" tabindex="-1" onclick="showGameProperty('tiberius')">🎯 Tiberius</button><button type="button" role="tab" id="game-property-tab-bergundtal" data-game-property-tab="bergundtal" aria-controls="game-property-bergundtal" aria-selected="false" tabindex="-1" onclick="showGameProperty('bergundtal')">🏔️ Berg und Tal</button><button type="button" role="tab" id="game-property-tab-ballermann" data-game-property-tab="ballermann" aria-controls="game-property-ballermann" aria-selected="false" tabindex="-1" onclick="showGameProperty('ballermann')">🏖️ Ballermann 6</button><button type="button" role="tab" id="game-property-tab-lattenzaun" data-game-property-tab="lattenzaun" aria-controls="game-property-lattenzaun" aria-selected="false" tabindex="-1" onclick="showGameProperty('lattenzaun')">🪵 Lattenzaun</button><button type="button" role="tab" id="game-property-tab-guterschnitt" data-game-property-tab="guterschnitt" aria-controls="game-property-guterschnitt" aria-selected="false" tabindex="-1" onclick="showGameProperty('guterschnitt')">✂️ Der gute Schnitt</button><button type="button" role="tab" id="game-property-tab-sechstage" data-game-property-tab="sechstage" aria-controls="game-property-sechstage" aria-selected="false" tabindex="-1" onclick="showGameProperty('sechstage')">🏁 Sechs-Tage-Rennen</button></nav>
- <div class="game-settings-grid"><section class="game-settings-card" id="game-property-guterschnitt" data-game-property="guterschnitt" role="tabpanel" aria-labelledby="game-property-tab-guterschnitt" hidden><header><h3>✂️ Der gute Schnitt</h3></header><label class="game-settings-field">Anzahl Zielzahlen<input id="goodcut-count" type="number" min="1" max="50" value="9" onchange="goodCutCount()"></label><div class="game-settings-fields" id="goodcut-targets"></div><div class="game-settings-fields"><label class="game-settings-field" for="goodcut-kranz-mode">Kranzwertung<select id="goodcut-kranz-mode" onchange="goodCutKranzMode()"><option value="target">Automatisch aktuelle Zielzahl treffen</option><option value="choose">Bei jedem Kranz eine Zahl wählen</option><option value="fixed" selected>Festen Wert zählen</option></select></label><label class="game-settings-field" id="goodcut-kranz-fixed" for="goodcut-kranz-value">Fester Kranzwert<input id="goodcut-kranz-value" type="number" min="1" max="12" step="1" value="8"></label></div><p>Gilt ab dem nächsten Spielstart. Laufende Partien behalten ihre Zahlenfolge und Kranzwertung.</p><button type="button" class="primary-btn" onclick="saveGoodCutSettings()">💾 Einstellungen speichern</button></section><section class="game-settings-card" id="game-property-sechstage" data-game-property="sechstage" role="tabpanel" aria-labelledby="game-property-tab-sechstage" hidden><header><h3>🏁 Sechs-Tage-Rennen</h3></header><label class="game-settings-field">Kranzwert<input type="number" min="1" max="12" id="sechstage-kranz-setting" value="8"></label><p>Nach einem Kranz wird wieder in die Vollen geworfen.</p><button type="button" class="primary-btn" onclick="saveRaceKranz('sechstage')">💾 Kranzwert speichern</button></section><section class="game-settings-card" id="game-property-general" data-game-property="general" role="tabpanel" aria-labelledby="game-property-tab-general" hidden><header><span>⚙️</span><div><h3>Allgemeine Spieleinstellungen</h3><p>Freigaben für neue Partien und den Zufallsgenerator</p></div></header><h4>🔥 OnTop vor Spielstart anbieten</h4><p>Nur markierte Spiele zeigen vor dem Start den OnTop-Schalter. Er steht bei jeder neuen Partie auf aus. Hausnummern bleiben immer unter dem Deckel.</p><div id="game-fine-settings-grid" class="game-fine-settings-grid"></div><h4>🎲 Spiele für den Zufallsgenerator</h4><p>Nur markierte Spiele werden ausgelost. Die Auslosung startet und öffnet kein Spiel.</p><div id="game-random-settings-grid" class="game-fine-settings-grid"></div></section>
+ <div class="game-settings-grid">
+<section class="game-settings-card" id="game-property-abschreibung" data-game-property="abschreibung" role="tabpanel" aria-labelledby="abschreibung-settings-title" hidden>
+ <header><h3 id="abschreibung-settings-title">📉 Abschreibung</h3></header>
+ <div class="game-settings-fields"><label class="game-settings-field">Startpunkte<input type="number" min="1" max="300" step="1" data-club-setting="startPoints"></label><label class="game-settings-field">Bis zu welchem Platz ausscheiden lassen<input type="number" min="2" max="16" step="1" data-club-setting="lastPlace"></label><label class="game-settings-field">Einsatz je Platz in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="placeCents"></label><label><input type="checkbox" data-club-setting="woodRequired"> Holzpflicht · Gosse wiederholen</label></div>
+ <button class="primary-btn" type="button" onclick="saveClubGameSettings('abschreibung')">Einstellungen speichern</button>
+</section>
+<section class="game-settings-card" id="game-property-lottokoenig" data-game-property="lottokoenig" role="tabpanel" aria-labelledby="lottokoenig-settings-title" hidden>
+ <header><h3 id="lottokoenig-settings-title">🍀 Lottokönig</h3></header>
+ <div class="game-settings-fields"><p>Sechs Glückszahlen, 13 Würfe und das Mindestziel von 49 Holz.</p></div>
+</section>
+<section class="game-settings-card" id="game-property-tageskurs" data-game-property="tageskurs" role="tabpanel" aria-labelledby="tageskurs-settings-title" hidden>
+ <header><h3 id="tageskurs-settings-title">💶 Tageskurs</h3></header>
+ <div class="game-settings-fields"><label class="game-settings-field">Teiler<input type="number" min="1" max="100" step="1" data-club-setting="divisor"></label><label class="game-settings-field">Kegel 1 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="0"></label><label class="game-settings-field">Kegel 2 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="1"></label><label class="game-settings-field">Kegel 3 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="2"></label><label class="game-settings-field">Kegel 4 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="3"></label><label class="game-settings-field">Kegel 5 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="4"></label><label class="game-settings-field">Kegel 6 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="5"></label><label class="game-settings-field">Kegel 7 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="6"></label><label class="game-settings-field">Kegel 8 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="7"></label><label class="game-settings-field">Kegel 9 in Cent<input type="number" min="0" max="10000" step="1" data-club-setting="pinCents" data-pin-index="8"></label></div>
+ <button class="primary-btn" type="button" onclick="saveClubGameSettings('tageskurs')">Einstellungen speichern</button>
+</section>
+<section class="game-settings-card" id="game-property-swingerclub" data-game-property="swingerclub" role="tabpanel" aria-labelledby="swingerclub-settings-title" hidden>
+ <header><h3 id="swingerclub-settings-title">🤝 Swinger Club</h3></header>
+ <div class="game-settings-fields"><label class="game-settings-field">Runden<input type="number" min="1" max="12" step="1" data-club-setting="rounds"></label><label class="game-settings-field">Würfe pro Team und Runde<input type="number" min="1" max="12" step="1" data-club-setting="throws"></label></div>
+ <button class="primary-btn" type="button" onclick="saveClubGameSettings('swingerclub')">Einstellungen speichern</button>
+</section><section class="game-settings-card" id="game-property-guterschnitt" data-game-property="guterschnitt" role="tabpanel" aria-labelledby="game-property-tab-guterschnitt" hidden><header><h3>✂️ Der gute Schnitt</h3></header><label class="game-settings-field">Anzahl Zielzahlen<input id="goodcut-count" type="number" min="1" max="50" value="9" onchange="goodCutCount()"></label><div class="game-settings-fields" id="goodcut-targets"></div><div class="game-settings-fields"><label class="game-settings-field" for="goodcut-kranz-mode">Kranzwertung<select id="goodcut-kranz-mode" onchange="goodCutKranzMode()"><option value="target">Automatisch aktuelle Zielzahl treffen</option><option value="choose">Bei jedem Kranz eine Zahl wählen</option><option value="fixed" selected>Festen Wert zählen</option></select></label><label class="game-settings-field" id="goodcut-kranz-fixed" for="goodcut-kranz-value">Fester Kranzwert<input id="goodcut-kranz-value" type="number" min="1" max="12" step="1" value="8"></label></div><p>Gilt ab dem nächsten Spielstart. Laufende Partien behalten ihre Zahlenfolge und Kranzwertung.</p><button type="button" class="primary-btn" onclick="saveGoodCutSettings()">💾 Einstellungen speichern</button></section><section class="game-settings-card" id="game-property-sechstage" data-game-property="sechstage" role="tabpanel" aria-labelledby="game-property-tab-sechstage" hidden><header><h3>🏁 Sechs-Tage-Rennen</h3></header><label class="game-settings-field">Kranzwert<input type="number" min="1" max="12" id="sechstage-kranz-setting" value="8"></label><p>Nach einem Kranz wird wieder in die Vollen geworfen.</p><button type="button" class="primary-btn" onclick="saveRaceKranz('sechstage')">💾 Kranzwert speichern</button></section><section class="game-settings-card" id="game-property-general" data-game-property="general" role="tabpanel" aria-labelledby="game-property-tab-general" hidden><header><span>⚙️</span><div><h3>Allgemeine Spieleinstellungen</h3><p>Freigaben für neue Partien und den Zufallsgenerator</p></div></header><h4>🔥 OnTop vor Spielstart anbieten</h4><p>Nur markierte Spiele zeigen vor dem Start den OnTop-Schalter. Er steht bei jeder neuen Partie auf aus. Hausnummern bleiben immer unter dem Deckel.</p><div id="game-fine-settings-grid" class="game-fine-settings-grid"></div><h4>🎲 Spiele für den Zufallsgenerator</h4><p>Nur markierte Spiele werden ausgelost. Die Auslosung startet und öffnet kein Spiel.</p><div id="game-random-settings-grid" class="game-fine-settings-grid"></div></section>
 <section class="game-settings-card" id="game-property-bergundtal" data-game-property="bergundtal" role="tabpanel" aria-labelledby="game-property-tab-bergundtal" hidden><header><span>🏔️</span><div><h3>Berg und Tal</h3><p>Vorgaben für neue Spiele</p></div></header><div class="game-settings-fields"><label class="game-settings-field" for="extra-bergundtal-rounds">Durchgänge<input id="extra-bergundtal-rounds" type="number" min="1" max="50" step="1" required></label><label class="game-settings-field" for="extra-bergundtal-gutterHigh">Gosse hoch · 1. Wurf<input id="extra-bergundtal-gutterHigh" type="number" min="0" max="12" step="1" required><small>Standard: 0 Holz</small></label><label class="game-settings-field" for="extra-bergundtal-gutterLow">Gosse runter · 2. Wurf<input id="extra-bergundtal-gutterLow" type="number" min="0" max="12" step="1" required><small>Standard: 9 Holz</small></label><label class="game-settings-field" for="extra-bergundtal-kranzMode">Kranzwertung<select id="extra-bergundtal-kranzMode" onchange="extraKranzMode('bergundtal')"><option value="8" selected>8 Holz</option><option value="12">12 Holz</option><option value="custom">Eigener fester Wert</option><option value="choose">Bei jedem Kranz wählen (1–9 oder 12)</option></select></label><label id="extra-bergundtal-custom" class="game-settings-field" for="extra-bergundtal-kranzValue" hidden>Eigener Kranzwert<input id="extra-bergundtal-kranzValue" type="number" min="1" max="12" step="1" value="8"></label></div><p>Gilt ab dem nächsten Spielstart. Laufende Spiele behalten ihre Einstellungen.</p><footer><button type="button" data-extra-settings-save class="primary-btn" onclick="saveExtraSettings('bergundtal')">💾 Berg und Tal speichern</button><span id="extra-bergundtal-status" class="game-settings-status" role="status"></span></footer></section><section class="game-settings-card" id="game-property-ballermann" data-game-property="ballermann" role="tabpanel" aria-labelledby="game-property-tab-ballermann" hidden><header><span>🏖️</span><div><h3>Ballermann 6</h3><p>Vorgaben für neue Spiele</p></div></header><div class="game-settings-fields"><label class="game-settings-field" for="extra-ballermann-seconds">Zeit je Mannschaft (Sekunden)<input id="extra-ballermann-seconds" type="number" min="1" max="3600" step="1" required></label><label class="game-settings-field" for="extra-ballermann-kranzMode">Kranzwertung<select id="extra-ballermann-kranzMode" onchange="extraKranzMode('ballermann')"><option value="8" selected>8 Holz</option><option value="12">12 Holz</option><option value="custom">Eigener fester Wert</option><option value="choose">Bei jedem Kranz wählen (1–9 oder 12)</option></select></label><label id="extra-ballermann-custom" class="game-settings-field" for="extra-ballermann-kranzValue" hidden>Eigener Kranzwert<input id="extra-ballermann-kranzValue" type="number" min="1" max="12" step="1" value="8"></label></div><p>Gilt ab dem nächsten Spielstart. Laufende Spiele behalten ihre Einstellungen.</p><footer><button type="button" data-extra-settings-save class="primary-btn" onclick="saveExtraSettings('ballermann')">💾 Ballermann 6 speichern</button><span id="extra-ballermann-status" class="game-settings-status" role="status"></span></footer></section><section class="game-settings-card" id="game-property-lattenzaun" data-game-property="lattenzaun" role="tabpanel" aria-labelledby="game-property-tab-lattenzaun" hidden><header><span>🪵</span><div><h3>Lattenzaun</h3><p>Vorgaben für neue Spiele</p></div></header><div class="game-settings-fields"><label class="game-settings-field" for="extra-lattenzaun-slats">Latten bis zum vollen Zaun<input id="extra-lattenzaun-slats" type="number" min="1" max="50" step="1" required></label><label class="game-settings-field" for="extra-lattenzaun-slatColor">Lattenfarbe<input id="extra-lattenzaun-slatColor" type="color" value="#bc7949"><small>Farbe der gesammelten Latten · gilt sofort in App und Dashboard.</small></label><label class="game-settings-field" for="extra-lattenzaun-slatCents">Preis je Latte (€)<input id="extra-lattenzaun-slatCents" type="number" min="0" max="0.2" step="0.01" required></label><label class="game-settings-field" for="extra-lattenzaun-kranzMode">Kranzwertung<select id="extra-lattenzaun-kranzMode" onchange="extraKranzMode('lattenzaun')"><option value="8" selected>8 Holz</option><option value="12">12 Holz</option><option value="custom">Eigener fester Wert</option><option value="choose">Bei jedem Kranz wählen (1–9 oder 12)</option></select></label><label id="extra-lattenzaun-custom" class="game-settings-field" for="extra-lattenzaun-kranzValue" hidden>Eigener Kranzwert<input id="extra-lattenzaun-kranzValue" type="number" min="1" max="12" step="1" value="8"></label></div><p>Gilt ab dem nächsten Spielstart. Laufende Spiele behalten ihre Einstellungen.</p><footer><button type="button" data-extra-settings-save class="primary-btn" onclick="saveExtraSettings('lattenzaun')">💾 Lattenzaun speichern</button><span id="extra-lattenzaun-status" class="game-settings-status" role="status"></span></footer></section>  <section class="game-settings-card" id="game-property-siebener" data-game-property="siebener" role="tabpanel" aria-labelledby="game-property-tab-siebener" hidden>
    <header><span aria-hidden="true">🎲</span><div><h3>7er-Spiel</h3><p>Preis pro Pin Abstand und Kranzwertung</p></div></header>
    <div class="game-settings-fields">
@@ -2324,6 +2363,30 @@
 </div>
 <div class="modal-overlay hidden kranz-picker" id="seven-kranz-modal" onclick="if(event.target===this)indCancelKranz()"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="seven-kranz-title"><div class="kranz-picker-heading"><span class="kranz-picker-crown" aria-hidden="true">👑</span><div><p class="kranz-picker-eyebrow">Kranz geworfen</p><h3 id="seven-kranz-title">Wurfwert wählen</h3></div></div><p class="kranz-picker-help">Wähle, wie viele Holz dieser Kranz zählt.</p><div id="seven-kranz-choices" class="kranz-value-grid"></div><button type="button" class="kranz-picker-cancel" onclick="indCancelKranz()">Abbrechen</button></div></div>
 <div class="modal-overlay hidden ind-rules-modal" id="siebener-rules-modal" onclick="if(event.target===this)closeIndividualRules('siebener')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="siebener-rules-title"><h3 id="siebener-rules-title">ℹ️ 7er-Spiel – unsere Regeln</h3><div id="siebener-rules-content"></div><p class="rules-sync-status" id="siebener-rules-sync-status" role="status"></p><button type="button" class="primary-btn" id="siebener-rules-close" onclick="closeIndividualRules('siebener')">Schließen</button></div></div>
+<div id="abschreibung-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('abschreibung')">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="abschreibung-rule-title">
+  <h3 id="abschreibung-rule-title">📉 Regeln für Abschreibung</h3><div id="abschreibung-rules-content"></div>
+  <button id="abschreibung-rules-close" class="primary-btn" type="button" onclick="closeIndividualRules('abschreibung')">Schließen</button>
+ </div>
+</div>
+<div id="lottokoenig-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('lottokoenig')">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lottokoenig-rule-title">
+  <h3 id="lottokoenig-rule-title">🍀 Regeln für Lottokönig</h3><div id="lottokoenig-rules-content"></div>
+  <button id="lottokoenig-rules-close" class="primary-btn" type="button" onclick="closeIndividualRules('lottokoenig')">Schließen</button>
+ </div>
+</div>
+<div id="tageskurs-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('tageskurs')">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tageskurs-rule-title">
+  <h3 id="tageskurs-rule-title">💶 Regeln für Tageskurs</h3><div id="tageskurs-rules-content"></div>
+  <button id="tageskurs-rules-close" class="primary-btn" type="button" onclick="closeIndividualRules('tageskurs')">Schließen</button>
+ </div>
+</div>
+<div id="swingerclub-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('swingerclub')">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="swingerclub-rule-title">
+  <h3 id="swingerclub-rule-title">🤝 Regeln für Swinger Club</h3><div id="swingerclub-rules-content"></div>
+  <button id="swingerclub-rules-close" class="primary-btn" type="button" onclick="closeIndividualRules('swingerclub')">Schließen</button>
+ </div>
+</div>
 <div id="guterschnitt-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('guterschnitt')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="guterschnitt-rules-title"><h3 id="guterschnitt-rules-title">ℹ️ Der gute Schnitt – unsere Regeln</h3><div id="guterschnitt-rules-content"></div><p id="guterschnitt-rules-sync-status" class="rules-sync-status" role="status"></p><button id="guterschnitt-rules-close" type="button" class="primary-btn" onclick="closeIndividualRules('guterschnitt')">Schließen</button></div></div><div id="bergundtal-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('bergundtal')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="bergundtal-rules-title"><h3 id="bergundtal-rules-title">ℹ️ Berg und Tal – unsere Regeln</h3><div id="bergundtal-rules-content"></div><p id="bergundtal-rules-sync-status" class="rules-sync-status" role="status"></p><button id="bergundtal-rules-close" type="button" class="primary-btn" onclick="closeIndividualRules('bergundtal')">Schließen</button></div></div><div id="ballermann-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('ballermann')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ballermann-rules-title"><h3 id="ballermann-rules-title">ℹ️ Ballermann 6 – unsere Regeln</h3><div id="ballermann-rules-content"></div><p id="ballermann-rules-sync-status" class="rules-sync-status" role="status"></p><button id="ballermann-rules-close" type="button" class="primary-btn" onclick="closeIndividualRules('ballermann')">Schließen</button></div></div><div id="lattenzaun-rules-modal" class="modal-overlay hidden ind-rules-modal" onclick="if(event.target===this)closeIndividualRules('lattenzaun')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="lattenzaun-rules-title"><h3 id="lattenzaun-rules-title">ℹ️ Lattenzaun – unsere Regeln</h3><div id="lattenzaun-rules-content"></div><p id="lattenzaun-rules-sync-status" class="rules-sync-status" role="status"></p><button id="lattenzaun-rules-close" type="button" class="primary-btn" onclick="closeIndividualRules('lattenzaun')">Schließen</button></div></div><div id="extra-kranz-modal" class="modal-overlay hidden kranz-picker" onclick="if(event.target===this)extraCancelKranz()"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="extra-kranz-title"><div class="kranz-picker-heading"><span class="kranz-picker-crown" aria-hidden="true">👑</span><div><p class="kranz-picker-eyebrow">Kranz geworfen</p><h3 id="extra-kranz-title">Wurfwert wählen</h3></div></div><p class="kranz-picker-help">Wähle, wie viele Holz dieser Kranz zählt.</p><div id="extra-kranz-choices" class="kranz-value-grid"></div><button type="button" class="kranz-picker-cancel" onclick="extraCancelKranz()">Abbrechen</button></div></div><div class="modal-overlay hidden ind-rules-modal" id="hindernis-rules-modal" onclick="if(event.target===this)closeIndividualRules('hindernis')"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="hindernis-rules-title"><h3 id="hindernis-rules-title">ℹ️ Hindernislauf – unsere Regeln</h3><div id="hindernis-rules-content"></div><p class="rules-sync-status" id="hindernis-rules-sync-status" role="status"></p><button type="button" class="primary-btn" id="hindernis-rules-close" onclick="closeIndividualRules('hindernis')">Schließen</button></div></div>
 <div class="modal-overlay hidden" id="spiral-rules-modal" onclick="if(event.target===this)closeSpiralRules()">
  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="spiral-rules-title">
@@ -2398,100 +2461,102 @@
   </form>
 </div>
 
-<script src="js/birthdays.js?v=20261119-v274"></script>
-<script src="js/kegel-calendar.js?v=20261119-v274"></script>
-<script src="js/helpers.js?v=20261119-v274"></script>
-<script src="js/dashboard-layout.js?v=20261119-v274"></script>
-<script src="js/state.js?v=20261119-v274"></script>
-<script src="js/shared-clock.js?v=20261119-v274"></script>
-<script src="js/game-stopwatch.js?v=20261119-v274"></script>
-<script src="js/dashboard-link.js?v=20261119-v274"></script>
-<script src="js/kranz-policy.js?v=20261119-v274"></script>
-<script src="js/game-player-rows.js?v=20261119-v274"></script>
-<script src="js/games/extra-core.js?v=20261119-v274"></script><script src="js/games/extra-view.js?v=20261119-v274"></script>
-<script src="js/games/individual-core.js?v=20261119-v274"></script>
-<script src="js/game-rules.js?v=20261119-v274"></script>
-<script src="js/payment-visibility.js?v=20261119-v274"></script>
-<script src="js/persons.js?v=20261119-v274"></script>
-<script src="js/member-profiles.js?v=20261119-v274"></script>
-<script src="js/clubs.js?v=20261119-v274"></script>
+<script src="js/birthdays.js?v=20261119-v275"></script>
+<script src="js/kegel-calendar.js?v=20261119-v275"></script>
+<script src="js/helpers.js?v=20261119-v275"></script>
+<script src="js/dashboard-layout.js?v=20261119-v275"></script>
+<script src="js/state.js?v=20261119-v275"></script>
+<script src="js/shared-clock.js?v=20261119-v275"></script>
+<script src="js/game-stopwatch.js?v=20261119-v275"></script>
+<script src="js/dashboard-link.js?v=20261119-v275"></script>
+<script src="js/kranz-policy.js?v=20261119-v275"></script>
+<script src="js/game-player-rows.js?v=20261119-v275"></script>
+<link rel="stylesheet" href="css/club-games.css?v=20261119-v275">
+<script src="js/games/club-games-core.js?v=20261119-v275"></script><script src="js/games/club-games-view.js?v=20261119-v275"></script>
+<script src="js/games/extra-core.js?v=20261119-v275"></script><script src="js/games/extra-view.js?v=20261119-v275"></script>
+<script src="js/games/individual-core.js?v=20261119-v275"></script>
+<script src="js/game-rules.js?v=20261119-v275"></script>
+<script src="js/payment-visibility.js?v=20261119-v275"></script>
+<script src="js/persons.js?v=20261119-v275"></script>
+<script src="js/member-profiles.js?v=20261119-v275"></script>
+<script src="js/clubs.js?v=20261119-v275"></script>
 
-<script src="js/games/avatar-select.js?v=20261119-v274"></script>
-<script src="js/games/tannenbaum.js?v=20261119-v274"></script>
-<script src="js/games/darts.js?v=20261119-v274"></script>
-<script src="js/games/tiberius.js?v=20261119-v274"></script>
-<script src="js/games/lotterie.js?v=20261119-v274"></script>
-<script src="js/game-fine-policy.js?v=20261119-v274"></script><script src="js/game-options.js?v=20261119-v274"></script><script src="js/game-fine-settings.js?v=20261119-v274"></script>
-<script src="js/game-results.js?v=20261119-v274"></script>
-<script src="js/starter-draw.js?v=20261119-v274"></script>
-<script src="js/games/solo-start-draw.js?v=20261119-v274"></script>
-<script src="js/games/start-setup.js?v=20261119-v274"></script>
-<script src="js/games/seating.js?v=20261119-v274"></script>
-<script src="js/games/mensch.js?v=20261119-v274"></script>
-<script src="js/games/plusminus.js?v=20261119-v274"></script>
-<script src="js/games/hausnummer-core.js?v=20261119-v274"></script>
-<script src="js/games/hausnummer-hoch.js?v=20261119-v274"></script>
-<script src="js/games/hausnummer-tief.js?v=20261119-v274"></script>
-<script src="js/games/fuchsjagd.js?v=20261119-v274"></script>
-<script src="js/games/sichern.js?v=20261119-v274"></script>
-<script src="js/games/sechstage-core.js?v=20261119-v274"></script>
-<script src="js/games/sechstage.js?v=20261119-v274"></script>
-<script src="js/games/table-games-core.js?v=20261119-v274"></script>
-<script src="js/games/table-games-ui.js?v=20261119-v274"></script>
-<script src="js/games/individual-view.js?v=20261119-v274"></script><script src="js/games/individual-ui.js?v=20261119-v274"></script><script src="js/games/extra-ui.js?v=20261119-v274"></script><script src="js/games/round-games-ui.js?v=20261119-v274"></script><script src="js/games/parteienspiel.js?v=20261119-v274"></script><script src="js/games/dreieuro.js?v=20261119-v274"></script><script src="js/games/ebbeflut.js?v=20261119-v274"></script><script src="js/games/hochsprung.js?v=20261119-v274"></script>
-<script src="js/games/poker.js?v=20261119-v274"></script>
-<script src="js/games/pfaelzer.js?v=20261119-v274"></script>
-<script src="js/games/tausend.js?v=20261119-v274"></script><script src="js/games/guterschnitt.js?v=20261119-v274"></script><script src="js/games/kranz-settings.js?v=20261119-v274"></script><script src="js/games/bergundtal.js?v=20261119-v274"></script><script src="js/games/ballermann.js?v=20261119-v274"></script><script src="js/games/lattenzaun.js?v=20261119-v274"></script><script src="js/games/siebener.js?v=20261119-v274"></script><script src="js/games/hindernis.js?v=20261119-v274"></script>
-<script src="js/games/blackjack.js?v=20261119-v274"></script>
-<script src="js/games/gluecksspirale.js?v=20261119-v274"></script>
-<script src="js/games/tor.js?v=20261119-v274"></script>
-<script src="js/games/coinflip.js?v=20261119-v274"></script>
+<script src="js/games/avatar-select.js?v=20261119-v275"></script>
+<script src="js/games/tannenbaum.js?v=20261119-v275"></script>
+<script src="js/games/darts.js?v=20261119-v275"></script>
+<script src="js/games/tiberius.js?v=20261119-v275"></script>
+<script src="js/games/lotterie.js?v=20261119-v275"></script>
+<script src="js/game-fine-policy.js?v=20261119-v275"></script><script src="js/game-options.js?v=20261119-v275"></script><script src="js/game-fine-settings.js?v=20261119-v275"></script>
+<script src="js/game-results.js?v=20261119-v275"></script>
+<script src="js/starter-draw.js?v=20261119-v275"></script>
+<script src="js/games/solo-start-draw.js?v=20261119-v275"></script>
+<script src="js/games/start-setup.js?v=20261119-v275"></script>
+<script src="js/games/seating.js?v=20261119-v275"></script>
+<script src="js/games/mensch.js?v=20261119-v275"></script>
+<script src="js/games/plusminus.js?v=20261119-v275"></script>
+<script src="js/games/hausnummer-core.js?v=20261119-v275"></script>
+<script src="js/games/hausnummer-hoch.js?v=20261119-v275"></script>
+<script src="js/games/hausnummer-tief.js?v=20261119-v275"></script>
+<script src="js/games/fuchsjagd.js?v=20261119-v275"></script>
+<script src="js/games/sichern.js?v=20261119-v275"></script>
+<script src="js/games/sechstage-core.js?v=20261119-v275"></script>
+<script src="js/games/sechstage.js?v=20261119-v275"></script>
+<script src="js/games/table-games-core.js?v=20261119-v275"></script>
+<script src="js/games/table-games-ui.js?v=20261119-v275"></script>
+<script src="js/games/individual-view.js?v=20261119-v275"></script><script src="js/games/individual-ui.js?v=20261119-v275"></script><script src="js/games/club-games-ui.js?v=20261119-v275"></script><script src="js/games/extra-ui.js?v=20261119-v275"></script><script src="js/games/round-games-ui.js?v=20261119-v275"></script><script src="js/games/parteienspiel.js?v=20261119-v275"></script><script src="js/games/dreieuro.js?v=20261119-v275"></script><script src="js/games/ebbeflut.js?v=20261119-v275"></script><script src="js/games/hochsprung.js?v=20261119-v275"></script>
+<script src="js/games/poker.js?v=20261119-v275"></script>
+<script src="js/games/pfaelzer.js?v=20261119-v275"></script>
+<script src="js/games/tausend.js?v=20261119-v275"></script><script src="js/games/guterschnitt.js?v=20261119-v275"></script><script src="js/games/kranz-settings.js?v=20261119-v275"></script><script src="js/games/bergundtal.js?v=20261119-v275"></script><script src="js/games/ballermann.js?v=20261119-v275"></script><script src="js/games/lattenzaun.js?v=20261119-v275"></script><script src="js/games/siebener.js?v=20261119-v275"></script><script src="js/games/hindernis.js?v=20261119-v275"></script>
+<script src="js/games/blackjack.js?v=20261119-v275"></script>
+<script src="js/games/gluecksspirale.js?v=20261119-v275"></script>
+<script src="js/games/tor.js?v=20261119-v275"></script>
+<script src="js/games/coinflip.js?v=20261119-v275"></script>
 
-<script src="js/groups.js?v=20261119-v274"></script>
+<script src="js/groups.js?v=20261119-v275"></script>
 
-<script src="js/penalty-table.js?v=20261119-v274"></script>
-<script src="js/club-content.js?v=20261119-v274"></script><script src="js/club-content-pager.js?v=20261119-v274"></script><script src="js/club-content-app.js?v=20261119-v274"></script>
-<script src="js/game-overview.js?v=20261119-v274"></script><script src="js/game-overview-app.js?v=20261119-v274"></script>
-<script src="js/team-drink-games.js?v=20261119-v274"></script>
-<script src="js/drink-ledger.js?v=20261119-v274"></script>
-<script src="js/vendor/station-qr.js?v=20261119-v274"></script>
-<script src="js/app.js?v=20261119-v274"></script><script src="js/dashboard-layout-app.js?v=20261119-v274"></script><script src="js/club-termine.js?v=20261119-v274"></script>
+<script src="js/penalty-table.js?v=20261119-v275"></script>
+<script src="js/club-content.js?v=20261119-v275"></script><script src="js/club-content-pager.js?v=20261119-v275"></script><script src="js/club-content-app.js?v=20261119-v275"></script>
+<script src="js/game-overview.js?v=20261119-v275"></script><script src="js/game-overview-app.js?v=20261119-v275"></script>
+<script src="js/team-drink-games.js?v=20261119-v275"></script>
+<script src="js/drink-ledger.js?v=20261119-v275"></script>
+<script src="js/vendor/station-qr.js?v=20261119-v275"></script>
+<script src="js/app.js?v=20261119-v275"></script><script src="js/dashboard-layout-app.js?v=20261119-v275"></script><script src="js/club-termine.js?v=20261119-v275"></script>
     
-<script src="js/live-games.js?v=20261119-v274"></script>
-<script src="js/strafe-pdf.js?v=20261119-v274"></script>
-<script src="js/cash-history.js?v=20261119-v274"></script>
-<script src="js/cash-overview.js?v=20261119-v274"></script>
-<script src="js/cash-income.js?v=20261119-v274"></script>
-<script src="js/cash-accounting.js?v=20261119-v274"></script>
-<script src="js/cash-book.js?v=20261119-v274"></script>
-<script src="js/penalty-statistics.js?v=20261119-v274"></script>
-<script src="js/activity-reports.js?v=20261119-v274"></script>
-<script src="js/reports-app.js?v=20261119-v274"></script>
-<script src="js/start-review.js?v=20261119-v274"></script>
-<script src="js/cash-expenses.js?v=20261119-v274"></script>
-<script src="js/historical-evenings.js?v=20261119-v274"></script>
-<script src="js/game-inputs.js?v=20261119-v274"></script>
-<script src="js/table-alignment.js?v=20261119-v274"></script>
-<script src="js/table-headers.js?v=20261119-v274"></script>
+<script src="js/live-games.js?v=20261119-v275"></script>
+<script src="js/strafe-pdf.js?v=20261119-v275"></script>
+<script src="js/cash-history.js?v=20261119-v275"></script>
+<script src="js/cash-overview.js?v=20261119-v275"></script>
+<script src="js/cash-income.js?v=20261119-v275"></script>
+<script src="js/cash-accounting.js?v=20261119-v275"></script>
+<script src="js/cash-book.js?v=20261119-v275"></script>
+<script src="js/penalty-statistics.js?v=20261119-v275"></script>
+<script src="js/activity-reports.js?v=20261119-v275"></script>
+<script src="js/reports-app.js?v=20261119-v275"></script>
+<script src="js/start-review.js?v=20261119-v275"></script>
+<script src="js/cash-expenses.js?v=20261119-v275"></script>
+<script src="js/historical-evenings.js?v=20261119-v275"></script>
+<script src="js/game-inputs.js?v=20261119-v275"></script>
+<script src="js/table-alignment.js?v=20261119-v275"></script>
+<script src="js/table-headers.js?v=20261119-v275"></script>
 
-<script src="js/shared-sync-core.js?v=20261119-v274"></script>
-<script src="js/shared-sync-transport.js?v=20261119-v274"></script>
-<script src="js/kranz-ui.js?v=20261119-v274"></script>
-<script src="js/tablet-sync.js?v=20261119-v274"></script>
-<script src="js/game-stopwatch-app.js?v=20261119-v274"></script>
-<script src="js/shared-sync-app.js?v=20261119-v274"></script>
+<script src="js/shared-sync-core.js?v=20261119-v275"></script>
+<script src="js/shared-sync-transport.js?v=20261119-v275"></script>
+<script src="js/kranz-ui.js?v=20261119-v275"></script>
+<script src="js/tablet-sync.js?v=20261119-v275"></script>
+<script src="js/game-stopwatch-app.js?v=20261119-v275"></script>
+<script src="js/shared-sync-app.js?v=20261119-v275"></script>
 <script>
   window.KCTabletAuth = async () => {
-    const {tabletFirebaseAuth} = await import("./js/station-client.js?v=20261119-v274");
+    const {tabletFirebaseAuth} = await import("./js/station-client.js?v=20261119-v275");
     return tabletFirebaseAuth();
   };
 </script>
 <script
   type="module"
-  src="js/firebase.js?v=20261119-v274"
+  src="js/firebase.js?v=20261119-v275"
 ></script>
 <script type="module">
-  import('./js/station-admin.js?v=20261119-v274').catch(()=>{
+  import('./js/station-admin.js?v=20261119-v275').catch(()=>{
     document.getElementById('kc-station-status').textContent='Geräteverwaltung konnte nicht geladen werden. Bitte Seite neu laden.';
   });
 </script>

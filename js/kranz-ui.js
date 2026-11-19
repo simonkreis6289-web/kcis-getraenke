@@ -13,7 +13,7 @@
   function rule(key,s=state(key)){return P.existing(key,s,root());}
   function freeze(key,beforeRoot){
     const s=state(key),before=beforeRoot?.[key+'State'];
-    if(s?.active&&(!before?.active||s.startedAt!==before.startedAt))s.kranzRule=P.configured(beforeRoot||root(),key);
+    if(P.keys.includes(key)&&s?.active&&(!before?.active||s.startedAt!==before.startedAt))s.kranzRule=P.configured(beforeRoot||root(),key);
   }
   function cancel(){if(pending)pending.done(null);}
   async function select(key,s=state(key)){
