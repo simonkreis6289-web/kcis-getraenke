@@ -10,6 +10,32 @@ test('tablet accepts repeated drinks immediately while an upload is held, then c
 test('unconfirmed tablet entries survive a reload and incoming server snapshots cannot erase them',async()=>{
  const {a,db}=await fixture();await a.c.changeDrink('A','beer',1);a.c.KCSharedSync.receive(db.root(),{});assert.equal(a.run('persons[0].drinks.beer'),1);const b=fullApp(db);for(const [k,v] of a.storage)b.storage.set(k,v);await b.select();assert.equal(b.run('persons[0].drinks.beer'),1);assert(await b.c.KCSharedSync.waitForUpload());assert.equal(db.root().persons[0].drinks.beer,1);
 });
+test('two open apps follow confirmed Firebase updates in both directions without echo writes',async()=>{
+ const {a,db}=await fixture();assert(await a.c.KCSharedSync.waitForUpload());
+ const b=fullApp(db);await b.select();assert(await b.c.KCSharedSync.waitForUpload());
+ db.deliver();
+ const original=db.root();
+ assert(await a.c.changeDrink('A','beer',1));assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(b.run('persons[0].drinks.beer'),0);
+ const confirmed=db.root(),commits=db.commits();
+ b.c.KCSharedSync.receive(confirmed,{fromCache:true});b.c.KCSharedSync.receive(confirmed,{pending:true});
+ assert.equal(b.run('persons[0].drinks.beer'),0);
+ db.deliver();
+ assert.equal(b.run('persons[0].drinks.beer'),1);
+ assert.equal(b.c.KCSharedSync.diagnostics().cloudSequence,confirmed.tabletSequence);
+ b.c.KCSharedSync.receive(original);
+ assert.equal(b.run('persons[0].drinks.beer'),1);
+ assert.equal(db.commits(),commits);
+ assert.equal(JSON.parse(b.storage.get('kcis_tablet_outbox_club')).pending,null);
+ assert(await b.c.changeDrink('B','beer',1));assert(await b.c.KCSharedSync.waitForUpload());
+ db.deliver();
+ assert.equal(a.run('persons[0].drinks.beer'),1);
+ assert.equal(a.run('persons[1].drinks.beer'),1);
+ assert(await a.c.startNewKegelabend());assert(await a.c.KCSharedSync.waitForUpload());
+ db.deliver();
+ assert.equal(b.run('currentEveningStartedAt'),db.root().currentEveningStartedAt);
+ assert.equal(b.run('persons[0].drinks.beer'),0);
+});
 test('a lost acknowledgement retries the same tablet batch without adding a drink twice',async()=>{
  const {a,db}=await fixture();await a.c.changeDrink('A','beer',1);db.lose();assert.equal(await a.c.KCSharedSync.waitForUpload(),false);assert.equal(db.root().persons[0].drinks.beer,1);assert(await a.c.KCSharedSync.reconnect());assert.equal(db.root().persons[0].drinks.beer,1);
 });
@@ -66,7 +92,9 @@ test('after a browser disconnect Tiberius keeps accepting local throws and preve
 test('a competing tablet sequence retains both tablets’ bookings instead of reporting a false acknowledgement',async()=>{
  const {a,db}=await fixture(),b=fullApp(db);await b.select();
  assert(await a.c.changeDrink('A','beer',1));assert(await b.c.changeDrink('B','beer',1));
- assert(await a.c.KCSharedSync.waitForUpload());assert.equal(await b.c.KCSharedSync.waitForUpload(),false);
+ assert(await a.c.KCSharedSync.waitForUpload());db.deliver();
+ assert.equal(b.run('persons[1].drinks.beer'),1);
+ assert.equal(await b.c.KCSharedSync.waitForUpload(),false);
  assert.equal(db.root().persons[0].drinks.beer,1);assert.equal(db.root().persons[1].drinks.beer,0);
  const failed=JSON.parse(b.storage.get('kcis_tablet_outbox_club')).inflight;
  assert(failed);assert.match(b.c.KCSharedSync.diagnostics().error,/sync-conflict/);
