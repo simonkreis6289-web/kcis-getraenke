@@ -6,6 +6,53 @@ function clubGameDraft(s){
  const next={id:s.id,revision:s.revision,selected:[],pairs:[],partner:''};
  clubGameDrafts.set(key,next);return next;
 }
+function swingerMembers(names,current=''){
+ return names.map(n=>'<span class="swinger-member'+(n===current?' is-thrower':'')+'">'+sixAvatar(n)+'</span>').join('');
+}
+function swingerAppTeams(s){
+ const throwing=s.active&&s.phase!=='pairs',current=window.KCClubGames.current(s);
+ return '<section class="swinger-team-board" aria-label="Teams der Runde"><h3>Teams · Runde '+(s.phase==='pairs'?s.round-1:s.round)+'</h3>'+
+  '<div class="swinger-team-grid">'+s.pairs.map((team,i)=>{
+   const active=throwing&&i===s.index,done=!throwing||i<s.index,used=done?s.config.throws:active?s.pairThrows:0;
+   return '<article class="swinger-team'+(active?' is-current':'')+'" data-swinger-team="'+i+'"><div class="swinger-team-top">'+
+    '<strong>Team '+(i+1)+(team.names.length===1?' <span class="swinger-solo">1er-Team</span>':'')+
+    '</strong><small>'+(active?'Am Wurf':done?'Fertig':i===s.index+1?'Als Nächstes':'Wartet')+'</small></div>'+
+    '<div class="swinger-members">'+swingerMembers(team.names,active?current:'')+'</div>'+
+    '<div class="swinger-team-foot"><progress aria-label="Würfe erledigt" max="'+s.config.throws+'" value="'+used+'"></progress>'+
+    '<b>'+team.points+' Holz</b></div></article>';
+  }).join('')+'</div></section>';
+}
+function swingerAppTurn(s,d,disabled){
+ const current=window.KCClubGames.current(s),team=s.pairs[s.index];
+ return '<div class="swinger-turn"><header><div><small>Team '+(s.index+1)+(team.names.length===1?' · 1er-Team':'')+'</small>'+
+  '<strong>'+clubGameEscape(current)+' am Wurf</strong></div><div class="swinger-progress"><span>Runde <b>'+s.round+' / '+s.config.rounds+'</b></span>'+
+  '<span>Wurf <b>'+(s.pairThrows+1)+' / '+s.config.throws+'</b></span></div></header>'+
+  '<div class="swinger-lane-layout"><div class="swinger-lane"><strong>Gefallene Kegel antippen</strong>'+
+  clubGameRack({standing:s.standing,selected:d.selected,buttons:true,disabled:!!disabled})+
+  '<span class="swinger-lane-caption">'+s.standing.length+' stehen noch</span></div>'+
+  '<div class="swinger-booking"><div class="swinger-member-line">'+swingerMembers(team.names,current)+'</div>'+
+  '<p><b>'+team.points+'</b> Holz für das Team</p><div class="swinger-throw-count" aria-live="polite"><strong data-swinger-picked>'+d.selected.length+'</strong> ausgewählt</div>'+
+  '<div class="ind-actions"><button type="button" data-club-book-pins class="primary-btn" '+(disabled||!d.selected.length?'disabled':'')+' onclick="clubGameBookPins(\'swingerclub\')">Wurf buchen</button>'+
+  '<button type="button" '+disabled+' onclick="indAction(\'swingerclub\',\'throw\',{kind:\'gosse\'})">Gosse</button></div></div></div></div>';
+}
+function swingerAppPairs(s,d,disabled){
+ const remaining=s.players.filter(n=>!d.pairs.some(t=>t.names.includes(n)));
+ const showSingle=s.players.length%2&&!d.pairs.some(t=>t.names.length===1)&&d.partner;
+ const first=s.splitPairs[0].names,needsNew=new Set(s.splitPairs.flatMap(t=>t.names));
+ const esc=clubGameEscape;
+ return '<div class="swinger-pairing"><header class="swinger-first-choice"><div><small>Runde '+s.round+' / '+s.config.rounds+' · Partnerwechsel</small>'+
+  '<strong>'+first.map(esc).join(' &amp; ')+'</strong><span>'+ (first.length===1?'darf':'dürfen')+' zuerst wählen</span></div>'+
+  '<span>Schwächstes Team der Vorrunde</span></header>'+
+  '<div class="swinger-pair-layout"><div><h3>Spieler wählen <small>'+remaining.length+' offen</small></h3>'+
+  '<div class="kc-avatar-picker">'+remaining.map(n=>'<button type="button" class="kc-avatar-option '+(d.partner===n?'selected':'')+'" aria-pressed="'+(d.partner===n)+'" '+disabled+
+   ' onclick="clubGamePairPick('+s.players.indexOf(n)+')">'+sixAvatar(n)+(needsNew.has(n)?'<small>Partnerwechsel</small>':'')+'</button>').join('')+'</div></div>'+
+  '<div><h3>Neue Teams <small>'+d.pairs.length+' / '+Math.ceil(s.players.length/2)+'</small></h3>'+
+  '<div class="swinger-pair-list">'+d.pairs.map((t,i)=>'<div><small>Team '+(i+1)+(t.names.length===1?' · 1er-Team':'')+'</small>'+
+   '<div class="swinger-members">'+swingerMembers(t.names)+'</div></div>').join('')+'</div></div></div>'+
+  '<div class="ind-actions">'+(showSingle?'<button type="button" onclick="clubGamePickSingle()" '+disabled+'>Als 1er-Team übernehmen</button>':'')+
+  '<button type="button" onclick="clubGameClearPairs()" '+disabled+'>Auswahl zurücksetzen</button>'+
+  '<button type="button" class="primary-btn" '+(disabled||remaining.length?'disabled':'')+' onclick="clubGameCommitPairs()">Neue Teams übernehmen</button></div></div>';
+}
 function clubGameControls(key,s,disabled){
  const g=window.KCClubGames,d=clubGameDraft(s),esc=clubGameEscape;
  if(s.phase==='numbers'){
@@ -16,21 +63,11 @@ function clubGameControls(key,s,disabled){
     '<div class="ind-actions club-lotto-action"><button class="primary-btn" type="button" data-club-ticket-submit '+(disabled||!ready?'disabled':'')+' onclick="clubGameCommitTicket()">Zahlen übernehmen</button>'+
    '<span data-club-ticket-status aria-live="polite">'+clubGameTicketStatus(d.selected)+'</span></div></div>';
  }
- if(s.phase==='pairs'){
-  const remaining=s.players.filter(n=>!d.pairs.some(t=>t.names.includes(n)));
-  const showSingle=s.players.length%2&&!d.pairs.some(t=>t.names.length===1)&&d.partner;
-  return '<div class="club-game-choices"><strong>Neue Zweierteams · schwächstes Paar wählt zuerst</strong><p>Wähle jeweils zwei Namen. Beide Spieler aus dem besten und dem schwächsten Paar brauchen einen neuen Partner.</p>'+
-   '<div class="kc-avatar-picker">'+remaining.map(n=>'<button type="button" class="kc-avatar-option '+(d.partner===n?'selected':'')+'" '+disabled+
-    ' onclick="clubGamePairPick('+s.players.indexOf(n)+')">'+sixAvatar(n)+'</button>').join('')+'</div>'+
-   '<ol>'+d.pairs.map(t=>'<li>'+t.names.map(esc).join(' + ')+(t.names.length===1?' · Einzelteam':'')+'</li>').join('')+'</ol>'+
-   '<div class="ind-actions">'+(showSingle?'<button type="button" onclick="clubGamePickSingle()" '+disabled+'>Als Einzelteam übernehmen</button>':'')+
-    '<button type="button" onclick="clubGameClearPairs()" '+disabled+'>Auswahl zurücksetzen</button>'+
-    '<button type="button" class="primary-btn" '+(disabled||remaining.length?'disabled':'')+' onclick="clubGameCommitPairs()">Neue Paare übernehmen</button></div></div>';
- }
+ if(key==='swingerclub')return s.phase==='pairs'?swingerAppPairs(s,d,disabled):swingerAppTurn(s,d,disabled);
  if(g.physical(key)){
-  const standing=key==='swingerclub'?s.standing:g.pins,prices=key==='tageskurs'?s.config.pinCents:undefined;
+  const prices=s.config.pinCents;
   return '<div class="club-game-choices"><strong>Gefallene Kegel antippen</strong>'+
-   clubGameRack({standing,selected:d.selected,prices,buttons:true,disabled:!!disabled})+
+   clubGameRack({selected:d.selected,prices,buttons:true,disabled:!!disabled})+
    '<div class="ind-actions"><button type="button" data-club-book-pins class="primary-btn" '+(disabled||!d.selected.length?'disabled':'')+' onclick="clubGameBookPins(\''+key+'\')">Wurf buchen</button>'+
    '<button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'gosse\'})">Gosse</button>'+
    (key==='tageskurs'?'<button type="button" '+disabled+' onclick="clubGameBookPins(\'tageskurs\',true)">Alle Neune</button><button type="button" '+disabled+' onclick="indRun(\'tageskurs\',\'throw\',{kind:\'kranz\'})">👑 Kranz</button>':'')+'</div></div>';
@@ -83,6 +120,8 @@ function clubGameTogglePin(n,button){
  const i=d.selected.indexOf(n);if(i<0)d.selected.push(n);else d.selected.splice(i,1);
  button.setAttribute('aria-pressed',String(d.selected.includes(n)));button.classList.toggle('is-selected',d.selected.includes(n));
  panel.querySelector('[data-club-book-pins]').disabled=!d.selected.length;
+ const counter=panel.querySelector('[data-swinger-picked]');
+ if(counter)counter.textContent=String(d.selected.length);
 }
 function clubGameBookPins(key,all=false){
  return indAction(key,'throw',{kind:'pins',knocked:all?window.KCClubGames.pins.slice():clubGameDraft(indGet(key)).selected.slice()});

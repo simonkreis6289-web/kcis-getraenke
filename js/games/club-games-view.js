@@ -23,7 +23,7 @@ function clubGameImpact(roll,name,before,after,detail){
  return '<aside class="club-game-impact" aria-label="Letzter Wurf"><strong>Letzter Wurf · '+clubGameEscape(roll.name)+' · '+result+
   '</strong><span>'+name+': <b>'+before+' → '+after+' Punkte</b></span><small>'+detail+'</small></aside>';
 }
-function renderClubGameBoard(s,{controls=''}={}){
+function renderClubGameBoard(s,{controls='',dashboard=false}={}){
  const g=window.KCClubGames,key=s.gameKey,current=g.current(s),escape=clubGameEscape,money=clubGameMoney;
  const last=s.history.findLast(e=>e.action==='throw');
  let phase='',body='',visual='',impact='';
@@ -63,14 +63,14 @@ function renderClubGameBoard(s,{controls=''}={}){
  }else{
   phase=s.phase==='pairs'?'Runde '+s.round+' · Neue Paare bilden':'Runde '+s.round+' / '+s.config.rounds+' · Wurf '+(s.pairThrows+1)+' / '+s.config.throws;
   const shown=s.active?s.pairs:s.pairRounds.at(-1)?.teams||s.pairs;
-  visual='<div class="extra-team-grid">'+shown.map((pair,i)=>'<article class="extra-team-card'+(s.active&&s.phase!=='pairs'&&s.index===i?' extra-current':'')+
+  visual=!dashboard&&typeof swingerAppTeams==='function'?swingerAppTeams(s):'<div class="extra-team-grid">'+shown.map((pair,i)=>'<article class="extra-team-card'+(s.active&&s.phase!=='pairs'&&s.index===i?' extra-current':'')+
    '"><small>Team '+(i+1)+(pair.names.length===1?' · Einzelteam':'')+'</small><strong>'+pair.points+' Holz</strong><span>'+pair.names.map(escape).join(' + ')+'</span></article>').join('')+'</div>';
-  if(s.active&&s.phase==='pairs')visual+='<p class="club-game-highlight">Neue Partner für '+s.splitPairs.map(t=>t.names.map(escape).join(' + ')).join(' sowie ')+'</p>';
+  if(s.active&&s.phase==='pairs'&&!controls)visual+='<p class="club-game-highlight">Neue Partner für '+s.splitPairs.map(t=>t.names.map(escape).join(' + ')).join(' sowie ')+'</p>';
   body=clubGameTable(s,[...s.pairRounds.map(r=>'R'+r.round),'Gesamt'],n=>
    s.pairRounds.map(r=>'<td>'+r.teams.find(t=>t.names.includes(n)).points+'</td>').join('')+'<td><strong>'+s.scores[n]+'</strong></td>');
  }
  return '<section class="ind-board extra-board club-game-board" data-extra-game="'+key+'">'+(s.active?
-  '<div class="ind-turn extra-turn">'+(current?'🎳 '+escape(current)+' · ':'')+phase+'</div>':
+  key==='swingerclub'&&controls?'':'<div class="ind-turn extra-turn">'+(current?'🎳 '+escape(current)+' · ':'')+phase+'</div>':
   '<p class="club-game-highlight">Spiel beendet'+(key==='swingerclub'&&s.winners.length?' · 🏆 '+s.winners.map(escape).join(' · '):'')+'</p>')+
   controls+visual+body+impact+'<p class="ind-help">'+escape(g.summary(key,s.config))+'</p></section>';
 }

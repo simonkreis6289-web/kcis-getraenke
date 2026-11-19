@@ -140,3 +140,61 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
  assert.equal(db.root().individualGameLedger.find(x=>x.gameKey==='tageskurs').amountCents,120);
  assert(db.data.has('clubs/club/liveGames/tageskurs'));
 });
+
+
+test('Swinger Club on the tablet shows first choice and books throws and drinks to the newly chosen teams',async()=>{
+ const seed=initial();
+ for(const name of ['C','D','E'])seed.persons.push({...seed.persons[0],name});
+ seed.extraGameSettings={swingerclub:{rounds:2,throws:2}};
+ const db=database({[rootPath]:seed}),a=fullApp(db);await a.select();
+ await a.c.indStart('swingerclub');
+ const panel=a.document.getElementById('tab-swingerclub');
+ const state=()=>a.c.indGet('swingerclub');
+ assert(panel.querySelector('.swinger-turn').textContent.includes('A am Wurf'));
+ assert.equal(panel.querySelectorAll('.swinger-solo').length,1);
+ for(const n of [1,1,2,2,3,3]){
+  for(const pin of state().standing.slice(0,n))a.c.clubGameTogglePin(pin,panel.querySelector('[data-club-pin="'+pin+'"]'));
+  assert.equal(panel.querySelector('[data-swinger-picked]').textContent,String(n));
+  await a.c.clubGameBookPins('swingerclub');
+ }
+ assert.match(panel.querySelector('.swinger-first-choice').textContent,/A & B.*zuerst wählen/);
+ const select=a.document.getElementById('spieltyp-select');
+ assert([...select.options].some(option=>option.value==='Swinger Club'));
+ Object.defineProperty(select,'value',{value:'Swinger Club',writable:true,configurable:true});
+ a.c.changeTeamGameSelection();
+ const previousTeam=a.c.getDrinkTeamChoices()[0];
+ assert.deepEqual(copy(previousTeam.members.map(p=>p.name)),['A','B']);
+ for(const name of ['A','E','B','D','C'])a.c.clubGamePairPick(state().players.indexOf(name));
+ a.c.clubGamePickSingle();
+ await a.c.clubGameCommitPairs();
+ assert.equal(state().phase,'throw');
+ assert.deepEqual(copy(state().pairs.map(t=>t.names)),[['A','E'],['B','D'],['C']]);
+ assert(panel.querySelector('.swinger-turn').textContent.includes('A am Wurf'));
+ let pin=panel.querySelector('[data-club-pin="1"]');a.c.clubGameTogglePin(1,pin);
+ await a.c.clubGameBookPins('swingerclub');
+ assert(panel.querySelector('.swinger-turn').textContent.includes('E am Wurf'));
+ pin=panel.querySelector('[data-club-pin="2"]');a.c.clubGameTogglePin(2,pin);
+ await a.c.clubGameBookPins('swingerclub');
+ assert(await a.c.KCSharedSync.waitForUpload());
+ const saved=db.root().swingerclubState;
+ assert.deepEqual(copy(saved.pairs[0]),{names:['A','E'],points:2});
+ assert.equal(saved.scores.A,4);assert.equal(saved.scores.E,8);
+ assert.match(panel.querySelector('.swinger-turn').textContent,/B am Wurf/);
+ const [newPair,,solo]=a.c.getDrinkTeamChoices();
+ assert.notEqual(newPair.id,previousTeam.id);
+ assert.deepEqual(copy(newPair.members.map(p=>p.name)),['A','E']);
+ a.c.selectLoser(newPair.id);a.c.changeTeamDrink('beer',1);a.c.addSpiel();
+ assert(await a.c.KCSharedSync.waitForUpload());
+ const root=db.root();
+ assert.deepEqual(copy(root.spiele[0].members),['A','E']);
+ assert.equal(root.spiele[0].proKopf,1);
+
+ const ledger=a.c.KCDrinkLedger,game=ledger.games(root).find(item=>item.key==='swingerclub');
+ assert.deepEqual(copy(ledger.availableTeams(root,game).map(t=>t.id)),copy(a.c.getDrinkTeamChoices().map(t=>t.id)));
+ const book=(team,members)=>ledger.apply(root,{evening,kind:'team',payload:{game:game.key,team:team.id,members,drinks:{beer:1}}},'station_swinger',evening);
+ assert.throws(()=>book(previousTeam,['A','B']),/Teamaufstellung wurde geändert/);
+ const station=book(solo,['C']).state;
+ assert.deepEqual(copy(station.spiele[1].members),['C']);
+ assert.equal(station.persons.find(p=>p.name==='C').teamExtra,2);
+ assert.equal(station.persons.find(p=>p.name==='B').teamExtra,0);
+});

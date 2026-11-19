@@ -59,3 +59,42 @@ button.club-game-pin { cursor:pointer; }
 .club-game-impact { display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem;margin-top:.7rem;padding:.65rem .85rem;border-left:4px solid #26708f;border-radius:.45rem;background:#edf6fb;color:#173d55; }
 .club-game-impact b { font-variant-numeric:tabular-nums; }
 .club-game-impact small { color:#385873; }
+
+/* Swinger Club in der Tablet-App */
+.swinger-turn,.swinger-pairing { overflow:hidden;border:1px solid #b7cad5;border-radius:1rem;background:#f3f7f9;color:#173247; }
+.swinger-turn > header,.swinger-first-choice { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.9rem;padding:.9rem 1.1rem;background:#162f45;color:#fff; }
+.swinger-turn header small,.swinger-first-choice small { display:block;color:#d0e2ed; }
+.swinger-turn header strong,.swinger-first-choice strong { display:block;font-size:clamp(1.2rem,2.6vw,1.75rem);line-height:1.25; }
+.swinger-progress { display:flex;gap:.45rem; }
+.swinger-progress span { padding:.4rem .65rem;border-radius:.55rem;background:#2c475f;color:#f0f7fc;white-space:nowrap; }
+.swinger-lane-layout,.swinger-pair-layout { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1rem;padding:1rem; }
+.swinger-lane { display:grid;justify-items:center;align-content:start;padding:.7rem .65rem;background:repeating-linear-gradient(90deg,#ecd9b6 0,#ecd9b6 22px,#f4e6cb 23px,#f4e6cb 44px);border:1px solid #d9c29a;border-radius:.75rem; }
+.swinger-lane .club-game-rack { max-width:15rem;gap:.23rem; }
+.swinger-lane .club-game-pin { min-height:2.8rem;border-radius:.65rem; }
+.swinger-lane-caption { font-size:.86rem;color:#513c25; }
+.swinger-booking { display:flex;flex-direction:column;justify-content:center;gap:.55rem; }
+.swinger-booking p { margin:0; }
+.swinger-booking .ind-actions,.swinger-pairing > .ind-actions { margin:.2rem 0 0; }
+.swinger-throw-count { display:flex;align-items:center;gap:.5rem;font-weight:650; }
+.swinger-throw-count strong { min-width:2.4rem;text-align:center;padding:.2rem .4rem;border-radius:.55rem;background:#deeee7;color:#164934;font-size:1.35rem; }
+.swinger-team-board h3 { margin:1rem 0 .5rem; }
+.swinger-team-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:.65rem;margin-bottom:1rem; }
+.swinger-team,.swinger-pair-list > div { display:grid;gap:.45rem;min-width:0;padding:.7rem;border:1px solid #cad9e4;border-radius:.75rem;background:#f4f8fb; }
+.swinger-team.is-current { border-color:#258168;background:#eaf7f0;box-shadow:inset 3px 0 #258168; }
+.swinger-team-top,.swinger-team-foot { display:flex;justify-content:space-between;align-items:center;gap:.4rem; }
+.swinger-team-top small { color:#355771;font-weight:600; }
+.swinger-team-foot b { white-space:nowrap; }
+.swinger-team-foot progress { min-width:2rem;max-width:55%;accent-color:#258168;height:.5rem; }
+.swinger-solo { display:inline-block;border-radius:1rem;background:#e6e8f6;color:#39365d;padding:.15rem .45rem;font-size:.72rem; }
+.swinger-members,.swinger-member-line,.swinger-pair-list { display:flex;flex-wrap:wrap;gap:.35rem; }
+.swinger-member { display:inline-flex;align-items:center;gap:.3rem;min-width:0;max-width:100%;border:1px solid transparent;border-radius:1.2rem;background:#e8eff5;padding:.2rem .5rem .2rem .25rem;overflow-wrap:anywhere; }
+.swinger-member .kc-avatar-image { width:1.5rem;height:1.5rem;flex:0 0 1.5rem;margin:0; }
+.swinger-member .kc-avatar-image img { width:100%;height:100%;object-fit:cover; }
+.swinger-member.is-thrower { border-color:#76b59e;background:#d9eee4;color:#174b39;font-weight:750; }
+.swinger-first-choice { background:#184a3e; }
+.swinger-first-choice > span { color:#dbf3e9; }
+.swinger-pair-layout h3 { margin:0 0 .6rem; }
+.swinger-pair-layout h3 small,.swinger-pair-list small { color:#466578;font-size:.8rem; }
+.swinger-pairing > .ind-actions { padding:0 1rem 1rem; }
+.swinger-pairing .kc-avatar-option small { font-size:.72rem;color:#305d6a; }
+@media(max-width:640px) { .swinger-lane-layout,.swinger-pair-layout { grid-template-columns:minmax(0,1fr); } }
