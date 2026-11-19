@@ -7,7 +7,7 @@
  <title>KC Getränkestation</title>
  <link rel="icon" href="station-icon-192.png">
  <link rel="manifest" href="station.webmanifest">
- <link rel="stylesheet" href="css/station.css?v=20261119-v272">
+ <link rel="stylesheet" href="css/station.css?v=20261119-v273">
 </head>
 <body class="station">
  <header class="station-header">
@@ -17,6 +17,7 @@
  <main id="station-main">
   <p id="station-status" class="station-status" role="status">Getränkestation wird geladen …</p>
   <p id="station-feedback" class="station-feedback" aria-live="polite" hidden></p>
+  <section id="station-pending" aria-label="Offene Buchung" hidden></section>
   <form id="station-pair-form" class="station-card" hidden>
    <h2>Getränkehandy verbinden</h2>
    <label for="station-label">Gerätename</label>
@@ -35,7 +36,7 @@
    <section id="station-content"></section>
   </section>
  </main>
- <footer id="station-version">V272 · 19.11.2026, 11:18 Uhr</footer>
+ <footer id="station-version">V273 · 19.11.2026, 12:03 Uhr</footer>
  <script>
   if(!navigator.onLine){
    const status=document.getElementById('station-status');
@@ -43,12 +44,12 @@
    status.classList.add('station-status-error');
   }
  </script>
- <script src="js/game-overview.js?v=20261119-v272"></script>
- <script src="js/team-drink-games.js?v=20261119-v272"></script>
- <script src="js/drink-ledger.js?v=20261119-v272"></script>
- <script type="module" src="js/firebase.js?v=20261119-v272"></script>
+ <script src="js/game-overview.js?v=20261119-v273"></script>
+ <script src="js/team-drink-games.js?v=20261119-v273"></script>
+ <script src="js/drink-ledger.js?v=20261119-v273"></script>
+ <script type="module" src="js/firebase.js?v=20261119-v273"></script>
  <script type="module">
-  import('./js/station-entry.js?v=20261119-v272').catch(()=>{
+  import('./js/station-entry.js?v=20261119-v273').catch(()=>{
    const status=document.getElementById('station-status');
    status.textContent='Verbindung zu Firebase konnte nicht aufgebaut werden. Bitte Internetverbindung prüfen und neu laden.';
    status.classList.add('station-status-error');

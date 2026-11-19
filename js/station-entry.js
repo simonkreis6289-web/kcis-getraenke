@@ -6,6 +6,7 @@ const currency=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
 const money=amount=>currency.format(Number(amount)||0);
 let root=null,config=null,history=[],club='',pending=null,pairing=null,view='people',person='',draft=null,editing=false;
 let sending=false,rootOnline=false,pairBusy=false,connectionError='',lastContext='',feedbackTimer=null;
+let pendingError='',canRelease=false;
 let stopControl,stopRoot,stopRecent,stopPairing,stopCommand;
 const q=new URLSearchParams(location.hash.slice(1)),fromQR=validClub(q.get('club'))&&validCode(q.get('code'))?{club:q.get('club'),code:q.get('code')}:null;
 function saved(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}}
@@ -227,6 +228,31 @@ function showHistory(out){
  out.append(section);
 }
 function newDraft(){draft={drinks:{},host:'',reason:'',recipients:Object.create(null),game:'',team:''};}
+function renderPending(off){
+ const area=$('pending');area.hidden=!pending;area.replaceChildren();
+ if(!pending)return;
+ const notice=card('Offene Buchung');
+ const text=sending?'Verbindung zu Firebase wird geprüft …':pendingError||'Der Auftrag wartet auf Bestätigung.';
+ notice.append(element('p',text,'station-hint'));
+ notice.append(button('Status prüfen / erneut senden',retry,{disabled:off||sending}));
+ if(canRelease&&!sending)notice.append(button('Nicht gebuchten Auftrag verwerfen',()=>{
+  if(!confirm('Firebase hat für diese Buchung keinen Auftrag. Den lokalen Entwurf verwerfen?'))return;
+  clearPending();
+  message('Nicht gebuchter Entwurf verworfen.');
+  render();
+ }));
+ area.append(notice);
+}
+function deadline(request){
+ let timer;
+ return Promise.race([request,new Promise((_,reject)=>{
+  timer=setTimeout(()=>reject(Object.assign(Error('Firebase hat nicht rechtzeitig geantwortet.'),{code:'deadline-exceeded'})),8000);
+ })]).finally(()=>clearTimeout(timer));
+}
+function clearPending(){
+ localStorage.removeItem(storageKey);
+ pending=null;pendingError='';canRelease=false;stopCommand?.();
+}
 function render(){
  const off=!navigator.onLine,paired=!!config?.uid,current=$('status');
  const reason=off?'Offline · Keine Buchung möglich.':connectionError||(!paired?
@@ -237,11 +263,11 @@ function render(){
  current.textContent=reason;current.classList.toggle('station-status-error',off||!!connectionError);
  $('pair-form').hidden=!(fromQR&&!pairing?.status&&location.hash);
  $('pair-form').querySelector('button').disabled=pairBusy||off;
+ renderPending(off);
  $('workspace').hidden=!paired||!root;
  const out=$('content');out.replaceChildren();
  if(!paired||!root)return;
  for(const item of $('nav').querySelectorAll('button'))item.setAttribute('aria-current',item.dataset.view===view?'page':'false');
- if(pending){const notice=card('Buchung wird geprüft');notice.append(button('Status prüfen / erneut senden',retry,{disabled:off||sending}));out.append(notice);}
  const list=people();
  if(view==='history')showHistory(out);
  else if(view==='account')showAccount(out);
@@ -252,7 +278,7 @@ function render(){
 }
 function loadClub(next){
  stopControl?.();stopRoot?.();stopRecent?.();stopCommand?.();
- club=next;config=null;root=null;history=[];rootOnline=false;connectionError='';
+ club=next;canRelease=false;config=null;root=null;history=[];rootOnline=false;connectionError='';
  const target=club;
  stopControl=client.watchControl(club,value=>{
   if(target!==club)return;
@@ -281,7 +307,7 @@ function loadClub(next){
 function lost(){editing=false;config=null;rootOnline=false;root=null;stopRoot?.();stopRecent?.();render();}
 function finish(row){
  if(!pending||!['applied','rejected','reversed'].includes(row?.status))return;
- const performed=row.status!=='rejected',adjust=pending.entry.kind==='adjust';pending=null;stopCommand?.();localStorage.removeItem(storageKey);
+ const performed=row.status!=='rejected',adjust=pending.entry.kind==='adjust';clearPending();
  if(performed&&!adjust){person='';editing=false;view='people';newDraft();}
  connectionError='';message(row.result?.description||(performed?'Buchung bestätigt.':'Buchung abgelehnt.'),!performed);render();
 }
@@ -294,22 +320,33 @@ function watchPending(){
 async function retry(){
  if(!pending||sending||!navigator.onLine)return;
  const current=pending;
- sending=true;render();
+ sending=true;canRelease=false;render();
  try{
-  const row=await client.submit(current.club,current.id,current.entry);
+  const row=await deadline(client.submit(current.club,current.id,current.entry));
   if(pending?.id!==current.id)return;
-  connectionError='';watchPending();finish(row);
+  pendingError='';watchPending();finish(row);
  }catch(error){
-  if(pending?.id===current.id){
-   try{finish(await client.readCommand(current.club,current.id));}catch{/* Keep the original durable receipt ID. */}
-   if(pending?.id===current.id){
-    connectionError=errorMessage(error)+' Der Auftrag bleibt zur Prüfung gespeichert.';
-    if(error.code==='permission-denied'&&config?.uid&&rootOnline&&
-       (config.generation!==current.entry.generation||root?.currentEveningStartedAt!==current.entry.evening||!activeEvening())){
-     pending=null;stopCommand?.();localStorage.removeItem(storageKey);
-     message('Buchung abgelehnt. Abend oder Gerätefreigabe wurde gewechselt.',true);
-    }
-   }
+  if(pending?.id!==current.id)return;
+  let receipt;
+  try{
+   receipt=await deadline(client.readCommand(current.club,current.id));
+   if(pending?.id!==current.id)return;
+   finish(receipt);
+  }catch{/* Ohne Serverantwort bleibt dieselbe Buchungs-ID erhalten. */}
+  if(pending?.id!==current.id)return;
+  if(receipt?.status==='queued'){
+   pendingError='Firebase hat den Auftrag erhalten. Bitte die Haupt-App öffnen und ihre Cloudspeicherung prüfen.';
+   watchPending();
+  }else if(error.code==='permission-denied'&&current.club===club&&config?.uid&&rootOnline){
+   canRelease=receipt===null&&config.generation!==current.entry.generation;
+   if(canRelease)pendingError='Der Auftrag stammt aus einer früheren Gerätefreigabe und liegt bei Firebase nicht vor.';
+   else if(config.generation!==current.entry.generation||root?.currentEveningStartedAt!==current.entry.evening||!activeEvening())
+    pendingError='Abend oder Gerätefreigabe wurde gewechselt. Der Auftrag bleibt zur Prüfung gespeichert.';
+   else if(['round','group','adjust'].includes(current.entry.kind))
+    pendingError='Firebase hat diese Buchung abgelehnt. Auf dem Tablet prüfen, ob die V272-Firestore-Regeln veröffentlicht sind. Danach hier erneut senden.';
+   else pendingError=errorMessage(error)+' Der Auftrag bleibt lokal gespeichert.';
+  }else{
+   pendingError=errorMessage(error)+' Der Auftrag bleibt lokal gespeichert.';
   }
  }finally{sending=false;render();}
 }
@@ -317,7 +354,7 @@ async function submit(kind,payload){
  if(!canBook())return;
  const value={club,id:'station_'+crypto.randomUUID(),entry:{evening:root.currentEveningStartedAt,generation:config.generation,kind,payload}};
  try{localStorage.setItem(storageKey,JSON.stringify(value));}catch{message('Die Buchung konnte auf diesem Gerät nicht gesichert werden.',true);return;}
- pending=value;message('');connectionError='';watchPending();await retry();
+ pending=value;pendingError='';canRelease=false;message('');connectionError='';watchPending();await retry();
 }
 function trackPair(ref){
  stopPairing?.();pairing={status:'requested'};
