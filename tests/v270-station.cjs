@@ -215,5 +215,31 @@ test('station UI pairs, locks offline, stores one durable ID and confirms only t
  groupBook().onclick();await tick();
  assert.equal(sent.at(-1).entry.kind,'group');
  assert.deepEqual(copy(sent.at(-1).entry.payload),{drinks:{beer:6},recipients:{beer:['A','B','C','D','E','F']}});
+ const kept=JSON.parse(storage.get('kc-theke-pending-v1'));
+ const retry=()=>findButton('Status prüfen / erneut senden');
+ client.submit=async()=>{throw Object.assign(Error('permission-denied'),{code:'permission-denied'});};
+ retry().onclick();await tick();
+ assert.match(restarted.getElementById('station-pending').textContent,/V272-Firestore-Regeln/);
+ assert.equal(JSON.parse(storage.get('kc-theke-pending-v1')).id,kept.id);
+ assert(!findButton('Nicht gebuchten Auftrag verwerfen'));
+
+ let timeout;
+ next.setTimeout=(fn,ms)=>{if(ms===8000)timeout=fn;return 1;};
+ client.submit=()=>new Promise(()=>{});
+ retry().onclick();
+ assert(retry().disabled);
+ timeout();await tick();
+ assert(!retry().disabled);
+ assert.equal(JSON.parse(storage.get('kc-theke-pending-v1')).id,kept.id);
+
+ subscriptions.control(null);
+ assert(restarted.getElementById('station-workspace').hidden);
+ assert(!restarted.getElementById('station-pending').hidden);
+ assert(!retry().disabled);
+ client.submit=async(club,id)=>{assert.equal(id,kept.id);return {status:'applied',result:{description:'6 × Bier'}};};
+ retry().onclick();await tick();
+ assert(restarted.getElementById('station-pending').hidden);
+ assert(!storage.has('kc-theke-pending-v1'));
+
 
 });

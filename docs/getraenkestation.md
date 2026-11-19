@@ -67,3 +67,9 @@ npx --yes firebase-tools@14.12.0 deploy --only firestore:rules --project kegelcl
 ```
 
 Danach V272 über GitHub Pages veröffentlichen und zuerst die Haupt-App auf dem Tablet neu laden. Anschließend die Theke und das TV-Dashboard aktualisieren. Falls ein Gerät noch ausstehende Buchungen anzeigt, die vorhandene Warteschlange im selben Browser behalten.
+
+### Theke meldet „Firebase hat keine Freigabe für diese Aktion bestätigt“
+
+- Wenn die Theke **Verbunden** meldet und die Ablehnung bei einer Runde, Sammelbuchung oder Korrektur auftritt, zuerst prüfen, ob die V272-Regeln im Projekt `kegelclub-invaliden-schwadron` aktiv sind. Der GitHub-Pages-Stand und die aktiven Firebase-Regeln werden separat bereitgestellt.
+- Nach der Regelaktualisierung auf demselben Getränkehandy **Status prüfen / erneut senden** wählen. Die Theke nutzt die gespeicherte Buchungs-ID. Bis die Buchung geklärt ist, Browserdaten behalten und denselben Auftrag nicht neu eingeben.
+- Meldet die Theke, dass Firebase den Auftrag bereits erhalten hat, die Haupt-App auf dem Tablet öffnen und auf die Cloudspeicherung achten. Steht die Gerätefreigabe selbst auf inaktiv, die Freigabe in **Verwaltung → Getränkestation** prüfen.
