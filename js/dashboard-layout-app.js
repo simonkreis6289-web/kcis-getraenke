@@ -80,7 +80,7 @@
   box=section('notifications','Wurfmeldungen und Toasts');
   box.append(element('h3','Wurf-Popups'));const popupLabel=element('label',undefined,'dashboard-popup-option');popupLabel.htmlFor='dashboard-popup-seconds';popupLabel.append(document.createTextNode('Gosse, Kranz und Alle Neune anzeigen für '),duration('dashboard-popup-seconds',draft.popupSeconds,0,30,v=>draft.popupSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(popupLabel);
   box.append(element('h3','Weitere TV-Toasts'),element('p','Neue Meldungen erscheinen erst nach einer tatsächlichen Änderung. Beim Öffnen des Dashboards werden alte Ereignisse nicht nachgespielt.'));
-  for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam']]){
+  for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam'],['station','🍺 KC Theke · Buchungen']]){
    const line=element('div',undefined,'dashboard-event-toast-color-row'),label=element('label',undefined,'dashboard-popup-option'),checkbox=element('input');
    checkbox.type='checkbox';checkbox.checked=draft.eventToasts[key];checkbox.disabled=busy;checkbox.id='dashboard-event-toast-'+key;
    checkbox.onchange=()=>{draft.eventToasts[key]=checkbox.checked;draw();};

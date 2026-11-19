@@ -153,11 +153,19 @@ service cloud.firestore {
       return payload is map &&
         ((kind == 'undo' && payload.keys().hasOnly(['target'])
           && payload.target is string && payload.target.matches('^station_[a-f0-9-]{36}$'))
-        || (kind != 'undo' && payload.drinks is map && payload.drinks.size() > 0 && payload.drinks.size() <= 100
+        || (kind == 'adjust' && payload.keys().hasOnly(['person','drink','expected','quantity'])
+          && textField(payload.person,200) && textField(payload.drink,200)
+          && payload.expected is int && payload.expected >= 0
+          && payload.quantity is int && payload.quantity >= 0
+          && (payload.quantity == payload.expected + 1 || payload.quantity == payload.expected - 1))
+        || (kind in ['drink','round','team','group'] && payload.drinks is map && payload.drinks.size() > 0 && payload.drinks.size() <= 100
           && ((kind == 'drink' && payload.keys().hasOnly(['person','drinks']) && textField(payload.person,200))
            || (kind == 'round' && payload.keys().hasOnly(['person','reason','recipients','drinks'])
              && textField(payload.person,200) && textField(payload.reason,200)
-             && payload.recipients is list && payload.recipients.size() > 0 && payload.recipients.size() <= 64)
+             && (!('recipients' in payload) || (payload.recipients is list && payload.recipients.size() > 0 && payload.recipients.size() <= 64)))
+           || (kind == 'group' && payload.keys().hasOnly(['drinks','recipients'])
+             && payload.recipients is map && payload.recipients.keys().hasOnly(payload.drinks.keys())
+             && payload.recipients.size() == payload.drinks.size())
            || (kind == 'team' && payload.keys().hasOnly(['game','team','members','drinks','roundGiven'])
              && textField(payload.game,200) && textField(payload.team,200)
              && payload.members is list && payload.members.size() > 0 && payload.members.size() <= 64
@@ -173,7 +181,7 @@ service cloud.firestore {
         && entry.evening is string && entry.evening.size() > 0
         && entry.evening == root.currentEveningStartedAt
         && (!('stationClosedEvening' in root) || root.stationClosedEvening != entry.evening)
-        && entry.kind in ['drink','round','team','undo']
+        && entry.kind in ['drink','round','team','undo','group','adjust']
         && validStationPayload(entry.kind,entry.payload)
         && entry.status == 'queued' && entry.createdAt == request.time;
     }

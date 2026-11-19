@@ -71,3 +71,21 @@ test('invalid persisted toast colors cannot become CSS properties',()=>{
  f.tool.feed(root,'club',f.now);root.persons=[person('Karl',{present:true})];f.tool.feed(root,'club',f.now);
  assert.equal(f.box.style.background,'#40cf88');
 });
+
+test('confirmed KC Theke bookings use their own color and toggle and never show twice',()=>{
+ const f=setup(),evening='evening-1';
+ const event=id=>({id,evening,at:new Date(f.now).toISOString(),name:'A',description:'A · 1 × Bier'});
+ const root={currentEveningStartedAt:evening,persons:[person('A',{present:true})],stationEvents:[event('station_old')],
+  dashboardSettings:{eventToasts:{station:true,seconds:4,colors:{station:'#aa1133'}}}};
+ f.tool.feed(root,'club',f.now);assert.equal(f.box,null);
+ root.persons[0].rounds=[{id:'station_round',createdAt:new Date(f.now).toISOString()}];
+ f.tool.feed(root,'club',f.now);assert.equal(f.box,null);
+ root.stationEvents.push(event('station_round'));
+ f.tool.feed(root,'club',f.now);assert.match(f.box.textContent,/KC Theke.*1 × Bier/);
+ assert.equal(f.box.style.background,'#aa1133');
+ f.tool.feed(root,'club',f.now);f.advance();f.advance();assert(f.box.hidden);
+ root.dashboardSettings.eventToasts.station=false;
+ root.stationEvents.push(event('station_disabled'));
+ f.tool.feed(root,'club',f.now);assert(f.box.hidden);
+ root.dashboardSettings.eventToasts.station=true;f.tool.feed(root,'club',f.now);assert(f.box.hidden);
+});

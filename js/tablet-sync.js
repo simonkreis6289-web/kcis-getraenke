@@ -158,6 +158,10 @@
           const previousConfirmedAt=s.lastConfirmedAt;s.inflight=null;s.lastConfirmedAt=Date.now();
           try{store(s);}catch(error){s.inflight=batch;s.lastConfirmedAt=previousConfirmedAt;throw error;}
           s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagnostic=null;s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
+          const stationResults=batch.documents.filter(row=>row.value?.status==='applied'&&row.value.result?.description&&
+            row.path.startsWith('clubs/'+s.club+'/stationCommands/'));
+          if(s===current&&stationResults.length)
+            toast('🍺 KC Theke · '+stationResults.map(row=>row.value.result.description).join(' / '),'success');
         }catch(error){
           s.retryFailures=(s.retryFailures||0)+1;
           s.failureDiagnostic=ctx?{
