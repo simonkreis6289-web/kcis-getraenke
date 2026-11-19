@@ -71,6 +71,21 @@ test('Firestore enforces pairing, a single authorized device, protected totals, 
   const repeated=sync(operator,5);
   repeated.batch.update(booking(operator),{...repeated.fields,status:'reversed'});
   await assertFails(repeated.batch.commit());
+  const newKinds=[
+   ['round',{person:'Alex',reason:'Geburtstag',drinks:{beer:1}}],
+   ['group',{drinks:{beer:1},recipients:{beer:['Alex']}}],
+   ['adjust',{person:'Alex',drink:'beer',expected:1,quantity:0}]
+  ];
+  for(const [index,[kind,payload]] of newKinds.entries()){
+   const id='station_0000000'+index+'-bbbb-cccc-dddd-eeeeeeeeeeee';
+   const entry={...draft('first',key),kind,payload};
+   await assertFails(setDoc(booking(second,id),{...entry,uid:'second'}));
+   await assertFails(setDoc(booking(first,id),{...entry,payload:{...payload,paid:500}}));
+   await assertSucceeds(setDoc(booking(first,id),entry));
+   await assertFails(setDoc(booking(first,id),{status:'applied'},{merge:true}));
+  }
+  const adjustID='station_aaaaaaaa-0000-0000-0000-dddddddddddd';
+  await assertFails(setDoc(booking(first,adjustID),{...draft('first',key),kind:'adjust',payload:{person:'Alex',drink:'beer',expected:5,quantity:0}}));
   await assertSucceeds(sync(operator,5,{stationClosedEvening:evening}).batch.commit());
   const nextID='station_bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee';
   await assertFails(setDoc(booking(first,nextID),draft('first',key)));
@@ -86,6 +101,7 @@ test('Firestore enforces pairing, a single authorized device, protected totals, 
   await assertSucceeds(setDoc(booking(second,nextID),draft('second',key2,tomorrow)));
   await assertSucceeds(setDoc(control(operator),grant('','e'.repeat(64),'','')));
   await assertFails(sync(stranger,7).batch.commit());
-  await assertFails(setDoc(booking(second,'station_cccccccc-bbbb-cccc-dddd-eeeeeeeeeeee'),draft('second',key2,tomorrow)));
+  for(const [kind,payload] of newKinds)
+   await assertFails(setDoc(booking(second,'station_cccccccc-bbbb-cccc-dddd-eeeeeeeeeeee'),{...draft('second',key2,tomorrow),kind,payload}));
  }finally{await env.cleanup();}
 });

@@ -65,13 +65,50 @@ test('tablet station commands share the normal drinks ledger, serialize parallel
  assert.equal(db.root().persons[0].drinks.beer,0);
 });
 
+test('rounds without recipients, multi-person drinks and guarded corrections share tablet accounting',async()=>{
+ const seed=initial();seed.RUNDEN_GRUENDE=['Geburtstag'];
+ seed.persons[0].paid=12;
+ const control={uid:'phone',generation:'g'};
+ const db=database({[rootPath]:seed,'clubs/club/stationControl/current':control}),app=fullApp(db);
+ await app.select();
+ const receipts=()=>db.root().stationEvents;
+ const toast=app.document.getElementById('toast');
+ async function run(kind,payload,status='applied'){
+  const id='station_'+randomUUID(),path='clubs/club/stationCommands/'+id;
+  db.data.set(path,{...control,kind,payload,evening,status:'queued',createdAt:'server-time'});
+  await app.c.firestoreApi.processDrinkStationCommand('club',id);
+  assert(await app.c.KCTabletSync.waitForUpload());
+  assert.equal(db.data.get(path).status,status);
+  return id;
+ }
+ await run('round',{person:'A',reason:'Geburtstag',drinks:{beer:2}});
+ assert.deepEqual(db.root().persons[0].rounds[0].recipients,[]);
+ assert.equal(db.root().persons[0].roundExtra,4);
+ const group=await run('group',{drinks:{beer:2},recipients:{beer:['A','B']}});
+ assert.deepEqual(db.root().persons.map(row=>row.drinks.beer),[1,1]);
+ assert.equal(receipts().at(-1).id,group);
+ assert.match(toast.textContent,/KC Theke.*2 × Bier/);
+ await run('group',{drinks:{beer:2},recipients:{beer:['A','A']}},'rejected');
+ assert.deepEqual(db.root().persons.map(row=>row.drinks.beer),[1,1]);
+ const edited=await run('adjust',{person:'A',drink:'beer',expected:1,quantity:0});
+ assert.equal(db.root().persons[0].paid,12);
+ assert.equal(db.root().persons[0].drinks.beer,0);
+ await run('adjust',{person:'A',drink:'beer',expected:1,quantity:2},'rejected');
+ assert.equal(receipts().at(-1).id,edited);
+ assert.equal(db.root().persons[0].drinks.beer,0);
+ await run('undo',{target:edited});
+ await run('undo',{target:group});
+ assert.deepEqual(db.root().persons.map(row=>row.drinks.beer),[0,0]);
+ assert.equal(db.root().persons[0].paid,12);
+});
+
 test('station PWA has distinct install identity, standalone display, icons and offline route',()=>{
  const manifest=JSON.parse(read('station.webmanifest')),main=JSON.parse(read('manifest.json'));
  assert.equal(manifest.name,'KC Getränkestation');assert.equal(manifest.display,'standalone');
  assert.notEqual(manifest.start_url,main.start_url);assert.notEqual(manifest.id,main.id||main.start_url);
  const html=read('getraenkestation.html'),{document}=parseHTML(html);
  assert.equal(document.querySelector('link[rel="manifest"]').getAttribute('href'),'station.webmanifest');
- assert.equal(document.querySelectorAll('#station-nav button').length,4);
+ assert.equal(document.querySelectorAll('#station-nav button').length,6);
  assert.match(read('sw.js'),/station\?'\.\/getraenkestation\.html':'\.\/'/);
  for(const icon of manifest.icons){
   const png=fs.readFileSync(path.join(__dirname,'..',icon.src));
@@ -148,4 +185,35 @@ test('station UI pairs, locks offline, stores one durable ID and confirms only t
  subscriptions.command(confirmation);
  assert.equal(storage.has('kc-theke-pending-v1'),false);
  assert.match(restarted.getElementById('station-feedback').textContent,/1 × Bier/);
+ const findButton=text=>[...restarted.querySelectorAll('button')].find(el=>el.textContent===text);
+ const newRoot=initial();newRoot.persons[0].paid=12;newRoot.persons[0].drinks.beer=2;
+ newRoot.RUNDEN_GRUENDE=['Geburtstag'];subscriptions.root(newRoot);
+ restarted.querySelector('[data-view="round"]').onclick();
+ restarted.querySelector('.station-person').onclick();
+ assert(!restarted.getElementById('station-content').textContent.includes('Empfänger'));
+ assert(restarted.querySelector('button[aria-label="Bier mehr"]'));
+ restarted.querySelector('[data-view="account"]').onclick();
+ const selector=restarted.querySelector('#station-content select');
+ selector.querySelector('option[value="A"]').selected=true;selector.onchange();
+ assert.match(restarted.getElementById('station-content').textContent,/Bezahlt laut Haupt-App/);
+ assert.equal(restarted.querySelector('button[aria-label="Bier weniger"]'),null);
+ findButton('Getränke bearbeiten').onclick();
+ assert(restarted.querySelector('button[aria-label="Bier weniger"]'));
+ findButton('Bearbeitung sperren').onclick();
+ assert.equal(restarted.querySelector('button[aria-label="Bier weniger"]'),null);
+ newRoot.persons.push(...['C','D','E','F','G','H'].map(name=>({name,present:true})));
+ subscriptions.root(newRoot);
+ restarted.querySelector('[data-view="group"]').onclick();
+ for(let i=0;i<6;i++)restarted.querySelector('button[aria-label="Bier mehr"]').onclick();
+ const groupBook=()=>findButton('Buchen');
+ for(let i=0;i<6;i++){
+  assert(groupBook().disabled);
+  restarted.querySelectorAll('.station-allocation .station-person')[i].onclick();
+ }
+ assert(!groupBook().disabled);
+ confirmation=null;
+ groupBook().onclick();await tick();
+ assert.equal(sent.at(-1).entry.kind,'group');
+ assert.deepEqual(copy(sent.at(-1).entry.payload),{drinks:{beer:6},recipients:{beer:['A','B','C','D','E','F']}});
+
 });

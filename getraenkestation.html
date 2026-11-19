@@ -7,12 +7,12 @@
  <title>KC Getränkestation</title>
  <link rel="icon" href="station-icon-192.png">
  <link rel="manifest" href="station.webmanifest">
- <link rel="stylesheet" href="css/station.css?v=20261119-v271">
+ <link rel="stylesheet" href="css/station.css?v=20261119-v272">
 </head>
 <body class="station">
  <header class="station-header">
   <img src="station-icon-192.png" width="46" height="46" alt="">
-  <div><h1>Getränkestation</h1><p>KC Invaliden Schwadron</p></div>
+  <div><p>KC Invaliden Schwadron</p><h1>KC Theke</h1></div>
  </header>
  <main id="station-main">
   <p id="station-status" class="station-status" role="status">Getränkestation wird geladen …</p>
@@ -26,6 +26,8 @@
   <section id="station-workspace" hidden>
    <nav id="station-nav" aria-label="Getränkestation">
     <button type="button" data-view="people">Getränke</button>
+    <button type="button" data-view="account">Pro Person</button>
+    <button type="button" data-view="group">Sammelbuchung</button>
     <button type="button" data-view="round">Runde geben</button>
     <button type="button" data-view="team">Mannschaftsspiel</button>
     <button type="button" data-view="history">Letzte Buchungen</button>
@@ -33,7 +35,7 @@
    <section id="station-content"></section>
   </section>
  </main>
- <footer id="station-version">V271 · 19.11.2026, 09:29 Uhr</footer>
+ <footer id="station-version">V272 · 19.11.2026, 11:18 Uhr</footer>
  <script>
   if(!navigator.onLine){
    const status=document.getElementById('station-status');
@@ -41,12 +43,12 @@
    status.classList.add('station-status-error');
   }
  </script>
- <script src="js/game-overview.js?v=20261119-v271"></script>
- <script src="js/team-drink-games.js?v=20261119-v271"></script>
- <script src="js/drink-ledger.js?v=20261119-v271"></script>
- <script type="module" src="js/firebase.js?v=20261119-v271"></script>
+ <script src="js/game-overview.js?v=20261119-v272"></script>
+ <script src="js/team-drink-games.js?v=20261119-v272"></script>
+ <script src="js/drink-ledger.js?v=20261119-v272"></script>
+ <script type="module" src="js/firebase.js?v=20261119-v272"></script>
  <script type="module">
-  import('./js/station-entry.js?v=20261119-v271').catch(()=>{
+  import('./js/station-entry.js?v=20261119-v272').catch(()=>{
    const status=document.getElementById('station-status');
    status.textContent='Verbindung zu Firebase konnte nicht aufgebaut werden. Bitte Internetverbindung prüfen und neu laden.';
    status.classList.add('station-status-error');

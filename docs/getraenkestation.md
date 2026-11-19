@@ -46,3 +46,24 @@ Ein Abschluss der Getränkeabrechnung sperrt die Station für den aktuellen Aben
 4. Bleibt ein Berechtigungsfehler oder ein Konflikt stehen, **Fehler kopieren** wählen und die Buchungen bis zum Abgleich nicht erneut eingeben. Die Diagnose enthält die Sequenzen, den Anmeldestatus und bei einer Schreibablehnung die beteiligten Dokumentpfade. Bei einem abgelehnten Lesezugriff enthält sie den abgelehnten Pfad. Bestätigte Cloud-Stände werden bei einem Sequenzkonflikt geschützt.
 
 Für die Korrektur in V271 ist bei bereits veröffentlichten V270-Regeln kein Regel-Deployment erforderlich.
+
+## KC Theke ab V272
+
+- **Runde geben:** Gastgeber und Rundengrund auswählen. Die Getränke werden dem Gastgeber berechnet.
+- **Sammelbuchung:** Pro Getränkesorte zuerst die Menge einstellen. Anschließend genau so viele verschiedene Namen auswählen, wie Getränke gebucht werden. Jeder ausgewählte Name erhält ein Getränk dieser Sorte.
+- **Pro Person:** Einzelgetränke, Runden, Mannschaftsbuchungen und den in der Haupt-App erfassten bezahlten Gesamtbetrag einsehen. **Getränke bearbeiten** schaltet die Plus- und Minus-Tasten frei. Jeder Tastendruck wird einzeln bestätigt. Die Haupt-App weist die Korrektur zurück, wenn sich die Anzahl inzwischen geändert hat.
+- Auf dem Tablet erscheint der kurze Toast nach Bestätigung durch Firebase. Auf dem TV lässt sich **KC Theke · Buchungen** unter **Wurfmeldungen und Toasts → Weitere TV-Toasts** einfärben oder ausschalten.
+
+### V272 bereitstellen
+
+Die V272-Regeln ergänzen die Auftragsformate `group` und `adjust` und erlauben bei Runden das Weglassen der Empfängerliste. V270/V271-Aufträge bleiben gültig. Die freigegebene Station darf weiterhin nur Aufträge anlegen. Die Haupt-App bestätigt sie nach erneuter Prüfung und schreibt die Abrechnung.
+
+Vor der Veröffentlichung die bisher aktiven Regeln sichern, die Auswirkungen der Änderungen prüfen und die Emulator-Tests auf dem V272-Branch ausführen. Mit einem berechtigten Firebase-Konto nur die Regeln des richtigen Projekts deployen.
+
+```sh
+npm ci
+npm run test:station-rules
+npx --yes firebase-tools@14.12.0 deploy --only firestore:rules --project kegelclub-invaliden-schwadron
+```
+
+Danach V272 über GitHub Pages veröffentlichen und zuerst die Haupt-App auf dem Tablet neu laden. Anschließend die Theke und das TV-Dashboard aktualisieren. Falls ein Gerät noch ausstehende Buchungen anzeigt, die vorhandene Warteschlange im selben Browser behalten.

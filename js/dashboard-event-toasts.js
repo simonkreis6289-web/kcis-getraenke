@@ -28,10 +28,10 @@
   row.className='kc-toast-person-layout';copy.className='kc-toast-person-text';headline.textContent=title;subtitle.textContent=detail||'';
   copy.append(headline,subtitle);if(person)row.append(avatar(root,person));row.append(copy);box.replaceChildren(row);
  }
- let scope='',initialized=false,snapshot=new Map(),historySeen=new Set(),queue=[],showing=false,activeTimer=null,exitTimer=null;
+ let scope='',initialized=false,snapshot=new Map(),historySeen=new Set(),stationSeen=new Set(),queue=[],showing=false,activeTimer=null,exitTimer=null;
  const clear=()=>{queue=[];showing=false;if(activeTimer!==null)clearTimeout(activeTimer);if(exitTimer!==null)clearTimeout(exitTimer);activeTimer=null;exitTimer=null;const box=$('dashboard-club-event-toast');if(box){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');}};
  function toast(entry){if(queue.length<15)queue.push(entry);if(!showing)next();}
- const defaults={arrival:'#40cf88',departure:'#7ba3ed',round:'#f9ba3e',loser:'#df83e7',teamLoss:'#fc977d'};
+ const defaults={arrival:'#40cf88',departure:'#7ba3ed',round:'#f9ba3e',loser:'#df83e7',teamLoss:'#fc977d',station:'#76d5c2'};
  const colorFor=(kind,root)=>{
   const key=kind==='team-loss'?'teamLoss':kind;
   const supplied=root?.dashboardSettings?.eventToasts?.colors?.[key];
@@ -70,13 +70,21 @@
  }
  function feed(root,club,now=Date.now()){
   const nextScope=String(club||'')+'|'+String(root?.currentEveningStartedAt||'');
-  if(nextScope!==scope){scope=nextScope;initialized=false;snapshot.clear();historySeen.clear();clear();}
+  if(nextScope!==scope){scope=nextScope;initialized=false;snapshot.clear();historySeen.clear();stationSeen.clear();clear();}
   if(!root)return;
   const nextSnapshot=makeSnapshot(root),history=Array.isArray(root.strafenHistory)?root.strafenHistory:[],settings=root.dashboardSettings?.eventToasts||{};
   const seconds=Math.max(0,Math.min(30,Number(settings.seconds??4)||0));
-  if(!initialized){snapshot=nextSnapshot;historySeen=new Set(history.map(identity));initialized=true;return;}
+  const station=(Array.isArray(root.stationEvents)?root.stationEvents:[]).filter(row=>row.evening===root.currentEveningStartedAt);
+  if(!initialized){snapshot=nextSnapshot;historySeen=new Set(history.map(identity));stationSeen=new Set(station.map(row=>row.id));initialized=true;return;}
   const enabled=key=>settings[key]!==false&&seconds>0&&!document.hidden;
   const events=[],ranks=new Map();
+  for(const row of station){
+   if(!row.id||stationSeen.has(row.id))continue;
+   stationSeen.add(row.id);
+   const at=Date.parse(row.at||'');
+   if(enabled('station')&&row.description&&Number.isFinite(at)&&now-at<=45000&&now-at>=-5000)
+    events.push({kind:'station',title:'🍺 KC Theke',detail:row.description,name:row.name});
+  }
   for(const person of people(root)){
    if(!person?.name)continue;
    const prev=snapshot.get(norm(person.name)),cur=nextSnapshot.get(norm(person.name));if(!prev||!cur)continue;
@@ -84,7 +92,7 @@
    if(enabled('departure')&&((prev.present&&!cur.present)||(prev.present&&!prev.left&&cur.left)))events.push({kind:'departure',title:'👋 Bis bald!',detail:person.name+' ist weg!',name:person.name});
    if(enabled('round')){
     for(const round of Array.isArray(person.rounds)?person.rounds:[]){
-     const id=String(round?.id||round?.createdAt||'');if(!id||prev.rounds.has(id))continue;
+     const id=String(round?.id||round?.createdAt||'');if(!id||id.startsWith('station_')||prev.rounds.has(id))continue;
      const created=Date.parse(round.createdAt||'');
      if(!Number.isFinite(created)||now-created>45000||now-created< -5000)continue;
      events.push({kind:'round',title:'🍻 Prost!',detail:person.name+' gibt eine Runde'+(round.reason?' · '+round.reason:''),name:person.name});

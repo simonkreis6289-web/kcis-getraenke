@@ -4,7 +4,7 @@ const client=stationClient(true),ledger=window.KCDrinkLedger;
 const storageKey='kc-theke-pending-v1',clubKey='kc-theke-club',pairKey='kc-theke-pairing';
 const currency=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
 const money=amount=>currency.format(Number(amount)||0);
-let root=null,config=null,history=[],club='',pending=null,pairing=null,view='people',person='',draft=null;
+let root=null,config=null,history=[],club='',pending=null,pairing=null,view='people',person='',draft=null,editing=false;
 let sending=false,rootOnline=false,pairBusy=false,connectionError='',lastContext='',feedbackTimer=null;
 let stopControl,stopRoot,stopRecent,stopPairing,stopCommand;
 const q=new URLSearchParams(location.hash.slice(1)),fromQR=validClub(q.get('club'))&&validCode(q.get('code'))?{club:q.get('club'),code:q.get('code')}:null;
@@ -52,7 +52,10 @@ function tiles(list,onSelect,{selected=[],balance=false}={}){
  for(const row of list){
   const item=button('',()=>onSelect(row.name),{className:'station-person',pressed:selected.includes(row.name)});
   item.append(avatar(row),element('span',row.name));
-  if(balance)item.append(element('small',money(total(row))));
+  if(balance){
+   item.append(element('small',money(total(row))));
+   if(row.paid>0)item.append(element('small','✓ '+money(row.paid)+' bezahlt','station-paid'));
+  }
   grid.append(item);
  }
  return grid;
@@ -71,21 +74,31 @@ function choices(label,options,current,change){
 function amountLine(text,amount){
  const row=element('div',undefined,'station-total');row.append(element('span',text),element('strong',money(amount)));return row;
 }
-function addDrinks(section,onValid){
+function counter(drink,number,step,{max=99,disabled=false}={}){
+ const row=element('div',undefined,'station-counter'),label=element('div',drink.label);
+ label.append(element('small',money(root.prices?.[drink.key])));
+ const less=button('−',()=>step(-1),{disabled:disabled||!number});
+ const more=button('+',()=>step(1),{disabled:disabled||number>=max});
+ less.setAttribute('aria-label',drink.label+' weniger');more.setAttribute('aria-label',drink.label+' mehr');
+ row.append(label,less,element('output',String(number)),more);
+ return row;
+}
+function addDrinks(section,onValid,{showAction=true,valid=true,max=99}={}){
  const list=root?.DRINKS||[],prices=root?.prices||{};
  for(const drink of list){
   const number=draft.drinks[drink.key]||0;
-  const row=element('div',undefined,'station-counter'),label=element('div',drink.label);
-  label.append(element('small',money(prices[drink.key])));
-  const step=delta=>{draft.drinks[drink.key]=Math.min(99,Math.max(0,number+delta));render();};
-  const less=button('−',()=>step(-1),{disabled:!number}),more=button('+',()=>step(1),{disabled:number===99});
-  less.setAttribute('aria-label',drink.label+' weniger');more.setAttribute('aria-label',drink.label+' mehr');
-  row.append(label,less,element('output',String(number)),more);section.append(row);
+  section.append(counter(drink,number,delta=>{
+   draft.drinks[drink.key]=Math.min(max,Math.max(0,number+delta));
+   if(draft.recipients[drink.key])draft.recipients[drink.key]=draft.recipients[drink.key].slice(0,draft.drinks[drink.key]);
+   render();
+  },{max,disabled:!!pending}));
  }
- const priced=ledger.total(list,prices,draft.drinks);
- section.append(amountLine('Summe der Buchung',priced));
+ section.append(amountLine('Summe der Buchung',ledger.total(list,prices,draft.drinks)));
+ if(showAction)bookingAction(section,onValid,valid);
+}
+function bookingAction(section,action,valid){
  const actions=element('div',undefined,'station-actions');
- actions.append(button('Buchen',onValid,{disabled:!canBook()||!Object.values(draft.drinks).some(Boolean),className:'station-primary'}));
+ actions.append(button('Buchen',action,{disabled:!valid||!canBook()||!Object.keys(drinksPayload()).length,className:'station-primary'}));
  section.append(actions);
 }
 function drinksPayload(){return Object.fromEntries(Object.entries(draft.drinks).filter(([,n])=>n>0));}
@@ -105,16 +118,81 @@ function currentOverview(out,list){
  section.append(amountLine('Getränke gesamt',(root?.persons||[]).reduce((sum,row)=>sum+total(row),0)));out.append(section);
 }
 function showRound(out,list){
- const section=card('Runde geben');
+ const section=card('Runde geben'),reasons=root.RUNDEN_GRUENDE||[];
  section.append(element('h3','Wer gibt die Runde?'),tiles(list,name=>{draft.host=name;render();},{selected:[draft.host]}));
- if(draft.host){
-  section.append(element('h3','Empfänger'),tiles(list,name=>{
-   draft.recipients=draft.recipients.includes(name)?draft.recipients.filter(n=>n!==name):[...draft.recipients,name];render();
-  },{selected:draft.recipients}));
-  section.append(choices('Rundengrund',(root.RUNDEN_GRUENDE||[]).map(value=>({value,label:value})),draft.reason,value=>{draft.reason=value;render();}));
-  if(draft.reason&&draft.recipients.length)addDrinks(section,()=>submit('round',{person:draft.host,reason:draft.reason,recipients:draft.recipients,drinks:drinksPayload()}));
+ if(list.some(row=>row.name===draft.host)){
+  section.append(choices('Rundengrund',reasons.map(value=>({value,label:value})),draft.reason,value=>{draft.reason=value;render();}));
+  addDrinks(section,()=>submit('round',{person:draft.host,reason:draft.reason,drinks:drinksPayload()}),{valid:reasons.includes(draft.reason)});
  }
  out.append(section);
+}
+function showGroup(out,list){
+ const section=card('Sammelbuchung');
+ section.append(element('p','Getränkemenge wählen. Danach pro Getränk auswählen, wer jeweils eins bekommt.','station-hint'));
+ const limit=Math.min(99,list.length);
+ addDrinks(section,null,{showAction:false,max:limit});
+ const drinks=drinksPayload(),recipients={};
+ for(const [key,amount] of Object.entries(drinks)){
+  const selected=(draft.recipients[key]||[]).filter(name=>list.some(row=>row.name===name));
+  const title=(root.DRINKS||[]).find(row=>row.key===key)?.label;
+  if(!title)continue;
+  recipients[key]=selected;
+  const block=element('section',undefined,'station-allocation');
+  block.append(element('h3',title+' · '+selected.length+' von '+amount+' ausgewählt'),tiles(list,name=>{
+   if(selected.includes(name))draft.recipients[key]=selected.filter(row=>row!==name);
+   else if(selected.length<amount)draft.recipients[key]=[...selected,name];
+   render();
+  },{selected}));
+  section.append(block);
+ }
+ bookingAction(section,()=>submit('group',{drinks,recipients}),
+  Object.entries(drinks).every(([key,amount])=>recipients[key]?.length===amount));
+ out.append(section);
+}
+function showAccount(out){
+ const list=(root.persons||[]).filter(row=>row.present||row.left||row.paid>0||total(row)>0);
+ const data=list.find(row=>row.name===person),section=card('Getränke pro Person');
+ section.append(choices('Person',list.map(row=>({value:row.name,label:row.name+(row.paid>0?' · ✓ '+money(row.paid)+' bezahlt':'')})),person,name=>{
+  person=name;editing=false;render();
+ }));
+ if(!data){out.append(section);return;}
+ const identity=element('div',undefined,'station-account');
+ identity.append(avatar(data),element('strong',data.name));
+ section.append(identity,amountLine('Getränkestand',total(data)));
+ if(data.paid>0)section.append(amountLine('Bezahlt laut Haupt-App (gesamt)',data.paid));
+ const drinks=card('Einzelgetränke');
+ const canEdit=!data.inactive&&(data.present||data.left)&&activeEvening();
+ drinks.append(button(editing?'Bearbeitung sperren':'Getränke bearbeiten',()=>{
+  if(editing||canBook()&&canEdit){editing=!editing;render();}
+ },{className:'station-edit',disabled:!editing&&(!canEdit||!canBook()),pressed:editing}));
+ let hasDrinks=false;
+ for(const drink of root.DRINKS||[]){
+  const n=Number(data.drinks?.[drink.key])||0;
+  if(editing)drinks.append(counter(drink,n,delta=>submit('adjust',{person:data.name,drink:drink.key,expected:n,quantity:n+delta}),
+   {disabled:!canBook()||!canEdit,max:Number.MAX_SAFE_INTEGER}));
+  else if(n){
+   hasDrinks=true;
+   drinks.append(amountLine(n+' × '+drink.label,n*(Number(root.prices?.[drink.key])||0)));
+  }
+ }
+ if(!editing&&!hasDrinks)drinks.append(element('p','Keine Einzelgetränke gebucht.','station-hint'));
+ if(editing)drinks.append(element('p','Jeder Schritt wird direkt gebucht.','station-hint'));
+ out.append(section,drinks);
+ const drinkList=drinks=>(root.DRINKS||[]).filter(row=>drinks?.[row.key])
+  .map(row=>drinks[row.key]+' × '+row.label).join(' · ');
+ const rounds=data.rounds||[],teams=(root.spiele||[]).filter(row=>row.members?.includes(data.name));
+ if(rounds.length||teams.length){
+  const other=card('Runden und Mannschaftsbuchungen');
+  for(const [label,amount,drinks] of [
+   ...rounds.map(row=>['Runde · '+row.reason,row.total,row.drinks]),
+   ...teams.map(row=>[row.spieltyp+' · '+(row.teamName||row.loser),row.proKopf,row.drinks])
+  ]){
+   const row=amountLine(label,amount),detail=drinkList(drinks);
+   if(detail)row.firstChild.append(element('small',detail,'station-item-detail'));
+   other.append(row);
+  }
+  out.append(other);
+ }
 }
 function showTeam(out){
  const section=card('Mannschaftsspiel verloren'),games=ledger.games(root),game=games.find(item=>item.key===draft.game);
@@ -148,7 +226,7 @@ function showHistory(out){
  }
  out.append(section);
 }
-function newDraft(){draft={drinks:{},host:'',reason:'',recipients:[],game:'',team:''};}
+function newDraft(){draft={drinks:{},host:'',reason:'',recipients:Object.create(null),game:'',team:''};}
 function render(){
  const off=!navigator.onLine,paired=!!config?.uid,current=$('status');
  const reason=off?'Offline · Keine Buchung möglich.':connectionError||(!paired?
@@ -166,6 +244,8 @@ function render(){
  if(pending){const notice=card('Buchung wird geprüft');notice.append(button('Status prüfen / erneut senden',retry,{disabled:off||sending}));out.append(notice);}
  const list=people();
  if(view==='history')showHistory(out);
+ else if(view==='account')showAccount(out);
+ else if(view==='group')showGroup(out,list);
  else if(view==='round')showRound(out,list);
  else if(view==='team')showTeam(out);
  else currentOverview(out,list);
@@ -185,7 +265,7 @@ function loadClub(next){
    stopRoot=client.watchRoot(club,value=>{
     if(target!==club)return;root=value;rootOnline=true;
     const evening=root?.currentEveningStartedAt||'';
-    if(evening!==lastContext){lastContext=evening;person='';view='people';newDraft();}
+    if(evening!==lastContext){lastContext=evening;person='';editing=false;view='people';newDraft();}
     render();
    },error=>{rootOnline=false;connectionError=errorMessage(error);render();},()=>{rootOnline=false;render();});
    stopRecent=client.watchRecent(club,value=>{history=value;render();},()=>{});
@@ -198,11 +278,11 @@ function loadClub(next){
  });
  if(pending?.club===club){watchPending();void retry();}
 }
-function lost(){config=null;rootOnline=false;root=null;stopRoot?.();stopRecent?.();render();}
+function lost(){editing=false;config=null;rootOnline=false;root=null;stopRoot?.();stopRecent?.();render();}
 function finish(row){
  if(!pending||!['applied','rejected','reversed'].includes(row?.status))return;
- const performed=row.status!=='rejected';pending=null;stopCommand?.();localStorage.removeItem(storageKey);
- if(performed){person='';view='people';newDraft();}
+ const performed=row.status!=='rejected',adjust=pending.entry.kind==='adjust';pending=null;stopCommand?.();localStorage.removeItem(storageKey);
+ if(performed&&!adjust){person='';editing=false;view='people';newDraft();}
  connectionError='';message(row.result?.description||(performed?'Buchung bestätigt.':'Buchung abgelehnt.'),!performed);render();
 }
 function watchPending(){
@@ -262,8 +342,8 @@ $('pair-form').addEventListener('submit',async event=>{
  }catch(error){localStorage.removeItem(pairKey);connectionError=errorMessage(error);}
  finally{pairBusy=false;render();}
 });
-for(const item of $('nav').querySelectorAll('button'))item.onclick=()=>{view=item.dataset.view;person='';newDraft();render();};
-window.addEventListener('offline',()=>{rootOnline=false;render();});
+for(const item of $('nav').querySelectorAll('button'))item.onclick=()=>{view=item.dataset.view;person='';editing=false;newDraft();render();};
+window.addEventListener('offline',()=>{editing=false;rootOnline=false;render();});
 window.addEventListener('online',()=>{if(club)loadClub(club);else render();});
 setInterval(()=>{if(config?.uid&&navigator.onLine)void client.heartbeat(club,config).catch(()=>{});},30000);
 async function initialize(){
