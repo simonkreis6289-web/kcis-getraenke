@@ -4,7 +4,7 @@
   "scripts": {
     "test": "node --test tests/*.cjs",
     "build:tv": "node scripts/build-tv-compat.cjs",
-    "test:station-rules": "npx --yes firebase-tools@14.12.0 emulators:exec --only firestore --project demo-kcis-station 'node --test tests/v270-station-rules.cjs'"
+    "test:station-rules": "npx --yes firebase-tools@14.12.0 emulators:exec --only firestore --project demo-kcis-station 'node --test --test-concurrency=1 tests/v270-station-rules.cjs tests/v271-tablet-rules.cjs'"
   },
   "devDependencies": {
     "@babel/core": "^7.29.13",

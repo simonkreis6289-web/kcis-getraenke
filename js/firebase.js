@@ -295,6 +295,7 @@ window.firestoreApi = {
   },
   async commitTabletBatch(clubId,batch={},syncContext=null){
     if(!clubId||!Number.isSafeInteger(batch.sequence)||batch.sequence<1||!batch.state||!Array.isArray(batch.documents)||batch.documents.length>400)throw Error('Ungültige Tablet-Übertragung');
+    if(syncContext&&window.KCTabletAuth)syncContext.authentication=await window.KCTabletAuth();
     const target=doc(db,'clubs',clubId,'state','current');
     return runSharedTransaction(clubId,syncContext,db,async tx=>{
       const snap=await tx.get(target),current=snap.exists()?snap.data():{};
@@ -305,16 +306,26 @@ window.firestoreApi = {
         throw window.KCSharedCore.conflict(['Tablet-Warteschlange']);
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       const beforeDocs=await Promise.all(docs.map(row=>tx.get(row.ref)));
-      for(const [index,row] of docs.entries())if(row.path.startsWith('clubs/'+clubId+'/stationCommands/')){
-        const stored=beforeDocs[index].exists()?beforeDocs[index].data():null;
-        const expected=row.value?.status==='reversed'?'applied':'queued';
-        if(stored?.status!==expected)throw window.KCSharedCore.conflict(['Getränkestation']);
-        // Preserve the server timestamp and original command fields on the receipt.
-        row.value={...stored,status:row.value.status,result:row.value.result};
-      }
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
-      tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence,tabletClock:{...(window.KCSharedClock?.captureTablet?.()||{time:window.KCSharedClock?.now()??Date.now()}),sequence:batch.sequence,serverAt:serverTimestamp()}});
-      for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(window.KCSharedCore.normalizeGameData(row.value)));}
+      const serialize=value=>timestamps(window.KCSharedCore.normalizeGameData(value));
+      tx.set(target,{...current,...serialize(batch.state),tabletSequence:batch.sequence,tabletClock:{...(window.KCSharedClock?.captureTablet?.()||{time:window.KCSharedClock?.now()??Date.now()}),sequence:batch.sequence,serverAt:serverTimestamp()}});
+      for(const [index,row] of docs.entries()){
+        if(row.path.startsWith('clubs/'+clubId+'/stationCommands/')){
+          const stored=beforeDocs[index].exists()?beforeDocs[index].data():null;
+          const status=row.value?.status;
+          if(row.deleted||!['applied','rejected','reversed'].includes(status)
+            ||stored?.status!==(status==='reversed'?'applied':'queued'))
+            throw window.KCSharedCore.conflict(['Getränkestation']);
+          // Only serialize local fields. Firestore Timestamp instances in stored
+          // receipt fields must retain their original types for the rules check.
+          const result=status==='reversed'?{}:{result:serialize(row.value.result)};
+          tx.set(row.ref,{...stored,status,...result});
+        }else if(row.deleted){
+          tx.delete(row.ref);
+        }else{
+          tx.set(row.ref,serialize(row.value));
+        }
+      }
       return {sequence:batch.sequence};
     });
   },
@@ -2765,8 +2776,16 @@ window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 
 
+async function startPrimaryApp(){
+  try{
+    await window.KCTabletAuth?.();
+  }catch(error){
+    console.warn('Firebase-Anmeldestatus noch nicht verfügbar:',error?.code||error?.message);
+  }
+  return startApp();
+}
 if (typeof startApp === "function") {
-  startApp();
+  void startPrimaryApp();
 }
 
 

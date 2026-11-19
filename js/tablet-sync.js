@@ -146,19 +146,26 @@
     s.uploading=Promise.resolve().then(async()=>{
       while(s.inflight||s.pending){
         if(!navigator.onLine){s.error='Tablet ist offline';break;}
+        let ctx;
         try{
           if(!s.inflight){const pending=s.pending;s.inflight=pending;s.pending=null;
             try{store(s);}catch(error){s.pending=pending;s.inflight=null;throw error;}
           }
           const batch=s.inflight;
-          const ctx={method:'commitTabletBatch',opId:batch.opId,eveningStartedAt:batch.expectedEvening??s.cloudEvening??'',base:{},sideOperations:[],metaBase:{}};
+          ctx={method:'commitTabletBatch',opId:batch.opId,eveningStartedAt:batch.expectedEvening??s.cloudEvening??'',base:{},sideOperations:[],metaBase:{}};
           const confirmed=await cloudRequest(raw.commitTabletBatch(s.club,batch,ctx));
           if(confirmed?.sequence!==batch.sequence)throw Error('Firebase hat diese Übertragung nicht bestätigt.');
           const previousConfirmedAt=s.lastConfirmedAt;s.inflight=null;s.lastConfirmedAt=Date.now();
           try{store(s);}catch(error){s.inflight=batch;s.lastConfirmedAt=previousConfirmedAt;throw error;}
-          s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
+          s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagnostic=null;s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
         }catch(error){
           s.retryFailures=(s.retryFailures||0)+1;
+          s.failureDiagnostic=ctx?{
+            batchSequence:s.inflight?.sequence,baseSequence:s.inflight?.baseSequence,
+            operation:ctx.method,authentication:ctx.authentication||null,
+            ...(ctx.permissionDiagnostic||{}),
+            sideDocuments:(s.inflight?.documents||[]).slice(0,60).map(row=>({path:row.path,operation:row.deleted?'delete':'set'}))
+          }:null;
           const message=error?.code==='sync-conflict'&&error.path?.[0]==='Tablet-Warteschlange'
             ?'Tablet und Firebase haben unterschiedliche Speicherstände. Bitte Abgleichdatei sichern und Buchungen bis zum Abgleich nicht erneut eingeben.'
             :String(error?.message||error);
@@ -318,7 +325,7 @@
     }
   }
 
-  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},clubContentView(club){return ready&&current?.club===club?C.clone(current.root.dashboardClubContent||null):undefined;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
+  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},clubContentView(club){return ready&&current?.club===club?C.clone(current.root.dashboardClubContent||null):undefined;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',failure:s?.failureDiagnostic||null,retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
   document.addEventListener('click',e=>{if(ready&&!unit)return;if(e.target?.closest?.('#shared-sync-status,.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
   window.addEventListener('online',()=>{status();void reconnect();});
   window.addEventListener('offline',()=>{if(current?.pending||current?.inflight)current.error='Tablet ist offline';status();});
