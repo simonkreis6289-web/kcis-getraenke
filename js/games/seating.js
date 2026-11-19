@@ -194,11 +194,11 @@ function removeOneSoloStatsEntry(name, kind, statId) {
   const index = penaltyStatsLog.findIndex(x => statId?x.id===statId:x.thrower===name&&(!x.eveningStartedAt||x.eveningStartedAt===currentEveningStartedAt)&&normalizePenaltyStatsType(x.type)===normalizePenaltyStatsType(kind));
   if (index >= 0) penaltyStatsLog.splice(index, 1);
 }
-async function changeSoloThrowPenalty(name, oldThrow, newThrow) {
+async function changeSoloThrowPenalty(name, oldThrow, newThrow, finishPenalties=[]) {
   // Beim Korrigieren alle Straf-Deltas in EINEM synchronisierten Schreibvorgang buchen.
   const oldValue = oldThrow ? Number(oldThrow.pins ?? oldThrow.value) : null;
   const newValue = newThrow ? Number(newThrow.pins ?? newThrow.value) : null;
-  const oldPenalty = oldThrow ? getSoloThrowPenalty(name, oldValue, !!oldThrow.isGosse) : null;
+  const oldPenalty = oldThrow ? oldThrow.penaltyBooking || getSoloThrowPenalty(name, oldValue, !!oldThrow.isGosse) : null;
   const newPenalty = newThrow ? getSoloThrowPenalty(name, newValue, !!newThrow.isGosse) : null;
   if (newPenalty && !newPenalty.key) { showToast('Strafenart nicht vorhanden: '+newPenalty.kind,'error'); return false; }
   if (oldPenalty && !oldPenalty.key) { showToast('Alte Strafenart nicht mehr vorhanden: '+oldPenalty.kind,'error'); return false; }
@@ -215,8 +215,11 @@ async function changeSoloThrowPenalty(name, oldThrow, newThrow) {
     const [personName,key]=JSON.parse(id);
     return {personName,category:'strafen',key,delta};
   });
-  if (changes.length && !(await changeMultipleSyncedPersonCounters(changes))) return false;
-  if (oldPenalty?.kind) removeOneSoloStatsEntry(name,oldPenalty.kind);
-  if (newPenalty?.kind) addPenaltyStatsEntry(newPenalty.kind,name,newPenalty.punished);
+  if (changes.length && !(await changeMultipleSyncedPersonCounters(changes,'',{reverse:changes.every(change=>change.delta<0)}))) return false;
+  if (oldPenalty?.kind) removeOneSoloStatsEntry(name,oldPenalty.kind,oldPenalty.statId);
+  if (newPenalty?.kind) {
+    const stat=addPenaltyStatsEntry(newPenalty.kind,name,newPenalty.punished);
+    newThrow.penaltyBooking={...newPenalty,statId:stat?.id||null};
+  }
   return true;
 }

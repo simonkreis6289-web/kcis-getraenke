@@ -87,11 +87,13 @@ async function applyFuchsjagdThrow(pins){
  const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('fuchsjagd'):pins;if(scored===null)return;
  s.busy=true;
  try{
-  if(!(await changeSoloThrowPenalty(thrower,null,{pins,isGosse:pins===0})))return;
+  const roll={pins,isGosse:pins===0};
+  if(!(await changeSoloThrowPenalty(thrower,null,roll)))return;
   const status=fuchsjagdApplyThrow(s,pins,scored,thrower,new Date().toISOString());
+  if(roll.penaltyBooking)s.throws.at(-1).penaltyBooking=roll.penaltyBooking;
   if(status==='complete'&&!(await fuchsjagdFinalize(s))){
    const last=s.throws.pop();fuchsjagdRestore(s,last.before);
-   if(!(await changeSoloThrowPenalty(thrower,{pins,isGosse:pins===0},null)))showToast('Abschluss fehlgeschlagen: Wurfstrafe bitte überprüfen','error');
+   if(!(await changeSoloThrowPenalty(thrower,roll,null)))showToast('Abschluss fehlgeschlagen: Wurfstrafe bitte überprüfen','error');
    return;
   }
   if(status==='nextFox')showToast('🦊 Nächster Fuchs: '+s.fox,'success');
@@ -111,12 +113,15 @@ function fuchsjagdNextThrower(){
 }
 async function undoFuchsjagdThrow(){
  ensureFuchsjagdState();const s=fuchsjagdState;
- if(s.busy||!s.throws.length||s.finished){showToast('Rückgängig nach Spielabschluss nicht möglich','error');return;}
+ if(s.busy||!s.throws.length)return;
  const last=s.throws[s.throws.length-1];
  if(!last.before){showToast('Älterer Wurf kann nicht sicher zurückgenommen werden','error');return;}
  s.busy=true;
  try{
-  if(!last.skipped&&!(await changeSoloThrowPenalty(last.name,{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0},null)))return;
+  const previous=last.skipped?null:{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0,penaltyBooking:last.penaltyBooking};
+  const finish=s.finished?s.finishPenalties||[]:[];
+  if(!(await changeSoloThrowPenalty(last.name,previous,null,finish)))return;
+  if(s.finished&&s.resultHistoryId)strafenHistory=strafenHistory.filter(entry=>entry.id!==s.resultHistoryId);
   s.throws.pop();fuchsjagdRestore(s,last.before);
   renderFuchsjagdGame();persistState();
  }finally{s.busy=false;}

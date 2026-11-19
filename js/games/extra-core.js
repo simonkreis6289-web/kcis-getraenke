@@ -241,7 +241,7 @@
    if(!s.id||req.gameId!==s.id)throw Error('Das Spiel wurde inzwischen gewechselt.');
    if(req.action==='reset'){s=empty(req.gameKey);s.eveningStartedAt=ctx.eveningStartedAt;}
    else if(req.action==='undo'){
-    if(!s.history.length||s.finished&&!['lattenzaun','guterschnitt',...KCRoundGames.keys].includes(s.gameKey))throw Error('Keine Aktion zum Zurücknehmen.');
+    if(!s.history.length||(!s.active&&!s.finished))throw Error('Keine Aktion zum Zurücknehmen.');
     const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.originalPlayerOrder||s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0]},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
     // Vor V225 gestartete Parteien behalten ihre Wurfreihenfolge auch bei Rückgängig.
     if(s.gameKey==='poker'){if(!s.pokerSequential)delete base.pokerSequential;if(!s.pokerSharedRanks)delete base.pokerSharedRanks;}

@@ -836,7 +836,9 @@ function finishTannenbaumGame() {
   if (!Array.isArray(strafenHistory)) strafenHistory = [];
   Object.assign(historyEntry,{gameFineFrozen:tannenbaumState.gameFineFrozen===true,onTop:tannenbaumState.onTop===true,gameFineOnTop:tannenbaumState.onTop===true});strafenHistory.unshift(historyEntry);
 
-  tannenbaumState = createTannenbaumState();
+  const round=JSON.parse(JSON.stringify(tannenbaumState));
+  delete round.closedRound;
+  tannenbaumState = {...createTannenbaumState(),closedRound:{id:historyEntry.id,state:round}};
 
   renderAll();
   persistState();
@@ -913,7 +915,7 @@ function handleTannenbaumThrow(number) {
                 ? 'strike-own'
                 : action.includes('bekommt Strich')
                   ? 'enemy-strike'
-                  : 'restore'
+                  : action.includes('wieder zurück')?'restore':'noop'
             )
           : 'unknown',
       createdAt: new Date().toISOString()
@@ -929,15 +931,21 @@ function handleTannenbaumThrow(number) {
 async function undoLastTannenbaumThrow() {
   ensureTannenbaumState();
 
-  const last = tannenbaumState.history?.[0];
+  const closed=!tannenbaumState.active?tannenbaumState.closedRound:null;
+  const last=(closed?.state||tannenbaumState).history?.[0];
 
   if (!last) {
     showToast('Keine Würfe vorhanden', 'error');
     return;
   }
 
-  if(last.penaltyKey&&last.punishedNames?.length){const ok=await changeMultipleSyncedPersonCounters(last.punishedNames.map(personName=>({personName,category:'strafen',key:last.penaltyKey,delta:-1})));if(!ok)return;}
-  if(last.thrower&&typeof removeOneSoloStatsEntry==='function')removeOneSoloStatsEntry(last.thrower,last.specialType||'gosse',last.statId);
+  if(last.penaltyKey&&last.punishedNames?.length){const ok=await changeMultipleSyncedPersonCounters(last.punishedNames.map(personName=>({personName,category:'strafen',key:last.penaltyKey,delta:-1})),'',{reverse:true});if(!ok)return;}
+  if(last.thrower&&(last.statId||last.specialType||last.type==='penalty-gosse')&&typeof removeOneSoloStatsEntry==='function')removeOneSoloStatsEntry(last.thrower,last.specialType||'gosse',last.statId);
+  if(closed){
+    for(const person of persons)if(Array.isArray(person.tannenbaumCharges))person.tannenbaumCharges=person.tannenbaumCharges.filter(charge=>charge.id!==closed.id);
+    strafenHistory=strafenHistory.filter(entry=>entry.id!==closed.id);
+    tannenbaumState=closed.state;
+  }
   const team = last.team;
   const otherTeam = getOtherTeam(team);
   const n = String(last.number);
@@ -951,7 +959,7 @@ async function undoLastTannenbaumThrow() {
 
   else if (last.action.includes('bekommt Strich')) {
     const strikeIndex =
-      other.strikes.findIndex(
+      other.strikes.findLastIndex(
         s => String(s.number) === n
       );
 
@@ -960,7 +968,7 @@ async function undoLastTannenbaumThrow() {
     }
   }
 
-  if(last.type==='manual-restore'||last.type==='restore')own.remaining[n]=Math.max(0,(own.remaining[n]||0)-1);
+  if(last.type==='manual-restore'||last.type==='restore'&&!last.action.includes('Keine Änderung'))own.remaining[n]=Math.max(0,(own.remaining[n]||0)-1);
   syncTannenbaumWinnerBonus();
   tannenbaumState.history.shift();
   if (last.type !== 'manual-restore') tannenbaumState.currentTeam = team;

@@ -31,6 +31,12 @@ test('direct TV link retains fresh throw popups in a long mixed-order log',()=>{
  }
  assert.equal(cloud.penaltyStatsLog.length,70);
 });
+test('seating switches to avatars only based on the rendered panel width',()=>{
+ const f=setup(),panel=f.document.getElementById('dashboard-seating');
+ let width=190;panel.getBoundingClientRect=()=>({width});
+ f.tv.apply(f.model.defaults());assert(panel.classList.contains('seat-avatars-only'));
+ width=270;f.tv.rotate();assert(!panel.classList.contains('seat-avatars-only'));
+});
 test('settings migrate old values and normalize durations and safe bounded custom messages',()=>{
  const {model:M}=setup(),s=M.normalize({panels:{drinks:{seconds:0},fines:{seconds:1000},gutters:{seconds:'bad'}},popupSeconds:-5,tickerMessages:[{id:'<bad>',text:'  Hi\n there <img>  ',enabled:false},{id:'<bad>',text:'x'.repeat(600)}]});
  assert.equal(s.panels.drinks.seconds,1);assert.equal(s.panels.fines.seconds,300);assert.equal(s.panels.gutters.seconds,5);assert.equal(s.popupSeconds,0);assert.equal(s.tickerMessages[0].text,'Hi there <img>');assert.equal(s.tickerMessages[1].text.length,500);assert.equal(s.tickerMessages[0].enabled,false);assert.notEqual(s.tickerMessages[0].id,s.tickerMessages[1].id);
@@ -71,7 +77,7 @@ test('only enabled custom ticker messages appear, safely escaped and without res
 test('throw popups handle fresh gutter/wreath/nine events once, duration/disable, evening boundaries and stale replay',()=>{
  const f=setup(),root={currentEveningStartedAt:'2026-11-16T19:00:00Z',dashboardSettings:{popupSeconds:5},penaltyStatsLog:[]},event=(id,type='gosse',extras={})=>({id,type,thrower:'Marius <img>',createdAt:new Date(f.now()).toISOString(),eveningStartedAt:root.currentEveningStartedAt,...extras});
  root.penaltyStatsLog=[event('old')];f.tv.feed(root,'club',f.now());assert(!f.document.getElementById('dashboard-throw-popup'));
- for(const [id,type,label] of [['a','gosse','Gosse'],['b','kranz','Kranz'],['c','9er','Alle Neune']]){
+ for(const [id,type,label] of [['a','gosse','Gosse'],['b','kranz','Kranz'],['c','9er','Alle Neune'],['d','durchgeworfen','Durchgeworfen']]){
   root.penaltyStatsLog.unshift(event(id,type));f.tv.feed(root,'club',f.now());const box=f.document.getElementById('dashboard-throw-popup');assert(!box.hidden);assert(box.textContent.includes(label));assert(box.textContent.includes('Marius <img>'));assert(!box.querySelector('img'));f.advance(4999);assert(!box.hidden);f.advance(1);assert(box.classList.contains('toast-leaving'));f.advance(420);assert(box.hidden);f.tv.feed(root,'club',f.now());assert(box.hidden,'confirmed repeats must not replay');
  }
  root.penaltyStatsLog.unshift(event('stale','gosse',{createdAt:new Date(f.now()-31000).toISOString()}));f.tv.feed(root,'club',f.now());assert(f.document.getElementById('dashboard-throw-popup').hidden);

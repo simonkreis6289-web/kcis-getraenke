@@ -20,7 +20,7 @@ test('the fast buttons and Tiberius show throw popups over the direct link while
  d.c.window.dashboardTest.connect('club','Club');
  try{
   db.fail(true);
-  for(const [type,label] of [['gosse','Gosse'],['9er','Alle Neune'],['kranz','Kranz'],['durchgeworfen','Alle Neune']]){
+  for(const [type,label] of [['gosse','Gosse'],['9er','Alle Neune'],['kranz','Kranz'],['durchgeworfen','Durchgeworfen']]){
    const fastButton=a.document.querySelector(`.quick-penalty-bar button[onclick="openPenaltyQuick('${type}')"]`);
    assert(fastButton);
    a.run(fastButton.getAttribute('onclick'));
@@ -35,7 +35,7 @@ test('the fast buttons and Tiberius show throw popups over the direct link while
   }
   a.run('tiberiusState.targets=[50];tiberiusState.columnCount=1;tiberiusState.targetsGenerated=true');
   await a.c.startTiberiusGameFinal('A');
-  for(const [value,type,label,thrower] of [[0,'gosse','Gosse','A'],[9,'9er','Alle Neune','B'],[12,'Kranz','Kranz','A'],['durchgeworfen','durchgeworfen','Alle Neune','B']]){
+  for(const [value,type,label,thrower] of [[0,'gosse','Gosse','A'],[9,'9er','Alle Neune','B'],[12,'Kranz','Kranz','A'],['durchgeworfen','durchgeworfen','Durchgeworfen','B']]){
    await a.c.handleTiberiusThrow(value);
    await tick();
    assert.equal(vm.runInContext('state.penaltyStatsLog[0].type',d.c),type);

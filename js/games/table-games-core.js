@@ -119,7 +119,7 @@
       if(s.gameKey==='blackjack'&&s.rulesVersion!==2&&request.action!=='reset')throw Error('Die Regeln wurden geändert. Bitte ein neues 17+4 vorbereiten; bisherige Buchungen bleiben erhalten.');
       if(request.action==='reset'){s=empty(request.gameKey);s.eveningStartedAt=context.eveningStartedAt;}
       else{
-        if(!s.active||s.finished)throw Error('Dieses Spiel ist bereits beendet');
+        if((!s.active||s.finished)&&!(s.finished&&request.action==='undo'))throw Error('Dieses Spiel ist bereits beendet');
         if(request.action==='finish'){
           if(!s.readyToFinish)throw Error('Zuerst die Runde zu Ende spielen');
           const values=totals(s);
@@ -180,6 +180,7 @@
       e.penalties=copy(changes);
     }else if(request.action==='undo'){
       const e=before.history[before.history.length-1];for(const change of e.penalties||[])changes.push({...change,delta:-change.delta});if(e.statId)removed.push(e.statId);
+      if(before.finished)for(const change of before.finishPenalties||[])changes.push({...change,delta:-change.delta});
     }else if(request.action==='finish'){
       if(s.gameKey==='gluecksspirale'){
         const groups=teamLoserGroups(s);

@@ -42,7 +42,7 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 .dashboard-throw-popup>span{font-size:clamp(24px,3vw,42px);font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .dashboard-throw-popup.is-gutter{border-color:#e72c4c;background:linear-gradient(135deg,#ffc5d0,#fa5977);color:#711026}
 .dashboard-throw-popup.is-wreath{border-color:#d38b00;background:linear-gradient(135deg,#fff0a1,#ffba2e);color:#653b00}
-.dashboard-throw-popup.is-nine{border-color:#119c56;background:linear-gradient(135deg,#baffcf,#38d883);color:#064b29}
+.dashboard-throw-popup.is-nine,.dashboard-throw-popup.is-through{border-color:#119c56;background:linear-gradient(135deg,#baffcf,#38d883);color:#064b29}
 @media(prefers-reduced-motion:reduce){.dashboard-throw-popup{transition:none!important;transform:translate(-50%,0)!important}.dashboard-throw-popup.toast-visible{opacity:1}}
 
 .dashboard-side-full #dashboard-seating .tv-seat{font-size:clamp(13px,1.1vw,18px)}
@@ -115,3 +115,9 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
   white-space: nowrap;
 }
 .football-clock[hidden] { display: none; }
+
+#dashboard-seating.seat-avatars-only .tv-seat{justify-content:center;padding:2px;gap:0}
+#dashboard-seating.seat-avatars-only .seat-name,
+#dashboard-seating.seat-avatars-only .seat-team-dot,
+#dashboard-seating.seat-avatars-only .seat-turn-flag{display:none}
+#dashboard-seating.seat-avatars-only .seat-avatar{flex-shrink:1;max-width:100%;max-height:100%}

@@ -25,7 +25,12 @@
    box.dataset.activePanel=current.key||'';const dots=box.querySelectorAll('[data-panel-key]');for(const dot of dots){const active=dot.dataset.panelKey===current.key;dot.classList.toggle('active',active);dot.setAttribute('aria-current',String(active));}}
    if(items.length>1)delay=Math.min(delay,current.remaining);
   }
+  resizeSeating();
   if(Number.isFinite(delay))rotationTimer=setTimeout(()=>rotate(),Math.max(25,delay));
+ }
+ function resizeSeating(){
+  const panel=$('dashboard-seating'),width=panel?.getBoundingClientRect?.().width||0;
+  if(width>0)panel.classList.toggle('seat-avatars-only',width<244);
  }
  function apply(settings){
   const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds,tableWidth:r.settings.tableWidth});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();
@@ -159,19 +164,19 @@
    if(!event?.id||seenThrows.has(event.id))continue;seenThrows.add(event.id);const at=Date.parse(event.createdAt);
    if(event.eveningStartedAt?String(event.eveningStartedAt)!==String(root.currentEveningStartedAt||''):Number.isFinite(start)&&(!Number.isFinite(at)||at<start))continue;
    if(!popupInitialized||!Number.isFinite(at)||now-at>30000||now-at< -5000)continue;
-   const type=String(event.type||'').toLowerCase(),kind=type==='gosse'?'gutter':type==='kranz'?'wreath':['9er','durchgeworfen'].includes(type)?'nine':'';
+   const type=String(event.type||'').toLowerCase(),kind=type==='gosse'?'gutter':type==='kranz'?'wreath':type==='durchgeworfen'?'through':type==='9er'?'nine':'';
    if(kind)fresh.push({kind,at,name:String(event.thrower||event.name||event.personName||'')});
   }
   popupInitialized=true;if(!popupSeconds||!fresh.length||document.hidden)return;
   const event=fresh.sort((a,b)=>a.at-b.at).at(-1);let box=$('dashboard-throw-popup');
   if(!box){box=document.createElement('div');box.id='dashboard-throw-popup';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.hidden=true;document.body.append(box);}
   hidePopup(true);box.className='dashboard-throw-popup is-'+event.kind;
-  const titleText={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!'}[event.kind];if(window.KCClubToasts)window.KCClubToasts.decorate(box,root,titleText,event.name,event.name);else{const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent=titleText;box.replaceChildren(title,name);}positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
+  const titleText={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!',through:'🎳 Durchgeworfen!'}[event.kind];if(window.KCClubToasts)window.KCClubToasts.decorate(box,root,titleText,event.name,event.name);else{const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent=titleText;box.replaceChildren(title,name);}positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
   popupTimer=setTimeout(hidePopup,popupSeconds*1000);
  }
  window.addEventListener('kc-football-updated',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  window.addEventListener('kc-football-clock',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hidePopup();else rotate();});
- window.addEventListener('resize',()=>{positionPopup();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
+ window.addEventListener('resize',()=>{positionPopup();resizeSeating();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
  window.KCDashboardLayoutTV=Object.freeze({apply,rotate,highlight,ticker,tickerFit,feed});
 })();

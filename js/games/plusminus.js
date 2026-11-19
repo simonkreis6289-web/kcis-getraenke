@@ -90,9 +90,10 @@ async function applyPlusminusThrow(value,isGosse=false) {
   const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('plusminus'):pins;if(scored===null)return;
   plusminusState.busy=true;
   try{
-    if(!(await changeSoloThrowPenalty(player.name,null,{value:pins,isGosse:!!isGosse})))return;
+    const roll={value:pins,isGosse:!!isGosse,...(pins===12?{kranzValue:scored}:{})};
+    if(!(await changeSoloThrowPenalty(player.name,null,roll)))return;
     plusminusState.undoStack.push({player:player.name,slot,oldIndex:plusminusState.currentPlayerIndex,oldSelectedSlot:plusminusState.selectedSlot});
-    row[slot]={value:pins,isGosse:!!isGosse,...(pins===12?{kranzValue:scored}:{})};plusminusState.rows[player.name]=row;
+    row[slot]=roll;plusminusState.rows[player.name]=row;
     let i=plusminusState.currentPlayerIndex+1;
     if(i>=players.length)i=0;
     let hops=0;

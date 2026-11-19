@@ -98,3 +98,10 @@ function applyCompletedGameResults(entries){
  if(!Array.isArray(entries))return;
  strafenHistory=[...entries,...(strafenHistory||[]).filter(e=>!e.serverGameResult&&!entries.some(r=>r.id===e.id))];
 }
+
+function removeGameFreeChargeResult(entry){
+ if(!entry)return;
+ const ids=new Set((entry.assignedTo||[]).map(charge=>charge.id).filter(Boolean));
+ for(const person of persons)if(Array.isArray(person.freeStrafen))person.freeStrafen=person.freeStrafen.filter(charge=>!ids.has(charge.id));
+ strafenHistory=strafenHistory.filter(result=>result.id!==entry.id);
+}

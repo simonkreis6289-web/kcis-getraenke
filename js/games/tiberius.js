@@ -556,7 +556,7 @@ async function handleTiberiusThrow(value){
 }
 async function undoLastTiberiusThrow(){
  ensureTiberiusState();
- if(tiberiusAutoBusy||!tiberiusState.active)return;
+ if(tiberiusAutoBusy||(!tiberiusState.active&&!tiberiusState.finished))return;
  const last=tiberiusState.undoStack?.at(-1);
  if(!last){showToast('Kein Tiberius-Wurf zum Rückgängig machen','error');return;}
  if(last.legacyUnverified){showToast('Die Strafe dieses alten Wurfs lässt sich nicht eindeutig zuordnen. Der Spielstand bleibt erhalten.','error');return;}
@@ -564,6 +564,10 @@ async function undoLastTiberiusThrow(){
  try{
   const changes=(last.bookedChanges||[]).map(x=>({...x,delta:-x.delta}));
   if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'↩ Tiberius: Sonderwurf rückgängig',{reverse:true})))return;
+  if(tiberiusState.finished){
+   removeGameFreeChargeResult(tiberiusState.history.shift());
+   tiberiusState.active=true;tiberiusState.finished=false;tiberiusState.customOrder=true;
+  }
   tiberiusState.undoStack.pop();
   tiberiusState.score=last.score;
   if(Number.isInteger(last.throwCount)){

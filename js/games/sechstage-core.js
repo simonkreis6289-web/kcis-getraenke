@@ -67,7 +67,7 @@
       if(request.raceId!==state.id)throw new Error('Das Rennen wurde inzwischen gewechselt');
       if(request.action==='reset'){state=empty();state.eveningStartedAt=context.eveningStartedAt;}
       else{
-        if(!state.active||state.finished)throw new Error('Dieses Rennen ist bereits beendet');
+        if((!state.active||state.finished)&&!(state.finished&&request.action==='undo'))throw new Error('Dieses Rennen ist bereits beendet');
         if(request.action==='select'){
           if(state.readyToFinish||!Number.isInteger(request.playerIndex)||request.playerIndex<0||request.playerIndex>=team(state).players.length||state.turn.used[request.playerIndex]>=quota(team(state)))throw new Error(team(state).players.length===1?'Ein Einzelteam darf höchstens viermal werfen':'Jeder Partner darf höchstens zweimal werfen');
           state.turn.playerIndex=request.playerIndex;
@@ -88,7 +88,7 @@
           const rebuilt=start(state.teams,state.bonus,state.id,state.startedAt,state.eveningStartedAt,state.kranzValue,state.kranzReset,state.kranzRule);
           for(const entry of history)takeThrow(rebuilt,entry);
           if(team(rebuilt)?.id===removed.teamId)rebuilt.turn.playerIndex=team(rebuilt).players.indexOf(removed.name);
-          state={...state,...rebuilt};
+          state={...state,...rebuilt,finishPenalties:[]};
         }else if(request.action==='finish'){
           if(!state.readyToFinish)throw new Error('Erst alle sechs Tage spielen');
           const best=Math.max(...Object.values(state.scores));state.winners=state.teams.filter(t=>state.scores[t.id]===best).map(t=>t.id);state.finished=true;state.active=false;
@@ -113,6 +113,7 @@
       entry.penalties=clone(changes);
     }else if(request.action==='undo'){
       const last=before.history[before.history.length-1];for(const change of last.penalties||[])changes.push({...change,delta:-change.delta});if(last.statId)removed.push(last.statId);
+      if(before.finished)for(const change of before.finishPenalties||[])changes.push({...change,delta:-change.delta});
     }else if(request.action==='finish'){
       const groups=loserGroups(state);
       for(let i=0;i<Math.min(3,groups.length);i++){
