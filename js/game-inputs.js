@@ -201,6 +201,14 @@ function renderGameDashboardButton(key,panel,s){
  if(!toolbar){toolbar=document.createElement('div');toolbar.className='game-dashboard-toolbar';}
  if(header){header.classList.add('game-title-with-actions');if(toolbar.parentElement!==header)header.append(toolbar);}
  else if(toolbar.parentElement!==panel)panel.prepend(toolbar);
+ let settings=toolbar.querySelector('[data-game-settings-link]');
+ if(!settings){
+  settings=document.createElement('button');
+  settings.type='button';settings.className='secondary-btn game-settings-link';settings.dataset.gameSettingsLink=key;
+  settings.textContent='⚙️ Spieleinstellungen';settings.onclick=()=>{window.KCStartReview?.cancel();openGameSettings(key);};
+  toolbar.prepend(settings);
+ }
+ settings.hidden=!!s?.active;
  if(!dashboard){
   dashboard=document.createElement('button');dashboard.type='button';
   dashboard.className='secondary-btn game-dashboard-button';dashboard.dataset.gameDashboard=key;

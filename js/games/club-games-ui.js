@@ -30,7 +30,7 @@ function clubGameControls(key,s,disabled){
    clubGameRack({standing,selected:d.selected,prices,buttons:true,disabled:!!disabled})+
    '<div class="ind-actions"><button type="button" data-club-book-pins class="primary-btn" '+(disabled||!d.selected.length?'disabled':'')+' onclick="clubGameBookPins(\''+key+'\')">Wurf buchen</button>'+
    '<button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'gosse\'})">Gosse</button>'+
-   (key==='tageskurs'?'<button type="button" '+disabled+' onclick="clubGameBookPins(\'tageskurs\',true)">Alle Neune</button>':'')+'</div></div>';
+   (key==='tageskurs'?'<button type="button" '+disabled+' onclick="clubGameBookPins(\'tageskurs\',true)">Alle Neune</button><button type="button" '+disabled+' onclick="indRun(\'tageskurs\',\'throw\',{kind:\'kranz\'})">👑 Kranz</button>':'')+'</div></div>';
  }
  return '';
 }
@@ -65,7 +65,8 @@ function clubGameBookPins(key,all=false){
  return indAction(key,'throw',{kind:'pins',knocked:all?window.KCClubGames.pins.slice():clubGameDraft(indGet(key)).selected.slice()});
 }
 function renderClubGameSettings(){
- const g=window.KCClubGames;
+ const g=window.KCClubGames,rack=document.querySelector('[data-tageskurs-settings-rack]');
+ if(rack&&!rack.firstElementChild)rack.innerHTML=clubGameRack();
  for(const key of g.keys){
   const panel=document.getElementById('game-property-'+key);if(!panel||panel.contains(document.activeElement))continue;
   const config=extraConfig(key);

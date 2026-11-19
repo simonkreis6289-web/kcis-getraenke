@@ -91,8 +91,34 @@ test('the start click opens review, allows settings edits and starts only after 
  const make=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath',factory+';return {database,initial,fullApp};')(read,copy,assert,vm,parse,require,evening,rootPath,personPath),db=make.database({[rootPath]:make.initial()}),a=make.fullApp(db);await a.select();
  const button=a.document.querySelector('[onclick="startHausGame(\'hoch\')"]');let starts=0;button.onclick=()=>starts++;
  const handler=clickHandlers.find(fn=>String(fn).includes('pending={key:game'));assert(handler);handler({target:button,preventDefault(){},stopImmediatePropagation(){}});assert.equal(starts,0);assert(a.document.getElementById('start-review-title'));
- a.document.querySelector('[data-edit]').click();assert(a.document.querySelector('.start-review-return'));assert(!a.document.getElementById('tab-spiele-einstellungen').classList.contains('hidden'));assert.equal(starts,0);
- a.document.querySelector('.start-review-return').click();a.document.querySelector('[data-start]').click();assert.equal(starts,1);assert.equal(a.document.getElementById('start-review-title'),null);
+ a.document.querySelector('[data-edit]').click();assert(a.document.querySelector('[data-game-settings-back="haushoch"]'));assert(!a.document.getElementById('tab-spiele-einstellungen').classList.contains('hidden'));assert.equal(starts,0);
+ a.document.querySelector('[data-game-settings-back="haushoch"]').click();a.document.querySelector('[data-start]').click();assert.equal(starts,1);assert.equal(a.document.getElementById('start-review-title'),null);
+ a.c.showSideTab('spiele','tageskurs');
+ const physical=a.document.querySelector('[onclick="indStart(\'tageskurs\')"]');
+ handler({target:physical,preventDefault(){},stopImmediatePropagation(){}});
+ assert.match(a.document.getElementById('start-review-title').textContent,/Tageskurs/);
+ a.c.KCStartReview.cancel();
+});
+test('every game can open its own settings and return to its start page; Tageskurs shows the same pin numbering',async()=>{
+ const seed=initial();seed.dartsState={active:false};
+ const db=database({[rootPath]:seed}),a=fullApp(db);await a.select();
+ for(const {key} of a.c.KCGameOverview.catalog){
+  a.c.showSideTab('spiele',key);
+  const tab=a.document.getElementById('tab-'+key),link=tab.querySelector('[data-game-settings-link]');
+  assert(link&&!link.hidden,key);
+  link.click();
+  assert(tab.classList.contains('hidden'),key);
+  const settings=a.document.getElementById('game-property-'+key);
+  assert(!settings.hidden&&!a.document.getElementById('tab-spiele-einstellungen').classList.contains('hidden'),key);
+  const back=settings.querySelectorAll('[data-game-settings-back]');
+  assert.equal(back.length,1,key);
+  back[0].click();
+  assert(!tab.classList.contains('hidden'),key);
+  assert(!a.c.gameSetupState(key)?.active,key);
+ }
+ const rack=a.document.querySelector('[data-tageskurs-settings-rack]');
+ assert.deepEqual([...rack.querySelectorAll('[data-rack-pin]')].map(pin=>Number(pin.dataset.rackPin)),[9,8,7,4,5,6,2,3,1]);
+ for(const key of ['tageskurs','swingerclub'])assert(!a.c.KCStartReview.settings(key).some(([label])=>label==='Kranz'),key);
 });
 test('Darts and Tannenbaum undo remove the exact own Kranz event and its associated fines',async()=>{
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();a.run("persons[0].tisch='T1';persons[1].tisch='T2';extraGameSettings={...extraGameSettings,kranzRules:{darts:{mode:'fixed',value:8},tannenbaum:{mode:'fixed',value:8}}};persistState()");

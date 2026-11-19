@@ -63,6 +63,7 @@ test('Tageskurs calculates and replays only the standing pins at configured pric
  const view=parseHTML(c.renderClubGameBoard(f.s)).document;
  assert.equal(view.querySelectorAll('.club-game-pin.is-down').length,9);
  f.run('undo');assert.equal(g.current(f.s),'B');assert.equal(f.s.bookings.length,1);
+ const kranz=f.run('throw',{kind:'kranz'});assert.equal(f.s.scores.B,0);assert.equal(kranz.moneyAdded.length,0);assert.equal(kranz.added[0].type,'kranz');assert.equal(f.s.history.at(-1).knocked.length,9);
 });
 test('Swinger Club alternates throws, requires new partners and books 1./2./3. by individual totals',()=>{
  const f=game('swingerclub',{rounds:2,throws:2},['A','B','C','D','E','F']);

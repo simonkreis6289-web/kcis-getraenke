@@ -66,6 +66,7 @@
   if(!physical(s.gameKey))return null;
   const board=s.gameKey==='swingerclub'?s.standing:pins;
   if(req.kind==='gosse')return {kind:'gosse',pins:0,knocked:[]};
+  if(s.gameKey==='tageskurs'&&req.kind==='kranz')return {kind:'kranz',pins:pins.length,knocked:pins.slice()};
   if(req.kind!=='pins'||!Array.isArray(req.knocked)||!req.knocked.length||
      new Set(req.knocked).size!==req.knocked.length||req.knocked.some(n=>!board.includes(n)))throw Error('Bitte die gefallenen Kegel markieren oder Gosse wählen.');
   return {kind:'pins',pins:req.knocked.length,knocked:board.filter(n=>req.knocked.includes(n))};

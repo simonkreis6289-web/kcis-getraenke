@@ -33,3 +33,13 @@ button.club-game-pin { cursor:pointer; }
  .club-game-score-layout { grid-template-columns:minmax(0,1fr); }
  .club-lotto-choices { grid-template-columns:repeat(5,minmax(0,1fr));margin:.65rem 0; }
 }
+
+
+.tageskurs-settings-layout { display:grid;grid-template-columns:minmax(0,1fr) minmax(13rem,.55fr);align-items:start;gap:1rem; }
+.tageskurs-settings-rack { margin:0; }
+.tageskurs-settings-rack figcaption { font-weight:750;color:#133359; }
+.tageskurs-settings-rack [data-tageskurs-settings-rack] { width:100%; }
+@media(max-width:680px) {
+ .tageskurs-settings-layout { grid-template-columns:minmax(0,1fr); }
+ .tageskurs-settings-rack { order:-1; }
+}
