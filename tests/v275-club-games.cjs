@@ -68,6 +68,29 @@ test('Tageskurs calculates and replays only the standing pins at configured pric
  f.run('undo');assert.equal(g.current(f.s),'B');assert.equal(f.s.bookings.length,1);
  const kranz=f.run('throw',{kind:'kranz'});assert.equal(f.s.scores.B,0);assert.equal(kranz.moneyAdded.length,0);assert.equal(kranz.added[0].type,'kranz');assert.equal(f.s.history.at(-1).knocked.length,9);
 });
+test('Tageskurs repeats a throw per person for each round and reverses only the last charge',()=>{
+ const f=game('tageskurs',{rounds:2},['A','B']);
+ const legacy={pinCents:[10,20,30,40,50,60,70,80,90],divisor:3};
+ assert.equal(core.settings('tageskurs',legacy).rounds,1);
+ assert.equal(core.settings('tageskurs',legacy).divisor,3);
+ assert(!g.validSettings('tageskurs',{...legacy,rounds:0}));
+ assert(!g.validSettings('tageskurs',{...legacy,rounds:13}));
+ const throwOne=()=>f.run('throw',{kind:'pins',knocked:[9]});
+ const first=throwOne().moneyAdded[0];
+ f.run('throw',{kind:'kranz'});
+ assert.equal(f.s.round,2);assert(f.s.active);assert.equal(g.current(f.s),'A');
+ const second=throwOne().moneyAdded[0];assert.notEqual(first.id,second.id);
+ const last=throwOne().moneyAdded[0];
+ assert(f.s.finished);
+ assert.deepEqual(copy(f.s.scores),{A:360,B:180});
+ const view=parseHTML(c.renderClubGameBoard(f.s)).document;
+ assert.match(view.querySelector('.club-game-visual').textContent,/1,80.*für diesen Wurf/);
+ assert.match(view.querySelector('tbody tr').textContent,/2 \/ 2.*3,60/);
+ assert.deepEqual(copy(f.run('undo').moneyRemoved),[last.id]);
+ assert(f.s.active);assert.equal(g.current(f.s),'B');
+ assert.deepEqual(copy(f.s.bookings.map(b=>b.id)),[first.id,second.id]);
+ assert.equal(f.s.scores.B,0);
+});
 test('Swinger Club alternates throws, requires new partners and books 1./2./3. by individual totals',()=>{
  const f=game('swingerclub',{rounds:2,throws:2},['A','B','C','D','E','F']);
  const roll=n=>f.run('throw',{kind:'pins',knocked:f.s.standing.slice(0,n)});
@@ -98,9 +121,11 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
  const seed=initial();seed.persons.push({...seed.persons[0],name:'C'},{...seed.persons[1],name:'D'});
  const db=database({[rootPath]:seed}),a=fullApp(db);await a.select();
  const divisor=a.document.querySelector('#game-property-tageskurs [data-club-setting="divisor"]');
- divisor.value='3';assert(await a.c.saveClubGameSettings('tageskurs'));
+ const rounds=a.document.querySelector('#game-property-tageskurs [data-club-setting="rounds"]');
+ divisor.value='3';rounds.value='2';assert(await a.c.saveClubGameSettings('tageskurs'));
  assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(db.root().extraGameSettings.tageskurs.divisor,3);
+ assert.equal(db.root().extraGameSettings.tageskurs.rounds,2);
  for(const key of g.keys){
   a.c.showSideTab('spiele',key);
   assert(!a.document.getElementById('tab-'+key).classList.contains('hidden'));
@@ -137,6 +162,7 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
  await a.c.clubGameBookPins('tageskurs');
  assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(db.root().tageskursState.history[0].pins,1);
+ assert.equal(db.root().tageskursState.config.rounds,2);
  assert.equal(db.root().individualGameLedger.find(x=>x.gameKey==='tageskurs').amountCents,120);
  assert(db.data.has('clubs/club/liveGames/tageskurs'));
 });

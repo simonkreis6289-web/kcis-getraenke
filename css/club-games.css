@@ -69,12 +69,14 @@ button.club-game-pin { cursor:pointer; }
 .swinger-progress span { padding:.4rem .65rem;border-radius:.55rem;background:#2c475f;color:#f0f7fc;white-space:nowrap; }
 .swinger-lane-layout,.swinger-pair-layout { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1rem;padding:1rem; }
 .swinger-lane { display:grid;justify-items:center;align-content:start;padding:.7rem .65rem;background:repeating-linear-gradient(90deg,#ecd9b6 0,#ecd9b6 22px,#f4e6cb 23px,#f4e6cb 44px);border:1px solid #d9c29a;border-radius:.75rem; }
-.swinger-lane .club-game-rack { max-width:15rem;gap:.23rem; }
-.swinger-lane .club-game-pin { min-height:2.8rem;border-radius:.65rem; }
+.swinger-lane .club-game-rack { width:min(100%,24rem);gap:clamp(.3rem,1vw,.65rem); }
+.swinger-lane .club-game-pin { min-height:clamp(3.4rem,7vw,4.5rem);border-radius:.75rem;font-size:clamp(1.25rem,3vw,1.75rem); }
 .swinger-lane-caption { font-size:.86rem;color:#513c25; }
 .swinger-booking { display:flex;flex-direction:column;justify-content:center;gap:.55rem; }
 .swinger-booking p { margin:0; }
 .swinger-booking .ind-actions,.swinger-pairing > .ind-actions { margin:.2rem 0 0; }
+.swinger-booking .ind-actions { display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:.65rem; }
+.swinger-booking .ind-actions button { min-height:3.6rem;padding:.6rem .75rem;font-size:clamp(1rem,2.3vw,1.2rem);font-weight:700; }
 .swinger-throw-count { display:flex;align-items:center;gap:.5rem;font-weight:650; }
 .swinger-throw-count strong { min-width:2.4rem;text-align:center;padding:.2rem .4rem;border-radius:.55rem;background:#deeee7;color:#164934;font-size:1.35rem; }
 .swinger-team-board h3 { margin:1rem 0 .5rem; }

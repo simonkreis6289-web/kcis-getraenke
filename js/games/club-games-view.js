@@ -52,12 +52,15 @@ function renderClubGameBoard(s,{controls='',dashboard=false}={}){
     '</div></td><td>'+(ticket?.hits.length||0)+' / 6</td><td>'+score+(score>=49?' <span title="Ziel erreicht">✓</span>':'')+'</td><td>'+s.rows[n].length+' / 13</td>';
   });
  }else if(key==='tageskurs'){
-  phase='Ein Wurf pro Person';
+  const rounds=s.config.rounds??1;
+  phase='Runde '+s.round+' / '+rounds;
   const standing=g.pins.filter(n=>!last?.knocked.includes(n));
   visual='<aside class="club-game-visual"><strong>'+(last?'Letzter Wurf · '+escape(last.name):'Tageskurs je Kegel')+'</strong>'+
-   clubGameRack({standing,prices:s.config.pinCents})+(last?'<b>'+money(s.scores[last.name])+' Strafe</b>':'')+'</aside>';
-  body=clubGameTable(s,['Gefallene Kegel','Strafe'],n=>{
-   const row=s.rows[n][0];return row?'<td>'+row.knocked.length+' / 9</td><td>'+money(row.cents)+'</td>':'<td>—</td><td>—</td>';
+   clubGameRack({standing,prices:s.config.pinCents})+(last?'<b>'+money(s.rows[last.name].at(-1).cents)+' für diesen Wurf</b>':'')+'</aside>';
+  body=clubGameTable(s,[...(rounds>1?['Würfe']:[]),'Gefallene Kegel','Strafe gesamt'],n=>{
+   const row=s.rows[n].at(-1);
+   return (rounds>1?'<td>'+s.rows[n].length+' / '+rounds+'</td>':'')+
+    (row?'<td>'+row.knocked.length+' / 9</td><td>'+money(s.scores[n])+'</td>':'<td>—</td><td>—</td>');
   });
   body='<div class="club-game-score-layout">'+visual+body+'</div>';visual='';
  }else{
