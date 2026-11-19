@@ -8,7 +8,7 @@
  const defaults=key=>{
   if(key==='abschreibung')return {startPoints:100,lastPlace:4,placeCents:50,woodRequired:false,kranzMode:'choose',kranzValue:8};
   if(key==='lottokoenig')return {kranzMode:'fixed',kranzValue:8};
-  if(key==='tageskurs')return {pinCents:[10,20,30,40,50,60,70,80,90],divisor:2};
+  if(key==='tageskurs')return {pinCents:[10,20,30,40,50,60,70,80,90],divisor:2,rounds:1};
   return {rounds:4,throws:4};
  };
  function validSettings(key,c){
@@ -16,7 +16,7 @@
   const kranz=['choose','fixed'].includes(c.kranzMode)&&int(c.kranzValue,1,12);
   if(key==='abschreibung')return kranz&&int(c.startPoints,1,300)&&int(c.lastPlace,2,16)&&int(c.placeCents,0,10000)&&typeof c.woodRequired==='boolean';
   if(key==='lottokoenig')return kranz;
-  if(key==='tageskurs')return Array.isArray(c.pinCents)&&c.pinCents.length===9&&pins.every(n=>int(c.pinCents[n-1],0,10000))&&int(c.divisor,1,100);
+  if(key==='tageskurs')return Array.isArray(c.pinCents)&&c.pinCents.length===9&&pins.every(n=>int(c.pinCents[n-1],0,10000))&&int(c.divisor,1,100)&&int(c.rounds===undefined?1:c.rounds,1,12);
   return int(c.rounds,1,12)&&int(c.throws,1,12);
  }
  const allNames=(teams)=>teams.flatMap(t=>t.names);
@@ -76,9 +76,9 @@
      new Set(req.knocked).size!==req.knocked.length||req.knocked.some(n=>!board.includes(n)))throw Error('Bitte die gefallenen Kegel markieren oder Gosse wählen.');
   return {kind:'pins',pins:req.knocked.length,knocked:board.filter(n=>req.knocked.includes(n))};
  }
- function charge(s,name,cents,detail){
+ function charge(s,name,cents,detail,roundSuffix=''){
   if(cents===0)return;
-  s.bookings.push({id:'indcharge_'+s.id+'_finish_'+s.players.indexOf(name),personName:name,amountCents:cents,
+  s.bookings.push({id:'indcharge_'+s.id+'_finish_'+s.players.indexOf(name)+roundSuffix,personName:name,amountCents:cents,
    reason:titles[s.gameKey]+' · '+detail,gameKey:s.gameKey,gameId:s.id,eveningStartedAt:s.eveningStartedAt,onTop:s.onTop===true});
  }
  function finish(s){s.active=false;s.finished=true;s.readyToFinish=true;}
@@ -108,12 +108,12 @@
   s.loserGroups=groups.slice(0,3).map((v,i)=>({rank:i+1,names:s.players.filter(n=>value(n)===v)}));
   finish(s);
  }
+ function abschreibungOrder(s){
+  return [...s.players.slice(s.index),...s.players.slice(0,s.index)].filter(name=>s.scores[name]>0);
+ }
  function abschreibung(s,e){
   const self=e.kind==='gosse'||e.kind==='pins'&&e.pins===6;
-  const targetIndex=(s.index+s.players.length-1)%s.players.length;
-  let prior=targetIndex;
-  while(s.scores[s.players[prior]]<=0)prior=(prior+s.players.length-1)%s.players.length;
-  const name=self?e.name:s.players[prior],amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
+  const name=self?e.name:abschreibungOrder(s).at(-1),amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
   e.target=name;e.amount=amount;e.beforePoints=s.scores[name];
   s.rows[e.name].push({amount,target:name,kind:e.kind});
   if(e.kind==='gosse'&&s.config.woodRequired)return;
@@ -147,11 +147,14 @@
  function tageskurs(s,e){
   const standing=pins.filter(n=>!e.knocked.includes(n));
   const sum=standing.reduce((total,n)=>total+s.config.pinCents[n-1],0),amount=Math.round(sum/s.config.divisor);
+  const rounds=s.config.rounds??1;
   s.rows[e.name].push({knocked:e.knocked,cents:amount});
-  s.scores[e.name]=amount;
-  charge(s,e.name,amount,'Stehen gebliebene Kegel · '+sum+' Cent ÷ '+s.config.divisor);
+  s.scores[e.name]+=amount;
+  const detail=(rounds>1?'Runde '+s.round+' · ':'')+'Stehen gebliebene Kegel · '+sum+' Cent ÷ '+s.config.divisor;
+  // Keep round one's booking ID so undo can still find bookings saved by older versions.
+  charge(s,e.name,amount,detail,s.round>1?'_r'+s.round:'');
   advance(s);
-  if(s.round>1){s.round=1;finish(s);}
+  if(s.round>rounds){s.round=rounds;finish(s);}
  }
  function swingerclub(s,e){
   if(e.action==='pairs'){
@@ -180,8 +183,8 @@
  function summary(key,c){
   if(key==='abschreibung')return c.startPoints+' Startpunkte · '+c.placeCents+' Cent × Platz · bis Platz '+c.lastPlace+' · '+(c.woodRequired?'mit Holzpflicht':'ohne Holzpflicht');
   if(key==='lottokoenig')return 'Sechs Glückszahlen · 13 Würfe · mindestens 49 Holz';
-  if(key==='tageskurs')return 'Ein Wurf · Summe der stehenden Kegel ÷ '+c.divisor;
+  if(key==='tageskurs')return ((c.rounds??1)===1?'1 Runde':c.rounds+' Runden')+' · 1 Wurf pro Person und Runde · Summe der stehenden Kegel ÷ '+c.divisor;
   return c.rounds+' Runden · '+c.throws+' Würfe auf Abräumen je Zweierteam · Partnerwechsel nach jeder Runde';
  }
- window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket});
+ window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,abschreibungOrder});
 })();

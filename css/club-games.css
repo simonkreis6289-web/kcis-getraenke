@@ -60,6 +60,38 @@ button.club-game-pin { cursor:pointer; }
 .club-game-impact b { font-variant-numeric:tabular-nums; }
 .club-game-impact small { color:#385873; }
 
+.abschreibung-layout { display:grid;grid-template-columns:minmax(0,2fr) minmax(12rem,1fr);gap:clamp(.65rem,2vw,1.5rem);align-items:start; }
+.abschreibung-target-label { display:inline-block;margin:.2rem 0 .2rem .55rem;padding:.2rem .6rem;border-radius:1rem;background:#ffe2d7;color:#792d1e; }
+.abschreibung-order { display:grid;gap:.3rem;list-style:none;margin:0;padding:0 0 0 .8rem;border-left:3px solid #c3d3e4; }
+.abschreibung-row { position:relative;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(2rem,1fr) max-content;align-items:center;gap:clamp(.45rem,1vw,.9rem);padding:.35rem .75rem;border:1px solid #d8e2ec;border-radius:.65rem;background:#f6f9fc;color:#19364e; }
+.abschreibung-row.is-thrower,.abschreibung-row.is-target { padding-block:.55rem;font-weight:750; }
+.abschreibung-row.is-thrower { border-color:#8cc3df;background:#e3f3fb;color:#123d60; }
+.abschreibung-row.is-target { border-color:#e3a28f;background:#ffece3;color:#712d20; }
+.abschreibung-row.is-thrower::before,.abschreibung-row.is-target::before { content:"";position:absolute;inset-inline-start:-1.16rem;top:50%;transform:translateY(-50%);width:.55rem;height:.55rem;border-radius:50%;background:#23749c; }
+.abschreibung-row.is-target::before { background:#bc5033; }
+.abschreibung-name { display:grid;min-width:0;overflow-wrap:anywhere; }
+.abschreibung-name small { font-size:.75em;line-height:1.2; }
+.abschreibung-meter { height:.55rem;border-radius:1rem;background:#d6e2ed;overflow:hidden; }
+.abschreibung-meter span { display:block;height:100%;border-radius:inherit;background:#5282aa; }
+.is-thrower .abschreibung-meter span { background:#1876a9; }
+.is-target .abschreibung-meter span { background:#bd5439; }
+.abschreibung-points { font-variant-numeric:tabular-nums;white-space:nowrap; }
+.abschreibung-points b { font-size:1.25em; }
+.abschreibung-details { display:grid;gap:.55rem;min-width:0; }
+.abschreibung-details .club-game-impact { display:grid;margin:0;gap:.5rem;overflow-wrap:anywhere; }
+.abschreibung-details .club-game-impact b { font-size:1.25em; }
+.abschreibung-details p,.abschreibung-eliminated { margin:0;padding:.55rem .75rem;border-radius:.65rem;background:#edf2f7;color:#354c62; }
+.abschreibung-eliminated { display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .65rem;margin-top:.55rem; }
+.abschreibung-eliminated h3 { margin:0;font-size:.9em; }
+.abschreibung-eliminated span { padding:.22rem .45rem;border-radius:.35rem;background:#fff; }
+#game-body .abschreibung-row,#game-body .abschreibung-details { font-size:clamp(.93rem,1.35vw,1.35rem); }
+#game-body .abschreibung-row.is-thrower strong,#game-body .abschreibung-row.is-target strong { font-size:1.18em; }
+#game-body .abschreibung-meter { height:.7rem; }
+@media(max-width:640px) {
+ .abschreibung-layout { grid-template-columns:minmax(0,1fr); }
+ .abschreibung-row { grid-template-columns:minmax(0,1.6fr) minmax(1.5rem,.7fr) max-content;padding-inline:.55rem; }
+}
+
 /* Swinger Club in der Tablet-App */
 .swinger-turn,.swinger-pairing { overflow:hidden;border:1px solid #b7cad5;border-radius:1rem;background:#f3f7f9;color:#173247; }
 .swinger-turn > header,.swinger-first-choice { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.9rem;padding:.9rem 1.1rem;background:#162f45;color:#fff; }
@@ -69,12 +101,14 @@ button.club-game-pin { cursor:pointer; }
 .swinger-progress span { padding:.4rem .65rem;border-radius:.55rem;background:#2c475f;color:#f0f7fc;white-space:nowrap; }
 .swinger-lane-layout,.swinger-pair-layout { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1rem;padding:1rem; }
 .swinger-lane { display:grid;justify-items:center;align-content:start;padding:.7rem .65rem;background:repeating-linear-gradient(90deg,#ecd9b6 0,#ecd9b6 22px,#f4e6cb 23px,#f4e6cb 44px);border:1px solid #d9c29a;border-radius:.75rem; }
-.swinger-lane .club-game-rack { max-width:15rem;gap:.23rem; }
-.swinger-lane .club-game-pin { min-height:2.8rem;border-radius:.65rem; }
+.swinger-lane .club-game-rack { width:min(100%,24rem);gap:clamp(.3rem,1vw,.65rem); }
+.swinger-lane .club-game-pin { min-height:clamp(3.4rem,7vw,4.5rem);border-radius:.75rem;font-size:clamp(1.25rem,3vw,1.75rem); }
 .swinger-lane-caption { font-size:.86rem;color:#513c25; }
 .swinger-booking { display:flex;flex-direction:column;justify-content:center;gap:.55rem; }
 .swinger-booking p { margin:0; }
 .swinger-booking .ind-actions,.swinger-pairing > .ind-actions { margin:.2rem 0 0; }
+.swinger-booking .ind-actions { display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:.65rem; }
+.swinger-booking .ind-actions button { min-height:3.6rem;padding:.6rem .75rem;font-size:clamp(1rem,2.3vw,1.2rem);font-weight:700; }
 .swinger-throw-count { display:flex;align-items:center;gap:.5rem;font-weight:650; }
 .swinger-throw-count strong { min-width:2.4rem;text-align:center;padding:.2rem .4rem;border-radius:.55rem;background:#deeee7;color:#164934;font-size:1.35rem; }
 .swinger-team-board h3 { margin:1rem 0 .5rem; }
