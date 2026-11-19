@@ -23,10 +23,27 @@ function clubGameImpact(roll,name,before,after,detail){
  return '<aside class="club-game-impact" aria-label="Letzter Wurf"><strong>Letzter Wurf · '+clubGameEscape(roll.name)+' · '+result+
   '</strong><span>'+name+': <b>'+before+' → '+after+' Punkte</b></span><small>'+detail+'</small></aside>';
 }
+function abschreibungBoard(s,order,last){
+ const escape=clubGameEscape;
+ const rows=order.map((name,i)=>{
+  const role=i===0?'thrower':i===order.length-1?'target':'';
+  const label=role==='thrower'?'Am Wurf':role==='target'?'Punktabzug bei normalem Wurf':'';
+  const points=s.scores[name],percent=Math.round(100*points/s.config.startPoints);
+  return '<li class="abschreibung-row'+(role?' is-'+role:'')+'"><span class="abschreibung-name"><strong>'+escape(name)+'</strong>'+
+   (label?'<small>'+label+'</small>':'')+'</span><span class="abschreibung-meter" aria-hidden="true"><span style="width:'+percent+'%"></span></span>'+
+   '<span class="abschreibung-points"><b>'+points+'</b> Pkt.</span></li>';
+ }).join('');
+ const eliminated=s.eliminated.length?'<div class="abschreibung-eliminated"><h3>Ausgeschieden</h3>'+
+  s.eliminated.map(({name,place})=>'<span><b>'+escape(name)+'</b> · Platz '+place+' · '+
+   clubGameMoney(s.bookings.find(b=>b.personName===name)?.amountCents||0)+'</span>').join('')+'</div>':'';
+ const rule='Eine geworfene 6 zählt gegen dich. '+(s.config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
+ return '<div class="abschreibung-layout"><div><ol class="abschreibung-order" aria-label="Wurfreihenfolge">'+rows+'</ol>'+eliminated+
+  '</div><aside class="abschreibung-details">'+(last||'')+'<p>'+rule+'</p></aside></div>';
+}
 function renderClubGameBoard(s,{controls='',dashboard=false}={}){
  const g=window.KCClubGames,key=s.gameKey,current=g.current(s),escape=clubGameEscape,money=clubGameMoney;
  const last=s.history.findLast(e=>e.action==='throw');
- let phase='',body='',visual='',impact='';
+ let phase='',body='',visual='',impact='',turnDetail='';
  if(key==='abschreibung'){
   phase='Runde '+s.round;
   if(last){
@@ -36,7 +53,12 @@ function renderClubGameBoard(s,{controls='',dashboard=false}={}){
    const detail=last.kind==='gosse'&&!last.amount?'Gosse · Wurf wiederholen':change+' Punkte';
    impact=clubGameImpact(last,escape(last.target),previous,points,detail);
   }
-  body=clubGameTable(s,['Punkte','Platz','Strafe'],n=>{
+  if(s.active){
+   const order=g.abschreibungOrder(s);
+   turnDetail='<span class="abschreibung-target-label">↓ Wurfziel · '+escape(order.at(-1))+'</span>';
+   body=abschreibungBoard(s,order,impact);
+   impact='';
+  }else body=clubGameTable(s,['Punkte','Platz','Strafe'],n=>{
    const place=s.eliminated.find(e=>e.name===n)?.place;
    return '<td><strong>'+s.scores[n]+'</strong></td><td>'+(place??'—')+'</td><td>'+money(s.bookings.find(e=>e.personName===n)?.amountCents||0)+'</td>';
   });
@@ -73,7 +95,7 @@ function renderClubGameBoard(s,{controls='',dashboard=false}={}){
    s.pairRounds.map(r=>'<td>'+r.teams.find(t=>t.names.includes(n)).points+'</td>').join('')+'<td><strong>'+s.scores[n]+'</strong></td>');
  }
  return '<section class="ind-board extra-board club-game-board" data-extra-game="'+key+'">'+(s.active?
-  key==='swingerclub'&&controls?'':'<div class="ind-turn extra-turn">'+(current?'🎳 '+escape(current)+' · ':'')+phase+'</div>':
+  key==='swingerclub'&&controls?'':'<div class="ind-turn extra-turn">'+(current?'🎳 '+escape(current)+' · ':'')+phase+turnDetail+'</div>':
   '<p class="club-game-highlight">Spiel beendet'+(key==='swingerclub'&&s.winners.length?' · 🏆 '+s.winners.map(escape).join(' · '):'')+'</p>')+
   controls+visual+body+impact+'<p class="ind-help">'+escape(g.summary(key,s.config))+'</p></section>';
 }

@@ -108,12 +108,12 @@
   s.loserGroups=groups.slice(0,3).map((v,i)=>({rank:i+1,names:s.players.filter(n=>value(n)===v)}));
   finish(s);
  }
+ function abschreibungOrder(s){
+  return [...s.players.slice(s.index),...s.players.slice(0,s.index)].filter(name=>s.scores[name]>0);
+ }
  function abschreibung(s,e){
   const self=e.kind==='gosse'||e.kind==='pins'&&e.pins===6;
-  const targetIndex=(s.index+s.players.length-1)%s.players.length;
-  let prior=targetIndex;
-  while(s.scores[s.players[prior]]<=0)prior=(prior+s.players.length-1)%s.players.length;
-  const name=self?e.name:s.players[prior],amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
+  const name=self?e.name:abschreibungOrder(s).at(-1),amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
   e.target=name;e.amount=amount;e.beforePoints=s.scores[name];
   s.rows[e.name].push({amount,target:name,kind:e.kind});
   if(e.kind==='gosse'&&s.config.woodRequired)return;
@@ -186,5 +186,5 @@
   if(key==='tageskurs')return ((c.rounds??1)===1?'1 Runde':c.rounds+' Runden')+' · 1 Wurf pro Person und Runde · Summe der stehenden Kegel ÷ '+c.divisor;
   return c.rounds+' Runden · '+c.throws+' Würfe auf Abräumen je Zweierteam · Partnerwechsel nach jeder Runde';
  }
- window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket});
+ window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,abschreibungOrder});
 })();

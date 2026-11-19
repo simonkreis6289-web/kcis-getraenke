@@ -21,12 +21,21 @@ function game(gameKey,config={},players=people.map(x=>x.name)){
 }
 test('Abschreibung charges only eliminated ranks, skips them, and safely reverses the charge when undoing',()=>{
  const f=game('abschreibung',{startPoints:9,lastPlace:5},['A','B','C','D','E','F']);
+ const display=options=>parseHTML(c.renderClubGameBoard(f.s,options)).document;
+ const names=doc=>[...doc.querySelectorAll('.abschreibung-row strong')].map(node=>node.textContent);
+ assert.deepEqual(names(display({dashboard:true})),['A','B','C','D','E','F']);
+ assert.equal(display().querySelector('.is-target strong').textContent,'F');
  f.roll('pins',6);assert.equal(f.s.scores.A,3);
+ assert.deepEqual(names(display()),['B','C','D','E','F','A']);
  const first=f.run('throw',{kind:'kranz',kranzValue:11});
  assert.equal(first.moneyAdded[0].amountCents,300);
  assert.equal(first.moneyAdded[0].personName,'A');
- const impact=parseHTML(c.renderClubGameBoard(f.s)).document.querySelector('.club-game-impact');
+ const dashboard=display({dashboard:true}),impact=dashboard.querySelector('.club-game-impact');
  assert.match(impact.textContent,/B · Kranz/);assert.match(impact.textContent,/A: 3 → 0 Punkte/);
+ assert.deepEqual(names(dashboard),['C','D','E','F','B']);
+ assert.equal(dashboard.querySelector('.is-thrower strong').textContent,'C');
+ assert.equal(dashboard.querySelector('.is-target strong').textContent,'B');
+ assert.match(dashboard.querySelector('.abschreibung-eliminated').textContent,/A · Platz 6/);
  assert.equal(f.s.eliminated[0].place,6);
  f.roll('pins',9);assert.equal(f.s.scores.B,0);
  assert(f.s.finished);
