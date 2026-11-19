@@ -186,12 +186,20 @@ function hideOldGameUndoButtons(panel){
  }
 }
 function renderGameDashboardButton(key,panel,s){
- const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');
+ let header=panel.querySelector(':scope > .game-title-with-actions,:scope > .tg-page-title,:scope > .six-page-title');
+ if(!header){
+  const title=panel.querySelector(':scope > .section-title');
+  if(title){
+   header=document.createElement('div');
+   title.before(header);
+   header.append(title);
+  }
+ }
  const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];
  let dashboard=buttons.shift();buttons.forEach(el=>el.remove());
  let toolbar=panel.querySelector('.game-dashboard-toolbar');
  if(!toolbar){toolbar=document.createElement('div');toolbar.className='game-dashboard-toolbar';}
- if(title){title.classList.add('game-title-with-actions');if(toolbar.parentElement!==title)title.append(toolbar);}
+ if(header){header.classList.add('game-title-with-actions');if(toolbar.parentElement!==header)header.append(toolbar);}
  else if(toolbar.parentElement!==panel)panel.prepend(toolbar);
  if(!dashboard){
   dashboard=document.createElement('button');dashboard.type='button';
@@ -217,12 +225,13 @@ function renderGameDashboardButton(key,panel,s){
   toolbar.insertBefore(undo,pause||next);
  }
  undo.disabled=!canUndoGameAction(key,s)||gameInputBusy[key]||!!(window.KCSharedSync&&!window.KCSharedSync.ready);
-
+ return header;
 }
 
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
- const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);renderGameDashboardButton(key,panel,s);hideOldGameUndoButtons(panel);
+ const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);
+ const header=renderGameDashboardButton(key,panel,s);hideOldGameUndoButtons(panel);
  // Nur dieser gemeinsame Abbruchweg darf während eines laufenden Spiels sichtbar sein.
  for(const button of panel.querySelectorAll('button'))if(!button.hasAttribute('data-abort-game')&&/Spiel abbrechen/i.test(button.textContent))button.remove();
  const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());
@@ -243,8 +252,7 @@ function applyGameInputLayout(key){
   for(const node of nodes)card.append(node);
  }
  normalizeGamePinpad(card);if(key==='darts'){const actions=panel.querySelector('.darts-round-actions');if(actions){const finish=actions.querySelector('button[onclick="finishDartsRound()"]');if(finish){finish.type='button';finish.disabled=!!gameInputBusy[key]||!!s.busy;}card.append(actions);}}if(gameInputBusy[key])for(const button of card.querySelectorAll('button'))button.disabled=true;old?.remove();
- const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');
- if(title)title.after(card);else panel.prepend(card);
+ if(header)header.after(card);else panel.prepend(card);
 }
 // Jeder Renderer wird nach seinem regulären DOM-Aufbau ergänzt, auch bei Live-Updates.
 function installGameInputLayouts(){

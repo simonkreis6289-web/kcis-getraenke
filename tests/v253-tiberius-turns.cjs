@@ -68,9 +68,9 @@ test('server authoritative skip actions do not charge scores or penalties and ca
 test('game header actions occupy the title line, with no duplicate next button and TV turn highlight',()=>{
  const js=read('js/game-inputs.js'),css=read('css/game-inputs.css'),tv=read('dashboard.html');
  assert.match(js,/function gameNextThrower\(key\)/);
- assert.match(js,/title\.append\(toolbar\)/);
  assert.match(js,/\[data-game-next\]/);
- assert.match(css,/game-title-with-actions/);
+ assert.match(css,/\.game-title-with-actions::after\s*\{[^}]*order:1/);
+ assert.match(css,/\.game-dashboard-toolbar\s*\{[^}]*order:2/);
  assert.match(tv,/tiberius-active-row/);
  assert.match(tv,/function tiberiusFunnyName\(name\)/);
  assert.match(tv,/function retryRoot\(\)/);

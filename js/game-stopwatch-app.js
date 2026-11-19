@@ -39,7 +39,7 @@
       element.setAttribute('role','group');
       element.setAttribute('aria-label','Stoppuhr');
       element.innerHTML='<span aria-hidden="true">⏱</span><span data-stopwatch-label></span><time></time>';
-      const header=panel.querySelector('.tg-page-title,.six-page-title,.section-title');
+      const header=panel.querySelector(':scope > .game-title-with-actions,:scope > .tg-page-title,:scope > .six-page-title,:scope > .section-title');
       if(header?.parentNode===panel)header.after(element);
       else panel.prepend(element);
     }
