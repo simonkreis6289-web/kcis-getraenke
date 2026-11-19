@@ -97,6 +97,18 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
   assert(a.c.indGet(key).active,key);
   assert(a.document.querySelector('#tab-'+key+' .game-input-panel'),key);
  }
+ const lotto=a.document.getElementById('tab-lottokoenig'),confirm=()=>lotto.querySelector('[data-club-ticket-submit]');
+ const pick=n=>a.c.clubGameLottoPick(n,lotto.querySelector('[data-lotto-number="'+n+'"]'));
+ for(const n of [2,7,12,34,47])pick(n);
+ assert(confirm().disabled);
+ await a.c.clubGameCommitTicket();
+ assert.equal(a.c.indGet('lottokoenig').history.length,0);
+ pick(36);assert(confirm().disabled);
+ pick(36);pick(24);assert(!confirm().disabled);
+ a.c.renderIndividualGame('lottokoenig');assert(!confirm().disabled);
+ pick(24);assert(confirm().disabled);
+ pick(24);await a.c.clubGameCommitTicket();
+ assert.equal(a.c.indGet('lottokoenig').history[0].action,'numbers');
  a.c.showSideTab('spiele','tageskurs');
  const pin=a.document.querySelector('#tab-tageskurs button[data-club-pin="9"]');
  a.c.clubGameTogglePin(9,pin);

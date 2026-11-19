@@ -18,10 +18,21 @@ button.club-game-pin { cursor:pointer; }
 .club-game-pin[data-rack-pin="3"] { grid-area:4/4; }
 .club-game-pin[data-rack-pin="1"] { grid-area:5/3; }
 .club-game-choices > strong { color:#123850; }
-.club-lotto-choices { display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;margin:.25rem 0; }
-.club-lotto-choices button { padding:3px;min-width:0;min-height:36px;border:1px solid #b4c7e0;border-radius:.4rem;background:#fff;color:#163655; }
-.club-lotto-choices button[aria-pressed=true] { color:#fff;background:#126247;border-color:#126247; }
-.club-game-choices [data-club-ticket-submit] { margin-top:.55rem; }
+.club-lotto-choices { display:grid;grid-template-columns:repeat(10,minmax(0,3rem));gap:.3rem;margin:.3rem 0; }
+.club-lotto-choices button {
+ display:grid;place-items:center;aspect-ratio:1;border-radius:50%;
+ padding:0;min-width:0;border:1px solid #a9bdda;color:#163655;font-weight:750;
+ background:radial-gradient(circle at 30% 23%,#fff 15%,#ebf1fa 62%,#cbd9ed 100%);
+ box-shadow:0 2px 3px #1b355326;
+}
+.club-lotto-choices button[aria-pressed=true] {
+ color:#fff;background:radial-gradient(circle at 30% 23%,#33866b,#126247 68%,#0a4633);
+ border-color:#0a4633;
+}
+.club-lotto-choices button:focus-visible { outline:2px solid #174d76;outline-offset:2px; }
+.club-lotto-action { align-items:center; }
+.club-game-choices [data-club-ticket-submit]:disabled { opacity:.5;cursor:not-allowed; }
+.club-lotto-action [data-club-ticket-status] { font-size:.88rem;color:#36536e; }
 .club-lotto-balls { display:flex;flex-wrap:wrap;gap:.25rem;justify-content:center; }
 .club-lotto-balls span { display:grid;place-items:center;min-width:1.6em;min-height:1.6em;border-radius:50%;background:#ecf0f7;border:1px solid #b8c9db;color:#1c3651; }
 .club-lotto-balls .is-hit { background:#c1ebd1;border-color:#4e9a70;color:#16462a;font-weight:bold; }
@@ -31,7 +42,7 @@ button.club-game-pin { cursor:pointer; }
 .club-game-board .ind-table th,.club-game-board .ind-table td { white-space:normal; }
 @media(max-width:560px){
  .club-game-score-layout { grid-template-columns:minmax(0,1fr); }
- .club-lotto-choices { grid-template-columns:repeat(5,minmax(0,1fr));margin:.65rem 0; }
+ .club-lotto-choices { grid-template-columns:repeat(5,minmax(0,3rem));margin:.65rem 0; }
 }
 
 
