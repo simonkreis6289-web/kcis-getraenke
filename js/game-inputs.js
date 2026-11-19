@@ -201,6 +201,14 @@ function renderGameDashboardButton(key,panel,s){
  if(!toolbar){toolbar=document.createElement('div');toolbar.className='game-dashboard-toolbar';}
  if(header){header.classList.add('game-title-with-actions');if(toolbar.parentElement!==header)header.append(toolbar);}
  else if(toolbar.parentElement!==panel)panel.prepend(toolbar);
+ let settings=toolbar.querySelector('[data-game-settings-link]');
+ if(!settings){
+  settings=document.createElement('button');
+  settings.type='button';settings.className='secondary-btn game-settings-link';settings.dataset.gameSettingsLink=key;
+  settings.textContent='⚙️ Spieleinstellungen';settings.onclick=()=>{window.KCStartReview?.cancel();openGameSettings(key);};
+  toolbar.prepend(settings);
+ }
+ settings.hidden=!!s?.active;
  if(!dashboard){
   dashboard=document.createElement('button');dashboard.type='button';
   dashboard.className='secondary-btn game-dashboard-button';dashboard.dataset.gameDashboard=key;
@@ -214,7 +222,7 @@ function renderGameDashboardButton(key,panel,s){
  const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
  dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false&&!window.KCTabletSync?.directConnected;
  dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
- next.disabled=!s?.active||!!s?.finished||key==='lottokoenig'&&s.phase==='numbers'||key==='swingerclub'&&s.phase==='pairs'||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
+ next.disabled=!s?.active||!!s?.finished||key==='lottokoenig'&&s.phase==='numbers'||key==='swingerclub'&&(s.phase==='pairs'||s.pairs?.[s.index]?.names.length===1)||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
  next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';
  const pause=toolbar.querySelector('[data-game-pause]');
  let undo=toolbar.querySelector('[data-game-undo]');
@@ -236,6 +244,9 @@ function applyGameInputLayout(key){
  for(const button of panel.querySelectorAll('button'))if(!button.hasAttribute('data-abort-game')&&/Spiel abbrechen/i.test(button.textContent))button.remove();
  const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());
  if(s?.active){if(!abort){abort=document.createElement('button');abort.type='button';abort.className='secondary-btn game-abort-button';abort.dataset.abortGame=key;abort.textContent='✕ Spiel abbrechen';abort.onclick=()=>cancelCurrentGame(key);panel.append(abort);}}else abort?.remove();const old=panel.querySelector(':scope > .game-input-panel');
+ if(old&&!gameInputBusy[key])for(const button of old.querySelectorAll('[data-game-input-busy]')){
+  button.disabled=false;delete button.dataset.gameInputBusy;
+ }
  if(['haushoch','haustief','lotterie'].includes(key)){old?.remove();return;}
  if(!s?.active){if(key==='darts'){const actions=old?.querySelector('.darts-round-actions');if(actions)document.getElementById('darts-game-area')?.append(actions);}old?.remove();for(const el of panel.querySelectorAll('[data-game-input-hidden]')){el.classList.remove('gi-original-input');el.removeAttribute('data-game-input-hidden');}return;}
  const card=document.createElement('section');card.className='game-input-panel';card.dataset.gameInput=key;card.setAttribute('aria-label','Wurfeingabe');
@@ -251,7 +262,10 @@ function applyGameInputLayout(key){
   if(!nodes.length){if(old)return;else return;}
   for(const node of nodes)card.append(node);
  }
- normalizeGamePinpad(card);if(key==='darts'){const actions=panel.querySelector('.darts-round-actions');if(actions){const finish=actions.querySelector('button[onclick="finishDartsRound()"]');if(finish){finish.type='button';finish.disabled=!!gameInputBusy[key]||!!s.busy;}card.append(actions);}}if(gameInputBusy[key])for(const button of card.querySelectorAll('button'))button.disabled=true;old?.remove();
+ normalizeGamePinpad(card);if(key==='darts'){const actions=panel.querySelector('.darts-round-actions');if(actions){const finish=actions.querySelector('button[onclick="finishDartsRound()"]');if(finish){finish.type='button';finish.disabled=!!s.busy;}card.append(actions);}}if(gameInputBusy[key])for(const button of card.querySelectorAll('button:not(:disabled)')){
+  button.dataset.gameInputBusy='true';button.disabled=true;
+ }
+ old?.remove();
  if(header)header.after(card);else panel.prepend(card);
 }
 // Jeder Renderer wird nach seinem regulären DOM-Aufbau ergänzt, auch bei Live-Updates.

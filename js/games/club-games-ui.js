@@ -9,19 +9,22 @@ function clubGameDraft(s){
 function clubGameControls(key,s,disabled){
  const g=window.KCClubGames,d=clubGameDraft(s),esc=clubGameEscape;
  if(s.phase==='numbers'){
-  const n=g.current(s);
+  const n=g.current(s),ready=g.validTicket(d.selected);
   return '<div class="club-game-choices"><strong>Sechs Glückszahlen für '+esc(n)+'</strong><p>Mindestens eine Zahl je Zehnerblock wählen.</p>'+
    Array.from({length:5},(_,block)=>'<div class="club-lotto-choices" aria-label="'+block*10+' bis '+(block*10+9)+'">'+
-    Array.from({length:10},(_,i)=>block*10+i).map(v=>'<button type="button" '+disabled+' aria-pressed="'+d.selected.includes(v)+'" onclick="clubGameLottoPick('+v+',this)">'+v+'</button>').join('')+'</div>').join('')+
-    '<button class="primary-btn" type="button" data-club-ticket-submit disabled onclick="clubGameCommitTicket()">Zahlen übernehmen</button></div>';
+    Array.from({length:10},(_,i)=>block*10+i).map(v=>'<button type="button" '+disabled+' aria-pressed="'+d.selected.includes(v)+'" data-lotto-number="'+v+'" onclick="clubGameLottoPick('+v+',this)">'+v+'</button>').join('')+'</div>').join('')+
+    '<div class="ind-actions club-lotto-action"><button class="primary-btn" type="button" data-club-ticket-submit '+(disabled||!ready?'disabled':'')+' onclick="clubGameCommitTicket()">Zahlen übernehmen</button>'+
+   '<span data-club-ticket-status aria-live="polite">'+clubGameTicketStatus(d.selected)+'</span></div></div>';
  }
  if(s.phase==='pairs'){
   const remaining=s.players.filter(n=>!d.pairs.some(t=>t.names.includes(n)));
+  const showSingle=s.players.length%2&&!d.pairs.some(t=>t.names.length===1)&&d.partner;
   return '<div class="club-game-choices"><strong>Neue Zweierteams · schwächstes Paar wählt zuerst</strong><p>Wähle jeweils zwei Namen. Beide Spieler aus dem besten und dem schwächsten Paar brauchen einen neuen Partner.</p>'+
    '<div class="kc-avatar-picker">'+remaining.map(n=>'<button type="button" class="kc-avatar-option '+(d.partner===n?'selected':'')+'" '+disabled+
     ' onclick="clubGamePairPick('+s.players.indexOf(n)+')">'+sixAvatar(n)+'</button>').join('')+'</div>'+
-   '<ol>'+d.pairs.map(t=>'<li>'+t.names.map(esc).join(' + ')+'</li>').join('')+'</ol>'+
-   '<div class="ind-actions"><button type="button" onclick="clubGameClearPairs()" '+disabled+'>Auswahl zurücksetzen</button>'+
+   '<ol>'+d.pairs.map(t=>'<li>'+t.names.map(esc).join(' + ')+(t.names.length===1?' · Einzelteam':'')+'</li>').join('')+'</ol>'+
+   '<div class="ind-actions">'+(showSingle?'<button type="button" onclick="clubGamePickSingle()" '+disabled+'>Als Einzelteam übernehmen</button>':'')+
+    '<button type="button" onclick="clubGameClearPairs()" '+disabled+'>Auswahl zurücksetzen</button>'+
     '<button type="button" class="primary-btn" '+(disabled||remaining.length?'disabled':'')+' onclick="clubGameCommitPairs()">Neue Paare übernehmen</button></div></div>';
  }
  if(g.physical(key)){
@@ -30,28 +33,48 @@ function clubGameControls(key,s,disabled){
    clubGameRack({standing,selected:d.selected,prices,buttons:true,disabled:!!disabled})+
    '<div class="ind-actions"><button type="button" data-club-book-pins class="primary-btn" '+(disabled||!d.selected.length?'disabled':'')+' onclick="clubGameBookPins(\''+key+'\')">Wurf buchen</button>'+
    '<button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'gosse\'})">Gosse</button>'+
-   (key==='tageskurs'?'<button type="button" '+disabled+' onclick="clubGameBookPins(\'tageskurs\',true)">Alle Neune</button>':'')+'</div></div>';
+   (key==='tageskurs'?'<button type="button" '+disabled+' onclick="clubGameBookPins(\'tageskurs\',true)">Alle Neune</button><button type="button" '+disabled+' onclick="indRun(\'tageskurs\',\'throw\',{kind:\'kranz\'})">👑 Kranz</button>':'')+'</div></div>';
  }
  return '';
 }
+function clubGameTicketStatus(selected){
+ const missing=selected.length===6&&!window.KCClubGames.validTicket(selected);
+ return selected.length+' / 6 ausgewählt'+(missing?' · In jedem Zehnerblock muss mindestens eine Zahl markiert sein.':'');
+}
 function clubGameLottoPick(n,button){
- const d=clubGameDraft(indGet('lottokoenig')),i=d.selected.indexOf(n);
+ const s=indGet('lottokoenig');
+ if(!s?.active||s.phase!=='numbers'||indBusy.lottokoenig||indPending.lottokoenig)return;
+ const d=clubGameDraft(s),i=d.selected.indexOf(n);
  if(i>=0)d.selected.splice(i,1);
  else if(d.selected.length<6)d.selected.push(n);
  button.setAttribute('aria-pressed',String(d.selected.includes(n)));
- document.querySelector('#tab-lottokoenig [data-club-ticket-submit]').disabled=!window.KCClubGames.validTicket(d.selected);
+ const panel=document.getElementById('tab-lottokoenig');
+ panel.querySelector('[data-club-ticket-submit]').disabled=!window.KCClubGames.validTicket(d.selected);
+ panel.querySelector('[data-club-ticket-status]').textContent=clubGameTicketStatus(d.selected);
 }
-function clubGameCommitTicket(){return indAction('lottokoenig','numbers',{numbers:clubGameDraft(indGet('lottokoenig')).selected.slice()});}
+function clubGameCommitTicket(){
+ const s=indGet('lottokoenig');
+ if(!s?.active||s.phase!=='numbers')return;
+ const numbers=clubGameDraft(s).selected.slice();
+ if(!window.KCClubGames.validTicket(numbers))return;
+ return indAction('lottokoenig','numbers',{numbers});
+}
 function clubGamePairPick(index){
  const s=indGet('swingerclub'),d=clubGameDraft(s),name=s.players[index];
  if(!name||d.pairs.some(t=>t.names.includes(name)))return;
  if(d.partner===name)d.partner='';
  else if(!d.partner)d.partner=name;
  else{
-  if(s.splitPairs.some(t=>t.names.includes(name)&&t.names.includes(d.partner))){showToast('Dieses Paar muss wechseln.','error');return;}
+  if(s.splitPairs.some(t=>t.names.length===2&&t.names.includes(name)&&t.names.includes(d.partner))){showToast('Dieses Paar muss wechseln.','error');return;}
   d.pairs.push({names:[d.partner,name]});d.partner='';
  }
  renderIndividualGame('swingerclub');
+}
+function clubGamePickSingle(){
+ const s=indGet('swingerclub'),d=clubGameDraft(s);
+ if(!d.partner||s.players.length%2!==1||d.pairs.some(t=>t.names.length===1))return;
+ if(s.splitPairs.some(t=>t.names.length===1&&t.names[0]===d.partner)){showToast('Dieses Einzelteam muss einen Partner bekommen.','error');return;}
+ d.pairs.push({names:[d.partner]});d.partner='';renderIndividualGame('swingerclub');
 }
 function clubGameClearPairs(){const d=clubGameDraft(indGet('swingerclub'));d.pairs=[];d.partner='';renderIndividualGame('swingerclub');}
 function clubGameCommitPairs(){return indAction('swingerclub','pairs',{pairs:clubGameDraft(indGet('swingerclub')).pairs});}
@@ -65,7 +88,8 @@ function clubGameBookPins(key,all=false){
  return indAction(key,'throw',{kind:'pins',knocked:all?window.KCClubGames.pins.slice():clubGameDraft(indGet(key)).selected.slice()});
 }
 function renderClubGameSettings(){
- const g=window.KCClubGames;
+ const g=window.KCClubGames,rack=document.querySelector('[data-tageskurs-settings-rack]');
+ if(rack&&!rack.firstElementChild)rack.innerHTML=clubGameRack();
  for(const key of g.keys){
   const panel=document.getElementById('game-property-'+key);if(!panel||panel.contains(document.activeElement))continue;
   const config=extraConfig(key);

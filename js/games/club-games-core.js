@@ -21,8 +21,10 @@
  }
  const allNames=(teams)=>teams.flatMap(t=>t.names);
  function pairs(s,teams){
-  if(!Array.isArray(teams)||teams.length!==s.players.length/2||teams.some(t=>!Array.isArray(t?.names)||t.names.length!==2))
-   throw Error('Bitte vollständige Zweierteams bilden.');
+  if(!Array.isArray(teams)||teams.length!==Math.ceil(s.players.length/2)||
+     teams.some(t=>!Array.isArray(t?.names)||![1,2].includes(t.names.length))||
+     teams.filter(t=>t.names.length===1).length!==s.players.length%2)
+   throw Error('Bitte Zweierteams bilden. Bei ungerader Spielerzahl gibt es genau ein Einzelteam.');
   const names=allNames(teams);
   if(new Set(names).size!==s.players.length||s.players.some(n=>!names.includes(n)))throw Error('Jeden Kegler genau einmal zuordnen.');
   return teams.map(t=>({names:t.names.slice(),points:0}));
@@ -37,14 +39,17 @@
    case 'lottokoenig':s.phase='numbers';s.tickets={};break;
    case 'tageskurs':break;
    case 'swingerclub':
-    if(s.players.length<4||s.players.length%2)throw Error('Mindestens vier Kegler und eine gerade Teilnehmerzahl sind nötig.');
-    s.startPairs=pairs(s,req.pairs||Array.from({length:s.players.length/2},(_,i)=>({names:s.players.slice(i*2,i*2+2)}))).map(t=>({names:t.names}));
+    if(s.players.length<3)throw Error('Mindestens drei Kegler sind nötig.');
+    s.startPairs=pairs(s,req.pairs||Array.from({length:Math.ceil(s.players.length/2)},(_,i)=>({names:s.players.slice(i*2,i*2+2)}))).map(t=>({names:t.names}));
     s.pairs=pairs(s,s.startPairs);s.standing=pins.slice();s.pairThrows=0;s.throwerOffset=0;s.pairRounds=[];
     break;
   }
  }
  function current(s){
-  if(s.gameKey==='swingerclub')return s.phase==='pairs'?'':s.pairs[s.index]?.names[(s.pairThrows+s.throwerOffset)%2]||'';
+  if(s.gameKey==='swingerclub'){
+   const names=s.pairs?.[s.index]?.names;
+   return s.phase==='pairs'||!names?'':names[(s.pairThrows+s.throwerOffset)%names.length];
+  }
   return s.players[s.index]||'';
  }
  function validTicket(numbers){
@@ -57,7 +62,7 @@
   }
   if(req.action==='pairs'&&s.gameKey==='swingerclub'&&s.phase==='pairs'){
    const next=pairs(s,req.pairs);
-   if(next.some(t=>s.splitPairs.some(old=>old.names.every(n=>t.names.includes(n)))))throw Error('Bestes und schwächstes Paar brauchen neue Partner.');
+   if(next.some(t=>s.splitPairs.some(old=>old.names.length===t.names.length&&old.names.every(n=>t.names.includes(n)))))throw Error('Bestes und schwächstes Paar brauchen neue Partner.');
    return {pairs:next.map(t=>({names:t.names}))};
   }
   if(s.phase==='numbers'||s.phase==='pairs')throw Error('Zuerst die Vorbereitung abschließen.');
@@ -66,6 +71,7 @@
   if(!physical(s.gameKey))return null;
   const board=s.gameKey==='swingerclub'?s.standing:pins;
   if(req.kind==='gosse')return {kind:'gosse',pins:0,knocked:[]};
+  if(s.gameKey==='tageskurs'&&req.kind==='kranz')return {kind:'kranz',pins:pins.length,knocked:pins.slice()};
   if(req.kind!=='pins'||!Array.isArray(req.knocked)||!req.knocked.length||
      new Set(req.knocked).size!==req.knocked.length||req.knocked.some(n=>!board.includes(n)))throw Error('Bitte die gefallenen Kegel markieren oder Gosse wählen.');
   return {kind:'pins',pins:req.knocked.length,knocked:board.filter(n=>req.knocked.includes(n))};
@@ -84,7 +90,10 @@
  }
  function next(s){
   if(s.gameKey==='abschreibung')advance(s,name=>s.scores[name]>0);
-  else if(s.gameKey==='swingerclub')s.throwerOffset=1-s.throwerOffset;
+  else if(s.gameKey==='swingerclub'){
+   if(s.pairs[s.index].names.length===1)throw Error('Das Einzelteam hat keinen zweiten Werfer.');
+   s.throwerOffset=1-s.throwerOffset;
+  }
   else{
    if(s.index+1>=s.players.length)throw Error('Den letzten Pflichtwurf der Runde zuerst abschließen.');
    if(!s.originalPlayerOrder)s.originalPlayerOrder=s.players.slice();
@@ -105,7 +114,7 @@
   let prior=targetIndex;
   while(s.scores[s.players[prior]]<=0)prior=(prior+s.players.length-1)%s.players.length;
   const name=self?e.name:s.players[prior],amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
-  e.target=name;e.amount=amount;
+  e.target=name;e.amount=amount;e.beforePoints=s.scores[name];
   s.rows[e.name].push({amount,target:name,kind:e.kind});
   if(e.kind==='gosse'&&s.config.woodRequired)return;
   s.scores[name]=Math.max(0,s.scores[name]-amount);

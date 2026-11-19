@@ -30,7 +30,7 @@
 
 .round-btn{min-width:250px;padding-inline:32px!important}
 .game-properties-tabs>button{display:none!important}.game-properties-tabs{display:block!important}.game-settings-select{display:grid;gap:6px;max-width:420px;font-weight:700}.game-settings-select select{width:100%;padding:12px;border:1px solid #afc2df;border-radius:10px;background:#f2f6fc;color:#223b63;font:700 15px 'DM Sans',sans-serif}
-.start-review-list{display:grid;gap:8px;margin:12px 0}.start-review-list>div{display:flex;justify-content:space-between;gap:20px;padding:9px 12px;background:#f1f5fb;border-radius:8px}.start-review-list dt{color:#52647f}.start-review-list dd{margin:0;font-weight:800;text-align:right}.start-review-return{position:fixed;bottom:20px;right:25px;z-index:25000;box-shadow:0 5px 25px #142c5250;padding:14px 22px!important}
+.start-review-list{display:grid;gap:8px;margin:12px 0}.start-review-list>div{display:flex;justify-content:space-between;gap:20px;padding:9px 12px;background:#f1f5fb;border-radius:8px}.start-review-list dt{color:#52647f}.start-review-list dd{margin:0;font-weight:800;text-align:right}
 @media(max-width:700px){.cash-year-table{font-size:12px}.cash-year-table th,.cash-year-table td{padding:5px!important}.cash-year-table tr>:first-child{width:20%}.activity-table{min-width:650px}.cash-year-scroller{overflow:auto}.round-btn{min-width:180px}}
 
 /* V222: schlankes Menüband statt großer Karten-Buttons. */

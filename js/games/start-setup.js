@@ -89,7 +89,17 @@ function renderGamePropertyTabs(){
  const tabs=document.getElementById('game-properties-tabs');if(!tabs)return;
  const panels=[...document.querySelectorAll('[data-game-property]')];if(!panels.some(p=>p.dataset.gameProperty===gamePropertySelected))gamePropertySelected=panels[0]?.dataset.gameProperty||'';
  const model=window.KCGameOverview,kind=gamePropertySelected==='general'?'general':model?.category(gamePropertySelected)||'solo';
- for(const panel of panels){const selected=panel.dataset.gameProperty===gamePropertySelected;panel.hidden=!selected;panel.setAttribute('tabindex','0');panel.setAttribute('aria-labelledby','game-property-select');}
+ for(const panel of panels){
+  const key=panel.dataset.gameProperty;
+  panel.hidden=key!==gamePropertySelected;panel.setAttribute('tabindex','0');panel.setAttribute('aria-labelledby','game-property-select');
+  if(!GAME_SETUP_KEYS.includes(key)||panel.querySelector('[data-game-settings-back]'))continue;
+  const back=document.createElement('button');
+  back.type='button';back.className='secondary-btn game-settings-back';back.dataset.gameSettingsBack=key;
+  back.textContent='← Zurück zum Spielstart';
+  back.onclick=()=>returnToGameStart(key);
+  const title=panel.querySelector(':scope > header,:scope > h3');
+  if(title)title.after(back);else panel.prepend(back);
+ }
  for(const button of tabs.querySelectorAll('[data-game-property-tab]')){const selected=button.dataset.gamePropertyTab===gamePropertySelected;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}
  let nav=document.getElementById('game-settings-categories');if(!nav){nav=document.createElement('nav');nav.id='game-settings-categories';nav.className='kc-admin-tabs game-category-tabs';nav.setAttribute('aria-label','Kategorie der Spieleinstellungen');tabs.prepend(nav);}
  nav.replaceChildren();for(const cat of [{key:'general',icon:'⚙️',title:'Allgemein'},...(model?.categories||[])]){const button=document.createElement('button');button.type='button';button.className='kc-admin-tab'+(kind===cat.key?' active':'');button.setAttribute('aria-pressed',String(kind===cat.key));button.textContent=cat.icon+' '+cat.title;button.onclick=()=>showGamePropertyCategory(cat.key);nav.append(button);}
@@ -97,6 +107,20 @@ function renderGamePropertyTabs(){
  label.hidden=kind==='general';const select=label.querySelector('select');select.innerHTML=[...tabs.querySelectorAll('[data-game-property-tab]')].filter(button=>button.dataset.gamePropertyTab!=='general'&&(!model||model.category(button.dataset.gamePropertyTab)===kind)).map(button=>'<option value="'+gsEscape(button.dataset.gamePropertyTab)+'">'+gsEscape(button.textContent.trim())+'</option>').join('');select.value=gamePropertySelected;
 }
 function showGameProperty(key,focus=false){if(!document.querySelector('[data-game-property="'+key+'"]'))return;gamePropertySelected=key;renderGamePropertyTabs();if(focus){const target=window.KCGameOverview?document.getElementById('game-property-select'):document.querySelector('[data-game-property-tab="'+key+'"]');target?.focus();target?.scrollIntoView?.({block:'nearest',inline:'nearest'});}}
+function openGameSettings(key){
+ const panel=document.getElementById('game-property-'+key);
+ if(!panel)return;
+ showSideTab('spiele','spiele-einstellungen');
+ showGameProperty(key);
+ panel.scrollIntoView?.({block:'start',behavior:'auto'});
+ panel.querySelector('[data-game-settings-back]')?.focus({preventScroll:true});
+}
+function returnToGameStart(key){
+ showSideTab('spiele',key);
+ const panel=document.getElementById('tab-'+key);
+ panel?.scrollIntoView?.({block:'start',behavior:'auto'});
+ if(!window.KCStartReview?.resume(key))panel?.querySelector('[data-game-settings-link]:not([hidden])')?.focus({preventScroll:true});
+}
 function gamePropertyKeydown(event){
  const buttons=[...document.querySelectorAll('#game-properties-tabs [data-game-property-tab]')],index=buttons.indexOf(document.activeElement);if(index<0)return;
  const next=event.key==='ArrowRight'?(index+1)%buttons.length:event.key==='ArrowLeft'?(index-1+buttons.length)%buttons.length:event.key==='Home'?0:event.key==='End'?buttons.length-1:null;if(next===null)return;event.preventDefault();showGameProperty(buttons[next].dataset.gamePropertyTab,true);

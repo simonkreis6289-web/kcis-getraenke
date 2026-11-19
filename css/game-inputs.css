@@ -74,6 +74,7 @@
  letter-spacing:0;text-transform:none;text-align:center;white-space:normal;box-shadow:none;cursor:pointer
 }
 #main-spiele .game-dashboard-toolbar button:hover:not(:disabled){background:var(--action-hover,#c9ebe8);box-shadow:none}
+#main-spiele .game-dashboard-toolbar button[hidden]{display:none}
 #main-spiele .game-dashboard-toolbar button:disabled{opacity:.45;cursor:not-allowed}
 #main-spiele .game-dashboard-toolbar .game-pause-button{
  --action-bg:#fff1cc;--action-border:#d6ad60;--action-text:#634515;--action-hover:#ffe7a3
@@ -87,4 +88,8 @@
 @media(max-width:800px){
  #main-spiele .game-dashboard-toolbar{gap:4px}
  #main-spiele .game-dashboard-toolbar button{min-height:36px;padding:5px 8px;font-size:12px}
+}
+
+#main-spiele .game-dashboard-toolbar .game-settings-link{
+ --action-bg:#eef2f8;--action-border:#a9b9d0;--action-text:#263f63;--action-hover:#e0e8f4
 }

@@ -25,6 +25,8 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  const first=f.run('throw',{kind:'kranz',kranzValue:11});
  assert.equal(first.moneyAdded[0].amountCents,300);
  assert.equal(first.moneyAdded[0].personName,'A');
+ const impact=parseHTML(c.renderClubGameBoard(f.s)).document.querySelector('.club-game-impact');
+ assert.match(impact.textContent,/B · Kranz/);assert.match(impact.textContent,/A: 3 → 0 Punkte/);
  assert.equal(f.s.eliminated[0].place,6);
  f.roll('pins',9);assert.equal(f.s.scores.B,0);
  assert(f.s.finished);
@@ -51,6 +53,7 @@ test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before
  assert.deepEqual(copy(last.changes.map(x=>x.key)),['loser','loser2','loser3']);
  const html=parseHTML(c.renderClubGameBoard(f.s)).document;
  assert(html.querySelector('.club-lotto-balls .is-hit'));
+ assert.match(html.querySelector('.club-game-impact').textContent,/D: 24 → 26 Punkte/);
  f.run('undo');assert.equal(g.current(f.s),'D');
 });
 test('Tageskurs calculates and replays only the standing pins at configured prices',()=>{
@@ -63,6 +66,7 @@ test('Tageskurs calculates and replays only the standing pins at configured pric
  const view=parseHTML(c.renderClubGameBoard(f.s)).document;
  assert.equal(view.querySelectorAll('.club-game-pin.is-down').length,9);
  f.run('undo');assert.equal(g.current(f.s),'B');assert.equal(f.s.bookings.length,1);
+ const kranz=f.run('throw',{kind:'kranz'});assert.equal(f.s.scores.B,0);assert.equal(kranz.moneyAdded.length,0);assert.equal(kranz.added[0].type,'kranz');assert.equal(f.s.history.at(-1).knocked.length,9);
 });
 test('Swinger Club alternates throws, requires new partners and books 1./2./3. by individual totals',()=>{
  const f=game('swingerclub',{rounds:2,throws:2},['A','B','C','D','E','F']);
@@ -76,6 +80,15 @@ test('Swinger Club alternates throws, requires new partners and books 1./2./3. b
  assert.deepEqual(copy(f.s.loserGroups),[{rank:1,names:['A']},{rank:2,names:['C']},{rank:3,names:['B']}]);
  f.run('undo');assert.equal(g.current(f.s),'F');
  assert.deepEqual(copy(f.s.standing),[4,5,6,7,8,9]);
+});
+test('Swinger Club lets an odd roster play with one single team and changes teams in the next round',()=>{
+ const f=game('swingerclub',{rounds:2,throws:2},['A','B','C','D','E']);
+ assert.deepEqual(copy(f.s.pairs.map(t=>t.names)),[['A','B'],['C','D'],['E']]);
+ for(const n of [1,1,2,2,3,3])f.run('throw',{kind:'pins',knocked:f.s.standing.slice(0,n)});
+ assert.equal(f.s.phase,'pairs');assert.equal(f.s.scores.E,6);
+ assert.throws(()=>f.run('pairs',{pairs:[{names:['A','C']},{names:['B','D']},{names:['E']}]}),/neue Partner/);
+ f.run('pairs',{pairs:[{names:['A','E']},{names:['B','D']},{names:['C']}]});
+ assert.equal(g.current(f.s),'A');assert(f.s.active);
 });
 const harness=read('tests/v215-shared-sync.cjs');
 const fixture=harness.slice(harness.indexOf('function database('),harness.indexOf("test('two devices increment"))+
@@ -96,6 +109,28 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
   assert(a.c.indGet(key).active,key);
   assert(a.document.querySelector('#tab-'+key+' .game-input-panel'),key);
  }
+ const lotto=a.document.getElementById('tab-lottokoenig'),confirm=()=>lotto.querySelector('[data-club-ticket-submit]');
+ const pick=n=>a.c.clubGameLottoPick(n,lotto.querySelector('[data-lotto-number="'+n+'"]'));
+ for(const n of [2,7,12,34,47])pick(n);
+ assert(confirm().disabled);
+ await a.c.clubGameCommitTicket();
+ assert.equal(a.c.indGet('lottokoenig').history.length,0);
+ pick(36);assert(confirm().disabled);
+ pick(36);pick(24);assert(!confirm().disabled);
+ a.c.renderIndividualGame('lottokoenig');assert(!confirm().disabled);
+ pick(24);assert(confirm().disabled);
+ pick(24);await a.c.clubGameCommitTicket();
+ assert.equal(a.c.indGet('lottokoenig').history[0].action,'numbers');
+ const player=a.c.indGet('lottokoenig').history[0].name;
+ await a.c.undoGameAction('lottokoenig',lotto.querySelector('[data-game-undo]'));
+ assert.equal(a.c.indGet('lottokoenig').history.length,0);
+ assert.equal(a.c.KCClubGames.current(a.c.indGet('lottokoenig')),player);
+ assert(confirm().disabled);
+ assert([...lotto.querySelectorAll('[data-lotto-number]')].every(button=>!button.disabled));
+ for(const n of [2,7,12,24,34,47])pick(n);
+ assert(!confirm().disabled);
+ await a.c.clubGameCommitTicket();
+ assert.equal(a.c.indGet('lottokoenig').history[0].name,player);
  a.c.showSideTab('spiele','tageskurs');
  const pin=a.document.querySelector('#tab-tageskurs button[data-club-pin="9"]');
  a.c.clubGameTogglePin(9,pin);
