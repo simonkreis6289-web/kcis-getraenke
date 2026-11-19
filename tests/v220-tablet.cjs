@@ -96,6 +96,36 @@ test('a competing tablet sequence retains both tablets’ bookings instead of re
  assert.equal(JSON.parse(c.storage.get('kcis_tablet_outbox_club')).inflight.opId,failed.opId);
  assert.equal(c.run('persons[1].drinks.beer'),1);
 });
+test('an older evening can be archived locally before opening the confirmed Firebase evening',async()=>{
+ const {a,db}=await fixture(),b=fullApp(db);await b.select();
+ await b.c.changeDrink('A','beer',1);
+ assert(await a.c.startNewKegelabend());assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(await b.c.KCSharedSync.waitForUpload(),false);
+ const outboxKey='kcis_tablet_outbox_club',archiveKey='kcis_tablet_recovery_club';
+ const savedOutbox=b.storage.get(outboxKey),confirmed=copy(db.root()),commits=db.commits();
+ const button=b.document.querySelector('.shared-sync-adopt-cloud');
+ assert.equal(button.hidden,false);
+ assert.match(b.c.KCSharedSync.diagnostics().error,/anderen Kegelabend/);
+ const setItem=b.c.localStorage.setItem;
+ b.c.localStorage.setItem=(key,value)=>{if(key===archiveKey)throw Error('Speicher voll');setItem(key,value);};
+ assert.equal(await button.onclick(),false);
+ assert.equal(b.storage.get(outboxKey),savedOutbox);
+ assert.equal(b.run('persons[0].drinks.beer'),1);
+ b.c.localStorage.setItem=setItem;
+ assert(await button.onclick());
+ assert.deepEqual(JSON.parse(b.storage.get(archiveKey))[0].tabletOutbox,JSON.parse(savedOutbox));
+ assert.equal(JSON.parse(b.storage.get(outboxKey)).inflight,null);
+ assert.equal(JSON.parse(b.storage.get(outboxKey)).pending,null);
+ assert.equal(b.run('currentEveningStartedAt'),confirmed.currentEveningStartedAt);
+ assert.deepEqual(db.root(),confirmed);
+ assert.equal(db.commits(),commits);
+ assert.equal(button.hidden,true);
+ assert.equal(b.document.querySelector('.shared-sync-local-archive').hidden,false);
+ const c=fullApp(db);for(const [key,value] of b.storage)c.storage.set(key,value);await c.select();
+ assert.equal(c.document.querySelector('.shared-sync-local-archive').hidden,false);
+ assert(await c.c.startNewKegelabend());assert(await c.c.KCSharedSync.waitForUpload());
+ assert.notEqual(db.root().currentEveningStartedAt,confirmed.currentEveningStartedAt);
+});
 test('a stalled SDK request releases the upload, preserves its receipt ID and can be retried',async()=>{
  const {a,db,hold,release,entered}=await fixture();await a.c.changeDrink('A','beer',1);hold();
  const waiting=a.c.KCSharedSync.waitForUpload();for(let i=0;i<10&&!entered();i++)await tick();assert(entered());
