@@ -142,7 +142,7 @@
     }
     s.link?.publish(s.root,s.seq,s.cloudEvening,content);
   }
-  function stage(state,docs=[]){
+  function stage(state,docs=[],clockOnly=false){
     const s=current;if(!ready||!s)return false;
     const comparison={...state,tabletSequence:s.root?.tabletSequence};if(!docs.length&&C.equal(C.clean(s.root),C.clean(comparison)))return true;
     const previous={seq:s.seq,pending:s.pending,root:s.root};
@@ -150,6 +150,7 @@
     const predecessor=s.inflight;
     s.seq++;s.root={...state,tabletSequence:s.seq};s.pending={sequence:s.seq,opId:id(),baseSequence:predecessor?.sequence??s.cloudSequence,expectedEvening:predecessor?predecessor.state.currentEveningStartedAt||'':s.cloudEvening,state:C.clean(s.root),documents:[...merged.values()]};
     try{store(s);}catch(error){s.seq=previous.seq;s.pending=previous.pending;s.root=previous.root;throw Error('Tablet-Speicher voll. Buchung wurde nicht übernommen.');}
+    if(!clockOnly)s.ownsClock=true;
     server=s.root;publish(s);cache();status();clearTimeout(timer);
     timer=setTimeout(()=>{if(!s.retryStopped&&Date.now()>=(s.nextRetryAt||0))void drain(s);},40);return true;
   }
@@ -172,6 +173,7 @@
           const previousConfirmedAt=s.lastConfirmedAt;s.inflight=null;s.lastConfirmedAt=Date.now();
           try{store(s);}catch(error){s.inflight=batch;s.lastConfirmedAt=previousConfirmedAt;throw error;}
           s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagnostic=null;s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
+          s.lastOperation=batch.opId;
           s.eveningConflict=false;
           const stationResults=batch.documents.filter(row=>row.value?.status==='applied'&&row.value.result?.description&&
             row.path.startsWith('clubs/'+s.club+'/stationCommands/'));
@@ -199,14 +201,41 @@
         }
       }
       return !s.inflight&&!s.pending;
-    }).finally(()=>{s.uploading=null;if(s===current)status();});
+    }).finally(()=>{s.uploading=null;if(s===current){applyReceived(s);status();}});
     return s.uploading;
   }
   function begin(club){
     current?.link?.close();ready=false;connectionMeasurement=null;
     current=sessions.get(club)||{club,root:null,seq:0,pending:null,inflight:null,uploading:null,error:'',docCache:new Map()};
     current.hasRecoveryArchive=!!localStorage.getItem(recoveryKey(club));
-    sessions.set(club,current);current.linkStatus=null;unit=null;status();
+    sessions.set(club,current);current.linkStatus=null;current.received=null;unit=null;status();
+  }
+  function receive(state,metadata={}){
+    const s=current;
+    if(!s||!state?.syncInitialized||metadata.fromCache||metadata.pending)return;
+    const revision=Number(state.syncRevision)||0;
+    if(revision<=(s.cloudRevision||0)||revision<=Number(s.received?.syncRevision||0))return;
+    s.received=state;
+    applyReceived(s);
+  }
+  function applyReceived(s){
+    if(current!==s||!ready||unit||s.uploading||s.recovering||s.inflight||s.pending||!s.received)return;
+    const saved=s.received;s.received=null;
+    const sequence=Number(saved.tabletSequence)||0,revision=Number(saved.syncRevision)||0;
+    if(revision<=(s.cloudRevision||0)||sequence<s.cloudSequence)return;
+    s.cloudRevision=revision;
+    if(s.lastOperation&&saved.syncOperation===s.lastOperation)return;
+    s.cloudEvening=saved.currentEveningStartedAt||'';
+    s.cloudSequence=sequence;
+    s.seq=Math.max(s.seq,sequence);
+    s.root=C.normalizeGameData(saved);
+    s.ownsClock=false;
+    s.docCache.clear();
+    s.error='';s.failureDiagnostic=null;s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;s.eveningConflict=false;
+    server=s.root;
+    project(s.root,true);
+    publish(s);
+    status();
   }
   function activate(s,root){
     s.root={...C.clone(root),syncProtocol:1};server=s.root;ready=true;
@@ -226,6 +255,7 @@
       const saved=C.normalizeGameData(await cloudRequest(raw.initializeSharedState(club,defaults,id())));
       if(current!==s)return false;
       s.cloudEvening=saved.currentEveningStartedAt||'';s.cloudSequence=Number(saved.tabletSequence)||0;
+      s.cloudRevision=Number(saved.syncRevision)||0;
       s.seq=Math.max(s.cloudSequence,Number(outbox?.seq)||0);
       s.lastConfirmedAt=outbox?.lastConfirmedAt||null;
       if(!s.uploading){s.inflight=outbox?.inflight||null;s.pending=outbox?.pending||null;}
@@ -309,13 +339,14 @@
         const next={seq:cloudSequence,inflight:null,pending:null,lastConfirmedAt:Date.now()};
         store({...s,...next});
         Object.assign(s,next,{cloudSequence,cloudEvening:saved.currentEveningStartedAt,
+          cloudRevision:Number(saved.syncRevision)||0,ownsClock:false,
           error:'',failureDiagnostic:null,retryStopped:false,retryFailures:0,nextRetryAt:0,eveningConflict:false});
         s.docCache.clear();
         activate(s,C.normalizeGameData(saved));
         toast('Firebase-Kegelabend geladen. Die offenen lokalen Änderungen wurden separat gesichert.','success');
         return true;
       }catch(error){toast('Firebase-Abgleich nicht abgeschlossen: '+error.message);return false;}
-      finally{s.recovering=false;if(current===s)status();}
+      finally{s.recovering=false;if(current===s){applyReceived(s);status();}}
     });
   }
   function write(method,args){
@@ -324,14 +355,14 @@
     return local(async()=>{if(!ready)throw Error('Tabletstand noch nicht geladen');
       if(method==='startNewEvening'&&(current.inflight||current.pending))throw Error('Buchungen warten auf Cloudbestätigung.');
       const action={session:current,before:method==='startNewEvening'?C.clone(current.root):{...current.root,...snapshot()},promises:[],messages:[],opened:new Set()};action.preview=preview(action.before);unit=action;
-      try{const result=await localCall(method,args);await Promise.all(action.promises);finish(action,undefined,method);return result;}catch(error){if(current===action.session)project(action.before,true);throw error;}finally{unit=null;status();}
+      try{const result=await localCall(method,args);await Promise.all(action.promises);finish(action,undefined,method);return result;}catch(error){if(current===action.session)project(action.before,true);throw error;}finally{unit=null;applyReceived(action.session);status();}
     });
   }
   function legacyAction(key,fn,args,self){
     if(unit)return fn.apply(self,args);
     return local(async()=>{if(!ready)return;const action={session:current,before:{...current.root,...snapshot()},promises:[],messages:[],opened:new Set()};action.preview=preview(action.before);unit=action;
       try{const result=await fn.apply(self,args);let n=0;while(n<action.promises.length){const chunk=action.promises.slice(n);n=action.promises.length;await Promise.all(chunk);}window.KCKranzUI?.freeze(key,action.before);const after=snapshot();finish(action,window.KCGameStopwatch?.updateLegacy(key,action.before,after)||after);for(const msg of action.messages.slice(-2))sharedOriginalToast?.(...msg);return result;}
-      catch(error){if(current===action.session)project(action.before,true);sharedOriginalToast?.(error.message,'error');return undefined;}finally{unit=null;status();}
+      catch(error){if(current===action.session)project(action.before,true);sharedOriginalToast?.(error.message,'error');return undefined;}finally{unit=null;applyReceived(action.session);status();}
     });
   }
   function persist(){if(!ready||unit||current?.recovering)return;try{stage({...current.root,...snapshot()});}catch(error){toast(error.message);}}
@@ -385,17 +416,17 @@
     }
   }
 
-  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive(){},capture(){return true;},clubContentView(club){return ready&&current?.club===club?C.clone(current.root.dashboardClubContent||null):undefined;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',failure:s?.failureDiagnostic||null,retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
+  window.KCTabletSync=Object.freeze({testConnection,status,install,begin,prepare,persist,flush,reconnect,waitForUpload,receive,capture(){return true;},clubContentView(club){return ready&&current?.club===club?C.clone(current.root.dashboardClubContent||null):undefined;},get server(){return C.clone(server);},get ready(){return ready;},get directConnected(){return !!current?.linkStatus?.direct;},get inUnit(){return !!unit;},get working(){return false;},get originalApi(){return raw;},diagnostics(){const s=current;return {ready,online:navigator.onLine,clubSet:!!s,sequence:s?.seq||0,cloudSequence:s?.cloudSequence||0,uploading:!!s?.uploading,inflightSequence:s?.inflight?.sequence||null,pendingSequence:s?.pending?.sequence||null,retryStopped:!!s?.retryStopped,lastConfirmedAt:s?.lastConfirmedAt||null,link:s?.linkStatus||null,pendingDocuments:s?.pending?.documents?.length||0,inflightDocuments:s?.inflight?.documents?.length||0,error:s?.error||'',failure:s?.failureDiagnostic||null,retryFailures:s?.retryFailures||0,nextRetryAt:s?.nextRetryAt?new Date(s.nextRetryAt).toISOString():null};}});
   document.addEventListener('click',e=>{if(ready&&!unit&&!current?.recovering)return;if(e.target?.closest?.('#shared-sync-status,.tor-person-backdrop,.kc-kranz-backdrop,.modal-overlay,.haus-modal-overlay'))return;const b=e.target?.closest?.('button,input,select,textarea');if(!b||b.closest('#club-start-screen'))return;const code=b.getAttribute('onclick')||'';if(/^(showMainTab|showSideTab|goToClubSelection|close|kcClose|KCSharedSync)/.test(code))return;e.preventDefault();e.stopImmediatePropagation();},true);
   window.addEventListener('online',()=>{status();void reconnect();});
   window.addEventListener('offline',()=>{if(current?.pending||current?.inflight)current.error='Tablet ist offline';status();});
   setInterval(()=>{for(const s of sessions.values())if(!s.retryStopped&&(s.error||s.pending)&&Date.now()>=(s.nextRetryAt||0))void drain(s);},5000);
-  // Zeitanker für laufende Spieluhren auffrischen.
+  // Nur der Browser mit der letzten lokalen Änderung liefert weitere Zeitanker.
   setInterval(()=>{
-    if(!ready||unit||!navigator.onLine||current?.recovering||current?.eveningConflict)return;
+    if(!ready||unit||!navigator.onLine||!current?.ownsClock||current.recovering||current.eveningConflict)return;
     const state={...current.root,...snapshot()},now=window.KCSharedClock?.now()??Date.now(),ball=state.ballermannState;
     const running=C.games.some(key=>state[key+'State']?.active&&window.KCGameStopwatch?.clock(key,state[key+'State'],state.teamStopwatchActive)?.runningSince!=null);
     if(!running&&!state.teamStopwatchRunning&&!(ball?.active&&ball.timer?.running&&ball.timer.endsAt>now))return;
-    try{stage({...state,tabletClock:{time:now}});}catch(error){toast(error.message);}
+    try{stage({...state,tabletClock:{time:now}},[],true);}catch(error){toast(error.message);}
   },10000);
 })();
