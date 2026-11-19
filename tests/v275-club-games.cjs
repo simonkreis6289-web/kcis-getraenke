@@ -25,6 +25,8 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  const first=f.run('throw',{kind:'kranz',kranzValue:11});
  assert.equal(first.moneyAdded[0].amountCents,300);
  assert.equal(first.moneyAdded[0].personName,'A');
+ const impact=parseHTML(c.renderClubGameBoard(f.s)).document.querySelector('.club-game-impact');
+ assert.match(impact.textContent,/B · Kranz/);assert.match(impact.textContent,/A: 3 → 0 Punkte/);
  assert.equal(f.s.eliminated[0].place,6);
  f.roll('pins',9);assert.equal(f.s.scores.B,0);
  assert(f.s.finished);
@@ -51,6 +53,7 @@ test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before
  assert.deepEqual(copy(last.changes.map(x=>x.key)),['loser','loser2','loser3']);
  const html=parseHTML(c.renderClubGameBoard(f.s)).document;
  assert(html.querySelector('.club-lotto-balls .is-hit'));
+ assert.match(html.querySelector('.club-game-impact').textContent,/D: 24 → 26 Punkte/);
  f.run('undo');assert.equal(g.current(f.s),'D');
 });
 test('Tageskurs calculates and replays only the standing pins at configured prices',()=>{
@@ -77,6 +80,15 @@ test('Swinger Club alternates throws, requires new partners and books 1./2./3. b
  assert.deepEqual(copy(f.s.loserGroups),[{rank:1,names:['A']},{rank:2,names:['C']},{rank:3,names:['B']}]);
  f.run('undo');assert.equal(g.current(f.s),'F');
  assert.deepEqual(copy(f.s.standing),[4,5,6,7,8,9]);
+});
+test('Swinger Club lets an odd roster play with one single team and changes teams in the next round',()=>{
+ const f=game('swingerclub',{rounds:2,throws:2},['A','B','C','D','E']);
+ assert.deepEqual(copy(f.s.pairs.map(t=>t.names)),[['A','B'],['C','D'],['E']]);
+ for(const n of [1,1,2,2,3,3])f.run('throw',{kind:'pins',knocked:f.s.standing.slice(0,n)});
+ assert.equal(f.s.phase,'pairs');assert.equal(f.s.scores.E,6);
+ assert.throws(()=>f.run('pairs',{pairs:[{names:['A','C']},{names:['B','D']},{names:['E']}]}),/neue Partner/);
+ f.run('pairs',{pairs:[{names:['A','E']},{names:['B','D']},{names:['C']}]});
+ assert.equal(g.current(f.s),'A');assert(f.s.active);
 });
 const harness=read('tests/v215-shared-sync.cjs');
 const fixture=harness.slice(harness.indexOf('function database('),harness.indexOf("test('two devices increment"))+

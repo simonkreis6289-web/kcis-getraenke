@@ -54,3 +54,8 @@ button.club-game-pin { cursor:pointer; }
  .tageskurs-settings-layout { grid-template-columns:minmax(0,1fr); }
  .tageskurs-settings-rack { order:-1; }
 }
+
+
+.club-game-impact { display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem;margin-top:.7rem;padding:.65rem .85rem;border-left:4px solid #26708f;border-radius:.45rem;background:#edf6fb;color:#173d55; }
+.club-game-impact b { font-variant-numeric:tabular-nums; }
+.club-game-impact small { color:#385873; }

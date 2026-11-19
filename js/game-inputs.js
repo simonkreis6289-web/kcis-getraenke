@@ -222,7 +222,7 @@ function renderGameDashboardButton(key,panel,s){
  const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
  dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false&&!window.KCTabletSync?.directConnected;
  dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
- next.disabled=!s?.active||!!s?.finished||key==='lottokoenig'&&s.phase==='numbers'||key==='swingerclub'&&s.phase==='pairs'||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
+ next.disabled=!s?.active||!!s?.finished||key==='lottokoenig'&&s.phase==='numbers'||key==='swingerclub'&&(s.phase==='pairs'||s.pairs?.[s.index]?.names.length===1)||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
  next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';
  const pause=toolbar.querySelector('[data-game-pause]');
  let undo=toolbar.querySelector('[data-game-undo]');

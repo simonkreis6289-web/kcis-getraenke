@@ -18,11 +18,13 @@ function clubGameControls(key,s,disabled){
  }
  if(s.phase==='pairs'){
   const remaining=s.players.filter(n=>!d.pairs.some(t=>t.names.includes(n)));
+  const showSingle=s.players.length%2&&!d.pairs.some(t=>t.names.length===1)&&d.partner;
   return '<div class="club-game-choices"><strong>Neue Zweierteams · schwächstes Paar wählt zuerst</strong><p>Wähle jeweils zwei Namen. Beide Spieler aus dem besten und dem schwächsten Paar brauchen einen neuen Partner.</p>'+
    '<div class="kc-avatar-picker">'+remaining.map(n=>'<button type="button" class="kc-avatar-option '+(d.partner===n?'selected':'')+'" '+disabled+
     ' onclick="clubGamePairPick('+s.players.indexOf(n)+')">'+sixAvatar(n)+'</button>').join('')+'</div>'+
-   '<ol>'+d.pairs.map(t=>'<li>'+t.names.map(esc).join(' + ')+'</li>').join('')+'</ol>'+
-   '<div class="ind-actions"><button type="button" onclick="clubGameClearPairs()" '+disabled+'>Auswahl zurücksetzen</button>'+
+   '<ol>'+d.pairs.map(t=>'<li>'+t.names.map(esc).join(' + ')+(t.names.length===1?' · Einzelteam':'')+'</li>').join('')+'</ol>'+
+   '<div class="ind-actions">'+(showSingle?'<button type="button" onclick="clubGamePickSingle()" '+disabled+'>Als Einzelteam übernehmen</button>':'')+
+    '<button type="button" onclick="clubGameClearPairs()" '+disabled+'>Auswahl zurücksetzen</button>'+
     '<button type="button" class="primary-btn" '+(disabled||remaining.length?'disabled':'')+' onclick="clubGameCommitPairs()">Neue Paare übernehmen</button></div></div>';
  }
  if(g.physical(key)){
@@ -63,10 +65,16 @@ function clubGamePairPick(index){
  if(d.partner===name)d.partner='';
  else if(!d.partner)d.partner=name;
  else{
-  if(s.splitPairs.some(t=>t.names.includes(name)&&t.names.includes(d.partner))){showToast('Dieses Paar muss wechseln.','error');return;}
+  if(s.splitPairs.some(t=>t.names.length===2&&t.names.includes(name)&&t.names.includes(d.partner))){showToast('Dieses Paar muss wechseln.','error');return;}
   d.pairs.push({names:[d.partner,name]});d.partner='';
  }
  renderIndividualGame('swingerclub');
+}
+function clubGamePickSingle(){
+ const s=indGet('swingerclub'),d=clubGameDraft(s);
+ if(!d.partner||s.players.length%2!==1||d.pairs.some(t=>t.names.length===1))return;
+ if(s.splitPairs.some(t=>t.names.length===1&&t.names[0]===d.partner)){showToast('Dieses Einzelteam muss einen Partner bekommen.','error');return;}
+ d.pairs.push({names:[d.partner]});d.partner='';renderIndividualGame('swingerclub');
 }
 function clubGameClearPairs(){const d=clubGameDraft(indGet('swingerclub'));d.pairs=[];d.partner='';renderIndividualGame('swingerclub');}
 function clubGameCommitPairs(){return indAction('swingerclub','pairs',{pairs:clubGameDraft(indGet('swingerclub')).pairs});}

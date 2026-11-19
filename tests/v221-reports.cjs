@@ -88,7 +88,8 @@ test('each dashboard report uses actual archive data and changes cleanly between
 });
 test('the start click opens review, allows settings edits and starts only after explicit confirmation',async()=>{
  const clickHandlers=[],parse=html=>{const result=parseHTML(html),add=result.document.addEventListener.bind(result.document);result.document.addEventListener=(name,fn,opts)=>{if(name==='click'&&opts===true)clickHandlers.push(fn);return add(name,fn,opts);};return result;};
- const make=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath',factory+';return {database,initial,fullApp};')(read,copy,assert,vm,parse,require,evening,rootPath,personPath),db=make.database({[rootPath]:make.initial()}),a=make.fullApp(db);await a.select();
+ const make=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath',factory+';return {database,initial,fullApp};')(read,copy,assert,vm,parse,require,evening,rootPath,personPath),seed=make.initial();for(const name of ['C','D','E'])seed.persons.push({...seed.persons[0],name});
+ const db=make.database({[rootPath]:seed}),a=make.fullApp(db);await a.select();
  const button=a.document.querySelector('[onclick="startHausGame(\'hoch\')"]');let starts=0;button.onclick=()=>starts++;
  const handler=clickHandlers.find(fn=>String(fn).includes('pending={key:game'));assert(handler);handler({target:button,preventDefault(){},stopImmediatePropagation(){}});assert.equal(starts,0);assert(a.document.getElementById('start-review-title'));
  a.document.querySelector('[data-edit]').click();assert(a.document.querySelector('[data-game-settings-back="haushoch"]'));assert(!a.document.getElementById('tab-spiele-einstellungen').classList.contains('hidden'));assert.equal(starts,0);
@@ -98,6 +99,15 @@ test('the start click opens review, allows settings edits and starts only after 
  handler({target:physical,preventDefault(){},stopImmediatePropagation(){}});
  assert.match(a.document.getElementById('start-review-title').textContent,/Tageskurs/);
  a.c.KCStartReview.cancel();
+ a.c.showSideTab('spiele','swingerclub');
+ const swing=a.document.querySelector('[onclick="indStart(\'swingerclub\')"]');let started;
+ assert(!swing.disabled);
+ swing.onclick=()=>{started=a.c.indStart('swingerclub');};
+ handler({target:swing,preventDefault(){},stopImmediatePropagation(){}});
+ assert.match(a.document.getElementById('start-review-title').textContent,/Swinger Club/);
+ a.document.querySelector('[data-start]').click();await started;
+ assert(a.c.indGet('swingerclub').active);
+ assert.deepEqual(copy(a.c.indGet('swingerclub').pairs.map(pair=>pair.names.length)),[2,2,1]);
 });
 test('every game can open its own settings and return to its start page; Tageskurs shows the same pin numbering',async()=>{
  const seed=initial();seed.dartsState={active:false};
