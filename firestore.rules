@@ -4,10 +4,6 @@ rules_version = '2';
 // Erst zusammen mit der bereitgestellten V216-App aktivieren.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Bisherige Leserechte beibehalten. Keine pauschale Schreibfreigabe!
-    match /{document=**} {
-      allow read: if true;
-    }
 
     function kcRoot(clubId) {
       return /databases/$(database)/documents/clubs/$(clubId)/state/current;
@@ -48,33 +44,155 @@ service cloud.firestore {
     }
 
     match /clubs/{clubId} {
-      allow create, update: if kcSharedRow(clubId);
+      allow read: if true;
+      allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId);
+      match /{collectionId}/{documentId} {
+        allow read: if collectionId in ['state','livePersons','liveGames','live','archive','documents','syncCommands'];
+      }
+
+      match /stationControl/current {
+        allow get: if stationOperator() || stationAuthorized(clubId);
+        // The document stays after revocation, so legacy clients cannot regain writes.
+        allow create, update: if stationOperator() && validStationControl(clubId);
+      }
+      match /stationPairings/{code} {
+        allow get: if stationOperator() || request.auth != null &&
+          (resource.data.status == 'open' && resource.data.expiresAt > request.time || resource.data.uid == request.auth.uid);
+        allow create: if stationOperator() && code.matches('^[a-f0-9]{64}$')
+          && request.resource.data.keys().hasOnly(['status','uid','label','expiresAt'])
+          && request.resource.data.status == 'open'
+          && request.resource.data.uid == '' && request.resource.data.label == ''
+          && request.resource.data.expiresAt > request.time
+          && request.resource.data.expiresAt <= request.time + duration.value(5,'m');
+        allow update: if resource.data.expiresAt > request.time && (
+          resource.data.status == 'open' && request.auth != null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','uid','label'])
+            && request.resource.data.status == 'requested' && request.resource.data.uid == request.auth.uid
+            && request.resource.data.label is string && request.resource.data.label.size() <= 80
+          || resource.data.status == 'requested' && stationOperator()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+            && request.resource.data.status in ['approved','rejected']
+            && (request.resource.data.status == 'rejected' || (getAfter(stationControl(clubId)).data.uid == resource.data.uid
+              && getAfter(stationControl(clubId)).data.pairingCode == code)));
+      }
+      match /stationPresence/current {
+        allow get: if stationOperator() || stationAuthorized(clubId);
+        allow create, update: if stationAuthorized(clubId)
+          && request.resource.data.keys().hasOnly(['uid','generation','at'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.generation == get(stationControl(clubId)).data.generation
+          && request.resource.data.at == request.time;
+      }
+      match /stationCommands/{commandId} {
+        allow read: if stationOperator() || stationAuthorized(clubId)
+          || request.auth != null && resource.data.uid == request.auth.uid;
+        allow create: if commandId.matches('^station_[a-f0-9-]{36}$') && validStationWrite(clubId);
+        allow update: if stationOperator() && kcSharedRow(clubId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','result','syncProtocol','syncRevision','syncOperation','updatedAt'])
+          && ((resource.data.status == 'queued' && request.resource.data.status in ['applied','rejected'])
+              || (resource.data.status == 'applied' && request.resource.data.status == 'reversed'));
+      }
 
       match /state/current {
-        allow create, update: if kcSharedRow(clubId);
+        allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId);
       }
       match /livePersons/{personId} {
-        allow create, update: if kcSharedRow(clubId);
-        allow delete: if kcSharedCommand(clubId);
+        allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId);
+        allow delete: if canonicalWriter(clubId) && kcSharedCommand(clubId);
       }
       match /liveGames/{gameId} {
-        allow create, update: if kcSharedRow(clubId);
-        allow delete: if kcSharedCommand(clubId);
+        allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId);
+        allow delete: if canonicalWriter(clubId) && kcSharedCommand(clubId);
       }
       match /live/seating {
-        allow create, update: if kcSharedRow(clubId);
+        allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId);
       }
       match /archive/{archiveId} {
-        allow create, update: if kcSharedRow(clubId);
-        allow delete: if kcSharedCommand(clubId);
+        allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId);
+        allow delete: if canonicalWriter(clubId) && kcSharedCommand(clubId);
       }
       match /documents/{documentId} {
-        allow create, update: if kcSharedRow(clubId);
+        allow create, update: if canonicalWriter(clubId) && kcSharedRow(clubId) || dashboardMessage(documentId);
       }
       match /syncCommands/{commandId} {
-        allow create: if kcSharedReceipt(clubId, commandId);
+        allow create: if kcSharedReceipt(clubId, commandId) && canonicalWriter(clubId);
         // Belege duerfen weder geaendert noch geloescht werden.
       }
     }
+    function stationOperator() {
+      return request.auth != null && request.auth.token.get('kcOperator', false) == true;
+    }
+    function stationControl(clubId) {
+      return /databases/$(database)/documents/clubs/$(clubId)/stationControl/current;
+    }
+    function canonicalWriter(clubId) {
+      return !exists(stationControl(clubId)) || stationOperator();
+    }
+    function stationAuthorized(clubId) {
+      return request.auth != null && exists(stationControl(clubId))
+        && get(stationControl(clubId)).data.uid == request.auth.uid;
+    }
+    function validStationControl(clubId) {
+      let value = request.resource.data;
+      let code = value.pairingCode;
+      let pair = /databases/$(database)/documents/clubs/$(clubId)/stationPairings/$(code);
+      return value.keys().hasOnly(['uid','generation','label','pairedAt','pairingCode'])
+        && value.uid is string && value.generation is string && value.generation.matches('^[a-f0-9]{64}$')
+        && value.label is string && value.label.size() <= 80
+        && value.pairedAt == request.time && code is string
+        && ((value.uid == '' && code == '' && value.label == '' && exists(stationControl(clubId)))
+          || (code.matches('^[a-f0-9]{64}$') && value.uid != ''
+            && get(pair).data.status == 'requested' && get(pair).data.uid == value.uid
+            && get(pair).data.label == value.label && get(pair).data.expiresAt > request.time
+            && getAfter(pair).data.status == 'approved'));
+    }
+    function textField(value, max) {
+      return value is string && value.size() > 0 && value.size() <= max;
+    }
+    function validStationPayload(kind, payload) {
+      return payload is map &&
+        ((kind == 'undo' && payload.keys().hasOnly(['target'])
+          && payload.target is string && payload.target.matches('^station_[a-f0-9-]{36}$'))
+        || (kind != 'undo' && payload.drinks is map && payload.drinks.size() > 0 && payload.drinks.size() <= 100
+          && ((kind == 'drink' && payload.keys().hasOnly(['person','drinks']) && textField(payload.person,200))
+           || (kind == 'round' && payload.keys().hasOnly(['person','reason','recipients','drinks'])
+             && textField(payload.person,200) && textField(payload.reason,200)
+             && payload.recipients is list && payload.recipients.size() > 0 && payload.recipients.size() <= 64)
+           || (kind == 'team' && payload.keys().hasOnly(['game','team','members','drinks','roundGiven'])
+             && textField(payload.game,200) && textField(payload.team,200)
+             && payload.members is list && payload.members.size() > 0 && payload.members.size() <= 64
+             && (!('roundGiven' in payload) || payload.roundGiven is bool)))));
+    }
+    function validStationWrite(clubId) {
+      let entry = request.resource.data;
+      let root = get(kcRoot(clubId)).data;
+      return stationAuthorized(clubId)
+        && entry.keys().hasOnly(['uid','generation','evening','kind','payload','status','createdAt'])
+        && entry.uid == request.auth.uid
+        && entry.generation == get(stationControl(clubId)).data.generation
+        && entry.evening is string && entry.evening.size() > 0
+        && entry.evening == root.currentEveningStartedAt
+        && (!('stationClosedEvening' in root) || root.stationClosedEvening != entry.evening)
+        && entry.kind in ['drink','round','team','undo']
+        && validStationPayload(entry.kind,entry.payload)
+        && entry.status == 'queued' && entry.createdAt == request.time;
+    }
+    function dashboardMessage(documentId) {
+      let value = request.resource.data;
+      return value.expiresAt is int && value.expiresAt > request.time.toMillis()
+        && value.expiresAt <= request.time.toMillis() + 180000
+        && ((documentId.matches('^dashboard_link_[a-zA-Z0-9_-]{1,80}$')
+          && value.keys().hasOnly(['kind','viewerId','connectionId','offer','answer','source','expiresAt'])
+          && value.kind == 'dashboardLink' && value.viewerId is string && value.viewerId.size() <= 80 && value.connectionId is string && value.connectionId.size() <= 80
+          && value.offer.type == 'offer' && value.offer.sdp is string && value.offer.sdp.size() <= 60000
+          && (value.answer == null || (value.answer.type == 'answer' && value.answer.sdp is string && value.answer.sdp.size() <= 60000)))
+        || (documentId in ['dashboard_diagnostic_presence','dashboard_diagnostic_probe']
+          && value.keys().hasOnly(['kind','id','webrtc','expiresAt'])
+          && value.kind in ['presence','ping','pong'] && value.id is string && value.id.size() <= 80
+          && value.webrtc is bool
+          && ((documentId == 'dashboard_diagnostic_presence' && value.kind == 'presence')
+            || (documentId == 'dashboard_diagnostic_probe' && value.kind in ['ping','pong']))));
+    }
+
   }
 }
