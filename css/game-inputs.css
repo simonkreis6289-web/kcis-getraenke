@@ -48,26 +48,30 @@
 
 .game-dashboard-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin:0 0 0 auto;padding:7px 12px;min-height:34px;border:1px solid #29466e;border-radius:8px;background:#29466e;color:#fff;font:700 13px/1.2 'DM Sans',sans-serif;text-transform:none;letter-spacing:0;cursor:pointer}.game-dashboard-button:disabled{opacity:.5;cursor:default}.game-dashboard-button:hover:not(:disabled){background:#1c3559}
 
-/* V250: Alle Spiele haben denselben Dashboard-Schalter rechts oben. */
-#main-spiele .game-dashboard-toolbar{display:flex;justify-content:flex-end;align-items:center;min-height:44px;width:100%;margin:0 0 8px;padding:0;box-sizing:border-box}
-#main-spiele .game-dashboard-toolbar .game-dashboard-button{margin:0;flex:none;max-width:100%;white-space:normal;text-align:center}
 #main-spiele .darts-round-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
 #main-spiele .darts-round-actions .save-prices-btn{flex:1 1 190px;min-width:0}
 #main-spiele .darts-round-actions #darts-undo-round{flex:1 1 190px;min-width:0;min-height:42px}
 #main-spiele #darts-undo-round:disabled{opacity:.5;cursor:not-allowed}
 
-#main-spiele .game-title-with-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-width:0}
-#main-spiele .game-title-with-actions::after{order:1;content:"";height:1px;flex:1 1 24px;min-width:12px;background:var(--border,#cbd5e1)}
+#main-spiele .game-title-with-actions{
+ display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;
+ gap:6px 10px;min-width:0;margin:20px 0 10px
+}
+#main-spiele .game-title-with-actions > .section-title{margin:0;min-width:0;overflow-wrap:anywhere}
+#main-spiele .game-title-with-actions > .section-title::after{content:none}
+#main-spiele .game-title-with-actions::after{
+ order:1;content:"";height:1px;flex:1 1 12px;background:var(--border,#cbd5e1)
+}
 #main-spiele .game-dashboard-toolbar{
- order:2;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:stretch;gap:6px;
- max-width:100%;min-width:0;margin:0;padding:0
+ order:2;display:flex;flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;align-items:stretch;gap:6px;
+ max-width:100%;min-width:0;margin:0 0 0 auto;padding:0
 }
 #main-spiele .game-dashboard-toolbar button{
  display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
  min-height:38px;max-width:100%;margin:0;padding:6px 12px;border:1px solid var(--action-border,#83c9c8);
  border-radius:8px;background:var(--action-bg,#def4f2);color:var(--action-text,#146065);
  font-family:inherit;line-height:1.15;font-size:clamp(12px,1vw,15px);font-weight:600;
- letter-spacing:0;text-transform:none;text-align:center;box-shadow:none;cursor:pointer
+ letter-spacing:0;text-transform:none;text-align:center;white-space:normal;box-shadow:none;cursor:pointer
 }
 #main-spiele .game-dashboard-toolbar button:hover:not(:disabled){background:var(--action-hover,#c9ebe8);box-shadow:none}
 #main-spiele .game-dashboard-toolbar button:disabled{opacity:.45;cursor:not-allowed}
