@@ -49,26 +49,43 @@ async function torThrow(kind='pins'){
  const thrower=personalPenalty?await torChoosePenaltyPlayer(team,isGosse?'Gosse':kind==='kranz'?'Kranz':'9er'):'';
  if(personalPenalty&&!thrower){s.busy=false;return;}
  try{
-   // Strafregeln für Gosse und 9er analog zu anderen Spielen.
-   if(personalPenalty){if(!(await changeSoloThrowPenalty(thrower,null,{pins:isGosse?0:kind==='kranz'?12:9,isGosse})))return;}
-   s.standing=kind==='kranz'?[]:s.standing.filter(n=>!hit.includes(n));s.selected=[];
-   s.history.push({team,thrower,kind,hit,pins:knocked,...(kranzValue!==undefined?{kranzValue}:{}),at:new Date().toISOString()});
+   const standing=kind==='kranz'?[]:s.standing.filter(n=>!hit.includes(n));
+   const other=torOther(team),goal=!standing.length;
+   const wins=goal&&s.scores[team]+1>=5&&s.scores[team]+1-s.scores[other]>=2;
+   const penalty=personalPenalty?getSoloThrowPenalty(thrower,isGosse?0:kind==='kranz'?12:9,isGosse):null;
+   const loserKey=wins?getFirstLoserStrafeKey():null;
+   if((personalPenalty&&!penalty?.key)||(wins&&!loserKey)){showToast('Benötigte Strafenart fehlt','error');return;}
+   const personal=penalty?penalty.punished.map(personName=>({personName,key:penalty.key,delta:1})):[];
+   const finish=wins?s.teams[other].map(personName=>({personName,key:loserKey,delta:1})):[];
+   const changes=[...personal,...finish];
+   if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes.map(change=>({...change,category:'strafen'})))))return;
+   const statId=penalty?addPenaltyStatsEntry(penalty.kind,thrower,penalty.punished)?.id||null:null;
+   const before={standing:s.standing.slice(),scores:{...s.scores},teamTurns:{...s.teamTurns}};
+   s.standing=standing;s.selected=[];
+   s.history.push({team,thrower,kind,hit,pins:knocked,...(kranzValue!==undefined?{kranzValue}:{}),at:new Date().toISOString(),before,changes,statId});
    s.teamTurns[team]=(s.teamTurns[team]||0)+1;
-   if(!s.standing.length){
-     s.scores[team]++;
-     const other=torOther(team);
-     if(s.scores[team]>=5&&s.scores[team]-s.scores[other]>=2){
-       const key=getFirstLoserStrafeKey();
-       if(!key){showToast('Strafe „1. Verlierer“ fehlt','error');s.history.pop();s.scores[team]--;s.standing=[1,2,3,4,5,6,7,8,9];return;}
-       const changes=s.teams[other].map(personName=>({personName,category:'strafen',key,delta:1}));
-       if(!(await changeMultipleSyncedPersonCounters(changes,'⚽ Tor: Verliererteam'))) {s.history.pop();s.scores[team]--;s.standing=[1,2,3,4,5,6,7,8,9];return;}
-       s.finishPenalties=changes.map(({personName,key,delta})=>({personName,key,delta}));s.active=false;s.finished=true;s.winner=team;s.message=getGroupLabel(team)+' gewinnt! '+getGroupLabel(other)+': 1. Verlierer +1 pro Spieler';
-     }else{s.standing=[1,2,3,4,5,6,7,8,9];s.current=other;}
-   }else if(!knocked){s.current=torOther(team);}
+   if(goal)s.scores[team]++;
+   if(wins){s.finishPenalties=finish;s.active=false;s.finished=true;s.winner=team;s.message=getGroupLabel(team)+' gewinnt! '+getGroupLabel(other)+': 1. Verlierer +1 pro Spieler';}
+   else if(goal){s.standing=[1,2,3,4,5,6,7,8,9];s.current=other;}
+   else if(!knocked)s.current=other;
    if(s.finished&&typeof recordCompletedGame==='function')recordCompletedGame('tor',s);
    dashboardActiveGame='tor';renderTorGame();persistState();
  }catch(e){console.error('Tor',e);showToast('Tor-Wurf konnte nicht gespeichert werden','error');}
  finally{s.busy=false;}
+}
+async function undoTorThrow(){
+ const s=torState,last=s?.history?.at(-1);
+ if(!last?.before||s.busy||s.coinPending)return;
+ s.busy=true;
+ try{
+  const changes=last.changes.map(change=>({...change,category:'strafen',delta:-change.delta}));
+  if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'',{reverse:true})))return;
+  if(last.statId)penaltyStatsLog=penaltyStatsLog.filter(entry=>entry.id!==last.statId);
+  if(s.resultHistoryId)strafenHistory=strafenHistory.filter(entry=>entry.id!==s.resultHistoryId);
+  delete s.resultHistoryId;delete s.finishPenalties;
+  Object.assign(s,last.before,{current:last.team,selected:[],active:true,finished:false,winner:'',message:''});
+  s.history.pop();renderAll();persistState();
+ }finally{s.busy=false;}
 }
 function renderTorGame(){if(typeof renderCommonGameSetups==='function')renderCommonGameSetups();
  const el=document.getElementById('tor-board');if(!el)return;ensureTorState();const s=torState;

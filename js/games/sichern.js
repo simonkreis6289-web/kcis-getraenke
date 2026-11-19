@@ -72,10 +72,9 @@ async function sichernThrow(pins){
   const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('sichern'):pins;if(scored===null)return;
   s.busy=true;
   try{
-    if(typeof changeSoloThrowPenalty==='function'){
-      if(!(await changeSoloThrowPenalty(name,null,{pins,isGosse:pins===0})))return;
-    }
-    s.undo.push({before:sichernSnapshot(),name,pins});
+    const roll={pins,isGosse:pins===0};
+    if(typeof changeSoloThrowPenalty==='function'&&!(await changeSoloThrowPenalty(name,null,roll)))return;
+    s.undo.push({before:sichernSnapshot(),name,...roll});
     const rawPins=pins;pins=scored;
     // Jeder gebuchte Wurf verbraucht genau einen Platz in der Teamreihenfolge.
     // Beim Sichern/Teamwechsel bleibt der nächste Spieler vorgemerkt.
@@ -132,6 +131,7 @@ async function finishSichernGame(winner){
       }
     }
     if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'🔒 Sichern abgeschlossen')))return false;
+    s.finishPenalties=changes;
     s.winner=winner;s.ranking=ranking;s.message=(s.mode==='team'?sichernTeamLabel(winner):winner)+' gewinnt!';s.finished=true;s.active=false;
     if(typeof recordCompletedGame==='function')recordCompletedGame('sichern',s);
     // Abschlussergebnis vor dem Rendering speichern, damit eine fremde Renderfunktion
@@ -146,12 +146,13 @@ async function finishSichernGame(winner){
   }finally{s.closing=false;}
 }
 async function undoSichernThrow(){
-  ensureSichernState();const s=sichernState;if(!s.active||s.busy||!s.undo.length)return;
+  ensureSichernState();const s=sichernState;if((!s.active&&!s.finished)||s.busy||s.closing||!s.undo.length||s.finished&&!Array.isArray(s.finishPenalties))return;
   const step=s.undo[s.undo.length-1];s.busy=true;
   try{
-    if(step.name&&typeof changeSoloThrowPenalty==='function'){
-      if(!(await changeSoloThrowPenalty(step.name,{pins:step.pins,isGosse:step.pins===0},null)))return;
-    }
+    const previous=step.name?step:null;
+    if(typeof changeSoloThrowPenalty==='function'&&!(await changeSoloThrowPenalty(step.name,previous,null,s.finished?s.finishPenalties:[])))return;
+    if(s.finished&&s.resultHistoryId)strafenHistory=strafenHistory.filter(entry=>entry.id!==s.resultHistoryId);
+    delete s.resultHistoryId;delete s.finishPenalties;
     s.undo.pop();Object.assign(s,step.before);renderSichernGame();persistState();
   }finally{s.busy=false;}
 }

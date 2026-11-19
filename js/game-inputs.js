@@ -142,6 +142,49 @@ async function gameNextThrower(key){
   persistState();renderAll();return true;
  }catch(error){showToast('Nächster Werfer: '+(error?.message||error),'error');return false;}
 }
+const GAME_UNDO_HANDLERS={
+ tannenbaum:()=>undoLastTannenbaumThrow(),darts:()=>undoDartsAction(),lotterie:()=>undoLotterieThrow(),
+ tiberius:()=>undoLastTiberiusThrow(),mensch:()=>undoMenschThrow(),plusminus:()=>undoPlusminusThrow(),
+ haushoch:()=>undoHausThrow('hoch'),haustief:()=>undoHausThrow('tief'),sichern:()=>undoSichernThrow(),
+ fuchsjagd:()=>undoFuchsjagdThrow(),tor:()=>undoTorThrow(),sechstage:()=>undoSechsThrow()
+};
+function canUndoGameAction(key,s){
+ if(!s)return false;
+ if(typeof IND_KEYS!=='undefined'&&IND_KEYS.includes(key))return !!(s.id&&s.history?.length&&!indPending[key]&&!indBusy[key]&&(s.active||s.finished));
+ switch(key){
+  case 'blackjack':case 'gluecksspirale':return !!(s.id&&s.history?.length&&(s.active||s.finished)&&!tablePending[key]&&!tableBusy[key]&&(key!=='blackjack'||s.rulesVersion===2));
+  case 'tannenbaum':return !!(s.active?s.history?.length:s.closedRound?.state.history?.length);
+  case 'darts':return !!(dartsLatestThrow(s)||s.history?.[0]?.undoSnapshot)&&!pendingDartsPenalty;
+  case 'lotterie':return !!((s.active||s.finished)&&s.throwUndo?.length);
+  case 'tiberius':return !!((s.active||s.finished)&&s.undoStack?.length&&!tiberiusAutoBusy);
+  case 'mensch':case 'plusminus':return !!(s.active||s.finished)&&!!s.undoStack?.length;
+  case 'haushoch':case 'haustief':return !!((s.active||s.finished)&&s.undoStack?.length);
+  case 'sichern':return !!((s.active||s.finished&&Array.isArray(s.finishPenalties))&&s.undo?.length);
+  case 'fuchsjagd':return !!((s.active||s.finished)&&s.throws?.at(-1)?.before);
+  case 'tor':return !!((s.active||s.finished)&&!s.coinPending&&s.history?.at(-1)?.before);
+  case 'sechstage':return !!((s.active||s.finished)&&s.history?.length&&!sechsBusy&&!sechsPending);
+  default:return false;
+ }
+}
+async function undoGameAction(key,button){
+ const state=gameSetupState(key);
+ if(button.disabled||state?.busy||state?.closing||gameInputBusy[key]||window.KCSharedSync?.inUnit||!canUndoGameAction(key,state))return;
+ gameInputBusy[key]=true;applyGameInputLayout(key);
+ try{
+  const run=GAME_UNDO_HANDLERS[key];
+  if(run)await run();
+  else if(['blackjack','gluecksspirale'].includes(key))await tableAction(key,'undo');
+  else await indAction(key,'undo');
+ }finally{gameInputBusy[key]=false;applyGameInputLayout(key);}
+}
+function hideOldGameUndoButtons(panel){
+ // Separate controls for correcting an individual throw in a history remain available.
+ const callbacks=['undoLastTannenbaumThrow(','undoDartsRound(','undoMenschThrow(','undoPlusminusThrow(','undoHausThrow(','undoSichernThrow(','undoFuchsjagdThrow(','undoSechsThrow('];
+ for(const button of panel.querySelectorAll('button[onclick]')){
+  const action=button.getAttribute('onclick');
+  if(callbacks.some(callback=>action.startsWith(callback))||/^(indAction|tableAction)\('[^']+','undo'\)/.test(action))button.classList.add('gi-original-input');
+ }
+}
 function renderGameDashboardButton(key,panel,s){
  const title=panel.querySelector(':scope > .section-title,:scope > .tg-page-title,:scope > .six-page-title');
  const buttons=[...panel.querySelectorAll('[data-game-dashboard]')];
@@ -165,26 +208,21 @@ function renderGameDashboardButton(key,panel,s){
  dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
  next.disabled=!s?.active||!!s?.finished||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
  next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';
- if(key==='tiberius'){
-  let undo=toolbar.querySelector('[data-game-undo]');
-  if(!undo){
-   undo=document.createElement('button');undo.type='button';undo.className='game-next-button';
-   undo.dataset.gameUndo=key;undo.textContent='↩ Letzten Wurf rückgängig';
-   undo.onclick=async()=>{
-    if(undo.disabled||gameInputBusy[key]||window.KCSharedSync?.inUnit)return;
-    gameInputBusy[key]=true;applyGameInputLayout(key);
-    try{await undoLastTiberiusThrow();}
-    finally{gameInputBusy[key]=false;applyGameInputLayout(key);}
-   };
-   toolbar.insertBefore(undo,toolbar.querySelector('[data-game-pause]')||next);
-  }
-  undo.disabled=next.disabled||!s?.undoStack?.length;
+ const pause=toolbar.querySelector('[data-game-pause]');
+ let undo=toolbar.querySelector('[data-game-undo]');
+ if(!undo){
+  undo=document.createElement('button');undo.type='button';undo.className='game-next-button game-undo-button';
+  undo.dataset.gameUndo=key;undo.textContent='↩ Letzte Aktion rückgängig';
+  undo.onclick=()=>undoGameAction(key,undo);
+  toolbar.insertBefore(undo,pause||next);
  }
+ undo.disabled=!canUndoGameAction(key,s)||gameInputBusy[key]||!!(window.KCSharedSync&&!window.KCSharedSync.ready);
+
 }
 
 function applyGameInputLayout(key){
  const panel=document.getElementById('tab-'+key);if(!panel)return;
- const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);renderGameDashboardButton(key,panel,s);
+ const s=gameSetupState(key);window.KCGameOptionsApp?.capture(key,s);renderGameDashboardButton(key,panel,s);hideOldGameUndoButtons(panel);
  // Nur dieser gemeinsame Abbruchweg darf während eines laufenden Spiels sichtbar sein.
  for(const button of panel.querySelectorAll('button'))if(!button.hasAttribute('data-abort-game')&&/Spiel abbrechen/i.test(button.textContent))button.remove();
  const aborts=[...panel.querySelectorAll('[data-abort-game]')];let abort=aborts.shift();aborts.forEach(button=>button.remove());

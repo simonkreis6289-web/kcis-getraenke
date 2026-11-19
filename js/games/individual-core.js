@@ -169,7 +169,7 @@
    if(!s.id||s.id!==req.gameId)throw Error('Das Spiel wurde inzwischen gewechselt');
    if(req.action==='reset'){s=empty(req.gameKey);s.eveningStartedAt=ctx.eveningStartedAt;}
    else{
-    if(!s.active||s.finished)throw Error('Dieses Spiel ist bereits beendet');
+    if((!s.active||s.finished)&&!(s.finished&&req.action==='undo'))throw Error('Dieses Spiel ist bereits beendet');
     if(req.action==='finish'){
      if(!s.readyToFinish&&!reachedTarget(s))throw Error(s.gameKey==='hindernis'?'Zuerst die Zielpunktzahl erreichen':'Zuerst die Runde zu Ende spielen');finish(s);
     }else if(req.action==='undo'){

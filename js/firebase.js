@@ -671,7 +671,8 @@ window.firestoreApi = {
         const stopwatch=KCGameStopwatch.advance('sechstage',before,next,{at:clockTime,newRound:request.action==='start'});
         if(stopwatch!==undefined)next.stopwatch=stopwatch;
       }
-      const resultHistory=window.KCGameResults?.append(current.strafenHistory,'sechstage',next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
+      const keptHistory=request.action==='undo'&&before.finished&&!next.finished?(current.strafenHistory||[]).filter(e=>e.id!==('game_result_'+'sechstage'+'_'+before.id)):current.strafenHistory;
+      const resultHistory=window.KCGameResults?.append(keptHistory,'sechstage',next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];
@@ -731,7 +732,8 @@ window.firestoreApi = {
         const stopwatch=KCGameStopwatch.advance(gameKey,before,next,{at:clockTime,newRound:request.action==='start'});
         if(stopwatch!==undefined)next.stopwatch=stopwatch;
       }
-      const resultHistory=window.KCGameResults?.append(current.strafenHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
+      const keptHistory=request.action==='undo'&&before.finished&&!next.finished?(current.strafenHistory||[]).filter(e=>e.id!==('game_result_'+gameKey+'_'+before.id)):current.strafenHistory;
+      const resultHistory=window.KCGameResults?.append(keptHistory,gameKey,next,{now,groups:current.groupSettings||{},server:true,catalog:current.STRAFEN||[]})||current.strafenHistory||[];
       if(!result.repeat){
         next.receipts=[...(next.receipts||[]),{id:request.opId,changes:effect.changes}].slice(-64);
         const removed=new Set(effect.removed);finalStats=[...(current.penaltyStatsLog||[]).filter(entry=>!removed.has(entry.id)),...effect.added];

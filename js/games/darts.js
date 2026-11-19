@@ -244,6 +244,7 @@ async function confirmDartsPenaltyPlayer() {
   }
 
   dartsState.roundThrows[team].push({
+    order:(Number(dartsLatestThrow(dartsState)?.entry.order)||0)+1,
     hit: type,statId:stat?.id,
     value: points,
     thrower: personName,
@@ -292,6 +293,7 @@ async function handleDartsThrow(hitKey) {
 
   const value=hitKey==='kranz'&&window.KCKranzUI?await KCKranzUI.select('darts'):rawValue;if(value===null)return;
   dartsState.roundThrows[team].push({
+    order:(Number(dartsLatestThrow(dartsState)?.entry.order)||0)+1,
     hit: hitKey,
     value,
     createdAt: new Date().toISOString()
@@ -685,9 +687,23 @@ function renderDartsRoundList() {
   `).join('');
 }
 
+function dartsLatestThrow(state){
+  const current=state.currentTeam==='T1'?'T1':'T2';
+  return ['T1','T2'].map(team=>{
+    const throws=state.roundThrows?.[team]||[];
+    return {team,index:throws.length-1,entry:throws.at(-1)};
+  }).filter(row=>row.entry).sort((a,b)=>(Number(b.entry.order)||0)-(Number(a.entry.order)||0)||
+    (Date.parse(b.entry.createdAt)||0)-(Date.parse(a.entry.createdAt)||0)||Number(a.team===current)-Number(b.team===current))[0];
+}
+function undoDartsAction(){
+  ensureDartsState();
+  if(dartsState.closing||dartsPenaltyBusy||pendingDartsPenalty)return;
+  const last=dartsLatestThrow(dartsState);
+  return last?deleteDartsThrow(last.team,last.index,{undo:true}):undoDartsRound();
+}
 async function deleteDartsThrow(
   team,
-  index
+  index, {undo=false}={}
 ) {
   ensureDartsState();
 
@@ -702,7 +718,7 @@ async function deleteDartsThrow(
       : entry.hit;
 
   if (
-    !confirm(
+    !undo && !confirm(
       `Wurf "${hitLabel}" (${entry.value} Punkte) löschen?`
     )
   ) {
@@ -729,7 +745,7 @@ async function deleteDartsThrow(
 
     const success =
       await changeMultipleSyncedPersonCounters(
-        reverseChanges
+        reverseChanges, '', {reverse:true}
       );
 
     if (!success) {
@@ -746,6 +762,7 @@ async function deleteDartsThrow(
     index,
     1
   );
+  if(undo)dartsState.currentTeam=team;
 
   renderDarts();
   persistState();

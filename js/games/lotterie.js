@@ -43,6 +43,7 @@ function getLiveLotteriePayload() {
       ...(lotterieState.throws || {})
     },
 
+    throwUndo: [...(lotterieState.throwUndo || [])],
     throwMeta: {
       ...(lotterieState.throwMeta || {})
     },
@@ -333,6 +334,7 @@ async function startLotterieGameFinal(starterName) {
   lotterieState.amountsGenerated = true;
   lotterieState.throws = {};
   lotterieState.throwMeta = {};
+  lotterieState.throwUndo = [];
 
   players.forEach(person => {
     lotterieState.throws[person.name] =
@@ -631,16 +633,16 @@ function closeLotterieThrowModal() {
 }
 
 async function confirmLotterieThrow(
-  value
+  value, undo = null
 ) {
   ensureLotterieState();
-  const scored=value===12&&window.KCKranzUI?await KCKranzUI.select('lotterie'):value;if(scored===null)return;
+  const scored=!undo&&value===12&&window.KCKranzUI?await KCKranzUI.select('lotterie'):value;if(!undo&&scored===null)return;
 
   const personName =
-    lotterieEdit.person;
+    undo ? undo.personName : lotterieEdit.person;
 
   const colIndex =
-    lotterieEdit.colIndex;
+    undo ? undo.colIndex : lotterieEdit.colIndex;
 
   if (
     !personName ||
@@ -652,7 +654,7 @@ async function confirmLotterieThrow(
 
   if (
     !ACTIVE_CLUB ||
-    !navigator.onLine
+    (!navigator.onLine && !window.KCTabletSync?.ready)
   ) {
     showToast(
       '📴 Lotterie-Würfe sind offline nicht möglich',
@@ -715,15 +717,18 @@ async function confirmLotterieThrow(
 
   let penaltyType = null;
 
-  if (value === 0) {
+  if (!undo && value === 0) {
     penaltyType = 'gosse';
-  } else if (value === 9) {
+  } else if (!undo && value === 9) {
     penaltyType = '9er';
-  } else if (value === 12) {
+  } else if (!undo && value === 12) {
     penaltyType = 'kranz';
   }
 
-  let nextMeta = null;
+  let nextMeta = undo?.meta || null;
+  if (nextMeta?.penaltyBooked) for (const personName of nextMeta.punishedNames) {
+    changes.push({personName, category:'strafen', key:nextMeta.penaltyKey, delta:1});
+  }
 
   if (penaltyType) {
     const penaltyKey =
@@ -810,7 +815,7 @@ try {
   if (changes.length) {
     const success =
       await changeMultipleSyncedPersonCounters(
-        changes
+        changes, '', {reverse:changes.every(change=>change.delta<0)}
       );
 
     if (!success) {
@@ -849,33 +854,29 @@ try {
   return;
 }
 
-  if(previousMeta?.penaltyType&&typeof removeOneSoloStatsEntry==='function')removeOneSoloStatsEntry(personName,previousMeta.penaltyType,previousMeta.statId);
-  // Sofort lokal anzeigen; der Firestore-Listener gleicht danach alle Geräte ab.
+  const previousStat = (penaltyStatsLog || []).find(entry => previousMeta?.statId && entry.id === previousMeta.statId) || null;
+  if(previousMeta?.penaltyType)removeOneSoloStatsEntry(personName,previousMeta.penaltyType,previousMeta.statId);
   lotterieState.throws[personName][colIndex] = value;
   lotterieState.throwMeta[personName][colIndex] = nextMeta;
+  if(undo){
+    if(lotterieState.finished){
+      removeGameFreeChargeResult(lotterieState.history.shift());
+      lotterieState.active=true;lotterieState.finished=false;lotterieState.customOrder=true;
+    }
+    lotterieState.throwUndo.pop();
+    lotterieState.manualCursor=undo.cursor;
+    if(undo.stat)penaltyStatsLog.unshift(undo.stat);
+  }else{
+    (lotterieState.throwUndo ||= []).push({personName,colIndex,value:previousValue,meta:previousMeta,stat:previousStat,cursor:Number(lotterieState.manualCursor)||0});
+    if(nextMeta&&typeof addPenaltyStatsEntry==='function'){
+      const log=addPenaltyStatsEntry(nextMeta.penaltyType,personName,nextMeta.punishedNames);
+      if(log)nextMeta.statId=log.id;
+    }
+  }
+  closeLotterieThrowModal();
   renderLotterie();
   persistState();
-
-  if (
-    nextMeta &&
-    typeof addPenaltyStatsEntry ===
-      'function'
-  ) {
-    const log=addPenaltyStatsEntry(
-      nextMeta.penaltyType,
-      personName,
-      nextMeta.punishedNames
-    );
-    if(log)nextMeta.statId=log.id;
-
-    /*
-     * Nur die Statistik kommt noch in
-     * state/current. Der Wurf selbst nicht.
-     */
-    persistState();
-  }
-
-  closeLotterieThrowModal();
+  if(undo){showToast('↩ Letzte Aktion rückgängig','success');return true;}
 
   let message =
     `🎳 ${value} Pins eingetragen`;
@@ -895,6 +896,11 @@ try {
     message,
     'success'
   );
+}
+
+function undoLotterieThrow(){
+  const last=lotterieState.throwUndo?.at(-1);
+  if((lotterieState.active||lotterieState.finished)&&last)return confirmLotterieThrow(last.value,last);
 }
 
 function getGosseStrafeKey() {

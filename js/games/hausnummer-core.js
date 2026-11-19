@@ -97,12 +97,16 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
 }
 async function undoHausThrow(mode) {
   const s=ensureHausState(mode);
-  if(s.busy||s.finished||!s.undoStack.length)return;
+  if(s.busy||s.finishing||!s.undoStack.length)return;
   const last=s.undoStack[s.undoStack.length-1],row=s.rows[last.name];
   if(!row||!row[last.place])return;
   s.busy=true;
   try{
-    if(!(await changeSoloThrowPenalty(last.name,row[last.place],null)))return;
+    const result=s.finished?s.history[0]:null;
+    const finish=(result?.assigned||[]).map(({name,rank,key})=>({personName:name,key:key||getLoserPenaltyKeyByRank(rank),delta:1}));
+    if(finish.some(change=>!change.key)){showToast('Verlierer-Strafart fehlt','error');return;}
+    if(!(await changeSoloThrowPenalty(last.name,row[last.place],null,finish)))return;
+    if(result){s.history.shift();strafenHistory=strafenHistory.filter(entry=>entry.id!==result.id);}
     row[last.place]=null;s.undoStack.pop();s.active=true;s.finished=false;s.closing=false;
     s.currentPlayerIndex=last.index;
     renderHausGame(mode);persistState();
@@ -143,7 +147,7 @@ async function finishHausGame(mode) {
       const rank=index+1,key=getLoserPenaltyKeyByRank(rank);
       for(const name of group.names){
         changes.push({personName:name,category:'strafen',key,delta:1});
-        assigned.push({name,rank,score:group.score});
+        assigned.push({name,rank,key,score:group.score});
       }
     });
     if(changes.length){

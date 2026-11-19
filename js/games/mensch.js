@@ -130,7 +130,9 @@ async function applyMenschThrow(value) {
     const pins=Number(value); if(!Number.isInteger(pins)||pins<0||pins>12)return;
     const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('mensch'):pins;if(scored===null)return;
     const before = {player:current.name,pins,oldScores:{...menschState.scores},oldIndex:menschState.currentIndex, oldWinner:menschState.winner};
-    if (!(await changeSoloThrowPenalty(current.name,null,{pins,isGosse:pins===0}))) return;
+    const roll={pins,isGosse:pins===0};
+    if (!(await changeSoloThrowPenalty(current.name,null,roll))) return;
+    if(roll.penaltyBooking)before.penaltyBooking=roll.penaltyBooking;
     menschState.undoStack.push(before);
     const oldScore=Number(menschState.scores[current.name])||0;
     let newScore=oldScore+scored;
@@ -242,7 +244,7 @@ async function undoMenschThrow() {
     // verbuchten Verlierer-Strafen in der gleichen Gegenbuchung aufheben.
     const winnerEntry=menschState.finished ? menschState.history[0] : null;
     const isWinnerUndo=!!(winnerEntry && winnerEntry.winner===last.player);
-    const original=getSoloThrowPenalty(last.player,last.pins,last.pins===0);
+    const original=last.penaltyBooking||getSoloThrowPenalty(last.player,last.pins,last.pins===0);
     if(original && !original.key){showToast('Strafart nicht mehr vorhanden','error');return;}
     const deltas=new Map();
     const add=(name,key,delta)=>{
@@ -259,8 +261,8 @@ async function undoMenschThrow() {
     const changes=[...deltas.entries()].filter(([,delta])=>delta).map(([id,delta])=>{
       const [personName,key]=JSON.parse(id);return {personName,category:'strafen',key,delta};
     });
-    if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes)))return;
-    if(original?.kind)removeOneSoloStatsEntry(last.player,original.kind);
+    if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'',{reverse:true})))return;
+    if(original?.kind)removeOneSoloStatsEntry(last.player,original.kind,original.statId);
     menschState.scores={...last.oldScores};
     menschState.currentIndex=last.oldIndex;
     (menschState.throws[last.player]||[]).pop();

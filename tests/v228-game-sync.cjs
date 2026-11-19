@@ -38,10 +38,15 @@ async function modern(key,players=['A','B','C','D']){
  return {db,c,state,run,method};
 }
 for(const key of ['sechstage','blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'])test(key+': every real turn and the completed result persist to Firestore, then further bookings still work', {timeout:60000},async()=>{
- const {db,c,state}=await modern(key);assert(db.root().strafenHistory.some(e=>e.gameKey===key||e.type===key),key+' result receipt');
+ const {db,c,state,run}=await modern(key);assert(db.root().strafenHistory.some(e=>e.gameKey===key||e.type===key),key+' result receipt');
  for(const p of db.root().persons)assert.deepEqual(db.data.get(personPath(p.name)).strafen,p.strafen);
  assert.deepEqual(db.data.get('clubs/club/liveGames/'+key).state,state());
  const before=copy(db.root().strafenHistory);await c.firestoreApi.changeLivePersonCounter('club','A','drinks','beer',1,context(db,'changeLivePersonCounter'));assert.equal(db.root().persons[0].drinks.beer,1);assert.deepEqual(db.root().strafenHistory,before);audit(db,key);assertDashboard(db,key);
+ const finished=state(),booked=copy(db.root().persons);await run('undo');
+ assert(!state().finished,key+' reopens after undo');
+ assert.equal(state().history.length,finished.history.length-1,key+' removes one action');
+ assert(!db.root().strafenHistory.some(e=>e.gameKey===key),key+' removes the old result');
+ for(const p of finished.finishPenalties||[])assert(db.root().persons.find(x=>x.name===p.personName).strafen[p.key]<booked.find(x=>x.name===p.personName).strafen[p.key],key+' refunds finish penalty');
 });
 const dashSource=read('tests/v185-regression.cjs'),start=dashSource.indexOf('function context(html){'),end=dashSource.indexOf('async function settle(',start),dashboard=new Function('read','vm','parseHTML','assert','require','let sequence=0;const plain=x=>JSON.parse(JSON.stringify(x));'+dashSource.slice(start,end)+';return dashboard;')(read,vm,parseHTML,assert,require);
 async function classicApp(key){const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();if(key==='pfaelzer'){a.document.getElementById('round-pfaelzer-rounds').value='1';a.document.getElementById('round-pfaelzer-strichCents').value='0.15';assert(await a.c.saveRoundSettings(key));}if(key==='tausend'){a.document.getElementById('round-tausend-rounds').value='1';assert(await a.c.saveRoundSettings(key));}await a.c.indStart(key);return {...a,db};}
@@ -102,6 +107,39 @@ test('legacy game header buttons switch the actual turn without adding penalties
  assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(db.root().tiberiusState.currentPlayerIndex,1);
  assert.equal(db.root().fuchsjagdState.throws.length,2);
+});
+test('shared undo reverses a Lotterie correction, a Darts penalty and a winning Tor throw', {timeout:60000},async()=>{
+ const db=database({[rootPath]:roster()}),a=fullApp(db);await a.select();
+ async function undo(key){
+  const button=a.document.querySelector('#tab-'+key+' [data-game-undo]');
+  assert(button&&!button.disabled,key);await button.onclick();assert(await a.c.KCSharedSync.waitForUpload());
+ }
+ await a.c.startLotterieGameFinal('A');
+ a.run('lotterieEdit={person:"A",colIndex:0}');await a.c.confirmLotterieThrow(4);
+ a.run('lotterieEdit={person:"A",colIndex:0}');await a.c.confirmLotterieThrow(0);
+ assert.equal(a.run('persons[0].strafen.gosse'),1);
+ await undo('lotterie');
+ assert.equal(db.root().lotterieState.throws.A[0],4);
+ assert.equal(db.root().persons[0].strafen.gosse,0);
+ await undo('lotterie');assert.equal(db.root().lotterieState.throws.A[0],null);
+
+ await a.c.startDartsGame();a.run('dartsThrowTeam="T1"');await a.c.handleDartsThrow('1');
+ a.run('pendingDartsPenalty={type:"gosse",team:"T2",points:0}');
+ a.document.getElementById('darts-penalty-player-select').innerHTML='<option value="B">B</option>';
+ await a.c.confirmDartsPenaltyPlayer();
+ assert.equal(a.run('persons[1].strafen.gosse'),1);
+ await undo('darts');
+ assert.equal(db.root().persons[1].strafen.gosse,0);
+ assert.equal(db.root().dartsState.roundThrows.T1.length,1);
+ assert.equal(db.root().dartsState.currentTeam,'T2');
+
+ await legacyCases.tor(a);assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(db.root().persons[1].strafen.loser,1);
+ await undo('tor');
+ assert.equal(db.root().persons[1].strafen.loser,0);
+ assert(!db.root().strafenHistory.some(entry=>entry.gameKey==='tor'));
+ assert.equal(db.root().torState.scores.T1,4);
+ assert.deepEqual(db.root().torState.standing,[1]);
 });
 for(const [key,complete] of Object.entries(legacyCases))test(key+': legacy completion, tablet upload, TV result and subsequent booking stay connected', {timeout:60000},async()=>{
  const db=database({[rootPath]:roster()}),a=fullApp(db);await a.select();await complete(a);const s=a.c.gameSetupState(key);assert(!s.active||key==='tannenbaum',key+' completes');assert(await a.c.KCSharedSync.waitForUpload());const root=db.root();assert(root.strafenHistory.some(e=>e.gameKey===key||e.type===key),key+' has a final result');const saved=copy(root.strafenHistory);await a.c.changeDrink('A','beer',1);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().persons[0].drinks.beer,1);assert.deepEqual(db.root().strafenHistory,saved);audit(db,key);assertDashboard(db,key);

@@ -83,7 +83,7 @@ test('the largest supported race stays comfortably below Firestore document size
 test('finishing and undo are unavailable at the wrong phase, and rejected penalty metadata cannot consume a throw',()=>{
  assert.throws(()=>step(started(),'finish'),/alle sechs/);assert.throws(()=>step(started(),'undo'),/Noch kein Wurf/);
  assert.throws(()=>step(started(),'throw',{kind:'gosse'},{...context,catalog:[]}),/Strafenart/);
- const finished=step(fullRace(),'finish').state;assert.throws(()=>step(finished,'undo'),/bereits beendet/);
+ const finished=step(fullRace(),'finish').state;const undone=step(finished,'undo');assert(undone.state.active&&!undone.state.finished);assert.equal(undone.state.history.length,finished.history.length-1);assert.deepEqual(plain(undone.effect.changes),plain(finished.finishPenalties.map(change=>({...change,delta:-change.delta}))));
 });
 test('transaction saves points and special counters atomically, rejects impossible throws without writes, and removes exact stats on undo',async()=>{
  const store=api();let s=(await store.c.transactSechsGame('club',request(game.empty(),'start',{raceId:'race_api',teams}))).state;
