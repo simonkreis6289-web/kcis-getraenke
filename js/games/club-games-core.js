@@ -1,0 +1,178 @@
+/* Game rules and replayable events for Abschreibung, Lottokönig, Tageskurs and Swinger Club. */
+(() => {
+ const titles={abschreibung:'Abschreibung',lottokoenig:'Lottokönig',tageskurs:'Tageskurs',swingerclub:'Swinger Club'};
+ const icons={abschreibung:'📉',lottokoenig:'🍀',tageskurs:'💶',swingerclub:'🤝'};
+ const keys=Object.keys(titles),pins=Array.from({length:9},(_,i)=>i+1);
+ const physical=key=>key==='tageskurs'||key==='swingerclub';
+ const int=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
+ const defaults=key=>{
+  if(key==='abschreibung')return {startPoints:100,lastPlace:4,placeCents:50,woodRequired:false,kranzMode:'choose',kranzValue:8};
+  if(key==='lottokoenig')return {kranzMode:'fixed',kranzValue:8};
+  if(key==='tageskurs')return {pinCents:[10,20,30,40,50,60,70,80,90],divisor:2};
+  return {rounds:4,throws:4};
+ };
+ function validSettings(key,c){
+  if(!c)return false;
+  const kranz=['choose','fixed'].includes(c.kranzMode)&&int(c.kranzValue,1,12);
+  if(key==='abschreibung')return kranz&&int(c.startPoints,1,300)&&int(c.lastPlace,2,16)&&int(c.placeCents,0,10000)&&typeof c.woodRequired==='boolean';
+  if(key==='lottokoenig')return kranz;
+  if(key==='tageskurs')return Array.isArray(c.pinCents)&&c.pinCents.length===9&&pins.every(n=>int(c.pinCents[n-1],0,10000))&&int(c.divisor,1,100);
+  return int(c.rounds,1,12)&&int(c.throws,1,12);
+ }
+ const allNames=(teams)=>teams.flatMap(t=>t.names);
+ function pairs(s,teams){
+  if(!Array.isArray(teams)||teams.length!==s.players.length/2||teams.some(t=>!Array.isArray(t?.names)||t.names.length!==2))
+   throw Error('Bitte vollständige Zweierteams bilden.');
+  const names=allNames(teams);
+  if(new Set(names).size!==s.players.length||s.players.some(n=>!names.includes(n)))throw Error('Jeden Kegler genau einmal zuordnen.');
+  return teams.map(t=>({names:t.names.slice(),points:0}));
+ }
+ function setup(s,req){
+  switch(s.gameKey){
+   case 'abschreibung':
+    for(const name of s.players)s.scores[name]=s.config.startPoints;
+    s.eliminated=[];
+    s.lastPlace=Math.min(s.players.length,s.config.lastPlace);
+    break;
+   case 'lottokoenig':s.phase='numbers';s.tickets={};break;
+   case 'tageskurs':break;
+   case 'swingerclub':
+    if(s.players.length<4||s.players.length%2)throw Error('Mindestens vier Kegler und eine gerade Teilnehmerzahl sind nötig.');
+    s.startPairs=pairs(s,req.pairs||Array.from({length:s.players.length/2},(_,i)=>({names:s.players.slice(i*2,i*2+2)}))).map(t=>({names:t.names}));
+    s.pairs=pairs(s,s.startPairs);s.standing=pins.slice();s.pairThrows=0;s.throwerOffset=0;s.pairRounds=[];
+    break;
+  }
+ }
+ function current(s){
+  if(s.gameKey==='swingerclub')return s.phase==='pairs'?'':s.pairs[s.index]?.names[(s.pairThrows+s.throwerOffset)%2]||'';
+  return s.players[s.index]||'';
+ }
+ function validTicket(numbers){
+  return Array.isArray(numbers)&&numbers.length===6&&numbers.every(n=>int(n,0,49))&&new Set(numbers).size===6&&new Set(numbers.map(n=>Math.floor(n/10))).size===5;
+ }
+ function fields(s,req){
+  if(req.action==='numbers'&&s.gameKey==='lottokoenig'&&s.phase==='numbers'){
+   if(!validTicket(req.numbers))throw Error('Sechs verschiedene Zahlen von 0 bis 49 wählen, mindestens eine je Zehnerblock.');
+   return {numbers:req.numbers.slice().sort((a,b)=>a-b)};
+  }
+  if(req.action==='pairs'&&s.gameKey==='swingerclub'&&s.phase==='pairs'){
+   const next=pairs(s,req.pairs);
+   if(next.some(t=>s.splitPairs.some(old=>old.names.every(n=>t.names.includes(n)))))throw Error('Bestes und schwächstes Paar brauchen neue Partner.');
+   return {pairs:next.map(t=>({names:t.names}))};
+  }
+  if(s.phase==='numbers'||s.phase==='pairs')throw Error('Zuerst die Vorbereitung abschließen.');
+  if(req.action==='next')return {};
+  if(req.action!=='throw')throw Error('Ungültige Spielaktion.');
+  if(!physical(s.gameKey))return null;
+  const board=s.gameKey==='swingerclub'?s.standing:pins;
+  if(req.kind==='gosse')return {kind:'gosse',pins:0,knocked:[]};
+  if(req.kind!=='pins'||!Array.isArray(req.knocked)||!req.knocked.length||
+     new Set(req.knocked).size!==req.knocked.length||req.knocked.some(n=>!board.includes(n)))throw Error('Bitte die gefallenen Kegel markieren oder Gosse wählen.');
+  return {kind:'pins',pins:req.knocked.length,knocked:board.filter(n=>req.knocked.includes(n))};
+ }
+ function charge(s,name,cents,detail){
+  if(cents===0)return;
+  s.bookings.push({id:'indcharge_'+s.id+'_finish_'+s.players.indexOf(name),personName:name,amountCents:cents,
+   reason:titles[s.gameKey]+' · '+detail,gameKey:s.gameKey,gameId:s.id,eveningStartedAt:s.eveningStartedAt,onTop:s.onTop===true});
+ }
+ function finish(s){s.active=false;s.finished=true;s.readyToFinish=true;}
+ function advance(s,eligible){
+  do{
+   s.index=(s.index+1)%s.players.length;
+   if(s.index===0)s.round++;
+  }while(eligible&&!eligible(s.players[s.index]));
+ }
+ function next(s){
+  if(s.gameKey==='abschreibung')advance(s,name=>s.scores[name]>0);
+  else if(s.gameKey==='swingerclub')s.throwerOffset=1-s.throwerOffset;
+  else{
+   if(s.index+1>=s.players.length)throw Error('Den letzten Pflichtwurf der Runde zuerst abschließen.');
+   if(!s.originalPlayerOrder)s.originalPlayerOrder=s.players.slice();
+   [s.players[s.index],s.players[s.index+1]]=[s.players[s.index+1],s.players[s.index]];
+  }
+ }
+ function settleRanks(s,value,winner){
+  const sorted=[...new Set(s.players.map(value))].sort((a,b)=>a-b);
+  const best=sorted.at(-1);
+  s.winners=s.players.filter(n=>value(n)===best&&winner(n));
+  const groups=sorted.filter(v=>v!==best||!s.winners.length);
+  s.loserGroups=groups.slice(0,3).map((v,i)=>({rank:i+1,names:s.players.filter(n=>value(n)===v)}));
+  finish(s);
+ }
+ function abschreibung(s,e){
+  const self=e.kind==='gosse'||e.kind==='pins'&&e.pins===6;
+  const targetIndex=(s.index+s.players.length-1)%s.players.length;
+  let prior=targetIndex;
+  while(s.scores[s.players[prior]]<=0)prior=(prior+s.players.length-1)%s.players.length;
+  const name=self?e.name:s.players[prior],amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
+  e.target=name;e.amount=amount;
+  s.rows[e.name].push({amount,target:name,kind:e.kind});
+  if(e.kind==='gosse'&&s.config.woodRequired)return;
+  s.scores[name]=Math.max(0,s.scores[name]-amount);
+  if(!s.scores[name]){
+   const place=s.players.length-s.eliminated.length;
+   s.eliminated.push({name,place});
+   charge(s,name,s.config.placeCents*place,'Platz '+place+' × '+s.config.placeCents+' Cent');
+   if(place===s.lastPlace){s.winners=s.players.filter(n=>s.scores[n]>0);finish(s);return;}
+  }
+  advance(s,n=>s.scores[n]>0);
+ }
+ function lottoRank(s,n){
+  const hits=s.tickets[n].hits.length;
+  return s.scores[n]>=49?1000+hits:hits*50+s.scores[n];
+ }
+ function lottokoenig(s,e){
+  if(e.action==='numbers'){
+   s.tickets[e.name]={numbers:e.numbers,hits:[]};
+   s.index=(s.index+1)%s.players.length;
+   if(s.index===0)s.phase='throw';
+   return;
+  }
+  s.scores[e.name]+=e.pins;
+  const ticket=s.tickets[e.name],score=s.scores[e.name],hit=ticket.numbers.includes(score)&&!ticket.hits.includes(score);
+  if(hit)ticket.hits.push(score);
+  s.rows[e.name].push({pins:e.pins,score,hit});
+  advance(s);
+  if(s.round>13){s.round=13;settleRanks(s,n=>lottoRank(s,n),n=>s.scores[n]>=49);}
+ }
+ function tageskurs(s,e){
+  const standing=pins.filter(n=>!e.knocked.includes(n));
+  const sum=standing.reduce((total,n)=>total+s.config.pinCents[n-1],0),amount=Math.round(sum/s.config.divisor);
+  s.rows[e.name].push({knocked:e.knocked,cents:amount});
+  s.scores[e.name]=amount;
+  charge(s,e.name,amount,'Stehen gebliebene Kegel · '+sum+' Cent ÷ '+s.config.divisor);
+  advance(s);
+  if(s.round>1){s.round=1;finish(s);}
+ }
+ function swingerclub(s,e){
+  if(e.action==='pairs'){
+   s.pairs=pairs(s,e.pairs);s.phase='throw';s.index=0;
+   return;
+  }
+  const team=s.pairs[s.index];
+  team.points+=e.pins;s.pairThrows++;s.standing=s.standing.filter(n=>!e.knocked.includes(n));
+  if(!s.standing.length)s.standing=pins.slice();
+  s.rows[e.name].push({pins:e.pins,round:s.round});
+  if(s.pairThrows<s.config.throws)return;
+  for(const name of team.names)s.scores[name]+=team.points;
+  s.pairThrows=0;s.throwerOffset=0;s.standing=pins.slice();
+  if(++s.index<s.pairs.length)return;
+  s.pairRounds.push({round:s.round,teams:s.pairs});
+  s.index=0;
+  if(s.round===s.config.rounds){settleRanks(s,n=>s.scores[n],()=>true);return;}
+  const ranked=s.pairs.slice().sort((a,b)=>a.points-b.points);
+  s.splitPairs=[ranked[0],ranked.at(-1)];s.phase='pairs';s.round++;
+ }
+ function play(s,e){
+  if(e.action==='next')next(s);
+  else ({abschreibung,lottokoenig,tageskurs,swingerclub})[s.gameKey](s,e);
+  s.history.push(e);
+ }
+ function summary(key,c){
+  if(key==='abschreibung')return c.startPoints+' Startpunkte · '+c.placeCents+' Cent × Platz · bis Platz '+c.lastPlace+' · '+(c.woodRequired?'mit Holzpflicht':'ohne Holzpflicht');
+  if(key==='lottokoenig')return 'Sechs Glückszahlen · 13 Würfe · mindestens 49 Holz';
+  if(key==='tageskurs')return 'Ein Wurf · Summe der stehenden Kegel ÷ '+c.divisor;
+  return c.rounds+' Runden · '+c.throws+' Würfe auf Abräumen je Zweierteam · Partnerwechsel nach jeder Runde';
+ }
+ window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket});
+})();

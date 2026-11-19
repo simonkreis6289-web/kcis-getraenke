@@ -66,7 +66,7 @@ function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
 }
 
 function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false}={}){
- if(!s?.id)return '';if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
+ if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
  const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?s.previous?.name:g.current(s),{running:fence?!!s.previous:s.active&&!s.readyToFinish})||names;
  const winner=s.winners.map(label).join(' · '),header=s.finished?(ball&&s.winners.length===2?'🤝 Unentschieden':'🏆 '+winner):s.readyToFinish?'🏁 Alle Durchgänge gespielt':g.icons[key]+' '+g.titles[key];

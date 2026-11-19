@@ -18,7 +18,7 @@ function extraDraft(key){const stamp=ACTIVE_CLUB+'|'+currentEveningStartedAt;ret
 function extraStart(key){
  const names=indDraft(key).names,d=extraDraft(key);if(['ballermann','parteienspiel'].includes(key)&&typeof gameSetupCheckGroups==='function'&&!gameSetupCheckGroups(key))return;
  if(key==='parteienspiel'&&!['T1','T2'].includes(d.startTeam))return extraDraw(key);
- return indRun(key,'start',{gameId:'indgame_'+crypto.randomUUID(),players:names,config:extraConfig(key),startTeam:d.startTeam,starter:names.includes(d.starter)?d.starter:names[0]});
+ return indRun(key,'start',{gameId:'indgame_'+crypto.randomUUID(),players:names,config:extraConfig(key),startTeam:d.startTeam,starter:names.includes(d.starter)?d.starter:names[0],...(key==='swingerclub'?{pairs:gameSetupTeams(key).map(names=>({names}))}:{})});
 }
 function extraChooseTeam(team){if(!['T1','T2'].includes(team)||indBusy.ballermann)return;extraDraft('ballermann').startTeam=team;renderIndividualGame('ballermann');}
 function extraDraw(key){
@@ -43,11 +43,14 @@ function extraChooseKranz(value){const p=extraKranzPending;extraCancelKranz();if
 function renderExtraGame(key){
  const setup=document.getElementById(key+'-setup'),box=document.getElementById(key+'-board');if(!setup||!box)return;const g=KCExtraGames,s=indGet(key),busy=!!(indBusy[key]||indPending[key]),disabled=busy?'disabled':'',d=extraDraft(key),config=extraConfig(key),label=t=>typeof getGroupLabel==='function'?getGroupLabel(t):t;
  setup.classList.toggle('hidden',!!s.id);
- if(!s.id){setup.innerHTML=(typeof gameSetupMarkup==='function'?gameSetupMarkup(key,{busy}):'<p>'+indDraft(key).names.map(indEscape).join(' · ')+'</p>')+(key==='ballermann'?'<div class="ind-actions">'+['T1','T2'].map(t=>'<button type="button" '+disabled+' aria-pressed="'+(d.startTeam===t)+'" onclick="extraChooseTeam(\''+t+'\')">'+indEscape(label(t))+' beginnt</button>').join('')+'</div>':'')+'<div class="ind-actions"><button type="button" '+disabled+' onclick="extraDraw(\''+key+'\')">🎲 '+(key==='parteienspiel'?'Startseite':key==='ballermann'?'Startmannschaft':'Startspieler')+' auslosen</button></div><p>'+(window.KCRoundGames?.keys.includes(key)?window.KCRoundGames.summary(key,config):key==='bergundtal'?config.rounds+' Durchgänge · je zwei Würfe · negative Differenzen zählen':key==='ballermann'?extraClockText(config.seconds*1000)+' je Mannschaft · Gruppe 1 gegen Gruppe 2':key==='guterschnitt'?config.targets.length+' Ziele · '+config.targets.join(' → '):config.slats+' Latten · '+indEuro(config.slatCents)+' je Latte · sofortiges Ende beim ersten vollen Zaun')+(d.starter?' · Start: '+indEscape(d.starter):'')+'</p><button type="button" class="primary-btn" '+(busy||indDraft(key).names.length<2||key==='hochsprung'&&!config.targets.length?'disabled':'')+' onclick="indStart(\''+key+'\')">🎳 Spiel starten</button>';}
+ const club=window.KCClubGames?.keys.includes(key)?window.KCClubGames:null;
+ if(!s.id){setup.innerHTML=(typeof gameSetupMarkup==='function'?gameSetupMarkup(key,{busy}):'<p>'+indDraft(key).names.map(indEscape).join(' · ')+'</p>')+(key==='ballermann'?'<div class="ind-actions">'+['T1','T2'].map(t=>'<button type="button" '+disabled+' aria-pressed="'+(d.startTeam===t)+'" onclick="extraChooseTeam(\''+t+'\')">'+indEscape(label(t))+' beginnt</button>').join('')+'</div>':'')+(key==='swingerclub'?'':'<div class="ind-actions"><button type="button" '+disabled+' onclick="extraDraw(\''+key+'\')">🎲 '+(key==='parteienspiel'?'Startseite':key==='ballermann'?'Startmannschaft':'Startspieler')+' auslosen</button></div>')+'<p>'+(club?club.summary(key,config)+(key==='swingerclub'?'<br>Mindestens vier Kegler und eine gerade Teilnehmerzahl.':''):window.KCRoundGames?.keys.includes(key)?window.KCRoundGames.summary(key,config):key==='bergundtal'?config.rounds+' Durchgänge · je zwei Würfe · negative Differenzen zählen':key==='ballermann'?extraClockText(config.seconds*1000)+' je Mannschaft · Gruppe 1 gegen Gruppe 2':key==='guterschnitt'?config.targets.length+' Ziele · '+config.targets.join(' → '):config.slats+' Latten · '+indEuro(config.slatCents)+' je Latte · sofortiges Ende beim ersten vollen Zaun')+(d.starter?' · Start: '+indEscape(d.starter):'')+'</p><button type="button" class="primary-btn" '+(busy||indDraft(key).names.length<2||key==='swingerclub'&&(indDraft(key).names.length<4||indDraft(key).names.length%2)||key==='hochsprung'&&!config.targets.length?'disabled':'')+' onclick="indStart(\''+key+'\')">🎳 Spiel starten</button>';}
  let controls='';
  if(s.active){
   let mayThrow=!s.readyToFinish&&!(key==='poker'&&s.phase==='select'||key==='tausend'&&s.pendingArrange);if(key==='ballermann')mayThrow=s.timer.running&&(g.remaining(s)>0||!s.timer.lastThrowUsed);
-  controls='<div class="extra-controls">'+classicGameControls(key,s,disabled);
+  const playControls=club&&(club.physical(key)||s.phase==='numbers')?clubGameControls(key,s,disabled):'';
+  controls='<div class="extra-controls">'+playControls+classicGameControls(key,s,disabled);
+  if(playControls)mayThrow=false;
   if(key==='ballermann'){
    const expired=s.timer.running&&g.remaining(s)===0;
    if(expired)controls+='<p class="ind-help" data-extra-last-throw>'+(!s.timer.lastThrowUsed?'⏱ Zeit abgelaufen · Jetzt noch den letzten Wurf eingeben.':'Letzter Wurf gebucht · Mannschaft wird abgeschlossen.')+'</p><div class="ind-actions"><button type="button" '+disabled+' onclick="indAction(\'ballermann\',\'expire\')">'+(s.phase===0?'Ohne weiteren Wurf zur nächsten Mannschaft':'Ohne weiteren Wurf abschließen')+'</button></div>';
@@ -60,10 +63,11 @@ function renderExtraGame(key){
 }
 function renderExtraSettings(){
  if(typeof renderRoundSettings==='function')renderRoundSettings();
+ if(typeof renderClubGameSettings==='function')renderClubGameSettings();
  if(window.KCKranzUI)KCKranzUI.render();
  if(typeof renderRaceKranzSettings==='function')renderRaceKranzSettings();
  const stamp=ACTIVE_CLUB+'|'+JSON.stringify(extraGameSettings);if(stamp===extraSettingsStamp)return;extraSettingsStamp=stamp;
- if(typeof renderGoodCutSettings==='function')renderGoodCutSettings();for(const key of KCExtraGames.keys){if(key==='guterschnitt'||window.KCRoundGames?.keys.includes(key))continue;const c=extraConfig(key);for(const field of ['rounds','seconds','slats','slatCents','kranzValue','gutterHigh','gutterLow','slatColor']){const el=document.getElementById('extra-'+key+'-'+field);if(el)el.value=field==='slatCents'?(c[field]/100).toFixed(2):c[field];}const mode=document.getElementById('extra-'+key+'-kranzMode');if(mode)mode.value=c.kranzMode==='choose'?'choose':[8,12].includes(c.kranzValue)?String(c.kranzValue):'custom';extraKranzMode(key);}
+ if(typeof renderGoodCutSettings==='function')renderGoodCutSettings();for(const key of KCExtraGames.keys){if(key==='guterschnitt'||window.KCRoundGames?.keys.includes(key)||window.KCClubGames?.keys.includes(key))continue;const c=extraConfig(key);for(const field of ['rounds','seconds','slats','slatCents','kranzValue','gutterHigh','gutterLow','slatColor']){const el=document.getElementById('extra-'+key+'-'+field);if(el)el.value=field==='slatCents'?(c[field]/100).toFixed(2):c[field];}const mode=document.getElementById('extra-'+key+'-kranzMode');if(mode)mode.value=c.kranzMode==='choose'?'choose':[8,12].includes(c.kranzValue)?String(c.kranzValue):'custom';extraKranzMode(key);}
 }
 function extraKranzMode(key){const el=document.getElementById('extra-'+key+'-custom');if(el)el.hidden=document.getElementById('extra-'+key+'-kranzMode').value!=='custom';}
 async function saveExtraSettings(key){

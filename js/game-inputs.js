@@ -100,7 +100,7 @@ async function showGameOnDashboard(key){
  }catch(error){if(ACTIVE_CLUB===club)showToast(error.message||'Dashboard konnte nicht umgeschaltet werden.','error');return false;}
  finally{gameDashboardBusy.delete(key);if(ACTIVE_CLUB===club)applyGameInputLayout(key);}
 }
-const GAME_NEXT_SERVER=new Set(['blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend']);
+const GAME_NEXT_SERVER=new Set(['blackjack','gluecksspirale','siebener','hindernis','bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend','abschreibung','lottokoenig','tageskurs','swingerclub']);
 async function gameNextThrower(key){
  const s=gameSetupState(key);if(!s?.active||s.finished){showToast('Zuerst das Spiel starten','error');return false;}
  if(window.KCSharedSync&&!window.KCSharedSync.ready){showToast('Verbindung nicht bestätigt. Bitte zuerst synchronisieren.','error');return false;}
@@ -214,7 +214,7 @@ function renderGameDashboardButton(key,panel,s){
  const available=!!(s&&(s.active||s.finished||s.id||s.startedAt||s.history?.length));
  dashboard.disabled=!available||gameDashboardBusy.has(key)||window.navigator?.onLine===false&&!window.KCTabletSync?.directConnected;
  dashboard.title=available?'Dieses Spiel wieder auf dem TV anzeigen':'Zuerst das Spiel starten';
- next.disabled=!s?.active||!!s?.finished||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
+ next.disabled=!s?.active||!!s?.finished||key==='lottokoenig'&&s.phase==='numbers'||key==='swingerclub'&&s.phase==='pairs'||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready;
  next.title=s?.active?'Ohne Wurf zum nächsten Spieler oder Team weiterschalten':'Zuerst das Spiel starten';
  const pause=toolbar.querySelector('[data-game-pause]');
  let undo=toolbar.querySelector('[data-game-undo]');
@@ -247,7 +247,7 @@ function applyGameInputLayout(key){
  }else{
   const board=document.getElementById(key==='sechstage'?'sechs-board':key==='fuchsjagd'?'fuchs-board':key+'-board');if(!board){old?.remove();return;}
   const selectors={poker:'.extra-turn,.extra-controls',pfaelzer:'.extra-turn,.extra-controls',tausend:'.extra-turn,.extra-controls',parteienspiel:'.extra-turn,.extra-controls',dreieuro:'.extra-turn,.extra-controls',ebbeflut:'.extra-turn,.extra-controls',hochsprung:'.extra-turn,.extra-controls',sechstage:'.six-turnline,.six-player-turn,.six-pinpad,.six-actions:has(button[onclick="undoSechsThrow()"])',blackjack:'.tg-turn,.bj-controls',gluecksspirale:'.tg-spiral-turn,.tg-spiral-booking',bergundtal:'.extra-turn,.extra-controls',ballermann:'.extra-turn,.extra-controls',lattenzaun:'.extra-turn,.extra-controls',guterschnitt:'.extra-turn,.extra-controls',siebener:'.ind-turn,.ind-place,.ind-actions',hindernis:'.ind-turn,.ind-actions',mensch:'.game-throw-toolbar',plusminus:'.game-throw-toolbar',sichern:'.sichern-controls',fuchsjagd:'.fox-turn,.fox-actions',tor:'.tor-turn,.tor-pins,.tor-remaining,.tor-actions'};
-  const found=[...board.querySelectorAll(selectors[key]||'.game-throw-toolbar')],nodes=found.filter(node=>!found.some(other=>other!==node&&other.contains(node)));
+  const found=[...board.querySelectorAll(window.KCClubGames?.keys.includes(key)?'.extra-turn,.extra-controls':selectors[key]||'.game-throw-toolbar')],nodes=found.filter(node=>!found.some(other=>other!==node&&other.contains(node)));
   if(!nodes.length){if(old)return;else return;}
   for(const node of nodes)card.append(node);
  }

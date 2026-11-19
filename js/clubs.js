@@ -175,7 +175,7 @@ function createEmptyClubData() {
     gluecksspiraleState: createGluecksspiraleState(),
     gluecksspiraleSettings: {target:50},
     blackjackSettings: {jack:2,queen:3,king:4,ace:[1,11]},
-    extraGameSettings:{},bergundtalState:null,ballermannState:null,lattenzaunState:null,guterschnittState:null,parteienspielState:null,dreieuroState:null,ebbeflutState:null,hochsprungState:null,pokerState:null,pfaelzerState:null,tausendState:null,
+    extraGameSettings:{},bergundtalState:null,ballermannState:null,lattenzaunState:null,guterschnittState:null,parteienspielState:null,dreieuroState:null,ebbeflutState:null,hochsprungState:null,pokerState:null,pfaelzerState:null,tausendState:null,abschreibungState:null,lottokoenigState:null,tageskursState:null,swingerclubState:null,
     siebenerSettings:null,siebenerState:null,hindernisState:null,hindernisSettings:null,individualGameLedger:[],individualGameRevision:0,
     currentEveningStartedAt: null,
     penaltyStatsLog: [],

@@ -156,14 +156,14 @@
 
 /* Berg und Tal, Ballermann 6 und Lattenzaun. Zeitpunkte sind absolut, Geldbeträge ganze Cent. */
 (() => {
- const KCRoundGames=window.KCRoundGames;
- const keys=['bergundtal','ballermann','lattenzaun','guterschnitt',...window.KCRoundGames.keys],titles={...window.KCRoundGames.titles,bergundtal:'Berg und Tal',ballermann:'Ballermann 6',lattenzaun:'Lattenzaun',guterschnitt:'Der gute Schnitt'},icons={...window.KCRoundGames.icons,bergundtal:'🏔️',ballermann:'🏖️',lattenzaun:'🪵',guterschnitt:'✂️'},clone=x=>JSON.parse(JSON.stringify(x)),norm=x=>String(x).trim().toLocaleLowerCase('de');
- function defaults(key){if(KCRoundGames.keys.includes(key))return KCRoundGames.defaults(key);if(key==='guterschnitt')return {kranzMode:'fixed',kranzValue:8,targets:[3,5,6,7,5,6,4,2,7]};return {kranzMode:'fixed',kranzValue:8,...(key==='bergundtal'?{rounds:4,gutterHigh:0,gutterLow:9}:key==='ballermann'?{seconds:360}:{slats:21,slatCents:10,slatColor:'#bc7949'})};}
- function validSettings(key,c){if(KCRoundGames.keys.includes(key))return KCRoundGames.validSettings(key,c);if(key==='guterschnitt')return !!c&&(c.kranzMode===undefined||['target','choose','fixed'].includes(c.kranzMode))&&(c.kranzValue===undefined||Number.isInteger(c.kranzValue)&&c.kranzValue>=1&&c.kranzValue<=12)&&Array.isArray(c.targets)&&c.targets.length>=1&&c.targets.length<=50&&c.targets.every(n=>Number.isInteger(n)&&n>=1&&n<=9);return keys.includes(key)&&!!c&&['fixed','choose'].includes(c.kranzMode)&&Number.isInteger(c.kranzValue)&&c.kranzValue>=1&&c.kranzValue<=12&&(key==='bergundtal'?Number.isInteger(c.rounds)&&c.rounds>=1&&c.rounds<=50&&((c.gutterHigh===undefined&&c.gutterLow===undefined)||[c.gutterHigh,c.gutterLow].every(n=>Number.isInteger(n)&&n>=0&&n<=12)):key==='ballermann'?Number.isInteger(c.seconds)&&c.seconds>=1&&c.seconds<=3600:Number.isInteger(c.slats)&&c.slats>=1&&c.slats<=50&&Number.isInteger(c.slatCents)&&c.slatCents>=0&&c.slatCents<=20&&(c.slatColor===undefined||/^#[0-9a-f]{6}$/i.test(c.slatColor)));}
+ const KCRoundGames=window.KCRoundGames,club=window.KCClubGames,clubKeys=club?.keys||[];
+ const keys=['bergundtal','ballermann','lattenzaun','guterschnitt',...window.KCRoundGames.keys,...clubKeys],titles={...club?.titles,...window.KCRoundGames.titles,bergundtal:'Berg und Tal',ballermann:'Ballermann 6',lattenzaun:'Lattenzaun',guterschnitt:'Der gute Schnitt'},icons={...club?.icons,...window.KCRoundGames.icons,bergundtal:'🏔️',ballermann:'🏖️',lattenzaun:'🪵',guterschnitt:'✂️'},clone=x=>JSON.parse(JSON.stringify(x)),norm=x=>String(x).trim().toLocaleLowerCase('de');
+ function defaults(key){if(clubKeys.includes(key))return club.defaults(key);if(KCRoundGames.keys.includes(key))return KCRoundGames.defaults(key);if(key==='guterschnitt')return {kranzMode:'fixed',kranzValue:8,targets:[3,5,6,7,5,6,4,2,7]};return {kranzMode:'fixed',kranzValue:8,...(key==='bergundtal'?{rounds:4,gutterHigh:0,gutterLow:9}:key==='ballermann'?{seconds:360}:{slats:21,slatCents:10,slatColor:'#bc7949'})};}
+ function validSettings(key,c){if(clubKeys.includes(key))return club.validSettings(key,c);if(KCRoundGames.keys.includes(key))return KCRoundGames.validSettings(key,c);if(key==='guterschnitt')return !!c&&(c.kranzMode===undefined||['target','choose','fixed'].includes(c.kranzMode))&&(c.kranzValue===undefined||Number.isInteger(c.kranzValue)&&c.kranzValue>=1&&c.kranzValue<=12)&&Array.isArray(c.targets)&&c.targets.length>=1&&c.targets.length<=50&&c.targets.every(n=>Number.isInteger(n)&&n>=1&&n<=9);return keys.includes(key)&&!!c&&['fixed','choose'].includes(c.kranzMode)&&Number.isInteger(c.kranzValue)&&c.kranzValue>=1&&c.kranzValue<=12&&(key==='bergundtal'?Number.isInteger(c.rounds)&&c.rounds>=1&&c.rounds<=50&&((c.gutterHigh===undefined&&c.gutterLow===undefined)||[c.gutterHigh,c.gutterLow].every(n=>Number.isInteger(n)&&n>=0&&n<=12)):key==='ballermann'?Number.isInteger(c.seconds)&&c.seconds>=1&&c.seconds<=3600:Number.isInteger(c.slats)&&c.slats>=1&&c.slats<=50&&Number.isInteger(c.slatCents)&&c.slatCents>=0&&c.slatCents<=20&&(c.slatColor===undefined||/^#[0-9a-f]{6}$/i.test(c.slatColor)));}
  function settings(key,c){return clone(validSettings(key,c)?{...defaults(key),...c}:defaults(key));}
  function empty(gameKey){return {gameKey,id:'',revision:0,active:false,finished:false,readyToFinish:false,players:[],index:0,round:1,turn:[],scores:{},rows:{},history:[],bookings:[],commands:[],receipts:[],winners:[],loserGroups:[],finishPenalties:[],config:defaults(gameKey),startedAt:'',eveningStartedAt:'',previous:null,participantTeams:null,teamNames:null,teamOrder:[],phase:0,teamIndexes:{T1:0,T2:0},timer:{running:false,endsAt:0,remainingMs:0}};}
  function team(s){return s.teamOrder[s.phase]||'';}
- function current(s){if(['poker','pfaelzer'].includes(s.gameKey)&&s.phase==='tiebreak')return s.tiePlayers[s.index]||'';if(s.gameKey==='parteienspiel'&&s.partyAlternating){const side=s.teamOrder[s.index%2],names=s.participantTeams[side],slots=Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length);return names[((s.round-1)*slots+Math.floor(s.index/2))%names.length]||'';}if(s.gameKey==='ballermann'){const t=team(s),names=s.participantTeams?.[t]||[];return names[(s.teamIndexes[t]||0)%names.length]||'';}return s.players[s.index]||'';}
+ function current(s){if(clubKeys.includes(s.gameKey))return club.current(s);if(['poker','pfaelzer'].includes(s.gameKey)&&s.phase==='tiebreak')return s.tiePlayers[s.index]||'';if(s.gameKey==='parteienspiel'&&s.partyAlternating){const side=s.teamOrder[s.index%2],names=s.participantTeams[side],slots=Math.max(s.participantTeams.T1.length,s.participantTeams.T2.length);return names[((s.round-1)*slots+Math.floor(s.index/2))%names.length]||'';}if(s.gameKey==='ballermann'){const t=team(s),names=s.participantTeams?.[t]||[];return names[(s.teamIndexes[t]||0)%names.length]||'';}return s.players[s.index]||'';}
  function remaining(s,now=window.KCSharedClock?.timerNow?.()??window.KCSharedClock?.now()??Date.now()){return Math.max(0,s.timer.running?s.timer.endsAt-now:s.timer.remainingMs);}
  function start(req,ctx){
   const names=req.players,active=p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly;
@@ -179,6 +179,7 @@
   }else if(req.starter&&req.gameKey!=='parteienspiel'){const i=names.indexOf(req.starter);if(i<0)throw Error('Startspieler fehlt.');s.players=[...names.slice(i),...names.slice(0,i)];}
   if(req.gameKey==='parteienspiel'){if(req.startTeam!==undefined&&!['T1','T2'].includes(req.startTeam))throw Error('Gültige Startseite wählen.');s.startTeam=req.startTeam||'T1';}
   if(KCRoundGames.keys.includes(req.gameKey))KCRoundGames.setup(s,ctx);
+  if(clubKeys.includes(req.gameKey))club.setup(s,req);
   if(req.gameKey==='guterschnitt')s.attempts=Object.fromEntries(names.map(n=>[n,1]));
   return s;
  }
@@ -192,6 +193,7 @@
  }
  function advance(s){s.index++;if(s.index>=s.players.length){s.index=0;s.round++;}}
  function play(s,e){
+  if(clubKeys.includes(s.gameKey))return club.play(s,e);
   if(e.action==='next'){
    const key=s.gameKey;
    if(s.turn?.length||s.pendingArrange||key==='poker'&&(s.phase!=='deal'||s.hands[e.name]?.length))throw Error('Offenen Wurf oder Kartenwahl zuerst abschließen');
@@ -242,7 +244,7 @@
    if(req.action==='reset'){s=empty(req.gameKey);s.eveningStartedAt=ctx.eveningStartedAt;}
    else if(req.action==='undo'){
     if(!s.history.length||(!s.active&&!s.finished))throw Error('Keine Aktion zum Zurücknehmen.');
-    const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.originalPlayerOrder||s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0]},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
+    const events=s.history.slice(0,-1),base=start({gameKey:s.gameKey,gameId:s.id,players:s.originalPlayerOrder||s.players,config:s.config,kranzRule:s.kranzRule,onTop:s.onTop,startTeam:s.teamOrder[0],pairs:s.startPairs},{...ctx,now:s.startedAt,people:s.players.map(name=>({...ctx.people.find(p=>p.name===name),name,present:true,left:false,inactive:false,isDrinksOnly:false,tisch:s.participantTeams?.T1.includes(name)?'T1':s.participantTeams?.T2.includes(name)?'T2':''})),groups:s.teamNames?{T1:{name:s.teamNames.T1},T2:{name:s.teamNames.T2}}:ctx.groups});
     // Vor V225 gestartete Parteien behalten ihre Wurfreihenfolge auch bei Rückgängig.
     if(s.gameKey==='poker'){if(!s.pokerSequential)delete base.pokerSequential;if(!s.pokerSharedRanks)delete base.pokerSharedRanks;}
     if(s.gameKey==='parteienspiel'&&!s.partyAlternating){delete base.partyAlternating;base.teamOrder=[];}
@@ -254,7 +256,11 @@
     else{
      if(s.readyToFinish||s.history.length>=2000)throw Error('Rundenende oder maximale Spiellänge erreicht.');
      const e={id:req.opId,action:req.action,name:current(s),at:ctx.now,atMs};
-     if(req.action==='next'){
+     const clubFields=clubKeys.includes(s.gameKey)?club.fields(s,req):null;
+     if(clubFields){
+      Object.assign(e,clubFields);
+      if(req.action==='throw'&&!ctx.people.some(p=>p.name===e.name&&p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly))throw Error('Werfer ist nicht mehr aktiv.');
+     }else if(req.action==='next'){
       if(s.turn?.length||s.pendingArrange)throw Error('Offene Wurfrunde zuerst abschließen');
      }else if(req.action==='throw'){
       if(s.gameKey==='ballermann'){

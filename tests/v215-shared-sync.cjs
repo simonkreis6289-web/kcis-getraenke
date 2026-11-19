@@ -25,7 +25,7 @@ const person=name=>({name,present:true,attendanceStatus:'present',drinks:{beer:0
 function initial(){return {persons:['A','B'].map(person),currentEveningStartedAt:evening,DRINKS:[{key:'beer',label:'Bier'}],prices:{beer:2},STRAFEN:[{key:'gosse',label:'Gosse'},{key:'nine',label:'9er / Kranz'},{key:'loser',label:'1. Verlierer'}],strafPrices:{gosse:0.5,nine:1,loser:1},STRAFEN_LIMIT:30,penaltyStatsLog:[],strafenHistory:[],spiele:[],seatingOrder:Array(16).fill(''),groupSettings:{T1:{label:'1'},T2:{label:'2'}},dartsState:{active:true,currentTeam:'T1',throws:[]}};}
 function apiClient(db){
  const c={...db.sdk,console,window:{},setTimeout,clearTimeout,crypto:require('node:crypto').webcrypto};c.window=c;vm.createContext(c);
- for(const p of ['js/game-fine-policy.js','js/shared-sync-core.js','js/shared-sync-transport.js','js/games/sechstage-core.js','js/games/table-games-core.js','js/games/individual-core.js','js/games/extra-core.js','js/game-options.js','js/club-content.js','js/game-results.js']){
+ for(const p of ['js/game-fine-policy.js','js/shared-sync-core.js','js/shared-sync-transport.js','js/games/sechstage-core.js','js/games/table-games-core.js','js/games/individual-core.js','js/games/club-games-core.js','js/games/extra-core.js','js/game-options.js','js/club-content.js','js/game-results.js']){
   let src=read(p);if(p==='js/game-options.js')src=src.slice(0,src.indexOf('})();')+5);vm.runInContext(src,c,{filename:p});
  }
  let src=read('js/firebase.js').replace(/^import[\s\S]*?from .*?;\s*/gm,'').replace(/if \(typeof startApp === "function"\) \{[\s\S]*?\}/,'');
