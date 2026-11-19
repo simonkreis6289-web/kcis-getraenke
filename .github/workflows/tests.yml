@@ -30,3 +30,18 @@ jobs:
       - run: npm run build:tv
       - run: git diff --exit-code -- dashboard-compat.html tv-compat
       - run: node --test tests/v239-dashboard-layout.cjs tests/v240-dashboard-rotation.cjs tests/v253-tiberius-turns.cjs
+  station-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run test:station-rules

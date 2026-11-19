@@ -2715,6 +2715,7 @@ async function generateDrinksPDF(snapshot) {
     
 async function closeDrinksAndExportPDF() {
   try {
+    if(window.KCStationAdmin&&!(await window.KCStationAdmin.beforeClose()))return;
     const snapshot = getDrinksSnapshot();
     const doc = await generateDrinksPDF(snapshot);
 
@@ -3236,7 +3237,7 @@ function describeRoundDrinks(drinksObj) {
 }
 
 function calcRoundTotal(drinksObj) {
-  return DRINKS.reduce((sum, d) => sum + ((drinksObj[d.key] || 0) * (prices[d.key] || 0)), 0);
+  return window.KCDrinkLedger.total(DRINKS,prices,drinksObj);
 }
 
 function getPersonTeamspielBreakdown(p) {
@@ -3264,11 +3265,11 @@ async function savePrices() {
 
 // ── CALC ──
 function calcDrinksTotal(p) {
-  return DRINKS.reduce((s, d) => s + (p.drinks[d.key] || 0) * (prices[d.key] || 0), 0);
+  return calcRoundTotal(p.drinks);
 }
 
 function calcRoundsTotal(p) {
-  return (p.rounds || []).reduce((sum, r) => sum + (r.total || 0), 0);
+  return window.KCDrinkLedger.roundTotal(p);
 }
 
 function calcTotal(p) {
@@ -3276,21 +3277,7 @@ function calcTotal(p) {
 }
 
 function recalcTeamExtras() {
-  persons.forEach(p => {
-    p.teamExtra = 0;
-    p.roundExtra = calcRoundsTotal(p);
-  });
-
-  spiele.forEach(s => {
-    const total = DRINKS.reduce((sum, d) => sum + (s.drinks[d.key] || 0) * (prices[d.key] || 0), 0);
-    s.total = total;
-    s.proKopf = (s.members && s.members.length) ? total / s.members.length : 0;
-
-    (s.members || []).forEach(name => {
-      const p = persons.find(x => x.name === name);
-      if (p) p.teamExtra = (p.teamExtra || 0) + s.proKopf;
-    });
-  });
+  window.KCDrinkLedger.recalculate(persons,spiele,DRINKS,prices);
 }
    
 function getBahnElapsedSeconds() {
@@ -4842,16 +4829,8 @@ function addSpiel() {
     return;
   }
 
-  const total = DRINKS.reduce((s, d) => s + (teamDrinks[d.key] || 0) * (prices[d.key] || 0), 0);
-
-  spiele.push({
-    spieltyp,
-    loser: selectedLoser,teamName:selectedTeam.label,gameId:selectedTeam.gameId||'',teamId:selectedTeam.teamId||selectedLoser,roundGiven:document.getElementById('team-drink-reason')?.value==='round',
-    drinks: { ...teamDrinks },
-    total,
-    proKopf: members.length ? total / members.length : 0,
-    members: members.map(m => m.name)
-  });
+  spiele.push(window.KCDrinkLedger.teamEntry({title:spieltyp},selectedTeam,teamDrinks,DRINKS,prices,
+    document.getElementById('team-drink-reason')?.value==='round'));
 
   teamDrinks = {};
   selectedLoser = null;
@@ -5508,7 +5487,7 @@ const subTabMap = {
   getraenke: ['getraenke-statistik', 'getraenke-uebersicht', 'teamspiele', 'runden', 'getraenke-abrechnung'],
   spiele: ['spiele-statistik', 'spiele-hub', 'tannenbaum', 'darts', 'lotterie', 'tiberius', 'mensch', 'plusminus', 'haushoch', 'haustief', 'sichern', 'fuchsjagd', 'tor', 'sechstage', 'blackjack', 'gluecksspirale', 'siebener', 'hindernis', 'bergundtal', 'ballermann', 'lattenzaun', 'guterschnitt', 'parteienspiel', 'dreieuro', 'ebbeflut', 'hochsprung', 'poker', 'pfaelzer', 'tausend', 'spiele-einstellungen'],
   strafen: ['strafen-uebersicht', 'strafen-historie', 'strafen-statistik', 'strafen-abrechnung'],
-  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'dashboard', 'info', 'notizen']
+  verwaltung: ['kataloge', 'spiele', 'getraenkepreise', 'strafpreise', 'termingruende', 'termine', 'einstellungen', 'dashboard', 'info', 'notizen', 'getraenkestation']
 };
 
 const defaultSubTab = {
@@ -5592,6 +5571,7 @@ function showSideTab(mainKey, subKey, el) {
   if (subKey === 'termine') {kcRenderTermine();kcEnsureKegelSeries();}
   if (subKey === 'termingruende') kcRenderTerminGruende();
   if (subKey === 'dashboard') kcShowInfo();
+  if (subKey === 'getraenkestation') window.KCStationAdmin?.show();
   if(typeof renderGameFineSettings==='function')renderGameFineSettings();
   if (['info','notizen'].includes(subKey)) window.KCClubContentApp?.render();
   if (subKey === 'gruppen-einstellungen' && typeof renderGroupSettings === 'function') renderGroupSettings();

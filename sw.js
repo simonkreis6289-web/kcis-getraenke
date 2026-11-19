@@ -1,10 +1,18 @@
-const CACHE_NAME = 'kcis-cache-v269';
+const CACHE_NAME = 'kcis-cache-v270';
 
 const ASSETS = [
   './',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './getraenkestation.html',
+  './station.webmanifest',
+  './station-icon-192.png',
+  './station-icon-512.png',
+  './css/station.css?v=20261119-v270',
+  './js/station-entry.js?v=20261119-v270',
+  './js/station-client.js',
+  './js/drink-ledger.js?v=20261119-v270',
   './sounds/bowling-strike.mp3',
   './sounds/gutter-plop.mp3'
 ];
@@ -29,7 +37,7 @@ self.addEventListener('activate', event => {
       .then(keys => {
         return Promise.all(
           keys
-            .filter(key => key !== CACHE_NAME)
+            .filter(key => key.startsWith('kcis-cache-') && key !== CACHE_NAME)
             .map(key => caches.delete(key))
         );
       })
@@ -61,15 +69,16 @@ self.addEventListener('fetch', event => {
    * Startseite zurück.
    */
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request, {
-        cache: 'no-store'
-      }).catch(async () => {
-        return (
-          await caches.match('./')
-        ) || Response.error();
-      })
-    );
+    const station = url.origin === self.location.origin && url.pathname.endsWith('/getraenkestation.html');
+    event.respondWith(fetch(request, {cache:'no-store'}).then(response=>{
+      if(station&&response.ok){
+        const copy=response.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.put('./getraenkestation.html',copy)));
+      }
+      return response;
+    }).catch(async ()=>{
+      return (await caches.match(station?'./getraenkestation.html':'./')) || Response.error();
+    }));
 
     return;
   }

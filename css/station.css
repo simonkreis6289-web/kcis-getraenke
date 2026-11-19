@@ -1,0 +1,47 @@
+:root { color-scheme: light; }
+.station { margin:0; background:#f5f2eb; color:#172b47; font:16px/1.45 system-ui,sans-serif; }
+.station [hidden],.kc-station-admin [hidden] { display:none!important; }
+.station-header { display:flex; align-items:center; gap:13px; color:#fff; background:#172b47; padding:18px max(16px,calc((100% - 590px)/2)); border-bottom:4px solid #edb85a; }
+.station-header img { flex:none; border-radius:12px; }
+.station-header h1 { font-size:1.35rem; margin:0; }
+.station-header p { margin:2px 0 0; color:#d6dfec; font-size:.86rem; }
+.station main { max-width:590px; margin:auto; padding:16px; }
+.station button,.station select,.station input { box-sizing:border-box; font:inherit; font-size:1rem; touch-action:manipulation; }
+.station button { min-height:46px; border:1px solid #bcc7d5; border-radius:12px; background:white; color:#172b47; padding:8px 12px; cursor:pointer; }
+.station button:not(:disabled):active { background:#e8edf5; }
+.station button:disabled { opacity:.58; cursor:default; }
+.station button:focus-visible,.station input:focus-visible,.station select:focus-visible { outline:3px solid #aa6b08; outline-offset:2px; }
+.station button.station-primary { background:#172b47; color:white; border-color:#172b47; font-weight:700; }
+.station button.station-primary:not(:disabled):active { background:#314c74; }
+.station-status,.station-feedback { border-radius:12px; padding:10px 13px; margin:0 0 12px; background:#e8edf5; }
+.station-status-error { background:#f8e4e3; color:#732923; }
+.station-feedback { background:#e3f1e4; color:#215432; }
+.station-feedback.error { background:#f8e4e3; color:#732923; }
+#station-nav { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:0 0 16px; }
+#station-nav button[aria-current="page"] { background:#f1d095; border-color:#ce9d52; font-weight:700; }
+.station-card { background:white; border:1px solid #dfd9ca; border-radius:16px; padding:14px; margin:0 0 12px; }
+.station h2 { margin:0 0 10px; font-size:1.18rem; }
+.station h3 { font-size:1rem; margin:15px 0 8px; }
+.station-card label { display:block; margin:9px 0 4px; font-weight:650; }
+.station select,.station input { width:100%; min-height:44px; border:1px solid #a5b2c4; border-radius:9px; padding:8px 10px; background:#fff; color:inherit; }
+#station-pair-form button { margin-top:12px; width:100%; }
+.station-people { display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:8px; }
+.station button.station-person { display:flex; align-items:center; flex-direction:column; justify-content:center; gap:5px; min-height:86px; padding:8px; min-width:0; overflow-wrap:anywhere; font-weight:650; }
+.station button.station-person[aria-pressed="true"] { border-color:#9d6815; background:#fff2d2; box-shadow:inset 0 0 0 1px #9d6815; }
+.station-avatar { display:grid; place-items:center; position:relative; width:40px; height:40px; border-radius:50%; overflow:hidden; background:#e3e9f1; font-size:.82rem; }
+.station-avatar img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.station-person small { color:#485871; font-weight:500; font-variant-numeric:tabular-nums; }
+.station-counter,.station-booking { display:grid; grid-template-columns:minmax(0,1fr) 44px minmax(24px,auto) 44px; gap:5px; align-items:center; padding:7px 0; border-bottom:1px solid #e5e9ee; }
+.station-counter small { display:block; color:#4b5b73; }
+.station-counter output { text-align:center; font-variant-numeric:tabular-nums; }
+.station-counter button { min-width:44px; padding:0; font-size:1.3rem; }
+.station-total { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:10px 0; font-variant-numeric:tabular-nums; }
+.station-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.station-actions button { flex:1; }
+.station-booking { grid-template-columns:minmax(0,1fr) auto; }
+.station-booking small { display:block; color:#4b5b73; }
+.station footer { color:#485871; text-align:center; font-size:.8rem; padding:4px 12px 22px; }
+.kc-station-admin { max-width:720px; }
+.kc-station-admin input { display:block; min-height:44px; font-size:16px; margin:4px 0 12px; }
+.kc-station-admin .station-actions { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.kc-station-admin canvas { display:block; max-width:100%; width:min(260px,100%); height:auto; image-rendering:pixelated; margin:12px 0; background:white; }

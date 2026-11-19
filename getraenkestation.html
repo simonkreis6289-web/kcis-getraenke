@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="theme-color" content="#172b47">
+ <title>KC Getränkestation</title>
+ <link rel="icon" href="station-icon-192.png">
+ <link rel="manifest" href="station.webmanifest">
+ <link rel="stylesheet" href="css/station.css?v=20261119-v270">
+</head>
+<body class="station">
+ <header class="station-header">
+  <img src="station-icon-192.png" width="46" height="46" alt="">
+  <div><h1>Getränkestation</h1><p>KC Invaliden Schwadron</p></div>
+ </header>
+ <main id="station-main">
+  <p id="station-status" class="station-status" role="status">Getränkestation wird geladen …</p>
+  <p id="station-feedback" class="station-feedback" aria-live="polite" hidden></p>
+  <form id="station-pair-form" class="station-card" hidden>
+   <h2>Getränkehandy verbinden</h2>
+   <label for="station-label">Gerätename</label>
+   <input id="station-label" value="Getränkehandy" maxlength="80" required>
+   <button type="submit" class="station-primary">Kopplung anfragen</button>
+  </form>
+  <section id="station-workspace" hidden>
+   <nav id="station-nav" aria-label="Getränkestation">
+    <button type="button" data-view="people">Getränke</button>
+    <button type="button" data-view="round">Runde geben</button>
+    <button type="button" data-view="team">Mannschaftsspiel</button>
+    <button type="button" data-view="history">Letzte Buchungen</button>
+   </nav>
+   <section id="station-content"></section>
+  </section>
+ </main>
+ <footer id="station-version">V270 · 19.11.2026, 07:57 Uhr</footer>
+ <script>
+  if(!navigator.onLine){
+   const status=document.getElementById('station-status');
+   status.textContent='Offline · Keine Buchung möglich.';
+   status.classList.add('station-status-error');
+  }
+ </script>
+ <script src="js/game-overview.js?v=20261119-v270"></script>
+ <script src="js/team-drink-games.js?v=20261119-v270"></script>
+ <script src="js/drink-ledger.js?v=20261119-v270"></script>
+ <script type="module" src="js/firebase.js?v=20261119-v270"></script>
+ <script type="module">
+  import('./js/station-entry.js?v=20261119-v270').catch(()=>{
+   const status=document.getElementById('station-status');
+   status.textContent='Verbindung zu Firebase konnte nicht aufgebaut werden. Bitte Internetverbindung prüfen und neu laden.';
+   status.classList.add('station-status-error');
+  });
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+ </script>
+</body>
+</html>

@@ -201,6 +201,17 @@ window.firestoreApi = {
   async sendDashboardSignal(clubId,request){
     if(!/^[a-zA-Z0-9_-]{1,80}$/.test(request.viewerId||'')||!/^[a-zA-Z0-9_-]{1,80}$/.test(request.connectionId||'')||!['offer','answer'].includes(request.action)||request.description?.type!==request.action||typeof request.description.sdp!=='string'||request.description.sdp.length>60000)throw Error('Ungültige TV-Verbindung');
     const rootRef=doc(db,'clubs',clubId,'state','current'),target=doc(db,'clubs',clubId,'documents','dashboard_link_'+request.viewerId),opId='sync_'+crypto.randomUUID();
+    try{
+      return await runTransaction(db,async tx=>{
+        const existing=await tx.get(target),old=existing.exists()?existing.data():{};
+        if(request.action==='answer'&&old.connectionId!==request.connectionId)return false;
+        const value=request.action==='offer'?{kind:'dashboardLink',viewerId:request.viewerId,connectionId:request.connectionId,
+          offer:request.description,answer:null,expiresAt:(window.KCSharedClock?.now()??Date.now())+120000}
+          :{kind:'dashboardLink',viewerId:old.viewerId,connectionId:old.connectionId,offer:old.offer,answer:request.description,
+            source:request.source,expiresAt:old.expiresAt};
+        tx.set(target,value);return true;
+      });
+    }catch(error){if(error.code!=='permission-denied')throw error;}
     for(let attempt=0;attempt<2;attempt++){
       const snap=await getDocFromServer(rootRef),base=snap.exists()?snap.data():{};if(!base.syncProtocol)return false;
       const context={method:'dashboardSignal',opId,base,eveningStartedAt:base.currentEveningStartedAt||'',sideOperations:[]};
@@ -215,6 +226,16 @@ window.firestoreApi = {
        !/^[a-zA-Z0-9_-]{1,80}$/.test(request.id||''))throw Error('Ungültiger Verbindungstest');
     const rootRef=doc(db,'clubs',clubId,'state','current');
     const target=doc(db,'clubs',clubId,'documents','dashboard_diagnostic_'+(request.kind==='presence'?'presence':'probe'));
+    try{
+      return await runTransaction(db,async tx=>{
+        const previous=await tx.get(target),old=previous.exists()?previous.data():null;
+        const time=window.KCSharedClock?.now()??Date.now();
+        if(request.kind==='pong'&&(old?.kind!=='ping'||old.id!==request.id||old.expiresAt<time))return false;
+        tx.set(target,{kind:request.kind,id:request.id,webrtc:request.webrtc===true,
+          expiresAt:time+(request.kind==='presence'?95000:15000)});
+        return true;
+      });
+    }catch(error){if(error.code!=='permission-denied')throw error;}
     const snap=await getDocFromServer(rootRef),base=snap.exists()?snap.data():{};
     if(!base.syncProtocol)return false;
     const context={method:'dashboardDiagnostic',opId:'sync_'+crypto.randomUUID(),base,eveningStartedAt:base.currentEveningStartedAt||'',sideOperations:[]};
@@ -233,6 +254,41 @@ window.firestoreApi = {
       {includeMetadataChanges:true},snap=>{if(!snap.metadata?.fromCache&&!snap.metadata?.hasPendingWrites)onData(snap.exists()?snap.data():null);},()=>{});
   },
 
+  async processDrinkStationCommand(clubId,id,syncContext=null){
+    if(!/^station_[a-f0-9-]{36}$/.test(id))throw Error('Ungültige Buchungs-ID.');
+    const root=doc(db,'clubs',clubId,'state','current'),commands=doc(db,'clubs',clubId,'stationCommands',id);
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const [saved,record,control]=await Promise.all([tx.get(root),tx.get(commands),tx.get(doc(db,'clubs',clubId,'stationControl','current'))]);
+      const entry=record.exists()?record.data():null;
+      if(entry?.status!=='queued')return null;
+      const configuration=control.exists()?control.data():null;
+      const targetId=entry.kind==='undo'?entry.payload?.target:'';
+      const target=/^station_[a-f0-9-]{36}$/.test(targetId||'')?doc(db,'clubs',clubId,'stationCommands',targetId):null;
+      const original=target?await tx.get(target):null;
+      let result;
+      try{
+        if(!configuration?.uid||configuration.uid!==entry.uid||configuration.generation!==entry.generation)throw Error('Die Gerätefreigabe wurde geändert.');
+        result=window.KCDrinkLedger.apply(saved.data(),entry,id,original?.exists()?original.data():null,new Date().toISOString());
+      }catch(error){
+        tx.set(commands,{...entry,status:'rejected',result:{description:error.message}});
+        return {status:'rejected'};
+      }
+      tx.set(root,result.state);
+      if(target)tx.set(target,{...original.data(),status:'reversed'});
+      tx.set(commands,{...entry,status:'applied',result:result.result});
+      return {status:'applied'};
+    });
+  },
+  async closeDrinkStationEvening(clubId,syncContext=null){
+    const root=doc(db,'clubs',clubId,'state','current');
+    return runSharedTransaction(clubId,syncContext,db,async tx=>{
+      const snapshot=await tx.get(root),state=snapshot.exists()?snapshot.data():null;
+      if(state?.currentEveningStartedAt&&state.stationClosedEvening!==state.currentEveningStartedAt)
+        tx.set(root,{stationClosedEvening:state.currentEveningStartedAt},{merge:true});
+      return true;
+    });
+  },
+
   async readTabletDocument(clubId,path){
     if(typeof path!=='string'||(path!=='clubs/'+clubId&&!path.startsWith('clubs/'+clubId+'/'))||path.split('/').length%2)throw Error('Ungültiger Dokumentpfad');
     const snap=await getDocFromServer(doc(db,...path.split('/')));return snap.exists()?snap.data():null;
@@ -248,7 +304,14 @@ window.firestoreApi = {
       if(cloudSequence>=batch.sequence||batch.baseSequence!==undefined&&batch.baseSequence!==cloudSequence)
         throw window.KCSharedCore.conflict(['Tablet-Warteschlange']);
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
-      await Promise.all(docs.map(row=>tx.get(row.ref)));
+      const beforeDocs=await Promise.all(docs.map(row=>tx.get(row.ref)));
+      for(const [index,row] of docs.entries())if(row.path.startsWith('clubs/'+clubId+'/stationCommands/')){
+        const stored=beforeDocs[index].exists()?beforeDocs[index].data():null;
+        const expected=row.value?.status==='reversed'?'applied':'queued';
+        if(stored?.status!==expected)throw window.KCSharedCore.conflict(['Getränkestation']);
+        // Preserve the server timestamp and original command fields on the receipt.
+        row.value={...stored,status:row.value.status,result:row.value.result};
+      }
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
       tx.set(target,{...current,...timestamps(window.KCSharedCore.normalizeGameData(batch.state)),tabletSequence:batch.sequence,tabletClock:{...(window.KCSharedClock?.captureTablet?.()||{time:window.KCSharedClock?.now()??Date.now()}),sequence:batch.sequence,serverAt:serverTimestamp()}});
       for(const row of docs){if(row.deleted)tx.delete(row.ref);else tx.set(row.ref,timestamps(window.KCSharedCore.normalizeGameData(row.value)));}
@@ -2697,7 +2760,7 @@ async deleteLivePerson(
 };
 
 
-window.firestoreApi.__syncArity={"setGameStopwatch":2,"ensureCashStandingIncome":2,"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
+window.firestoreApi.__syncArity={"processDrinkStationCommand":2,"closeDrinkStationEvening":1,"setGameStopwatch":2,"ensureCashStandingIncome":2,"updateCashIncome":2,"commitTabletBatch":2,"cancelGame":2,"startNewEvening": 2, "saveClubState": 2, "updateClubCalendar": 2, "setDashboardGameOverview": 2, "updateGameOptions": 2, "drawRandomGame": 2, "updateGameFineSettings": 2, "updateClubContent": 2, "setClubContentDashboard": 2, "setCashDashboardView": 2, "updateCashStandingOrders": 2, "setDashboardRules": 2, "updatePenaltyStatsSettings": 2, "transactSechsGame": 2, "transactTableGame": 2, "transactIndividualGame": 2, "saveLiveGameState": 4, "resetLiveGameState": 4, "deleteLiveGameState": 2, "runLiveGameTransaction": 4, "saveLiveLotterie": 3, "changeLiveLotterieThrow": 6, "saveSeatingLive": 2, "archiveClubEvent": 3, "saveStrafenClosure": 4, "saveCashExpense": 4, "updateLaneExpense": 4, "deleteCashExpense": 3, "deleteArchivedStrafenEvent": 3, "saveHistoricalStrafenEvent": 5, "saveClubMeta": 2, "seedLivePersons": 2, "saveLivePersonStatus": 3, "saveLivePerson": 3, "deleteLivePersonRound": 3, "changeLivePersonBoughtThrows": 4, "saveLivePersonPayment": 3, "addLivePersonFreeStrafe": 3, "addLivePersonRound": 3, "deleteLivePersonFreeStrafe": 3, "deleteLivePerson": 2, "changeLivePersonCounter": 5, "changeMultipleLivePersonCounters": 2};
 window.KCSharedSync?.install(window.firestoreApi);
 console.log("Firestore API bereit");
 
