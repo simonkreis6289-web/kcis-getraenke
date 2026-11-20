@@ -24,6 +24,7 @@
  }
  // Host-only ICE: keep mDNS names and private/link-local addresses, including tablet hotspot interfaces.
  function localAddress(address){
+  if(/^::ffff:\d/i.test(address))address=address.slice(7);
   if(/^[a-z0-9-]+\.local$/i.test(address))return true;
   const octets=address.split('.').map(Number);
   if(/^\d+\.\d+\.\d+\.\d+$/.test(address)&&octets.every(n=>n>=0&&n<=255)){

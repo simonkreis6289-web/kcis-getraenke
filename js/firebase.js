@@ -308,7 +308,8 @@ window.firestoreApi = {
           tx.set(row.ref,serialize(row.value));
         }
       }
-      return {sequence:batch.sequence,revision:Number(current.syncRevision||0)+1};
+      return {sequence:batch.sequence,...(Number.isSafeInteger(batch.baseRevision)||batch.baseOperation?
+        {revision:Number(current.syncRevision||0)+1}:{})};
     });
   },
 
