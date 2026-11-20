@@ -11,6 +11,10 @@
 .extra-fence-group{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:min(3px,10%);min-width:0;align-items:stretch}
 .extra-fence i{display:block;min-width:0;height:auto;border:0;box-shadow:inset 0 0 0 1px #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1;box-sizing:border-box}
 .extra-fence i.filled{box-shadow:inset 0 0 0 1px #0003;background:var(--fence-color,#bc7949)}
+.extra-fence i.fence-slat-enter{animation:fence-slat-color .1s ease-out backwards;animation-delay:var(--fence-slat-delay)}
+@keyframes fence-slat-color{from{background:#e5eaf1;box-shadow:inset 0 0 0 1px #c2cad6}}
+@media(prefers-reduced-motion:reduce){.extra-fence i.fence-slat-enter{animation:none}}
+
 .extra-fence-heading{display:flex;justify-content:space-between;align-items:stretch;gap:16px;margin-bottom:12px}
 .extra-fence-heading>div:first-child{display:flex;flex-direction:column;justify-content:center;min-width:0}
 .extra-fence-heading h2{margin:0 0 5px}

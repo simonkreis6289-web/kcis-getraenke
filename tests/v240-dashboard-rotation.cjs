@@ -94,12 +94,23 @@ test('real app saves messages, panel durations and popup duration across reload 
  const b=fullApp(a.db);await b.select();assert.equal(b.document.querySelector('.dashboard-ticker-message textarea').value,'Eigener Text');assert(await b.c.startNewKegelabend());assert(await b.c.KCSharedSync.waitForUpload());assert.deepEqual(a.db.root().dashboardSettings,saved);
  const remove=b.document.querySelector('.dashboard-ticker-message button');remove.onclick();assert(await b.c.KCDashboardSettingsApp.save());assert(await b.c.KCSharedSync.waitForUpload());assert.equal(a.db.root().dashboardSettings.tickerMessages.length,1);
 });
-test('Lattenzaun dashboard marks the actual next thrower, preserves last-throw-first order and clears on finish',{timeout:60000},async()=>{
+test('Lattenzaun reveals slats in sequence, then moves rows, then marks the next thrower',{timeout:60000},async()=>{
  const a=await app();await a.c.indStart('lattenzaun');assert(await a.c.KCSharedSync.waitForUpload());const d=tv(a.db);
  const names=()=>[...d.document.querySelectorAll('.extra-fence-row')].map(x=>x.querySelector('.extra-fence-name').textContent),marked=()=>[...d.document.querySelectorAll('.extra-fence-next-thrower')].map(x=>x.querySelector('.extra-fence-name').textContent);
  d.update();assert.deepEqual(marked(),['A']);
  await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:6});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);assert(d.document.querySelector('.extra-fence-next-thrower').getAttribute('aria-label').includes('Als Nächstes'));assert(!a.document.querySelector('.extra-fence-next-thrower'));
- await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:4});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'B');assert.deepEqual(marked(),['C']);
+ const timersBefore=new Set(d.timers.keys());
+ await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:4});assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);
+ const delays=[...d.document.querySelectorAll('.fence-slat-enter')].map(slat=>parseInt(slat.style.getPropertyValue('--fence-slat-delay'),10));
+ assert.equal(delays.length,2);assert.equal(delays[1]-delays[0],140);
+ const nextPhase=()=>{
+  const [key,tick]=[...d.timers].find(([key])=>!timersBefore.has(key));
+  d.timers.delete(key);tick();
+ };
+ nextPhase();assert.equal(names()[0],'B');assert.deepEqual(marked(),['B']);
+ assert(d.document.querySelector('.extra-fences').hasAttribute('data-player-motion-only'));
+ nextPhase();assert.equal(names()[0],'B');assert.deepEqual(marked(),['C']);
  const state=copy(a.db.root().lattenzaunState);state.active=false;state.finished=true;const {document}=parseHTML(d.c.renderExtraGameBoard(state,{dashboard:true}));assert.equal(document.querySelectorAll('.extra-fence-next-thrower').length,0);
 });
 

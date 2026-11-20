@@ -17,7 +17,7 @@ async function check(a,d,key,expected){assert(await a.c.KCSharedSync.waitForUplo
  const s=a.c.gameSetupState(key),order=s.players||s.playerOrder||s.order;assert.deepEqual(copy(order),['A','B','C','D'],'frozen order is unchanged');}
 const keys=['mensch','plusminus','sichern','blackjack','siebener','hindernis','bergundtal','guterschnitt','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend','lattenzaun'];
 for(const key of keys)test(key+': real app and TV move rows with the actual turn, preserve inputs and undo to the original order',{timeout:60000},async()=>{
- const a=await app();if(key==='mensch')await a.c.startMenschGameFinal('A');else if(key==='plusminus')await a.c.startPlusminusGame();else if(key==='sichern'){a.document.getElementById('sichern-mode').value='solo';await a.c.startSichernGame();}else if(key==='blackjack')await a.c.startTableGame(key);else await a.c.indStart(key,key==='hindernis'?a.c.gameSetupNames(key)[0]:null);const d=tv(a.db);await check(a,d,key,['A','B','C','D']);
+ const a=await app();if(key==='mensch')await a.c.startMenschGameFinal('A');else if(key==='plusminus')await a.c.startPlusminusGame();else if(key==='sichern'){a.document.getElementById('sichern-mode').value='solo';await a.c.startSichernGame();}else if(key==='blackjack')await a.c.startTableGame(key);else await a.c.indStart(key,key==='hindernis'?a.c.gameSetupNames(key)[0]:null);const d=tv(a.db);if(key==='lattenzaun')d.c.window.matchMedia=()=>({matches:true});await check(a,d,key,['A','B','C','D']);
  const roll=pins=>a.c.indAction(key,'throw',{kind:'pins',pins});
  if(key==='mensch'){
   const field=name=>Number(d.document.querySelector('[data-mensch-player="'+name+'"]').closest('[data-mensch-position]').dataset.menschPosition);
