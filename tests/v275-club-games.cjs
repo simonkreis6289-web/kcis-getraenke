@@ -60,7 +60,7 @@ test('Abschreibung TV shows the deducted score before rotating and cancels anima
  assert.deepEqual(names(animated),['A','B','C','D']);
  assert.deepEqual([...animated.querySelectorAll('.abschreibung-tv-trail strong')].map(e=>e.textContent),['—','A','B']);
  assert.equal(animated.querySelector('.abschreibung-flying-points').textContent,'−7');
- assert.equal(animated.querySelector('.abschreibung-row .abschreibung-score-swap').textContent,'10093');
+ assert.equal(animated.querySelector('.abschreibung-row .abschreibung-points b').textContent,'93');
  assert.equal(f.s.scores.A,93);
  assert.equal(playback(f.s,repaint),frame);
  pending();assert.equal(paints,2);

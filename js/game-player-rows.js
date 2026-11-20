@@ -8,6 +8,7 @@
 
   const escape=value=>String(value).replace(/[&"<>]/g,c=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[c]));
   const row=name=>' data-player-row="'+escape(name)+'"';
+  const score=(name,metric='score')=>' data-tv-score="'+escape(JSON.stringify([name,metric]))+'"';
   function group(key,state,{motionOnly=false,turn=state.history?.length}={}){
     return ' data-player-rows="'+escape(key)+'" data-player-game="'+escape(state.id||state.startedAt||'')+'"'+
       (Number.isInteger(turn)?' data-player-turn="'+turn+'"':'')+(motionOnly?' data-player-motion-only':'');
@@ -71,15 +72,55 @@
     };
   }
 
-  window.KCPlayerRows=Object.freeze({order,row,group,createMotion});
+  function createCounters({request=fn=>window.requestAnimationFrame(fn),now=()=>performance.now(),reduced=()=>false}={}){
+    let previousGame=null,values=new Map();
+    return function update(board){
+      const game=board.dataset.scoreGame,previous=game===previousGame?values:new Map();
+      previousGame=game;
+      values=new Map();
+      for(const node of board.querySelectorAll('[data-tv-score]')){
+        const text=node.firstChild,key=node.dataset.tvScore;
+        if(text?.nodeType!==3||node.childNodes.length!==1)continue;
+        const match=/^(-?\d+)(?:,(\d{1,2}))?(.*)$/.exec(text.data);
+        if(!match||!/^\s*(?:Holz|Punkte|Pkt\.|Latten|Tore|€|\/\s*\d+)?\s*$/.test(match[3]))continue;
+        const [,whole,fraction,suffix]=match;
+        const target=Number(fraction?whole+'.'+fraction:whole);
+        if(!Number.isFinite(target))continue;
+        const old=previous.get(key),at=now(),duration=440;
+        const value={target,from:target,since:at,shown:target,node};
+        values.set(key,value);
+        if(!old||reduced()||!board.getClientRects().length)continue;
+        if(old.target===target){
+          value.from=old.from;value.since=old.since;
+        }else value.from=old.shown;
+        if(value.from===target||at>=value.since+duration)continue;
+        const finalText=text.data,decimals=fraction?.length||0;
+        const paint=()=>{
+          if(values.get(key)!==value||!node.isConnected)return;
+          const ratio=Math.min(1,Math.max(0,(now()-value.since)/duration));
+          value.shown=ratio===1?target:value.from+(target-value.from)*ratio;
+          text.data=ratio===1?finalText:value.shown.toFixed(decimals).replace('.',',')+suffix;
+          if(ratio<1)request(paint);
+        };
+        paint();
+      }
+    };
+  }
+
+  window.KCPlayerRows=Object.freeze({order,row,group,score,createMotion,createCounters});
   if(typeof document==='undefined'||!document.body||typeof MutationObserver!=='function')return;
   const selector='[data-player-rows]';
-  const update=createMotion({reduced:()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches});
+  const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const update=createMotion({reduced});
+  const counters=createCounters({reduced});
   new MutationObserver(records=>{
+    let dashboard=null;
     for(const record of records)for(const node of record.addedNodes){
       if(node.nodeType!==1||!node.isConnected)continue;
       if(node.matches(selector))update(node);
       for(const parent of node.querySelectorAll(selector))update(parent);
+      if(record.target.id==='game-body')dashboard=record.target;
     }
+    if(dashboard)counters(dashboard);
   }).observe(document.body,{childList:true,subtree:true});
 })();

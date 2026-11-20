@@ -147,15 +147,9 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-tv-person.is-current { background:#e0f3fd;border-color:#8cc3df; }
 .abschreibung-tv-person strong,.abschreibung-tv-person small { display:block;overflow-wrap:anywhere; }
 .abschreibung-tv-person small { font-size:.74em;color:#3e5b72; }
-.abschreibung-flying-points { position:absolute;z-index:1;right:clamp(4.25rem,8vw,7.5rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly .82s ease-out both; }
-.abschreibung-score-swap { display:inline-grid; }
-.abschreibung-score-swap span { grid-area:1/1;text-align:right; }
-.abschreibung-score-swap span:first-child { animation:abschreibung-hide .01s .52s both; }
-.abschreibung-score-swap span:last-child { animation:abschreibung-show .01s .52s both; }
-.abschreibung-meter-drop { animation:abschreibung-drop .42s .47s ease-out both; }
+.abschreibung-flying-points { position:absolute;z-index:1;right:clamp(4.25rem,8vw,7.5rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly .82s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
+.abschreibung-meter-drop { animation:abschreibung-drop .44s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
 @keyframes abschreibung-fly { 0% {opacity:0;transform:translate(2rem,1.6rem) scale(.7)} 30%,68% {opacity:1;transform:translate(0,-50%)} 100% {opacity:0;transform:translate(2.8rem,-50%)} }
-@keyframes abschreibung-hide { to {visibility:hidden} }
-@keyframes abschreibung-show { from {visibility:hidden} }
 @keyframes abschreibung-drop { from {width:var(--abschreibung-before)} }
 @media(max-width:640px) { .abschreibung-tv-layout { grid-template-columns:minmax(0,1fr); } }
 

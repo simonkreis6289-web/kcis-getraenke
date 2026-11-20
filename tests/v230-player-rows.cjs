@@ -87,3 +87,30 @@ test('animated rows show the new booking in place, then slide into the game’s 
  assert.equal([...clock.values()][0].ms,0);release();
  assert.deepEqual(names(body),['B','C','A']);
 });
+
+test('TV scores keep counting across a redraw and never jump back when rows move',()=>{
+ const {document}=parseHTML('<html><body><main data-score-game="abschreibung"></main></body></html>');
+ const frames=[],window={};let time=0;
+ vm.runInNewContext(read('js/game-player-rows.js'),{window,document});
+ const {score,createCounters}=window.KCPlayerRows;
+ const paint=createCounters({request:callback=>frames.push(callback),now:()=>time});
+ const board=document.querySelector('main');
+ board.getClientRects=()=>[{}];
+ const render=(a,b,reverse=false)=>{
+  const items=['<b'+score('A')+'>'+a+'</b>','<b'+score('B')+'>'+b+'</b>'];
+  board.innerHTML=(reverse?items.reverse():items).join('');
+  paint(board);return board.querySelectorAll('[data-tv-score]');
+ };
+ const flush=()=>frames.splice(0).forEach(callback=>callback());
+ render(100,43);let scores=render(90,51);
+ assert.deepEqual([...scores].map(n=>n.textContent),['100','43']);
+ time=220;flush();
+ assert.deepEqual([...scores].map(n=>n.textContent),['95','47']);
+ scores=render(90,51);
+ assert.deepEqual([...scores].map(n=>n.textContent),['95','47']);
+ time=450;flush();
+ assert.deepEqual([...scores].map(n=>n.textContent),['90','51']);
+ scores=render(90,51,true);
+ assert.deepEqual([...scores].map(n=>n.textContent),['51','90']);
+ assert.equal(frames.length,0);
+});
