@@ -103,3 +103,58 @@ test('Tannenbaum table fills the stage below the scores and above the throw hist
  assert(board.scrollHeight*zoom<=477);
  assert(board.scrollHeight*zoom>=475);
 });
+
+test('Mensch pins hop through every field, reflect at 36 and return to Start on a collision',()=>{
+ const source=read('dashboard.html');
+ const code=source.slice(source.indexOf('const menschColors='),source.indexOf('function renderDartsBoard('));
+ const env={window:{},activeNames:names=>names,safe:String};
+ const {menschHopFields,menschPawnOrigins,animateMenschPawns,renderMenschBoard}=new Function('env','with(env){'+code+
+  ';return {menschHopFields,menschPawnOrigins,animateMenschPawns,renderMenschBoard};}')(env);
+ assert.deepEqual(menschHopFields(0,4,4),[1,2,3,4]);
+ assert.deepEqual(menschHopFields(33,33,6),[34,35,36,35,34,33]);
+ const base={active:true,playerOrder:['Simon','Peter'],currentIndex:0,scores:{Simon:1,Peter:4},throws:{Simon:[],Peter:[]}};
+ const {document}=parseHTML('<main><div id="game-body"></div></main>');
+ const body=document.getElementById('game-body');body.dataset.scoreGame='same-game';
+ body.innerHTML=renderMenschBoard(base);
+ assert.equal(body.querySelector('[data-mensch-player=Simon]').style.getPropertyValue('--mensch-player-color'),'#ffd326');
+ assert.equal(body.querySelector('.mensch-active-field').dataset.menschPosition,'1');
+ const seedRects=()=>{
+  for(const item of body.querySelectorAll('.mensch-field,.mensch-pawn')){
+   const field=Number(item.closest('[data-mensch-position]').dataset.menschPosition);
+   item.getBoundingClientRect=()=>({left:field*40,top:0,width:20,height:20});
+  }
+ };
+ seedRects();
+ assert.equal(menschPawnOrigins(body,base,'same-game'),null);
+ const thrown={...base,currentIndex:1,scores:{Simon:4,Peter:0},throws:{...base.throws,Simon:[{pins:3}]}};
+ const origins=menschPawnOrigins(body,thrown,'same-game');
+ body.innerHTML=renderMenschBoard(thrown);seedRects();
+ assert.equal(body.querySelector('.mensch-active-field').dataset.menschPosition,'0');
+ const calls=new Map();
+ for(const pawn of body.querySelectorAll('.mensch-pawn'))pawn.animate=(frames,options)=>calls.set(pawn.dataset.menschPlayer,{frames,options});
+ animateMenschPawns(body.querySelector('.mensch-tv-board'),origins,thrown);
+ const moves=calls.get('Simon'),knockout=calls.get('Peter');
+ assert.deepEqual(moves.frames.filter((_,index)=>index%2===0).map(frame=>frame.transform),[
+  'translate(-120px,0px) rotate(0deg)','translate(-80px,0px) rotate(0deg)','translate(-40px,0px) rotate(0deg)','translate(0px,0px) rotate(0deg)'
+ ]);
+ assert.equal(knockout.options.delay,moves.options.duration);
+ assert.equal(knockout.frames.length,3);
+ assert.equal(menschPawnOrigins(body,base,'same-game'),null);
+});
+
+test('Mensch TV expands the equal-field grid to the available height and refits after a resize',()=>{
+ const html=read('dashboard.html'),css=read('css/dashboard-mensch.css');
+ assert.match(css,/grid-template-columns:repeat\(10,minmax\(0,1fr\)\)/);
+ assert.match(css,/grid-template-rows:repeat\(10,minmax\(2rem,1fr\)\)/);
+ const fitSource=html.slice(html.indexOf('function fitTvBoard('),html.indexOf("if(typeof ResizeObserver!=='undefined')"));
+ const track={style:{},get offsetHeight(){return Math.max(Number.parseFloat(this.style.height)||0,480);}};
+ const board={style:{},dataset:{},scrollWidth:850,get scrollHeight(){return track.offsetHeight+28;},querySelector:selector=>selector==='.mensch-track'?track:null};
+ const area={clientWidth:1000,clientHeight:880,querySelector:selector=>selector==='.tv-board'?board:null};
+ const fit=new Function('document','getComputedStyle','let fitInProgress=false;'+fitSource+';return fitTvBoard;')(
+  {getElementById:()=>area},()=>({paddingTop:'10px',paddingBottom:'10px',paddingLeft:'10px',paddingRight:'10px'})
+ );
+ fit();assert.equal(track.style.height,'829px');assert.equal(board.style.zoom,'1');
+ area.clientHeight=650;fit();assert.equal(track.style.height,'599px');assert.equal(board.style.zoom,'1');
+ area.clientHeight=420;fit();assert(Number(board.style.zoom)<1);
+ assert(board.scrollHeight*Number(board.style.zoom)<=397);
+});
