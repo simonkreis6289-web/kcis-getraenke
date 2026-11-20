@@ -28,10 +28,13 @@
  function menschPopup(value){
   return {seconds:seconds(value?.seconds,2,0,30),color:tickerColor(value?.color,'#ffd36a')};
  }
- const defaults=()=>({playerRows:playerRows(),lottoAnimations:lottoAnimations(),menschPopup:menschPopup(),tableWidth:{left:17,right:17},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
+ const defaults=()=>({playerRows:playerRows(),lottoAnimations:lottoAnimations(),menschPopup:menschPopup(),tableWidth:{left:17,right:17},tableHeight:{left:50,right:50},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,stationSeconds:4,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
  function normalize(value){
   const out=defaults();out.playerRows=playerRows(value?.playerRows);out.lottoAnimations=lottoAnimations(value?.lottoAnimations);out.menschPopup=menschPopup(value?.menschPopup);for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
-  for(const side of ['left','right'])out.tableWidth[side]=seconds(value?.tableWidth?.[side],17,10,35);
+  for(const side of ['left','right']){
+   out.tableWidth[side]=seconds(value?.tableWidth?.[side],17,10,35);
+   out.tableHeight[side]=seconds(value?.tableHeight?.[side],50,20,80);
+  }
   out.tickerEnabled=value?.tickerEnabled!==false;
   const streamSettings=value?.tickerStreams;
   for(const key of ['club','football']){
@@ -45,6 +48,7 @@
   out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
   out.eventToasts={seconds:seconds(value?.eventToasts?.seconds,4,0,30),colors:eventToastColors()};
+  out.eventToasts.stationSeconds=seconds(value?.eventToasts?.stationSeconds,out.eventToasts.seconds,0,30);
   for(const key of Object.keys(out.eventToasts.colors))out.eventToasts.colors[key]=tickerColor(value?.eventToasts?.colors?.[key],out.eventToasts.colors[key]);
   for(const key of ['arrival','departure','round','loser','teamLoss','station'])out.eventToasts[key]=value?.eventToasts?.[key]!==false;
   out.football={bl1:value?.football?.bl1===true,bl2:value?.football?.bl2===true,goalToastSeconds:seconds(value?.football?.goalToastSeconds,5,0,30),events:{goal:value?.football?.events?.goal!==false,kickoff:value?.football?.events?.kickoff!==false,halftime:value?.football?.events?.halftime!==false,fulltime:value?.football?.events?.fulltime!==false,red:false,secondYellow:false},demo:null};

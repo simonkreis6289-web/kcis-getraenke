@@ -47,7 +47,12 @@
     throw Error('Der Getränkestand dieses Kegelabends ist geschlossen.');
   const people=copy(root.persons||[]),spiel=copy(root.spiele||[]),catalog=root.DRINKS||[],prices=root.prices||{};
   const values=entry.payload||{},find=name=>people.find(person=>name===person.name);
-  let effect,description,name='';
+  const line=(person,key,quantity)=>({
+   name:person,drink:catalog.find(row=>row.key===key).label,quantity,
+   cents:Math.round(quantity*(Number(prices[key])||0)*100)
+  });
+  const lines=(person,drinks)=>Object.entries(drinks).map(([key,n])=>line(person,key,n));
+  let effect,description,name='',items=[],detail='';
   if(entry.kind==='undo'){
    if(original?.status!=='applied'||original.evening!==entry.evening||!original.result?.effect||original.kind==='undo')
      throw Error('Diese Buchung ist bereits storniert oder gehört zu einem anderen Abend.');
@@ -73,6 +78,8 @@
     spiel.splice(index,1);
    }else throw Error('Unbekannte Art der Buchung.');
    description='Storno · '+original.result.description;
+   items=(original.result.display?.items||[]).map(item=>({...item,quantity:-item.quantity,cents:-item.cents}));
+   detail=original.result.display?.detail||'';
   }else if(entry.kind==='group'){
    const drinks=quantities(catalog,values.drinks),recipients=values.recipients;
    if(!recipients||Object.keys(recipients).length!==Object.keys(drinks).length||
@@ -82,6 +89,8 @@
       }))throw Error('Für jedes Getränk genau die passende Anzahl unterschiedlicher Teilnehmer auswählen.');
    for(const [key,names] of Object.entries(recipients))for(const recipient of names)changeCount(find(recipient),key,1);
    effect={kind:'group',drinks:recipients};
+   items=Object.entries(recipients).flatMap(([key,names])=>names.map(person=>line(person,key,1)))
+    .sort((a,b)=>a.name.localeCompare(b.name,'de'));
    const names=[...new Set(Object.values(recipients).flat())];
    description=drinkNames(catalog,drinks)+' · '+names.join(', ');
   }else if(entry.kind==='adjust'){
@@ -94,6 +103,7 @@
    changeCount(person,drink.key,quantity-expected);
    effect={kind:'adjust',person:person.name,drink:drink.key,expected,quantity};
    name=person.name;description=name+' · '+drink.label+' von '+expected+' auf '+quantity;
+   items=[line(name,drink.key,quantity-expected)];
   }else{
    const drinks=quantities(catalog,values.drinks);
    if(entry.kind==='team'){
@@ -104,6 +114,7 @@
     const gameRow=teamEntry(game,team,drinks,catalog,prices,values.roundGiven===true);
     spiel.push({...gameRow,stationBookingId:id});
     effect={kind:'team'};description=team.label+' · '+game.title+' · '+drinkNames(catalog,drinks);
+    items=lines(team.label,drinks);detail=game.title;
    }else{
     const person=find(values.person);
     if(!active(person))throw Error('Diese Person ist nicht mehr anwesend.');
@@ -121,12 +132,15 @@
      description=person.name+' · Runde · '+values.reason+' · '+drinkNames(catalog,drinks);
     }else throw Error('Unbekannte Art der Buchung.');
     effect={kind:entry.kind,person:person.name,drinks};
+    items=lines(name,drinks);
+    if(entry.kind==='round')detail='Runde · '+values.reason;
    }
   }
   recalculate(people,spiel,catalog,prices);
   const stationEvents=(root.stationEvents||[]).filter(row=>row.evening===entry.evening).slice(-19);
-  stationEvents.push({id,evening:entry.evening,at,name,description:description.slice(0,600)});
-  return {state:{...root,persons:people,spiele:spiel,stationEvents},result:{description,...(effect?{effect}:{})}};
+  const display={items,detail,kind:entry.kind};
+  stationEvents.push({id,evening:entry.evening,at,name,description:description.slice(0,600),...display});
+  return {state:{...root,persons:people,spiele:spiel,stationEvents},result:{description,display,...(effect?{effect}:{})}};
  }
  window.KCDrinkLedger=Object.freeze({active,total,roundTotal,recalculate,teamEntry,availableTeams,games,apply});
 })();

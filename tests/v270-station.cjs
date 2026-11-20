@@ -87,7 +87,10 @@ test('rounds without recipients, multi-person drinks and guarded corrections sha
  const group=await run('group',{drinks:{beer:2},recipients:{beer:['A','B']}});
  assert.deepEqual(db.root().persons.map(row=>row.drinks.beer),[1,1]);
  assert.equal(receipts().at(-1).id,group);
- assert.match(toast.textContent,/KC Theke.*2 × Bier/);
+ assert.doesNotMatch(toast.textContent,/KC Theke/);
+ assert.deepEqual(receipts().at(-1).items,[
+  {name:'A',drink:'Bier',quantity:1,cents:200},{name:'B',drink:'Bier',quantity:1,cents:200}
+ ]);
  await run('group',{drinks:{beer:2},recipients:{beer:['A','A']}},'rejected');
  assert.deepEqual(db.root().persons.map(row=>row.drinks.beer),[1,1]);
  const edited=await run('adjust',{person:'A',drink:'beer',expected:1,quantity:0});
@@ -96,7 +99,9 @@ test('rounds without recipients, multi-person drinks and guarded corrections sha
  await run('adjust',{person:'A',drink:'beer',expected:1,quantity:2},'rejected');
  assert.equal(receipts().at(-1).id,edited);
  assert.equal(db.root().persons[0].drinks.beer,0);
+ assert.deepEqual(receipts().at(-1).items,[{name:'A',drink:'Bier',quantity:-1,cents:-200}]);
  await run('undo',{target:edited});
+ assert.deepEqual(receipts().at(-1).items,[{name:'A',drink:'Bier',quantity:1,cents:200}]);
  await run('undo',{target:group});
  assert.deepEqual(db.root().persons.map(row=>row.drinks.beer),[0,0]);
  assert.equal(db.root().persons[0].paid,12);

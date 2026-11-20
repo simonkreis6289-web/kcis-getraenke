@@ -25,7 +25,7 @@
    box.dataset.activePanel=current.key||'';const dots=box.querySelectorAll('[data-panel-key]');for(const dot of dots){const active=dot.dataset.panelKey===current.key;dot.classList.toggle('active',active);dot.setAttribute('aria-current',String(active));}}
    if(items.length>1)delay=Math.min(delay,current.remaining);
   }
-  resizeSeating();
+  resizeSeating();window.KCClubToasts?.positionStation?.();
   if(Number.isFinite(delay))rotationTimer=setTimeout(()=>rotate(),Math.max(25,delay));
  }
  function resizeSeating(){
@@ -33,12 +33,13 @@
   if(width>0)panel.classList.toggle('seat-avatars-only',width<244);
  }
  function apply(settings){
-  const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds,tableWidth:r.settings.tableWidth});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();
+  const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds,tableWidth:r.settings.tableWidth,tableHeight:r.settings.tableHeight});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();
   let parking=$('dashboard-panel-parking');if(!parking){parking=document.createElement('div');parking.id='dashboard-panel-parking';parking.hidden=true;main.append(parking);}
   const panels=new Map(M.keys.map(key=>[key,$('dashboard-panel-'+key)]));
   for(const key of M.keys){const panel=panels.get(key);if(panel){panel.hidden=true;parking.append(panel);}}
   for(const [side,box] of [['left',left],['right',right]]){
-   const occupied=M.slots.filter(slot=>slot.startsWith(side)&&r.groups[slot].length);box.replaceChildren();box.hidden=!occupied.length;box.classList.toggle('dashboard-side-full',occupied.length===1);box.style.gridTemplateRows='repeat('+Math.max(1,occupied.length)+',minmax(0,1fr))';
+   const occupied=M.slots.filter(slot=>slot.startsWith(side)&&r.groups[slot].length);box.replaceChildren();box.hidden=!occupied.length;box.classList.toggle('dashboard-side-full',occupied.length===1);const top=r.settings.tableHeight[side];
+   box.style.gridTemplateRows=occupied.length===2?'minmax(0,'+top+'fr) minmax(0,'+(100-top)+'fr)':'minmax(0,1fr)';
    for(const slot of occupied){const frame=document.createElement('div');frame.className='dashboard-panel-slot';frame.id='dashboard-slot-'+slot;
     for(const key of r.groups[slot])if(panels.get(key))frame.append(panels.get(key));
     if(r.groups[slot].length>1){const dots=document.createElement('div');dots.className='dashboard-rotation-dots';dots.setAttribute('aria-label','Wechselnde Anzeigen');for(const key of r.groups[slot]){const dot=document.createElement('span');dot.dataset.panelKey=key;dot.title=M.labels[key]+' · '+r.settings.panels[key].seconds+' Sekunden';dots.append(dot);}frame.append(dots);}box.append(frame);
@@ -177,6 +178,6 @@
  window.addEventListener('kc-football-updated',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  window.addEventListener('kc-football-clock',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hidePopup();else rotate();});
- window.addEventListener('resize',()=>{positionPopup();resizeSeating();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
+ window.addEventListener('resize',()=>{positionPopup();resizeSeating();window.KCClubToasts?.positionStation?.();if(!resizeQueued){resizeQueued=true;requestAnimationFrame(tickerFit);}});
  window.KCDashboardLayoutTV=Object.freeze({apply,rotate,highlight,ticker,tickerFit,feed});
 })();
