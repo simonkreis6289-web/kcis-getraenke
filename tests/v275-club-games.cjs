@@ -43,6 +43,7 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  assert.equal(f.s.eliminated[0].place,6);
  f.roll('pins',9);assert.equal(f.s.scores.B,0);
  assert(f.s.finished);
+ assert.equal(display({dashboard:true}).querySelector('.abschreibung-chart .is-current'),null);
  assert.deepEqual(copy(f.s.winners),['C','D','E','F']);
  assert.deepEqual(copy(f.run('undo').moneyRemoved),['indcharge_indgame_fixture_finish_1']);
  assert(f.s.active);
@@ -68,7 +69,8 @@ test('Abschreibung TV shows the deducted score before rotating and cancels anima
   column.querySelector('.abschreibung-chart-value').textContent,
   column.querySelector('.abschreibung-chart-track span').style.height
  ]);
- assert.deepEqual(columns(animated),[['A','93','93%'],['B','100','100%'],['C','100','100%'],['D','96','96%']]);
+ assert.deepEqual(columns(animated),[['B','100','100%'],['C','100','100%'],['D','96','96%'],['A','93','93%']]);
+ assert.equal(animated.querySelector('.abschreibung-chart [aria-current="true"] .abschreibung-chart-track .abschreibung-chart-name').textContent,'C');
  assert.equal(animated.querySelector('.abschreibung-row.is-deducted .abschreibung-flying-points').textContent,'−7');
  assert(!animated.querySelector('.abschreibung-details .abschreibung-flying-points'));
  assert.equal(animated.querySelector('.abschreibung-row .abschreibung-points b').textContent,'93');
