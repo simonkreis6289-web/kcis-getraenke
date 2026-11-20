@@ -99,7 +99,16 @@
 }
 
 #shared-sync-status { --tv-dot:#cbd5e1; }
-#shared-sync-status[data-tv-mode='direct'] { --tv-dot:#4ade80; }
+#shared-sync-status[data-tv-mode='direct'] { --tv-dot:#56aefa; }
+.shared-sync-cloud {
+  display:none;padding-left:.45rem;border-left:1px solid currentColor;
+  color:var(--title_fc);font-size:.66rem;white-space:nowrap;
+}
+#shared-sync-status[data-mode] .shared-sync-cloud { display:inline; }
+#shared-sync-status[data-mode='ready'] .shared-sync-cloud { color:#136c43; }
+#shared-sync-status[data-mode='saving'] .shared-sync-cloud,
+#shared-sync-status[data-mode='error'] .shared-sync-cloud { color:#a44608; }
+@media(max-width:520px) { #shared-sync-status[data-mode] .shared-sync-cloud { white-space:normal; } }
 #shared-sync-status[data-tv-mode='firebase'],
 #shared-sync-status[data-tv-mode='relay'] { --tv-dot:#facc15; }
 #shared-sync-status[data-tv-mode='disconnected'] { --tv-dot:#ff6369; }

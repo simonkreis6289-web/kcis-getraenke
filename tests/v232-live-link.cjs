@@ -108,12 +108,35 @@ test('display frames omit persistence history and cannot roll back a confirmed s
 });
 
 test('data-channel negotiation, chunk reassembly and backpressure send the latest view without per-throw cloud writes',async()=>{
- const pcs=new Map(),timers=new Map(),sent=[];let id=0;
- class Channel{constructor(){this.readyState='connecting';this.bufferedAmount=0;}send(data){assert.equal(this.readyState,'open');sent.push(data.length);queueMicrotask(()=>this.other?.onmessage?.({data}));}close(){if(this.readyState==='closed')return;this.readyState='closed';this.onclose?.();}}
- class Peer{constructor(){this.id=String(++id);pcs.set(this.id,this);this.connectionState='new';this.iceGatheringState='complete';}createDataChannel(){return this.channel=new Channel();}async createOffer(){return {type:'offer',sdp:this.id};}async createAnswer(){return {type:'answer',sdp:this.id};}async setLocalDescription(d){this.localDescription=d;}async setRemoteDescription(d){this.remoteDescription=d;this.partner=pcs.get(d.sdp);if(d.type==='offer'){this.channel=new Channel();this.channel.other=this.partner.channel;this.partner.channel.other=this.channel;this.ondatachannel({channel:this.channel});}else{this.channel.readyState=this.partner.channel.readyState='open';this.connectionState=this.partner.connectionState='connected';this.channel.onopen?.();this.partner.channel.onopen?.();}}close(){if(this.connectionState==='closed')return;this.connectionState='closed';this.channel?.close();this.onconnectionstatechange?.();}}
- const w={RTCPeerConnection:Peer},module=new Function('window','crypto','setInterval','clearInterval',read('js/dashboard-link.js')+';return window.KCDashboardLink;')(w,require('node:crypto').webcrypto,fn=>{const key=++id;timers.set(key,fn);return key;},key=>timers.delete(key));let offers,answers,record;const writes=[],api={subscribeDashboardOffers:(_,fn)=>{offers=fn;return ()=>{};},subscribeDashboardAnswer:(_,who,fn)=>{answers=fn;return ()=>{};},sendDashboardSignal:async(_,r)=>{writes.push(r);record=r.action==='offer'?{...r,offer:r.description,expiresAt:Date.now()+120000}:{...record,answer:r.description};if(r.action==='offer')offers([record]);else await answers(record);return true;}};
- const publisher=module.create({role:'publisher',club:'club',api}),frames=[],viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1}),onFrame:f=>frames.push(f)});publisher.publish({persons:[{name:'A'}],currentEveningStartedAt:evening},1,evening);for(const fn of [...timers.values()])fn();for(let n=0;n<8;n++)await tick();assert.equal(frames.at(-1)?.sequence,1);assert.equal(writes.length,2);const measurement=await publisher.test();assert.equal(measurement.via,'webrtc');assert(measurement.ms>=0);
- const sending=[...pcs.values()].find(p=>p.remoteDescription?.type==='offer').channel;sending.bufferedAmount=300000;publisher.publish({persons:[{name:'A',avatarData:'x'.repeat(200000)}]},2,evening);publisher.publish({persons:[{name:'A',avatarData:'y'.repeat(200000)}],teamStopwatchRunning:false,menschState:{scores:{A:7}}},3,evening);await tick();assert.equal(frames.at(-1).sequence,1);sending.bufferedAmount=0;sending.onbufferedamountlow();for(let n=0;n<5;n++)await tick();assert.equal(frames.at(-1).sequence,3);assert.equal(frames.at(-1).state.persons[0].avatarData.length,200000);assert.equal(frames.at(-1).state.teamStopwatchRunning,false);assert.equal(frames.at(-1).state.menschState.scores.A,7);assert(sent.length>20);assert(Math.max(...sent)<50000);assert.equal(writes.length,2,'throws and pauses never enter the signaling transaction queue');publisher.close();viewer.close();assert.equal(timers.size,0);
+ const pcs=new Map(),timers=new Map(),sent=[];let id=0,elapsed=0,routeType='host';const Clock={now:()=>1700000000000+elapsed};
+ class Channel{constructor(){this.label='kcis-display';this.readyState='connecting';this.bufferedAmount=0;}send(data){assert.equal(this.readyState,'open');sent.push(data.length);queueMicrotask(()=>this.other?.onmessage?.({data}));}close(){if(this.readyState==='closed')return;this.readyState='closed';this.onclose?.();}}
+ class Peer{constructor(config){assert.deepEqual(config.iceServers,[]);this.id=String(++id);pcs.set(this.id,this);this.connectionState='new';this.iceGatheringState='complete';}getStats(){return Promise.resolve(new Map([
+  ['transport',{type:'transport',selectedCandidatePairId:'pair'}],['pair',{type:'candidate-pair',localCandidateId:'local',remoteCandidateId:'remote'}],
+  ['local',{candidateType:'host',address:'192.168.0.2'}],['remote',{candidateType:routeType,address:'192.168.0.4'}]
+ ]));}createDataChannel(){return this.channel=new Channel();}async createOffer(){return {type:'offer',sdp:this.sdp()};}async createAnswer(){return {type:'answer',sdp:this.sdp()};}sdp(){return this.id+'\r\na=candidate:1 1 udp 1 192.168.0.2 47700 typ host\r\n';}async setLocalDescription(d){this.localDescription=d;}async setRemoteDescription(d){this.remoteDescription=d;this.partner=pcs.get(d.sdp.split('\r\n')[0]);if(d.type==='offer'){this.channel=new Channel();this.channel.other=this.partner.channel;this.partner.channel.other=this.channel;this.ondatachannel({channel:this.channel});}else{this.channel.readyState=this.partner.channel.readyState='open';this.connectionState=this.partner.connectionState='connected';this.channel.onopen?.();this.partner.channel.onopen?.();}}close(){if(this.connectionState==='closed')return;this.connectionState='closed';this.channel?.close();this.onconnectionstatechange?.();}}
+ const w={RTCPeerConnection:Peer,navigator:{onLine:true}},module=new Function('window','crypto','setInterval','clearInterval','Date',read('js/dashboard-link.js')+';return window.KCDashboardLink;')(w,require('node:crypto').webcrypto,fn=>{const key=++id;timers.set(key,fn);return key;},key=>timers.delete(key),Clock);let offers,answers,record;const writes=[],api={subscribeDashboardOffers:(_,fn)=>{offers=fn;return ()=>{};},subscribeDashboardAnswer:(_,who,fn)=>{answers=fn;return ()=>{};},sendDashboardSignal:async(_,r)=>{writes.push(r);record=r.action==='offer'?{...r,offer:r.description,expiresAt:Clock.now()+120000}:{...record,source:r.source,answer:r.description};if(r.action==='offer')offers([record]);else await answers(record);return true;}};
+ const statuses=[],publisher=module.create({role:'publisher',club:'club',api,onStatus:value=>statuses.push(value)}),frames=[],viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1}),onFrame:f=>frames.push(f)});publisher.publish({persons:[{name:'A'}],currentEveningStartedAt:evening},1,evening);for(const fn of [...timers.values()])fn();for(let n=0;n<8;n++)await tick();assert.equal(frames.at(-1)?.sequence,1);assert.equal(writes.length,2);const measurement=await publisher.test();assert.equal(measurement.via,'webrtc');assert(measurement.ms>=0);
+ const sending=[...pcs.values()].find(p=>p.remoteDescription?.type==='offer').channel;sending.bufferedAmount=300000;publisher.publish({persons:[{name:'A',avatarData:'x'.repeat(200000)}]},2,evening);publisher.publish({persons:[{name:'A',avatarData:'y'.repeat(200000)}],teamStopwatchRunning:false,menschState:{scores:{A:7}}},3,evening);await tick();assert.equal(frames.at(-1).sequence,1);sending.bufferedAmount=0;sending.onbufferedamountlow();for(let n=0;n<5;n++)await tick();assert.equal(frames.at(-1).sequence,3);assert.equal(frames.at(-1).state.persons[0].avatarData.length,200000);assert.equal(frames.at(-1).state.teamStopwatchRunning,false);assert.equal(frames.at(-1).state.menschState.scores.A,7);assert(sent.length>20);assert(Math.max(...sent)<50000);assert.equal(writes.length,2,'throws and pauses never enter the signaling transaction queue');
+ assert.equal(statuses.at(-1).mode,'direct');
+ const poll=async()=>{for(const fn of [...timers.values()])fn();for(let n=0;n<6;n++)await tick();};
+ w.navigator.onLine=false;
+ elapsed+=2000;await poll();
+ publisher.publish({persons:[{name:'A'}]},4,evening);await tick();
+ assert.equal(frames.at(-1).sequence,4,'a negotiated LAN channel still renders during an internet outage');
+ assert.equal(statuses.at(-1).mode,'direct');
+ assert.equal(writes.length,2);
+ for(const pc of pcs.values()){pc.connectionState='failed';pc.onconnectionstatechange?.();}
+ assert.notEqual(statuses.at(-1).mode,'direct');
+ publisher.publish({persons:[{name:'A'}]},5,evening);await poll();
+ assert.equal(frames.at(-1).sequence,4);
+ w.navigator.onLine=true;
+ elapsed+=18000;await poll();
+ assert.equal(statuses.at(-1).mode,'direct');
+ assert.equal(frames.at(-1).sequence,5,'reconnect sends the newest view');
+ assert.equal(writes.length,4);
+ routeType='relay';elapsed+=11000;await poll();
+ assert.notEqual(statuses.at(-1).mode,'direct');
+ publisher.close();viewer.close();assert.equal(timers.size,0);
 });
 test('an unavailable peer implementation leaves the existing cloud path usable without an unhandled rejection',async()=>{
  const timers=[],w={RTCPeerConnection:class{constructor(){throw Error('TV does not support peer channels');}}},module=new Function('window','crypto','setInterval','clearInterval',read('js/dashboard-link.js')+';return window.KCDashboardLink;')(w,require('node:crypto').webcrypto,fn=>{timers.push(fn);return timers.length;},()=>{});let offers;const api={subscribeDashboardOffers:(_,fn)=>{offers=fn;return ()=>{};},subscribeDashboardAnswer:()=>()=>{},sendDashboardSignal:async()=>{throw Error('must not write a broken offer');}};const publisher=module.create({role:'publisher',club:'club',api}),viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1})});publisher.publish({persons:[]},1,evening);offers([{viewerId:'viewer',connectionId:'connection',expiresAt:Date.now()+10000,offer:{type:'offer',sdp:'x'}}]);for(const fn of timers)fn();await tick();publisher.close();viewer.close();
@@ -184,4 +207,42 @@ test('older TV build has the same dashboard shell and parses as an ES2018 applic
   assert.doesNotThrow(()=>parse(read('tv-compat/'+name+'.js'),{ecmaVersion:2018}));
  }
  assert.match(modern,/dashboard-compat\.html/);
+});
+
+test('LAN SDP preserves private IPv4, local IPv6 and mDNS and strips public routes and relay candidates',()=>{
+ const window={};new Function('window',read('js/dashboard-link.js'))(window);
+ const candidate=(addr,type='host')=>'a=candidate:1 1 udp 1 '+addr+' 45678 typ '+type;
+ const local=['192.168.43.12','172.20.10.3','10.41.0.2','fe80::2','fd01::1','abc-1.local'];
+ const publicRoutes=[candidate('203.0.113.9'),candidate('2001:db8::1'),candidate('192.168.1.3','relay'),candidate('192.168.1.4','srflx')];
+ assert.equal(window.KCDashboardLink.lanDescription({type:'offer',sdp:publicRoutes.join('\n')}),null);
+ const description=window.KCDashboardLink.lanDescription({type:'offer',sdp:['v=0',...local.map(addr=>candidate(addr)),...publicRoutes].join('\n')});
+ assert.deepEqual(description.sdp.split('\r\n'),['v=0',...local.map(addr=>candidate(addr))]);
+});
+
+test('display retains a pending frame across its own cloud receipt but yields to independent Firebase revisions',()=>{
+ const window={};new Function('window',read('js/dashboard-link.js'))(window);
+ const root={tabletSequence:8,syncRevision:18,syncOperation:'sync_other',currentEveningStartedAt:evening,persons:[{name:'A'}]};
+ const frame={sequence:9,baseRevision:17,baseEvening:evening,operations:['sync_local_8','sync_local_9'],
+  state:{currentEveningStartedAt:evening,persons:[{name:'B'}]}};
+ const {reconcile}=window.KCDashboardLink;
+ assert.equal(reconcile(root,frame),root);
+ const same={...root,syncOperation:'sync_local_8'};
+ assert.equal(reconcile(same,frame).persons[0].name,'B');
+ assert.equal(reconcile(same,{...frame,conflict:true}),same);
+ const confirmed={...same,tabletSequence:9};
+ assert.equal(reconcile(confirmed,frame),confirmed);
+});
+
+test('Firebase keeps the confirmed state when a tablet batch conflicts with an independent revision',async()=>{
+ const db=database({[rootPath]:initial()}),c=apiClient(db);
+ await c.firestoreApi.initializeSharedState('club',{},'sync_guard_init');
+ const original=copy(db.root());
+ const external={...original,syncRevision:original.syncRevision+1,syncOperation:'sync_external'};
+ db.data.set(rootPath,external);
+ const batch={state:{...original,persons:original.persons.map((p,i)=>i? p:{...p,drinks:{beer:7}})},
+  sequence:Number(original.tabletSequence||0)+1,baseSequence:Number(original.tabletSequence||0),baseRevision:original.syncRevision,documents:[]};
+ const context={method:'commitTabletBatch',opId:'sync_stale_tablet',eveningStartedAt:original.currentEveningStartedAt||'',base:{},sideOperations:[]};
+ await assert.rejects(c.firestoreApi.commitTabletBatch('club',batch,context),/Firebase-Revision/);
+ assert.deepEqual(db.root(),external);
+ assert(!db.data.has('clubs/club/syncCommands/sync_stale_tablet'));
 });
