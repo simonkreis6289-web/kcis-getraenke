@@ -14,9 +14,12 @@ test('all sixteen selections preserve default placement and allow shared positio
 });
 test('TV moves the original panels and expands the stage and single side without duplicating or deleting contents',()=>{
  const f=ui();vm.runInContext(read('js/dashboard-layout-tv.js'),f);const T=f.KCDashboardLayoutTV,panels=Object.fromEntries(M.keys.map(k=>[k,f.document.getElementById('dashboard-panel-'+k)]));panels.drinks.dataset.marker='retained';T.apply(null);assert.deepEqual([...f.document.querySelector('.side.left').querySelectorAll('.panel')].map(x=>x.id),['dashboard-panel-drinks','dashboard-panel-fines']);
- let s=selection(['seating']);s.panels.seating.position='right-top';T.apply(s);assert(f.document.querySelector('.side.left').hidden);assert(!f.document.querySelector('.side.right').hidden);assert.equal(f.document.querySelector('.stage').style.gridColumn,'1');assert(f.document.querySelector('.side.right').style.gridTemplateRows.startsWith('repeat(1,'));
+ let s=selection(['seating']);s.panels.seating.position='right-top';T.apply(s);assert(f.document.querySelector('.side.left').hidden);assert(!f.document.querySelector('.side.right').hidden);assert.equal(f.document.querySelector('.stage').style.gridColumn,'1');assert(f.document.querySelector('.side.right').style.gridTemplateRows==='minmax(0,1fr)');
  s=selection(['gutters','fines']);s=M.move(s,'fines','left-bottom');s=M.move(s,'gutters','left-top');T.apply(s);assert(f.document.querySelector('.side.right').hidden);assert.deepEqual([...f.document.querySelector('.side.left').querySelectorAll('.panel')].map(x=>x.id),['dashboard-panel-gutters','dashboard-panel-fines']);
- T.apply(selection(['drinks','gutters','seating']));assert(f.document.querySelector('.side.left').style.gridTemplateRows.startsWith('repeat(1,'));assert(f.document.querySelector('.side.right').style.gridTemplateRows.startsWith('repeat(2,'));T.apply(selection([]));assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,1fr)');T.apply({tableWidth:{left:14,right:23}});assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,14%) minmax(0,1fr) minmax(0,23%)');T.apply(null);for(const key of M.keys)assert.equal(f.document.getElementById('dashboard-panel-'+key),panels[key]);assert.equal(panels.drinks.dataset.marker,'retained');
+ T.apply({tableHeight:{left:65,right:30}});
+ assert.equal(f.document.querySelector('.side.left').style.gridTemplateRows,'minmax(0,65fr) minmax(0,35fr)');
+ assert.equal(f.document.querySelector('.side.right').style.gridTemplateRows,'minmax(0,30fr) minmax(0,70fr)');
+ T.apply(selection(['drinks','gutters','seating']));assert(f.document.querySelector('.side.left').style.gridTemplateRows==='minmax(0,1fr)');assert(f.document.querySelector('.side.right').style.gridTemplateRows==='minmax(0,50fr) minmax(0,50fr)');T.apply(selection([]));assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,1fr)');T.apply({tableWidth:{left:14,right:23}});assert.equal(f.document.querySelector('main').style.gridTemplateColumns,'minmax(0,14%) minmax(0,1fr) minmax(0,23%)');T.apply(null);for(const key of M.keys)assert.equal(f.document.getElementById('dashboard-panel-'+key),panels[key]);assert.equal(panels.drinks.dataset.marker,'retained');
 });
 test('real app saves panel choices and ordering, reloads them and keeps them on a new evening',{timeout:60000},async()=>{
  const a=await app();const box=a.document.getElementById('dashboard-layout-settings');assert(box);assert.equal(box.querySelectorAll('[id^="dashboard-show-"]').length,4);for(const check of box.querySelectorAll('[id^="dashboard-show-"]'))assert(check.checked);
@@ -37,9 +40,15 @@ test('real app saves panel choices and ordering, reloads them and keeps them on 
   const field=a.document.getElementById('dashboard-mensch-popup-'+key);
   field.value=value;field.oninput();
  }
+ for(const [id,value] of [['dashboard-table-height-left','67'],['dashboard-table-height-right','35'],['dashboard-station-seconds','8']]){
+  const field=a.document.getElementById(id);
+  field.value=value;field.oninput();
+ }
  const check=a.document.getElementById('dashboard-show-drinks');check.checked=false;check.onchange();const select=a.document.getElementById('dashboard-position-seating');for(const option of select.querySelectorAll('option'))if(option.value==='left-top')option.setAttribute('selected','');else option.removeAttribute('selected');select.onchange();const counters=people=>people.map(p=>({name:p.name,drinks:p.drinks,strafen:p.strafen,paid:p.paid,freeStrafen:p.freeStrafen,rounds:p.rounds,boughtThrows:p.boughtThrows})),people=copy(counters(a.db.root().persons));assert(await a.c.KCDashboardSettingsApp.save());assert(await a.c.KCSharedSync.waitForUpload());assert.equal(a.db.root().dashboardSettings.panels.drinks.enabled,false);assert.equal(a.db.root().dashboardSettings.panels.seating.position,'left-top');assert.deepEqual(counters(a.db.root().persons),people);assert.deepEqual(copy(a.db.root().dashboardSettings.playerRows),{holdSeconds:2.4,moveSeconds:1.1});
  assert.deepEqual(copy(a.db.root().dashboardSettings.lottoAnimations),{hit:2.4,miss:0});
  assert.deepEqual(copy(a.db.root().dashboardSettings.menschPopup),{seconds:4,color:'#19447a'});
+ assert.deepEqual(copy(a.db.root().dashboardSettings.tableHeight),{left:67,right:35});
+ assert.equal(a.db.root().dashboardSettings.eventToasts.stationSeconds,8);
  const b=fullApp(a.db);await b.select();assert.equal(b.document.getElementById('dashboard-lotto-animation-hit').value,'2.4');assert.equal(b.document.getElementById('dashboard-show-drinks').checked,false);assert.equal(b.document.getElementById('game-row-hold-seconds').value,'2.4');assert.equal(b.document.getElementById('game-row-move-seconds').value,'1.1');assert.equal(b.document.getElementById('dashboard-position-seating').value,'left-top');const saved=copy(b.db?.root?.()?.dashboardSettings||a.db.root().dashboardSettings);assert(await b.c.startNewKegelabend());assert(await b.c.KCSharedSync.waitForUpload());assert.deepEqual(a.db.root().dashboardSettings,saved);
 });
 test('ticker birthday window ends at the next bowling date, includes every matching birthday, and does not stop at an earlier tour',()=>{
@@ -216,4 +225,17 @@ test('the dense hurdle board fits the available width and height as one block',(
  fit({...area,dataset:{hurdleGame:'indgame_next'}},{...next,offsetHeight:500},memory);
  assert.equal(memory.scale,1,'a new game can use the available space again');
  assert.match(read('css/individual-games.css'),/\.ind-hurdle-tv \.ind-table-scroll\s*\{\s*overflow: visible/);
+});
+
+test('dashboard indicator stays blue on a direct link independently of Firebase confirmation',()=>{
+ const f=ui(),src=read('dashboard.html');
+ vm.runInContext("const $=id=>document.getElementById(id);let tvDirect=true;"+src.slice(src.indexOf('function status('),src.indexOf('let lastReceived=')),f);
+ f.status('Cloudbestätigung ausstehend');
+ const dot=f.document.getElementById('indicator');
+ assert(dot.classList.contains('direct'));
+ assert.equal(dot.getAttribute('aria-label'),'Tablet direkt · Cloudbestätigung ausstehend');
+ vm.runInContext('tvDirect=false',f);
+ f.status('TV über Firebase verbunden',true);assert(dot.classList.contains('ok'));
+ f.status('Gerätestand · Serverbestätigung ausstehend',false,true);assert(dot.classList.contains('pending'));
+ f.status('Keine Internetverbindung');assert.equal(dot.className,'dot');
 });

@@ -42,6 +42,13 @@
    label.append(document.createTextNode('Tabellenbreite '+title+' '),duration(id,draft.tableWidth[side],10,35,v=>draft.tableWidth[side]=v),document.createTextNode(' % der Dashboardbreite'));
    box.append(label);
   }
+  box.append(element('p','Die Höhe gilt für die obere Tabelle. Die untere nutzt den übrigen Platz. Eine einzelne Tabelle nutzt die volle Höhe.'));
+  for(const [side,title] of [['left','links'],['right','rechts']]){
+   const id='dashboard-table-height-'+side,label=element('label',undefined,'dashboard-popup-option');
+   label.htmlFor=id;
+   label.append(document.createTextNode('Tabellenhöhe '+title+' oben '),duration(id,draft.tableHeight[side],20,80,v=>draft.tableHeight[side]=v),document.createTextNode(' % der verfügbaren Höhe'));
+   box.append(label);
+  }
   const fadeLabel=element('label',undefined,'dashboard-popup-option');fadeLabel.htmlFor='dashboard-transition-seconds';const fade=element('input');fade.type='number';fade.id='dashboard-transition-seconds';fade.min='0';fade.max='3';fade.step='0.1';fade.value=String(draft.transitionSeconds);fade.disabled=busy;fade.oninput=()=>draft.transitionSeconds=fade.value;fadeLabel.append(document.createTextNode('Sanfter Tabellenwechsel · Übergangszeit '),fade,document.createTextNode(' Sekunden (0 = sofort, Standard 0,6 s)'));box.append(fadeLabel);
   box=section('player-rows','Spielerzeilen in App und Dashboard');
   box.append(element('p','Gilt für Spieltabellen mit wechselnder Wurfreihenfolge. Mit 0 Sekunden entfällt die jeweilige Pause oder Bewegung.'));
@@ -112,7 +119,7 @@
   menschColor.htmlFor=menschPicker.id;menschColor.append(document.createTextNode('Hintergrundfarbe des Rauswurf-Popups '),menschPicker);
   box.append(menschDuration,menschColor);
   box.append(element('h3','Weitere TV-Toasts'),element('p','Neue Meldungen erscheinen erst nach einer tatsächlichen Änderung. Beim Öffnen des Dashboards werden alte Ereignisse nicht nachgespielt.'));
-  for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam'],['station','🍺 KC Theke · Buchungen']]){
+  for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam']]){
    const line=element('div',undefined,'dashboard-event-toast-color-row'),label=element('label',undefined,'dashboard-popup-option'),checkbox=element('input');
    checkbox.type='checkbox';checkbox.checked=draft.eventToasts[key];checkbox.disabled=busy;checkbox.id='dashboard-event-toast-'+key;
    checkbox.onchange=()=>{draft.eventToasts[key]=checkbox.checked;draw();};
@@ -125,6 +132,20 @@
   }
   const eventDuration=element('label',undefined,'dashboard-popup-option');eventDuration.htmlFor='dashboard-event-toast-seconds';
   eventDuration.append(document.createTextNode('Diese Toasts anzeigen für '),duration('dashboard-event-toast-seconds',draft.eventToasts.seconds,0,30,v=>draft.eventToasts.seconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(eventDuration);
+  box.append(element('h3','KC Theke · Buchungen'));
+  const stationLabel=element('label',undefined,'dashboard-popup-option'),station=element('input');
+  station.type='checkbox';station.id='dashboard-event-toast-station';station.checked=draft.eventToasts.station;station.disabled=busy;
+  station.onchange=()=>{draft.eventToasts.station=station.checked;draw();};
+  stationLabel.append(station,document.createTextNode('Buchungen am TV anzeigen'));
+  const stationDuration=element('label',undefined,'dashboard-popup-option');
+  stationDuration.htmlFor='dashboard-station-seconds';
+  stationDuration.append(document.createTextNode('Thekenbuchungen anzeigen für '),duration(stationDuration.htmlFor,draft.eventToasts.stationSeconds,0,30,v=>draft.eventToasts.stationSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));
+  const stationColor=element('label',undefined,'dashboard-popup-option'),stationPicker=element('input');
+  stationPicker.id='dashboard-event-toast-color-station';stationPicker.type='color';stationPicker.value=draft.eventToasts.colors.station;stationPicker.disabled=busy||!station.checked;
+  stationPicker.oninput=()=>draft.eventToasts.colors.station=stationPicker.value;
+  stationColor.htmlFor=stationPicker.id;stationColor.append(document.createTextNode('Hintergrundfarbe der Buchungsanzeige '),stationPicker);
+  box.append(stationLabel,stationDuration,stationColor);
+
   box=section('football','Bundesliga');
   box.append(element('p','OpenLigaDB liefert Spielstände und bestätigte Ereignisse. Die angezeigte Spielminute ist eine Schätzung.'));
   for(const [key,name] of [['bl1','1. Bundesliga'],['bl2','2. Bundesliga']]){const label=element('label',undefined,'dashboard-popup-option'),check=element('input');check.type='checkbox';check.checked=draft.football[key];check.disabled=busy;check.onchange=()=>draft.football[key]=check.checked;label.append(check,document.createTextNode(name+' im Laufband anzeigen'));box.append(label);}
