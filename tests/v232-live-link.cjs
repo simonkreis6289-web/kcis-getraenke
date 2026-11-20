@@ -118,6 +118,8 @@ test('data-channel negotiation, chunk reassembly and backpressure send the lates
  const statuses=[],publisher=module.create({role:'publisher',club:'club',api,onStatus:value=>statuses.push(value)}),frames=[],viewer=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1}),onFrame:f=>frames.push(f)});publisher.publish({persons:[{name:'A'}],currentEveningStartedAt:evening},1,evening);for(const fn of [...timers.values()])fn();for(let n=0;n<8;n++)await tick();assert.equal(frames.at(-1)?.sequence,1);assert.equal(writes.length,2);const measurement=await publisher.test();assert.equal(measurement.via,'webrtc');assert(measurement.ms>=0);
  const sending=[...pcs.values()].find(p=>p.remoteDescription?.type==='offer').channel;sending.bufferedAmount=300000;publisher.publish({persons:[{name:'A',avatarData:'x'.repeat(200000)}]},2,evening);publisher.publish({persons:[{name:'A',avatarData:'y'.repeat(200000)}],teamStopwatchRunning:false,menschState:{scores:{A:7}}},3,evening);await tick();assert.equal(frames.at(-1).sequence,1);sending.bufferedAmount=0;sending.onbufferedamountlow();for(let n=0;n<5;n++)await tick();assert.equal(frames.at(-1).sequence,3);assert.equal(frames.at(-1).state.persons[0].avatarData.length,200000);assert.equal(frames.at(-1).state.teamStopwatchRunning,false);assert.equal(frames.at(-1).state.menschState.scores.A,7);assert(sent.length>20);assert(Math.max(...sent)<50000);assert.equal(writes.length,2,'throws and pauses never enter the signaling transaction queue');
  assert.equal(statuses.at(-1).mode,'direct');
+ assert.equal(await viewer.checkDirect(),'direct');
+ assert.equal(writes.length,2,'checking a healthy channel leaves it in place');
  const poll=async()=>{for(const fn of [...timers.values()])fn();for(let n=0;n<6;n++)await tick();};
  w.navigator.onLine=false;
  elapsed+=2000;await poll();
@@ -127,6 +129,7 @@ test('data-channel negotiation, chunk reassembly and backpressure send the lates
  assert.equal(writes.length,2);
  for(const pc of pcs.values()){pc.connectionState='failed';pc.onconnectionstatechange?.();}
  assert.notEqual(statuses.at(-1).mode,'direct');
+ assert.equal(await viewer.checkDirect(),'offline');
  publisher.publish({persons:[{name:'A'}]},5,evening);await poll();
  assert.equal(frames.at(-1).sequence,4);
  w.navigator.onLine=true;
@@ -139,10 +142,11 @@ test('data-channel negotiation, chunk reassembly and backpressure send the lates
  viewer.close();
  routeType='host';isolated=true;
  const reloadedFrames=[],reloaded=module.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1}),onFrame:f=>reloadedFrames.push(f)});
- await poll();elapsed+=13000;await poll();
+ await poll();const checking=reloaded.checkDirect();elapsed+=13000;await poll();
  assert.equal(reloadedFrames.length,0,'an isolated network cannot open a channel even if both browsers have private IPs');
  isolated=false;elapsed+=13000;await poll();
  assert.equal(reloadedFrames.at(-1)?.sequence,5);
+ assert.equal(await checking,'direct');
  publisher.close();reloaded.close();assert.equal(timers.size,0);
 });
 test('an unavailable peer implementation leaves the existing cloud path usable without an unhandled rejection',async()=>{
@@ -175,6 +179,7 @@ test('without WebRTC the TV reports Firebase presence and echoes a real round-tr
  const publisher=link.create({role:'publisher',club:'club',api,getBase:base,onStatus:value=>statuses.push(value)});
  const viewer=link.create({role:'viewer',club:'club',api,getBase:base});
  try{
+  assert.equal(await viewer.checkDirect(),'unsupported');
   for(const poll of intervals)poll();
   await tick();
   assert.equal(statuses.at(-1).mode,'firebase');
@@ -252,4 +257,40 @@ test('Firebase keeps the confirmed state when a tablet batch conflicts with an i
  await assert.rejects(c.firestoreApi.commitTabletBatch('club',batch,context),/Firebase-Revision/);
  assert.deepEqual(db.root(),external);
  assert(!db.data.has('clubs/club/syncCommands/sync_stale_tablet'));
+});
+
+test('a TV check bypasses automatic retry backoff and times out without affecting the viewer',async()=>{
+ const timers=new Map(),signals=[];
+ class Peer{
+  createDataChannel(){return {close(){}};}
+  getStats(){return new Map();}
+  async createOffer(){return {type:'offer',sdp:'a=candidate:1 1 udp 1 192.168.0.2 47700 typ host\r\n'};}
+  async setLocalDescription(description){this.localDescription=description;this.iceGatheringState='complete';}
+  close(){}
+ }
+ const window={RTCPeerConnection:Peer,navigator:{onLine:true}};
+ new Function('window','crypto','setInterval','clearInterval','setTimeout','clearTimeout',read('js/dashboard-link.js'))(
+  window,require('node:crypto').webcrypto,()=>0,()=>{},
+  (fn,delay)=>{timers.set(delay,fn);return delay;},delay=>timers.delete(delay));
+ const api={
+  subscribeDashboardAnswer:()=>()=>{},
+  async sendDashboardSignal(club,signal){signals.push(signal);return false;}
+ };
+ const viewer=window.KCDashboardLink.create({role:'viewer',club:'club',api,getBase:()=>({syncProtocol:1})});
+ await tick();
+ viewer.refresh();
+ await tick();
+ assert.equal(signals.length,1,'automatic retries back off after the first failed offer');
+ const manual=viewer.checkDirect();
+ const repeated=viewer.checkDirect();
+ await tick();
+ assert.equal(signals.length,2,'manual check sends one new offer during backoff');
+ timers.get(16000)();
+ assert.equal(await manual,'timeout');
+ assert.equal(await repeated,'timeout');
+ const pending=viewer.checkDirect();
+ viewer.close();
+ assert.equal(await pending,'unavailable');
+ await tick();
+ assert.equal(timers.size,0);
 });

@@ -64,20 +64,31 @@
  }
  function create({role,club,api,getBase=()=>null,onFrame=()=>{},onStatus=()=>{}}){
   const BC=window.BroadcastChannel,PC=window.RTCPeerConnection||window.webkitRTCPeerConnection;
-  if(!BC&&!PC&&!api?.subscribeDashboardDiagnostic)return {publish(){},close(){}};
+  if(!BC&&!PC&&!api?.subscribeDashboardDiagnostic)return {checkDirect:async()=>'unsupported',publish(){},close(){}};
   let closed=false,latest=null,bc=null,unsub=null,viewerUnsub=null,busy=false,nextOfferAt=0,viewerPeer=null,serial=0,version=0,attempts=0;
   const created=Date.now(),monotonic=()=>window.performance?.now()??Date.now();
   const diagnosticOff=[];
-  let lastViaPeer=false,presence=null,lastPresence=0,presenceBusy=false,lastProbe='',probe=null;
+  let lastViaPeer=false,presence=null,lastPresence=0,presenceBusy=false,lastProbe='',probe=null,directCheck=null;
   const diagnosticAvailable=!!(api?.subscribeDashboardDiagnostic&&api?.sendDashboardDiagnostic);
   const source=uid(),peers=new Map(),acks=new Map(),assembling=new Map();let viewerId=uid();
   try{if(role==='viewer'&&window.sessionStorage){const key='kcis_tv_peer_'+club,saved=window.sessionStorage.getItem(key);if(/^[a-zA-Z0-9_-]{1,80}$/.test(saved||''))viewerId=saved;else window.sessionStorage.setItem(key,viewerId);}}catch{}
+  function viewerDirect(now=Date.now()){
+   return viewerPeer?.local===true&&viewerPeer.dc?.readyState==='open'&&
+    viewerPeer.heard>0&&now-viewerPeer.heard<10000&&lastViaPeer;
+  }
+  function settleDirectCheck(result){
+   if(!directCheck)return;
+   const pending=directCheck;directCheck=null;
+   clearTimeout(pending.timer);
+   pending.resolve(result);
+  }
   function report(){
    const now=Date.now();
    for(const [id,row] of acks)if(now-row.at>8000)acks.delete(id);
    const acknowledged=[...acks.values()].sort((a,b)=>Number(!!b.peer)-Number(!!a.peer))[0];
    const cloud=!!(presence?.expiresAt>stamp()&&window.navigator?.onLine!==false);
-   const direct=acknowledged?.peer?.local===true||role==='viewer'&&viewerPeer?.local===true&&viewerPeer.heard>0&&now-viewerPeer.heard<10000&&lastViaPeer;
+   const direct=acknowledged?.peer?.local===true||role==='viewer'&&viewerDirect(now);
+   if(directCheck&&viewerDirect(now))settleDirectCheck('direct');
    const mode=direct?'direct':cloud?'firebase':now-created<12000?'connecting':'disconnected';
    try{onStatus({mode,direct,peers:acks.size,webrtc:typeof PC==='function',
     tvWebrtc:acknowledged?.webrtc??(cloud?presence.webrtc:undefined),
@@ -272,6 +283,24 @@
   }catch{}
   if(role==='viewer')post({kind:'hello',club,viewerId});
   function refresh(){if(role==='viewer'&&api?.sendDashboardSignal)void offer();}
+  async function checkDirect(){
+   if(closed||role!=='viewer')return 'unavailable';
+   if(viewerDirect())return 'direct';
+   if(typeof PC!=='function'||typeof PC.prototype?.createDataChannel!=='function'||typeof PC.prototype?.getStats!=='function')return 'unsupported';
+   if(window.navigator?.onLine===false)return 'offline';
+   if(!api?.sendDashboardSignal||!api?.subscribeDashboardAnswer)return 'unavailable';
+   if(directCheck)return directCheck.result;
+
+   let resolve;
+   const result=new Promise(done=>{resolve=done;});
+   const timer=setTimeout(()=>{
+    settleDirectCheck(window.navigator?.onLine===false?'offline':getBase()?.syncProtocol?'timeout':'unavailable');
+   },16000);
+   directCheck={result,resolve,timer};
+   nextOfferAt=0;
+   refresh();
+   return result;
+  }
   function resume(){if(!viewerPeer){nextOfferAt=0;refresh();}}
   const network=window.navigator?.connection;
   window.addEventListener?.('online',resume);network?.addEventListener?.('change',resume);
@@ -293,9 +322,9 @@
   },2000);
   refresh();
   return {
-   test,refresh,
+   test,refresh,checkDirect,
    publish(state,sequence,baseEvening='',content={},basis={}){if(closed||role!=='publisher'||!Number.isSafeInteger(sequence)||sequence<0)return;latest={v:1,club,source,version:++version,sequence,baseEvening:String(baseEvening||''),...basis,clock:window.KCSharedClock?.captureTablet?.()||{time:stamp()},state:project(state),content:lean(content)};post({kind:'frame',club,frame:latest});for(const peer of peers.values())send(peer,latest);},
-   close(){if(closed)return;closed=true;clearInterval(interval);window.removeEventListener?.('online',resume);network?.removeEventListener?.('change',resume);if(probe)settleProbe(probe.id,null);try{bc?.close();unsub?.();viewerUnsub?.();for(const off of diagnosticOff)off?.();}catch{}for(const peer of peers.values())closePeer(peer);if(viewerPeer)closePeer(viewerPeer);peers.clear();assembling.clear();acks.clear();}
+   close(){if(closed)return;closed=true;settleDirectCheck('unavailable');clearInterval(interval);window.removeEventListener?.('online',resume);network?.removeEventListener?.('change',resume);if(probe)settleProbe(probe.id,null);try{bc?.close();unsub?.();viewerUnsub?.();for(const off of diagnosticOff)off?.();}catch{}for(const peer of peers.values())closePeer(peer);if(viewerPeer)closePeer(viewerPeer);peers.clear();assembling.clear();acks.clear();}
   };
  }
  window.KCDashboardLink=Object.freeze({create,project,reconcile,valid,lanDescription});
