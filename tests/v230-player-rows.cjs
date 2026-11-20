@@ -7,7 +7,13 @@ async function app(){const root=initial();root.dartsState={active:false};root.pe
 function tv(db){let receive;const d=dashboard({root:()=>db.root(),subscribe:(_,cb)=>{receive=cb;cb(db.root());return ()=>{};}});for(const f of ['js/game-player-rows.js','js/kranz-policy.js','js/games/extra-core.js','js/games/extra-view.js','js/games/individual-core.js','js/games/individual-view.js','js/games/table-games-core.js','js/game-overview.js']){vm.runInContext(read(f),d.c);Object.assign(d.c,d.c.window);}Object.defineProperty(d.document.getElementById('game-select'),'value',{value:'auto',writable:true});d.c.window.dashboardTest.connect('club','Test');return {...d,update:()=>receive(db.root())};}
 function names(document,selector){return [...document.querySelectorAll(selector)].map(row=>{const cell=row.matches('strong')?row:row.querySelector('th,td'),clone=cell.cloneNode(true);for(const small of clone.querySelectorAll('small'))small.remove();return clone.textContent.replace(/🎳 Am Wurf/g,'').trim();});}
 function selectors(key){return key==='lattenzaun'?['#tab-lattenzaun .extra-fence-row>div:first-child>strong','#game-body .extra-fence-row>div:first-child>strong']:key==='sichern'?['#sichern-board .sichern-card-top>strong','#game-body .tv-board>div[style*="grid-template-columns"]>div>strong:first-child']:[key==='blackjack'?'#tab-blackjack .tg-table-scroll tbody tr':key==='mensch'||key==='plusminus'?'#tab-'+key+' .game-compact-table tbody tr':'#tab-'+key+' .ind-table tbody tr','#game-body table:first-of-type tbody tr'];}
-async function check(a,d,key,expected){assert(await a.c.KCSharedSync.waitForUpload());d.update();const [one,two]=selectors(key);assert.deepEqual(names(a.document,one),expected,key+' app');assert.deepEqual(names(d.document,two),expected,key+' dashboard');const before=copy(a.run('getFirestoreState()'));a.c.renderAll();d.c.window.dashboardTest.paint();assert.deepEqual(copy(a.run('getFirestoreState()')),before,'rendering must not mutate persisted data');assert(!a.document.querySelector('#tab-'+key+' tr.ind-current,#tab-'+key+' tr.current,#tab-'+key+' .sichern-current,#tab-'+key+' .extra-current'));assert(!d.document.querySelector('#game-body tr.ind-current,#game-body tr.tg-current,#game-body .tv-current'));
+async function check(a,d,key,expected){assert(await a.c.KCSharedSync.waitForUpload());d.update();const [one,two]=selectors(key);assert.deepEqual(names(a.document,one),expected,key+' app');assert.deepEqual(names(d.document,two),expected,key+' dashboard');const before=copy(a.run('getFirestoreState()'));a.c.renderAll();d.c.window.dashboardTest.paint();assert.deepEqual(copy(a.run('getFirestoreState()')),before,'rendering must not mutate persisted data');assert(!a.document.querySelector('#tab-'+key+' tr.ind-current,#tab-'+key+' tr.current,#tab-'+key+' .sichern-current,#tab-'+key+' .extra-current'));if(key==='siebener'){
+ const active=d.document.querySelector('#game-body tr.ind-current');
+ assert.equal(active?.dataset.playerRow,expected[0]);
+ assert.equal(active.getAttribute('aria-current'),'true');
+ const s=a.c.indGet(key),open=a.c.KCIndividual.sevenColumns(s).filter(number=>!s.sheet[expected[0]][number]);
+ assert.deepEqual([...d.document.querySelectorAll('.ind-seven-open b')].map(chip=>Number(chip.textContent)),Array.from(open));
+ }else assert(!d.document.querySelector('#game-body tr.ind-current,#game-body tr.tg-current,#game-body .tv-current'));
  const s=a.c.gameSetupState(key),order=s.players||s.playerOrder||s.order;assert.deepEqual(copy(order),['A','B','C','D'],'frozen order is unchanged');}
 const keys=['mensch','plusminus','sichern','blackjack','siebener','hindernis','bergundtal','guterschnitt','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend','lattenzaun'];
 for(const key of keys)test(key+': real app and TV move rows with the actual turn, preserve inputs and undo to the original order',{timeout:60000},async()=>{
@@ -52,7 +58,7 @@ test('animated rows show the new booking in place, then slide into the game’s 
  function render(key,order,turn,values={},options={}){
   root.innerHTML='<table><tbody'+group(key,{id:'game'}, {turn,...options})+'>'+
    order.map(name=>'<tr'+row(name)+'><th>'+name+'</th><td>'+(values[name]||0)+'</td></tr>').join('')+'</tbody></table>';
-  const body=root.querySelector('tbody');body.getClientRects=()=>[{}];
+  const body=root.querySelector('tbody');body.getClientRects=()=>[{}];if(options.extraHold)body.dataset.playerExtraHold=String(options.extraHold);
   for(const item of body.children){
    item.getBoundingClientRect=()=>({left:0,top:[...body.children].indexOf(item)*50});
    item.animate=(frames,settings)=>{const playback={currentTime:0};animations.push([item.dataset.playerRow,frames,settings,playback]);return playback;};
@@ -98,6 +104,11 @@ test('animated rows show the new booking in place, then slide into the game’s 
  assert.deepEqual(names(body),['A','B','C']);
  assert(animations.length>beforeSimple);
  assert(animations.slice(beforeSimple).every(entry=>entry[1].length===2&&entry[2].duration===220));
+ render('lottokoenig',['A','B','C'],1);
+ body=render('lottokoenig',['B','C','A'],2,{A:9},{extraHold:3700});
+ assert.deepEqual(names(body),['A','B','C']);
+ assert.equal([...clock.values()][0].ms,5600);
+ release();assert.deepEqual(names(body),['B','C','A']);
  moveSeconds=0;
  const animated=animations.length;
  render('abschreibung',['A','B','C'],3,{}, {motionOnly:true});

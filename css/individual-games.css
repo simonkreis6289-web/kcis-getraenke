@@ -397,3 +397,17 @@
 .jump-tv-bar { position:absolute; bottom:var(--jump-bar); left:50%; transform:translate(-50%, 50%); padding:2px 4px; width:max-content; border-bottom:3px solid #d58a28; color:#694318; background:#fff4d5; font-size:11px; font-weight:800; }
 
 .hurdle-player-choice { flex-direction:column; align-items:stretch; }
+
+.ind-seven-tv-turn {
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;
+}
+.ind-seven-open {
+  display:flex;flex-wrap:wrap;align-items:center;gap:.32rem;
+  color:#61490f;font-size:clamp(.8rem,1.1vw,1.05rem);
+}
+.ind-seven-open > span { margin-right:.2rem;font-weight:700; }
+.ind-seven-open b {
+  display:grid;place-items:center;min-width:2em;min-height:2em;padding:0 .25em;
+  border:1px solid #e7ca78;border-radius:.52rem;background:#fffaf0;color:#4b3611;
+  font-variant-numeric:tabular-nums;
+}

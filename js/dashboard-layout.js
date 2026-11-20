@@ -17,9 +17,17 @@
     ?Math.max(0,Math.min(rowTimingLimits[key],Math.round(number*10)/10)):fallback];
   }));
  }
- const defaults=()=>({playerRows:playerRows(),tableWidth:{left:17,right:17},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
+ const lottoAnimationMax=10;
+ const lottoAnimationDefaults={hit:1.6,miss:2.1};
+ function lottoAnimations(value){
+  return Object.fromEntries(Object.entries(lottoAnimationDefaults).map(([key,fallback])=>{
+   const raw=value?.[key],number=Number(raw);
+   return [key,raw!=null&&raw!==''&&Number.isFinite(number)?Math.max(0,Math.min(lottoAnimationMax,Math.round(number*10)/10)):fallback];
+  }));
+ }
+ const defaults=()=>({playerRows:playerRows(),lottoAnimations:lottoAnimations(),tableWidth:{left:17,right:17},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:true,position:slots[i],seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false},demo:null}});
  function normalize(value){
-  const out=defaults();out.playerRows=playerRows(value?.playerRows);for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
+  const out=defaults();out.playerRows=playerRows(value?.playerRows);out.lottoAnimations=lottoAnimations(value?.lottoAnimations);for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
   for(const side of ['left','right'])out.tableWidth[side]=seconds(value?.tableWidth?.[side],17,10,35);
   out.tickerEnabled=value?.tickerEnabled!==false;
   const streamSettings=value?.tickerStreams;
@@ -75,5 +83,5 @@
   const tour=all.filter(e=>e.type==='tour'&&B.parse(e.date)&&(B.parse(e.endDate)&&e.endDate>=e.date?e.endDate:e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;
   return {kegeln,tour,birthdays:B.events(root?.persons||[],all,today,kegeln?.date||today)};
  }
- window.KCDashboardLayout=Object.freeze({keys,slots,labels,tickerTypes,tickerPalette,tickerColor,defaults,normalize,resolve,move,cycle,turn,upcoming,playerRows,rowTimingLimits});
+ window.KCDashboardLayout=Object.freeze({keys,slots,labels,tickerTypes,tickerPalette,tickerColor,defaults,normalize,resolve,move,cycle,turn,upcoming,playerRows,rowTimingLimits,lottoAnimations,lottoAnimationMax});
 })();

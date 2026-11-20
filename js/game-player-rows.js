@@ -126,7 +126,7 @@
         view.shown=keys;
         move(view,parent.hasAttribute('data-player-simple-motion')?Math.min(moveSeconds*1000,220):moveSeconds*1000);
       };
-      view.releaseAt=continuing?previous.releaseAt:now()+(motionOnly?0:holdSeconds*1000);
+      view.releaseAt=continuing?previous.releaseAt:now()+(motionOnly?0:holdSeconds*1000+Math.max(0,Number(parent.dataset.playerExtraHold)||0));
       view.timer=schedule(release,Math.max(0,view.releaseAt-now()));
     };
   }
