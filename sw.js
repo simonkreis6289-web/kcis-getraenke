@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kcis-cache-v289';
+const CACHE_NAME = 'kcis-cache-v290';
 
 const ASSETS = [
   './',
@@ -9,10 +9,10 @@ const ASSETS = [
   './station.webmanifest',
   './station-icon-192.png',
   './station-icon-512.png',
-  './css/station.css?v=20261120-v289',
-  './js/station-entry.js?v=20261120-v289',
+  './css/station.css?v=20261120-v290',
+  './js/station-entry.js?v=20261120-v290',
   './js/station-client.js',
-  './js/drink-ledger.js?v=20261120-v289',
+  './js/drink-ledger.js?v=20261120-v290',
   './sounds/bowling-strike.mp3',
   './sounds/gutter-plop.mp3'
 ];

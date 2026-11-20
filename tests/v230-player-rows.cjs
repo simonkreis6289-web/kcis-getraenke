@@ -29,8 +29,14 @@ for(const key of keys)test(key+': real app and TV move rows with the actual turn
   assert.deepEqual([cell(1),cell(10),cell(19),cell(28),cell(36)],[['1','1'],['10','1'],['10','10'],['1','10'],['1','2']]);
   assert(fields[35].classList.contains('mensch-goal'));
   assert.deepEqual(['A','B','C','D'].map(field),[0,0,0,0]);
+  assert.equal(track.querySelector('.mensch-active-field').dataset.menschPosition,'0');
+  const portrait=track.querySelector('[data-mensch-player="A"] .mensch-pawn-head img');
+  assert.match(portrait.getAttribute('src'),/^bilder\/a\.jpg$/);
+  for(let i=0;i<4;i++)portrait.onerror();
+  assert.equal(track.querySelector('[data-mensch-player="A"] .mensch-pawn-head').textContent,'A');
   await a.c.applyMenschThrow(6);await check(a,d,key,['A','B','C','D']);
   assert.equal(field('A'),6);
+  assert.equal(d.document.querySelector('.mensch-active-field').dataset.menschPosition,'6');
   assert.equal(d.document.querySelector('.mensch-pawn.is-current').dataset.menschPlayer,'A');
   await a.c.applyMenschThrow(1);assert(await a.c.KCSharedSync.waitForUpload());d.update();
   assert.equal(field('A'),7);
