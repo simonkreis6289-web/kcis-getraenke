@@ -178,3 +178,45 @@ tbody[data-player-rows] > tr > :last-child { border-right:1px solid #dce6f0;bord
 .club-lotto-turn-stats { display:flex;justify-content:center;flex-wrap:wrap;gap:.45rem 1.25rem;margin-top:.6rem;text-align:center; }
 .club-lotto-turn-stats b { font-size:1.22em;font-variant-numeric:tabular-nums; }
 .club-lotto-done { display:inline-block;padding:.1rem .35rem;border-radius:.4rem;background:#e3f1e8;color:#25513c;font-weight:700; }
+
+#game-body .club-lotto-balls .is-hit {
+  background:#32cb72;border-color:#168248;color:#06321a;
+}
+.lotto-effect {
+  pointer-events:none;position:absolute;z-index:950;left:50%;top:50%;
+  width:var(--lotto-size);height:var(--lotto-size);
+  margin-top:calc(var(--lotto-size) / -2);margin-left:calc(var(--lotto-size) / -2);
+  font-size:calc(var(--lotto-size) * .46);font-weight:900;line-height:1;
+}
+.lotto-effect > span {
+  box-sizing:border-box;position:absolute;top:0;left:0;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  border:4px solid #adc6dd;border-radius:50%;
+  color:#17344e;background:#ecf4fb;box-shadow:0 12px 28px #14263e50;
+}
+.lotto-effect.is-hit .lotto-effect-ball { animation:lotto-target-hit var(--lotto-time) ease both; }
+.lotto-effect.is-miss .lotto-effect-ball { animation:lotto-target-miss var(--lotto-time) ease both; }
+.lotto-effect > :not(.lotto-effect-ball) {
+  background:#eb463e;color:#fff;border-color:#a11d22;
+  animation:lotto-target-shards var(--lotto-time) ease-in both;
+}
+.lotto-effect-left { clip-path:polygon(0 0,47% 0,56% 24%,38% 46%,49% 58%,0 72%);--lotto-drift:-85%;--lotto-spin:-85deg; }
+.lotto-effect-right { clip-path:polygon(47% 0,100% 0,100% 67%,49% 58%,38% 46%,56% 24%);--lotto-drift:78%;--lotto-spin:64deg; }
+.lotto-effect-bottom { clip-path:polygon(0 72%,49% 58%,100% 67%,100% 100%,0 100%);--lotto-drift:-15%;--lotto-spin:38deg; }
+@keyframes lotto-target-hit {
+  0% {transform:translate(var(--lotto-x),var(--lotto-y)) scale(var(--lotto-scale));}
+  36% {transform:scale(1);background:#ecf4fb;border-color:#adc6dd;color:#17344e;}
+  50%,84% {transform:scale(1);background:#29d56f;border-color:#168248;color:#062e19;opacity:1;}
+  100% {transform:scale(.93);background:#29d56f;border-color:#168248;color:#062e19;opacity:0;}
+}
+@keyframes lotto-target-miss {
+  0% {transform:translate(var(--lotto-x),var(--lotto-y)) scale(var(--lotto-scale));}
+  35% {transform:scale(1);background:#ecf4fb;border-color:#adc6dd;color:#17344e;}
+  47%,54% {transform:scale(1);background:#eb463e;border-color:#a11d22;color:#fff;opacity:1;}
+  55%,100% {transform:scale(1);background:#eb463e;border-color:#a11d22;color:#fff;opacity:0;}
+}
+@keyframes lotto-target-shards {
+  0%,54% {transform:none;opacity:0;}
+  55% {transform:none;opacity:1;}
+  100% {transform:translate(var(--lotto-drift),var(--lotto-fall)) rotate(var(--lotto-spin));opacity:0;}
+}

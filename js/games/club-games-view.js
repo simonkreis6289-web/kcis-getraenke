@@ -126,7 +126,7 @@ function clubLottoBalls(ticket,score,next=null){
   const hit=ticket.hits.includes(number),missed=!hit&&number<score;
   const status=hit?'is-hit':missed?'is-missed':number===next?'is-next':'';
   const label=hit?' getroffen':missed?' übersprungen':number===next?' · nächste Glückszahl':'';
-  return '<span class="'+status+'" aria-label="'+number+label+'">'+number+'</span>';
+  return '<span data-lotto-target="'+number+'" class="'+status+'" aria-label="'+number+label+'">'+number+'</span>';
  }).join('');
 }
 function clubLottoTurn(s,current,phase){
@@ -134,7 +134,7 @@ function clubLottoTurn(s,current,phase){
  const next=ticket.numbers.find(number=>number>score);
  const goal=next===undefined?(s.config.lottoEarlyStop&&score<49?'<span>Noch <b>'+(49-score)+'</b> Holz bis 49</span>':
   '<span>Keine Glückszahl mehr offen</span>'):'<span>Noch <b>'+(next-score)+'</b> Holz bis zur <b>'+next+'</b></span>';
- return '<section class="club-lotto-turn" aria-label="Glückszahlen des aktiven Werfers"><header><strong>🎳 '+clubGameEscape(current)+
+ return '<section class="club-lotto-turn" data-lotto-player="'+clubGameEscape(current)+'" aria-label="Glückszahlen des aktiven Werfers"><header><strong>🎳 '+clubGameEscape(current)+
   '</strong><small>'+phase+'</small></header><div class="club-lotto-turn-body"><div class="club-lotto-balls">'+clubLottoBalls(ticket,score,next)+'</div>'+
   '<div class="club-lotto-turn-stats"><span><b'+(globalThis.window?.KCPlayerRows?.score?.(current,'lotto-turn')||'')+'>'+score+
   '</b> Holz gesamt</span>'+goal+
@@ -178,7 +178,7 @@ function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=nu
   }
   body=clubGameTable(s,['Glückszahlen','Treffer','Holz','Würfe'],n=>{
    const ticket=s.tickets[n],score=s.scores[n];
-   return '<td><div class="club-lotto-balls">'+clubLottoBalls(ticket,score)+
+   return '<td><div class="club-lotto-balls" data-lotto-player="'+escape(n)+'">'+clubLottoBalls(ticket,score)+
     '</div></td><td>'+(ticket?.hits.length||0)+' / 6</td><td><span'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+score+'</span>'+(g.lottoQualified(s,n)?' <span title="Ziel erreicht">✓</span>':'')+'</td><td>'+s.rows[n].length+' / 13'+
     (s.config.lottoEarlyStop&&g.lottoDone(s,n)?' <small class="club-lotto-done">Fertig</small>':'')+'</td>';
   });

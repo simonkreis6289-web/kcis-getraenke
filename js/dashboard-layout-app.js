@@ -92,6 +92,14 @@
   const add=element('button','+ Text hinzufügen','secondary-btn');add.type='button';add.id='dashboard-ticker-add';add.disabled=busy||draft.tickerMessages.length>=20;add.onclick=()=>{draft.tickerMessages.push({id:'text-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),text:'',enabled:true,color:M.tickerPalette[draft.tickerMessages.length%M.tickerPalette.length]});draw();box.querySelector('.dashboard-ticker-message:last-child textarea')?.focus();};box.append(messages,add);
   box=section('notifications','Wurfmeldungen und Toasts');
   box.append(element('h3','Wurf-Popups'));const popupLabel=element('label',undefined,'dashboard-popup-option');popupLabel.htmlFor='dashboard-popup-seconds';popupLabel.append(document.createTextNode('Gosse, Kranz und Alle Neune anzeigen für '),duration('dashboard-popup-seconds',draft.popupSeconds,0,30,v=>draft.popupSeconds=v),document.createTextNode(' Sekunden · 0 = aus'));box.append(popupLabel);
+  box.append(element('h3','Lottokönig'));
+  for(const [key,title] of [['hit','Animation bei Treffern'],['miss','Animation bei übersprungenen Zielzahlen']]){
+   const id='dashboard-lotto-animation-'+key,label=element('label',undefined,'dashboard-popup-option');
+   const input=duration(id,draft.lottoAnimations[key],0,M.lottoAnimationMax,value=>draft.lottoAnimations[key]=value);
+   input.step='0.1';label.htmlFor=id;
+   label.append(document.createTextNode(title+' '),input,document.createTextNode(' Sekunden · 0 = aus'));
+   box.append(label);
+  }
   box.append(element('h3','Weitere TV-Toasts'),element('p','Neue Meldungen erscheinen erst nach einer tatsächlichen Änderung. Beim Öffnen des Dashboards werden alte Ereignisse nicht nachgespielt.'));
   for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam'],['station','🍺 KC Theke · Buchungen']]){
    const line=element('div',undefined,'dashboard-event-toast-color-row'),label=element('label',undefined,'dashboard-popup-option'),checkbox=element('input');
