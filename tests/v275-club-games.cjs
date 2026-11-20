@@ -3,7 +3,7 @@ const {parseHTML}=require('linkedom');
 const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8'),copy=value=>JSON.parse(JSON.stringify(value));
 const evening='2026-11-19T18:00:00Z',rootPath='clubs/club/state/current',personPath=name=>'clubs/club/livePersons/'+name.toLowerCase();
 const c={window:null};c.window=c;vm.createContext(c);
-for(const file of ['js/kranz-policy.js','js/games/club-games-core.js','js/games/extra-core.js','js/games/club-games-view.js'])vm.runInContext(read(file),c);
+for(const file of ['js/kranz-policy.js','js/games/club-games-core.js','js/games/extra-core.js','js/games/club-games-view.js','js/games/extra-view.js'])vm.runInContext(read(file),c);
 const g=c.KCClubGames,core=c.KCExtraGames;
 const people=['A','B','C','D','E','F'].map(name=>({name,present:true}));
 const catalog=[{key:'gosse',label:'Gosse'},{key:'nine',label:'9er / Kranz'},...['loser','loser2','loser3'].map((key,i)=>({key,label:(i+1)+'. Verlierer'}))];
@@ -16,14 +16,14 @@ function game(gameKey,config={},players=people.map(x=>x.name)){
   state=core.command(state,req,ctx).state;
   return core.effects(before,state,req,ctx);
  }
- run('start',{players,config:{...g.defaults(gameKey),...config},...(gameKey==='abschreibung'?{kranzRule:{mode:'choose'}}:{})});
+ run('start',{players,config:{...core.defaults(gameKey),...config},...(gameKey==='abschreibung'?{kranzRule:{mode:'choose'}}:{})});
  return {get s(){return state;},run,roll(kind,pins){return run('throw',{kind,pins});}};
 }
 test('Abschreibung charges only eliminated ranks, skips them, and safely reverses the charge when undoing',()=>{
  const f=game('abschreibung',{startPoints:9,lastPlace:5},['A','B','C','D','E','F']);
  const display=options=>parseHTML(c.renderClubGameBoard(f.s,options)).document;
  const names=doc=>[...doc.querySelectorAll('.abschreibung-row strong')].map(node=>node.textContent);
- assert.deepEqual(names(display({dashboard:true})),['A','B','C','D','E','F']);
+ assert.deepEqual(names(display({dashboard:true})),['F','A','B','C','D','E']);
  assert.equal(display().querySelector('.is-target strong').textContent,'F');
  f.roll('pins',6);assert.equal(f.s.scores.A,3);
  assert.deepEqual(names(display()),['B','C','D','E','F','A']);
@@ -32,9 +32,9 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  assert.equal(first.moneyAdded[0].personName,'A');
  const dashboard=display({dashboard:true}),impact=dashboard.querySelector('.club-game-impact');
  assert.match(impact.textContent,/B · Kranz/);assert.match(impact.textContent,/A: 3 → 0 Punkte/);
- assert.deepEqual(names(dashboard),['C','D','E','F','B']);
+ assert.deepEqual(names(dashboard),['B','C','D','E','F']);
  assert.equal(dashboard.querySelector('.is-thrower strong').textContent,'C');
- assert.equal(dashboard.querySelector('.is-target strong').textContent,'B');
+ assert.equal(dashboard.querySelector('.abschreibung-tv-trail .is-current strong').textContent,'C');
  assert.match(dashboard.querySelector('.abschreibung-eliminated').textContent,/A · Platz 6/);
  assert.equal(f.s.eliminated[0].place,6);
  f.roll('pins',9);assert.equal(f.s.scores.B,0);
@@ -45,6 +45,41 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  assert.equal(g.current(f.s),'C');
  const wood=game('abschreibung',{woodRequired:true},['A','B']);
  wood.roll('gosse');assert.equal(g.current(wood.s),'A');assert.equal(wood.s.scores.A,100);
+});
+test('Abschreibung TV shows the deducted score before rotating and cancels animation on undo',()=>{
+ const f=game('abschreibung',{},['A','B','C','D']);
+ let pending=null,paints=0;
+ const playback=c.createAbschreibungTvPlayback((fn,ms)=>{assert.equal(ms,1300);pending=fn;return 1;},()=>{pending=null;});
+ const repaint=()=>paints++;
+ playback(f.s,repaint);
+ f.roll('pins',4);playback(f.s,repaint);pending();
+ f.roll('pins',7);const frame=playback(f.s,repaint);
+ const view=animation=>parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true,abschreibungFrame:animation})).document;
+ const names=doc=>[...doc.querySelectorAll('.abschreibung-row strong')].map(e=>e.textContent);
+ const animated=view(frame);
+ assert.deepEqual(names(animated),['A','B','C','D']);
+ assert.deepEqual([...animated.querySelectorAll('.abschreibung-tv-trail strong')].map(e=>e.textContent),['—','A','B']);
+ assert.equal(animated.querySelector('.abschreibung-flying-points').textContent,'−7');
+ assert.equal(animated.querySelector('.abschreibung-row .abschreibung-score-swap').textContent,'10093');
+ assert.equal(f.s.scores.A,93);
+ assert.equal(playback(f.s,repaint),frame);
+ pending();assert.equal(paints,2);
+ assert.deepEqual(names(view(playback(f.s,repaint))),['B','C','D','A']);
+ f.roll('pins',3);assert(playback(f.s,repaint));f.run('undo');
+ assert.equal(playback(f.s,repaint),null);assert.equal(pending,null);
+ f.roll('pins',5);assert.equal(playback(f.s,repaint,true),null);
+});
+test('Pfälzerspiel shows all nine balls, shared numbers, hits and round progress',()=>{
+ const f=game('pfaelzer',{rounds:3},['A','B','C']);
+ for(const n of [4,4,7,4,7,4])f.roll('pins',n);
+ const doc=parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true})).document;
+ const balls=[...doc.querySelectorAll('.pfaelzer-numbers li')];
+ assert.equal(balls.length,9);
+ assert.deepEqual([...balls[3].querySelectorAll('.pfaelzer-name')].map(e=>e.textContent),['A','B']);
+ assert.equal(balls[3].querySelector('.is-hit').textContent,'4');
+ assert.equal(balls[3].querySelector('.is-current').textContent,'A');
+ assert.match(doc.querySelector('.ind-turn').textContent,/Runde 2 von 3/);
+ assert.equal(doc.querySelector('.pfaelzer-current .pfaelzer-marks').children.length,2);
 });
 test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before qualified players',()=>{
  const f=game('lottokoenig',{},['A','B','C','D']);
