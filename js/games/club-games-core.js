@@ -56,10 +56,22 @@
  function validTicket(numbers){
   return Array.isArray(numbers)&&numbers.length===6&&numbers.every(n=>int(n,0,49))&&new Set(numbers).size===6&&new Set(numbers.map(n=>Math.floor(n/10))).size===5;
  }
+ function randomTicket(random=Math.random){
+  const numbers=Array.from({length:5},(_,block)=>block*10+Math.floor(random()*10));
+  const block=Math.floor(random()*5),extra=block*10+Math.floor(random()*9);
+  numbers.push(extra+(extra>=numbers[block]?1:0));
+  return numbers.sort((a,b)=>a-b);
+ }
  function fields(s,req){
   if(req.action==='numbers'&&s.gameKey==='lottokoenig'&&s.phase==='numbers'){
    if(!validTicket(req.numbers))throw Error('Sechs verschiedene Zahlen von 0 bis 49 wählen, mindestens eine je Zehnerblock.');
    return {numbers:req.numbers.slice().sort((a,b)=>a-b)};
+  }
+  if(req.action==='randomNumbers'&&s.gameKey==='lottokoenig'&&s.phase==='numbers'){
+   const tickets=req.tickets;
+   if(!Array.isArray(tickets)||tickets.length!==s.players.length||!Array.from(tickets).every(ticket=>validTicket(ticket?.numbers)))
+    throw Error('Für jeden Tippschein werden sechs gültige Zielzahlen benötigt.');
+   return {tickets:tickets.map(({numbers})=>({numbers:numbers.slice().sort((a,b)=>a-b)}))};
   }
   if(req.action==='pairs'&&s.gameKey==='swingerclub'&&s.phase==='pairs'){
    const next=pairs(s,req.pairs);
@@ -148,6 +160,14 @@
    if(s.index===0)s.phase='throw';
    return;
   }
+  if(e.action==='randomNumbers'){
+   e.tickets.forEach(({numbers},offset)=>{
+    s.tickets[s.players[offset]]={numbers,hits:[]};
+   });
+   s.index=0;
+   s.phase='throw';
+   return;
+  }
   s.scores[e.name]+=e.pins;
   const ticket=s.tickets[e.name],score=s.scores[e.name],hit=ticket.numbers.includes(score)&&!ticket.hits.includes(score);
   if(hit)ticket.hits.push(score);
@@ -203,5 +223,5 @@
   if(key==='tageskurs')return ((c.rounds??1)===1?'1 Runde':c.rounds+' Runden')+' · 1 Wurf pro Person und Runde · Summe der stehenden Kegel ÷ '+c.divisor;
   return c.rounds+' Runden · '+c.throws+' Würfe auf Abräumen je Zweierteam · Partnerwechsel nach jeder Runde';
  }
- window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,abschreibungOrder,lottoQualified,lottoDone});
+ window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,randomTicket,abschreibungOrder,lottoQualified,lottoDone});
 })();
