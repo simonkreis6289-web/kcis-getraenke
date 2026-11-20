@@ -120,27 +120,64 @@ function bergTalTvThrows(s,current,escape){
   (result===undefined?'—':signed(result))+'</strong><small>'+(result===undefined?'Nach Wurf 2':'Punkte')+'</small></div></div></section>';
 }
 
-function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,abschreibungFrame=null}={}){
+const FENCE_SLAT_MS=140;
+function createFenceTvPlayback(schedule=setTimeout,cancel=clearTimeout,now=()=>Date.now()){
+ let previous=null,frame=null,timer=null;
+ return (state,repaint,reduced=false,{holdSeconds=1.5,moveSeconds=0.8}={})=>{
+  const before=previous;
+  previous=state;
+  if(!state||state.id!==before?.id||state.revision<before.revision||reduced){
+   cancel(timer);timer=null;frame=null;return null;
+  }
+  if(state.revision===before.revision)return frame;
+  cancel(timer);timer=null;frame=null;
+  const shot=state.history.at(-1),name=shot?.slatPerson;
+  if(state.history.length!==before.history.length+1||shot?.action!=='throw'||!name||
+    (before.history.at(-1)?.id??null)!==(state.history.at(-2)?.id??null))return null;
+  const from=before.scores[name],added=state.scores[name]-from;
+  if(added<=0)return null;
+  frame={before,name,from,started:now(),reordering:false};
+  const finish=()=>{frame=null;timer=null;repaint();};
+  timer=schedule(()=>{
+   if(moveSeconds===0){finish();return;}
+   frame={...frame,reordering:true};
+   repaint();
+   timer=schedule(finish,moveSeconds*1000+32);
+  },added*FENCE_SLAT_MS+holdSeconds*1000);
+  return frame;
+ };
+}
+
+function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,abschreibungFrame=null,fenceFrame=null}={}){
  if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
- const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?s.previous?.name:g.current(s),{running:fence?!!s.previous:s.active&&!s.readyToFinish})||names;
+ const fenceElapsed=fenceFrame?Math.max(0,Date.now()-fenceFrame.started):0;
+ const fenceOrder=fenceFrame&&!fenceFrame.reordering?fenceFrame.before:s;
+ const fenceNext=g.current(fenceFrame?.before||s);
+ const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?fenceOrder.previous?.name:g.current(s),{running:fence?!!fenceOrder.previous:s.active&&!s.readyToFinish})||names;
  const winner=s.winners.map(label).join(' · '),header=s.finished?(ball&&s.winners.length===2?'🤝 Unentschieden':'🏆 '+winner):s.readyToFinish?'🏁 Alle Durchgänge gespielt':g.icons[key]+' '+g.titles[key];
  let body='';
  if(ball){body='<div class="extra-clock" data-extra-clock="'+s.id+'"><small>'+esc(s.teamNames[g.team(s)]||'Spiel beendet')+' · Spielzeit</small><strong data-extra-time>'+extraClockText(g.remaining(s))+'</strong><span data-extra-clock-status>'+(!s.active?'Beendet':s.timer.running?(g.remaining(s)>0?'Zeit läuft':s.timer.lastThrowUsed?'Letzter Wurf gebucht':'Zeit abgelaufen · Ein letzter Wurf möglich'):s.timer.endsAt?'Pausiert':'Bereit · Zeit in der App starten')+'</span></div><div class="extra-team-grid">'+names.map(n=>'<article class="extra-team-card '+(n===g.team(s)&&s.active?'extra-current':'')+'"><small>'+(n==='T1'?'⚫':'🔴')+' '+esc(label(n))+'</small><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+'</strong><span>'+s.participantTeams[n].map(esc).join(' · ')+'</span></article>').join('')+'</div>';
  }else if(key==='guterschnitt'){body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Kegler</th>'+s.config.targets.map((n,i)=>'<th>'+(i+1)+'.<br><strong>'+n+'</strong></th>').join('')+'<th>Fortschritt</th><th>Würfe</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowNames.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+'><th>'+esc(n)+'</th>'+s.config.targets.map((v,i)=>'<td>'+(i<s.scores[n]?'✅':i===s.scores[n]?'🎯':'·')+'</td>').join('')+'<td><span'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+'</span> / '+s.config.targets.length+'</td><td><strong>'+(s.rows[n]||[]).length+'</strong></td></tr>').join('')+'</tbody></table></div><p><strong>Bisher '+names.reduce((sum,n)=>sum+(s.rows[n]||[]).length,0)+' Würfe insgesamt.</strong> Exakte Zahl treffen. Nach einem Fehlzug steigt die Wurfzahl für diese Zahl um eins. Ein Treffer beendet den Zug.</p>';
  }else if(fence){
   const color=[slatColor,s.config.slatColor,'#bc7949'].find(value=>/^#[0-9a-f]{6}$/i.test(value));
-  body='<div class="extra-fences"'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+' style="--fence-color:'+color+'">'+rowNames.map(n=>{
-   const next=dashboard&&s.active&&!s.finished&&!s.readyToFinish&&n===g.current(s);
+  body='<div class="extra-fences"'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s,{motionOnly:!!fenceFrame?.reordering})||'')+' style="--fence-color:'+color+'">'+rowNames.map(n=>{
+   const next=dashboard&&(fenceFrame||s.active&&!s.finished&&!s.readyToFinish)&&n===fenceNext;
+   const slat=idx=>{
+    if(idx>=s.scores[n])return '<i></i>';
+    if(n!==fenceFrame?.name||idx<fenceFrame.from)return '<i class="filled"></i>';
+    const delay=(idx-fenceFrame.from)*FENCE_SLAT_MS-fenceElapsed;
+    return '<i class="filled fence-slat-enter" style="--fence-slat-delay:'+delay+'ms"></i>';
+   };
    return '<article'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+' class="extra-fence-row'+(next?' extra-fence-next-thrower':'')+'"'+(next?' aria-label="'+esc(n)+' · Als Nächstes am Wurf"':'')+'><div class="extra-fence-name"><strong>'+esc(n)+'</strong></div>'+
-    '<div class="extra-fence" style="--fence-slats:'+s.config.slats+';--fence-groups:'+Math.ceil(s.config.slats/5)+'" aria-label="'+s.scores[n]+' von '+s.config.slats+' Latten">'+Array.from({length:Math.ceil(s.config.slats/5)},(_,group)=>'<span class="extra-fence-group" aria-hidden="true">'+Array.from({length:Math.min(5,s.config.slats-group*5)},(_,offset)=>'<i class="'+(group*5+offset<s.scores[n]?'filled':'')+'"></i>').join('')+'</span>').join('')+'</div>'+
+    '<div class="extra-fence" style="--fence-slats:'+s.config.slats+';--fence-groups:'+Math.ceil(s.config.slats/5)+'" aria-label="'+s.scores[n]+' von '+s.config.slats+' Latten">'+Array.from({length:Math.ceil(s.config.slats/5)},(_,group)=>'<span class="extra-fence-group" aria-hidden="true">'+Array.from({length:Math.min(5,s.config.slats-group*5)},(_,offset)=>slat(group*5+offset)).join('')+'</span>').join('')+'</div>'+
     '<div class="extra-fence-count"><b'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+' / '+s.config.slats+'</b><small>Latten</small></div>'+
     '<div class="extra-fence-price">'+money(s.scores[n]*s.config.slatCents)+'</div></article>';
   }).join('')+'</div><p class="ind-help">'+(s.previous?'':'Erster Wurf legt die Vergleichszahl fest. ')+money(s.config.slatCents)+' je Latte.'+(s.fenceLoser?' Voller Zaun: '+esc(s.fenceLoser)+'. Alle Lattenbeträge wurden gebucht.':'')+'</p>';
 
  }else{const end=Math.min(s.config.rounds,s.round),begin=Math.max(1,end-4),cols=Array.from({length:end-begin+1},(_,i)=>begin+i);body='<div class="ind-table-scroll"><table class="ind-table extra-score-table"><thead><tr><th>Kegler</th>'+cols.map(n=>'<th>D'+n+'</th>').join('')+'<th>Gesamt</th><th>Platz</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowNames.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+'><th>'+esc(n)+'</th>'+cols.map(r=>{const cell=s.rows[n][r-1];return '<td>'+(cell?'<strong class="'+(cell.result<0?'extra-negative':'')+'">'+(cell.result>0?'+':'')+cell.result+'</strong><small>'+cell.throws.map(t=>t.kind==='kranz'?'K('+t.pins+')':t.kind==='gosse'?'G('+t.pins+')':t.pins).join(' − ')+'</small>':'—')+'</td>';}).join('')+'<td><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+'</strong></td><td>'+place(n)+'.</td></tr>').join('')+'</tbody></table></div><p class="ind-help">Durchgang '+Math.min(s.round,s.config.rounds)+' von '+s.config.rounds+' · '+(begin>1?'Die letzten fünf Durchgänge sind sichtbar; die Gesamtsumme enthält alle Ergebnisse.':'Erster Wurf minus zweiter Wurf. Negative Ergebnisse zählen mit. '+(s.config.gutterHigh===undefined?'Diese laufende Partie: Gosse oder Vorbei ergibt Durchgang 0.':'Gosse hoch: '+s.config.gutterHigh+' · Gosse runter: '+s.config.gutterLow+' · Vorbei: 0. Auch mit Gosse wird die Differenz gewertet.'))+'</p>';}
  const context=!s.active?'':ball?esc(s.teamNames[g.team(s)])+' · '+esc(g.current(s)):esc(g.current(s))+(key==='guterschnitt'?' · Ziel '+s.config.targets[s.scores[g.current(s)]]+' · Wurf '+(s.turn.length+1)+' / '+s.attempts[g.current(s)]:key==='bergundtal'?' · Wurf '+(s.turn.length+1)+' / 2':'');
- const title=fence?'<div class="extra-fence-heading"><div><h2>🪵 Lattenzaun</h2><p class="extra-fence-next">'+(s.finished?'🏆 '+esc(winner):s.active?'Nächster Werfer: <strong>'+esc(g.current(s))+'</strong>':'Spiel beendet')+'</p></div><div class="extra-fence-last"><small>Letzter Wurf'+(s.previous?' · '+esc(s.previous.name):'')+'</small><b>'+(s.previous?s.previous.pins+' Holz':'—')+'</b></div></div>':'<h2>'+esc(header)+'</h2>'+(s.active&&!s.readyToFinish?'<div class="ind-turn extra-turn">🎳 '+context+'</div>':'');
+ const title=fence?'<div class="extra-fence-heading"><div><h2>🪵 Lattenzaun</h2><p class="extra-fence-next">'+(s.finished&&!fenceFrame?'🏆 '+esc(winner):s.active||fenceFrame?'Nächster Werfer: <strong>'+esc(fenceNext)+'</strong>':'Spiel beendet')+'</p></div><div class="extra-fence-last"><small>Letzter Wurf'+(s.previous?' · '+esc(s.previous.name):'')+'</small><b>'+(s.previous?s.previous.pins+' Holz':'—')+'</b></div></div>':'<h2>'+esc(header)+'</h2>'+(s.active&&!s.readyToFinish?'<div class="ind-turn extra-turn">🎳 '+context+'</div>':'');
  const throws=dashboard&&key==='bergundtal'?bergTalTvThrows(s,g.current(s),esc):'';
  return '<section class="ind-board extra-board" data-extra-game="'+key+'">'+title+controls+throws+body+(s.finished&&!ball?'<p class="extra-result">'+(fence?'Abrechnung nach gesammelten Latten.':key==='guterschnitt'?'Zahlenfolge beendet · 1./2./3. Verlierer nach Fortschritt gebucht.':'Gesamtsumme aller '+s.config.rounds+' Durchgänge · 1./2./3. Verlierer gebucht.')+'</p>':'')+'</section>';
 }
