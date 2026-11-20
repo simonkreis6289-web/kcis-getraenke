@@ -69,9 +69,37 @@ test('Tannenbaum shows one recent-throw row with the app symbols and the newest 
  assert.equal(rows[0].previousElementSibling.className,'tree-table-v138');
  const lanes=[...rows[0].children];
  assert.deepEqual(lanes.map(lane=>lane.dataset.team),['T2','T1']);
- assert.deepEqual([...lanes[0].children].map(chip=>chip.textContent),['💀','👑','🎯','1 ✅','1 ✅','1 ✅','1 ✅']);
- assert.deepEqual([...lanes[1].children].map(chip=>chip.textContent),['5 ✅','2 ⚠️','4 ↩️']);
+ assert.deepEqual([...lanes[0].querySelectorAll('.tree-history-throw')].map(chip=>chip.textContent),['💀','👑','🎯','1 ✅','1 ✅','1 ✅','1 ✅']);
+ assert.deepEqual([...lanes[1].querySelectorAll('.tree-history-throw')].map(chip=>chip.textContent),['5 ✅','2 ⚠️','4 ↩️']);
+ assert.deepEqual(lanes.map(lane=>lane.querySelector('.tree-history-name').textContent),['TV','Wand']);
+ assert.deepEqual([...rows[0].querySelectorAll('.tree-history-latest')].map(chip=>chip.textContent),['💀','5 ✅']);
+ const oneTeam=parseHTML(render({history:history.filter(entry=>entry.team==='T1')})).document;
+ assert.equal(oneTeam.querySelector('.tree-history-empty').getAttribute('aria-label'),'Noch keine Würfe');
  history.splice(1,1);
  assert.equal(parseHTML(render({history})).document.querySelector('.tree-history-throw').textContent,'👑');
  assert(!parseHTML(render({})).document.querySelector('.tree-history'));
+});
+
+test('Tannenbaum table fills the stage below the scores and above the throw history and refits on resize',()=>{
+ const html=read('dashboard.html');
+ const fitSource=html.slice(html.indexOf('function fitTvBoard('),html.indexOf("if(typeof ResizeObserver!=='undefined')"));
+ const table={style:{},get offsetHeight(){return Math.max(Number.parseFloat(this.style.minHeight)||0,540);}};
+ let otherHeight=160;
+ const board={style:{},dataset:{},scrollWidth:850,get scrollHeight(){return table.offsetHeight+otherHeight;},querySelector:selector=>selector==='.tree-table-v138'?table:null};
+ const area={clientWidth:1000,clientHeight:940,querySelector:selector=>selector==='.tv-board'?board:null};
+ const fit=new Function('document','getComputedStyle','let fitInProgress=false;'+fitSource+';return fitTvBoard;')(
+  {getElementById:()=>area},()=>({paddingTop:'10px',paddingBottom:'10px',paddingLeft:'10px',paddingRight:'10px'})
+ );
+ fit();
+ assert.equal(board.style.zoom,'1');
+ assert.equal(table.style.minHeight,'757px');
+ otherHeight=112;
+ fit();
+ assert.equal(table.style.minHeight,'805px');
+ area.clientHeight=500;
+ fit();
+ const zoom=Number(board.style.zoom);
+ assert(zoom<1);
+ assert(board.scrollHeight*zoom<=477);
+ assert(board.scrollHeight*zoom>=475);
 });
