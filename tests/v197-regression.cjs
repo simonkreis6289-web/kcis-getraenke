@@ -51,3 +51,27 @@ test('remaining numbers start at the center for both teams and winner rendering 
  const css=read('css/dashboard-tannenbaum.css');assert.match(css,/\.tree-side-left\{flex-direction:row-reverse/);assert.match(css,/\.tree-side-right\{flex-direction:row/);
  s.teams.T1.remaining=Object.fromEntries(Object.keys(base).map(n=>[n,0]));const won=parseHTML(render(s)).document;assert(won.querySelector('.tree-win'));assert.equal(won.querySelectorAll('[data-team=T1] .tree-ball').length,0);
 });
+
+test('Tannenbaum shows one recent-throw row with the app symbols and the newest seven throws per team',()=>{
+ const {render}=treeFixture(),history=[
+  {team:'T2',number:8,type:'manual-restore'},
+  {team:'T2',number:'gosse',type:'penalty-gosse'},
+  {team:'T1',number:5,type:'strike-own'},
+  {team:'T2',number:5,specialType:'kranz'},
+  {team:'T1',number:2,type:'enemy-strike'},
+  {team:'T2',number:9,specialType:'9er'},
+  {team:'T1',number:4,type:'restore'},
+  ...Array.from({length:5},()=>({team:'T2',number:1,type:'strike-own'})),
+ ];
+ const {document}=parseHTML(render({history}));
+ const rows=document.querySelectorAll('.tree-history');
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].previousElementSibling.className,'tree-table-v138');
+ const lanes=[...rows[0].children];
+ assert.deepEqual(lanes.map(lane=>lane.dataset.team),['T2','T1']);
+ assert.deepEqual([...lanes[0].children].map(chip=>chip.textContent),['💀','👑','🎯','1 ✅','1 ✅','1 ✅','1 ✅']);
+ assert.deepEqual([...lanes[1].children].map(chip=>chip.textContent),['5 ✅','2 ⚠️','4 ↩️']);
+ history.splice(1,1);
+ assert.equal(parseHTML(render({history})).document.querySelector('.tree-history-throw').textContent,'👑');
+ assert(!parseHTML(render({})).document.querySelector('.tree-history'));
+});

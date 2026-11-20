@@ -43,11 +43,11 @@ test('house-number tables keep their existing seat order even when the next play
 
 test('animated rows show the new booking in place, then slide into the game’s requested order',()=>{
  const {document}=parseHTML('<html><body><main></main></body></html>');
- const clock=new Map(),animations=[],window={};let serial=0,reduce=false;
+ const clock=new Map(),animations=[],window={};let serial=0,reduce=false,time=0,moveSeconds=1.2;
  vm.runInNewContext(read('js/game-player-rows.js'),{window,document});
  const {group,row,createMotion}=window.KCPlayerRows;
  const update=createMotion({schedule(fn,ms){const id=++serial;clock.set(id,{fn,ms});return id;},
-  cancel:id=>clock.delete(id),reduced:()=>reduce});
+  cancel:id=>clock.delete(id),reduced:()=>reduce,now:()=>time,timing:()=>({holdSeconds:1.9,moveSeconds})});
  const root=document.querySelector('main');
  function render(key,order,turn,values={},options={}){
   root.innerHTML='<table><tbody'+group(key,{id:'game'}, {turn,...options})+'>'+
@@ -55,7 +55,7 @@ test('animated rows show the new booking in place, then slide into the game’s 
   const body=root.querySelector('tbody');body.getClientRects=()=>[{}];
   for(const item of body.children){
    item.getBoundingClientRect=()=>({left:0,top:[...body.children].indexOf(item)*50});
-   item.animate=(frames,settings)=>animations.push([item.dataset.playerRow,frames,settings]);
+   item.animate=(frames,settings)=>{const playback={currentTime:0};animations.push([item.dataset.playerRow,frames,settings,playback]);return playback;};
   }
   update(body);return body;
  }
@@ -64,13 +64,19 @@ test('animated rows show the new booking in place, then slide into the game’s 
  render('mensch',['A','B','C'],1);
  let body=render('mensch',['B','C','A'],2,{A:7});
  assert.deepEqual(names(body),['A','B','C']);assert.equal(body.firstElementChild.lastElementChild.textContent,'7');
- assert([...clock.values()][0].ms>0);assert.equal(animations.length,0);
+ assert.equal([...clock.values()][0].ms,1900);assert.equal(animations.length,0);
+ time=300;
  body=render('mensch',['B','C','A'],2,{A:7});
- assert.equal(clock.size,1);assert.deepEqual(names(body),['A','B','C']);
+ assert.equal(clock.size,1);assert.equal([...clock.values()][0].ms,1600);assert.deepEqual(names(body),['A','B','C']);
+ time=1900;
  release();
  assert.deepEqual(names(body),['B','C','A']);
  assert.equal(animations.find(entry=>entry[0]==='A')[1].length,3);
+ assert.equal(animations.find(entry=>entry[0]==='A')[2].duration,1200);
  assert(animations.some(entry=>entry[0]==='B'&&entry[1][0].transform==='translate(0px,50px)'));
+ time+=300;
+ body=render('mensch',['B','C','A'],2,{A:7});
+ assert.equal(animations.at(-1)[3].currentTime,300);assert.deepEqual(names(body),['B','C','A']);
  render('lattenzaun',['A','B','C'],3);
  body=render('lattenzaun',['C','A','B'],4);
  assert.deepEqual(names(body),['A','B','C']);release();
@@ -82,10 +88,52 @@ test('animated rows show the new booking in place, then slide into the game’s 
  body=render('lattenzaun',['B','C','A'],5);
  assert.equal(clock.size,0);assert.deepEqual(names(body),['B','C','A']);
  reduce=false;
- render('abschreibung',['A','B','C'],2,{}, {motionOnly:true});
- body=render('abschreibung',['B','C','A'],3,{}, {motionOnly:true});
+ const beforeSimple=animations.length;
+ render('abschreibung',['C','A','B'],1,{}, {simpleMotion:true});
+ body=render('abschreibung',['A','B','C'],2,{C:96}, {simpleMotion:true});
+ assert.equal(body.firstElementChild.dataset.playerRow,'C');
+ assert.equal(body.firstElementChild.lastElementChild.textContent,'96');
+ assert.equal([...clock.values()][0].ms,1900);
+ release();
+ assert.deepEqual(names(body),['A','B','C']);
+ assert(animations.length>beforeSimple);
+ assert(animations.slice(beforeSimple).every(entry=>entry[1].length===2&&entry[2].duration===220));
+ moveSeconds=0;
+ const animated=animations.length;
+ render('abschreibung',['A','B','C'],3,{}, {motionOnly:true});
+ body=render('abschreibung',['B','C','A'],4,{}, {motionOnly:true});
  assert.equal([...clock.values()][0].ms,0);release();
  assert.deepEqual(names(body),['B','C','A']);
+ assert.equal(animations.length,animated);
+});
+
+test('Pfälzerspiel flashes a strike increase beside every affected tally without replaying it on reload or undo',()=>{
+ const {document}=parseHTML('<html><body><main></main></body></html>'),window={};
+ let time=0,serial=0;
+ const timers=new Map();
+ vm.runInNewContext(read('js/game-player-rows.js'),{window,document});
+ const {group,row,createMotion}=window.KCPlayerRows;
+ const update=createMotion({now:()=>time,schedule(fn,ms){timers.set(++serial,{fn,at:time+ms});return serial;},
+  cancel:id=>timers.delete(id),reduced:()=>true});
+ const root=document.querySelector('main');
+ function render(turn,counts){
+  root.innerHTML='<table><tbody'+group('pfaelzer',{id:'game'},{turn})+'>'+
+   ['A','B','C'].map((name,i)=>'<tr'+row(name)+'><th>'+name+'</th><td><span data-pfaelzer-gain="'+counts[i]+'" hidden></span></td></tr>').join('')+'</tbody></table>';
+  const body=root.querySelector('tbody');body.getClientRects=()=>[{}];update(body);
+  return [...body.querySelectorAll('[data-pfaelzer-gain]:not([hidden])')].map(node=>[node.closest('tr').dataset.playerRow,node.textContent]);
+ }
+ assert.deepEqual(render(3,[0,1,0]),[]);
+ assert.deepEqual(render(4,[1,2,0]),[['A','+1'],['B','+1']]);
+ time=500;
+ assert.deepEqual(render(4,[1,2,0]),[['A','+1'],['B','+1']]);
+ assert.equal(timers.size,1);
+ assert.equal([...timers.values()][0].at,1300);
+ time=1300;
+ for(const [id,{fn}] of timers){timers.delete(id);fn();}
+ assert.equal(root.querySelectorAll('[data-pfaelzer-gain]:not([hidden])').length,0);
+ assert.deepEqual(render(3,[0,1,0]),[]);
+ assert.deepEqual(render(4,[0,1,1]),[['C','+1']]);
+ assert.deepEqual(render(3,[0,1,0]),[]);
 });
 
 test('TV scores keep counting across a redraw and never jump back when rows move',()=>{

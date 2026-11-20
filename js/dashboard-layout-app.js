@@ -43,6 +43,19 @@
    box.append(label);
   }
   const fadeLabel=element('label',undefined,'dashboard-popup-option');fadeLabel.htmlFor='dashboard-transition-seconds';const fade=element('input');fade.type='number';fade.id='dashboard-transition-seconds';fade.min='0';fade.max='3';fade.step='0.1';fade.value=String(draft.transitionSeconds);fade.disabled=busy;fade.oninput=()=>draft.transitionSeconds=fade.value;fadeLabel.append(document.createTextNode('Sanfter Tabellenwechsel · Übergangszeit '),fade,document.createTextNode(' Sekunden (0 = sofort, Standard 0,6 s)'));box.append(fadeLabel);
+  box=section('player-rows','Spielerzeilen in App und Dashboard');
+  box.append(element('p','Gilt für Spieltabellen mit wechselnder Wurfreihenfolge. Mit 0 Sekunden entfällt die jeweilige Pause oder Bewegung.'));
+  for(const [key,id,title] of [
+   ['holdSeconds','game-row-hold-seconds','Verweildauer nach dem Wurf'],
+   ['moveSeconds','game-row-move-seconds','Dauer der Zeilenbewegung']
+  ]){
+   const label=element('label',undefined,'dashboard-popup-option');
+   label.htmlFor=id;
+   const input=duration(id,draft.playerRows[key],0,M.rowTimingLimits[key],value=>draft.playerRows[key]=value);
+   input.step='0.1';
+   label.append(document.createTextNode(title+' '),input,document.createTextNode(' Sekunden'));
+   box.append(label);
+  }
   box=section('ticker','Laufschriften und eigene Texte');
   const tickerOptions=element('div',undefined,'dashboard-ticker-options');
   const showTicker=element('label',undefined,'dashboard-popup-option'),tickerCheck=element('input');tickerCheck.type='checkbox';tickerCheck.id='dashboard-ticker-enabled';tickerCheck.checked=draft.tickerEnabled;tickerCheck.disabled=busy;tickerCheck.onchange=()=>{draft.tickerEnabled=tickerCheck.checked;draw();};showTicker.append(tickerCheck,document.createTextNode('Laufschrift auf dem Dashboard anzeigen'));tickerOptions.append(showTicker);
