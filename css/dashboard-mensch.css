@@ -25,7 +25,7 @@
 .mensch-field {
   position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
   gap:2px;padding:2px;border:1px solid var(--mensch-field-border);border-radius:.55rem;
-  color:#203650;background:var(--mensch-field-bg);font-weight:800;font-size:clamp(.72rem,1vw,1rem);
+  color:#203650;background:var(--mensch-field-bg);font-weight:800;font-size:clamp(1rem,1.65vw,1.75rem);
 }
 .mensch-sector-1 { --mensch-field-bg:#d9f1e4;--mensch-field-border:#75b496; }
 .mensch-sector-2 { --mensch-field-bg:#daeaf9;--mensch-field-border:#80a5ce; }
@@ -42,20 +42,20 @@
 .mensch-pawns:empty { display:none; }
 .mensch-pawn {
   position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;
-  min-width:1.35rem;height:1.03rem;padding:0 .17rem;margin-top:.7rem;
+  min-width:clamp(1.55rem,2.1vw,2.2rem);height:1.3rem;padding:0 .2rem;margin-top:.9rem;
   border-radius:.52rem .52rem .2rem .2rem;background:var(--mensch-player-color);color:#fff;
   box-shadow:0 1px 2px #1b2c4850;box-sizing:border-box;white-space:nowrap;
 }
 .mensch-pawn::before {
-  content:"";position:absolute;top:-.39rem;left:50%;transform:translateX(-50%);
-  width:.62rem;height:.62rem;border-radius:50%;background:var(--mensch-player-color);
+  content:"";position:absolute;top:-.55rem;left:50%;transform:translateX(-50%);
+  width:.83rem;height:.83rem;border-radius:50%;background:var(--mensch-player-color);
 }
 .mensch-pawn > .mensch-pawn-head {
-  position:absolute;top:-.74rem;left:50%;transform:translateX(-50%);
-  width:1.07rem;height:1.07rem;border:1px solid var(--mensch-player-color);
+  position:absolute;top:-.92rem;left:50%;transform:translateX(-50%);
+  width:clamp(1.25rem,1.65vw,1.68rem);height:clamp(1.25rem,1.65vw,1.68rem);border:1px solid var(--mensch-player-color);
 }
-.mensch-pawn-head .seat-avatar-initials { font-size:.56rem; }
-.mensch-pawn b { position:relative;font-size:.65rem;line-height:1; }
+.mensch-pawn-head .seat-avatar-initials { font-size:.72rem; }
+.mensch-pawn b { position:relative;font-size:.85rem;line-height:1; }
 .mensch-pawn.is-simon { color:#432e00;box-shadow:0 0 0 1px #a36c00; }
 .mensch-pawn.is-simon::before { box-shadow:0 0 0 1px #a36c00; }
 .mensch-pawn.is-current { outline:2px solid #ed9c12;outline-offset:1px; }
@@ -75,4 +75,17 @@
 .mensch-track .mensch-active-field {
   border:1px solid #b36300;background:#ffe393;color:#4a300e;
   box-shadow:inset 0 0 0 2px #d67b08;
+}
+
+.mensch-knockout-popup {
+  position:absolute;z-index:960;top:50%;left:50%;transform:translate(-50%,-50%);
+  max-width:88%;padding:.55em .85em;border:2px solid currentColor;border-radius:.42em;
+  pointer-events:none;box-shadow:0 10px 30px #17243e60;text-align:center;overflow-wrap:anywhere;
+  font-size:clamp(1.4rem,4vw,3.75rem);font-weight:850;line-height:1.15;
+}
+@media(max-width:700px) {
+  .mensch-field { font-size:.85rem; }
+  .mensch-pawn { min-width:1.28rem;height:1rem;margin-top:.65rem; }
+  .mensch-pawn > .mensch-pawn-head { top:-.67rem;width:1.02rem;height:1.02rem; }
+  .mensch-pawn b { font-size:.65rem; }
 }

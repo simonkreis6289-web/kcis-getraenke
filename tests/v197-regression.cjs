@@ -107,13 +107,16 @@ test('Tannenbaum table fills the stage below the scores and above the throw hist
 test('Mensch pins hop through every field, reflect at 36 and return to Start on a collision',()=>{
  const source=read('dashboard.html');
  const code=source.slice(source.indexOf('const menschColors='),source.indexOf('function renderDartsBoard('));
- const env={window:{},activeNames:names=>names,safe:String};
- const {menschHopFields,menschPawnOrigins,animateMenschPawns,renderMenschBoard}=new Function('env','with(env){'+code+
-  ';return {menschHopFields,menschPawnOrigins,animateMenschPawns,renderMenschBoard};}')(env);
+ const timers=new Map();let serial=0;
+ const env={window:{KCDashboardLayout:{menschPopup:value=>value}},activeNames:names=>names,safe:String,
+  setTimeout:(fn,ms)=>{const id=++serial;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
+ const {menschHopFields,menschPawnOrigins,animateMenschPawns,menschKnockout,showMenschPopup,clearMenschPopup,renderMenschBoard}=new Function('env','with(env){'+code+
+  ';return {menschHopFields,menschPawnOrigins,animateMenschPawns,menschKnockout,showMenschPopup,clearMenschPopup,renderMenschBoard};}')(env);
  assert.deepEqual(menschHopFields(0,4,4),[1,2,3,4]);
  assert.deepEqual(menschHopFields(33,33,6),[34,35,36,35,34,33]);
  const base={active:true,playerOrder:['Simon','Peter'],currentIndex:0,scores:{Simon:1,Peter:4},throws:{Simon:[],Peter:[]}};
  const {document}=parseHTML('<main><div id="game-body"></div></main>');
+ env.document=document;
  const body=document.getElementById('game-body');body.dataset.scoreGame='same-game';
  body.innerHTML=renderMenschBoard(base);
  assert.equal(body.querySelector('[data-mensch-player=Simon]').style.getPropertyValue('--mensch-player-color'),'#ffd326');
@@ -139,6 +142,23 @@ test('Mensch pins hop through every field, reflect at 36 and return to Start on 
  ]);
  assert.equal(knockout.options.delay,moves.options.duration);
  assert.equal(knockout.frames.length,3);
+ const event=menschKnockout(thrown,origins);
+ assert.deepEqual(event,{thrower:'Simon',victims:['Peter'],delay:345});
+ assert.equal(menschKnockout({...thrown,scores:{Simon:4,Peter:4}},origins),null);
+ const stage=body.parentElement,selector='.mensch-knockout-popup';
+ showMenschPopup(stage,event,'same-game',1,{menschPopup:{seconds:4,color:'#123456'}},false);
+ assert.equal(stage.querySelector(selector),null);
+ const runTimer=expected=>{const [id,{fn,ms}]=[...timers][0];assert.equal(ms,expected);timers.delete(id);fn();};
+ runTimer(345);
+ const popup=stage.querySelector(selector);
+ assert.equal(popup.textContent,'Simon schmeißt Peter');
+ assert.equal(popup.style.backgroundColor,'#123456');
+ assert.equal(popup.style.color,'#fff');
+ runTimer(4000);assert.equal(stage.querySelector(selector),null);
+ showMenschPopup(stage,event,'same-game',1,{menschPopup:{seconds:0,color:'#123456'}},true);
+ assert.equal(timers.size,0);assert.equal(stage.querySelector(selector),null);
+ showMenschPopup(stage,event,'same-game',1,{menschPopup:{seconds:2,color:'#ffd36a'}},true);
+ assert(stage.querySelector(selector));clearMenschPopup();assert.equal(timers.size,0);
  assert.equal(menschPawnOrigins(body,base,'same-game'),null);
 });
 
