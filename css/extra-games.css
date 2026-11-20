@@ -146,3 +146,17 @@
 #game-body .pfaelzer-table td,#game-body .pfaelzer-table th { padding:.32rem .6rem;font-size:clamp(.95rem,1.25vw,1.25rem); }
 @media(max-width:520px) { .pfaelzer-numbers { grid-template-columns:repeat(5,minmax(0,1fr)); } }
 .pfaelzer-ball.is-unassigned { background:radial-gradient(circle at 31% 23%,#ec7d72,#a92d24 66%,#781f18);color:#fff; }
+
+/* TV-Anzeige für Berg und Tal */
+.berg-tal-tv-throws { margin:0 0 .7rem;padding:.6rem .8rem;background:#eef4fa;border:1px solid #ccddea;border-radius:.75rem; }
+.berg-tal-tv-throws h3 { margin:0 0 .4rem;color:#23435d;font-size:clamp(13px,1.25vw,19px); }
+.berg-tal-equation { display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:.35rem; }
+.berg-tal-equation > b { color:#405c72;font-size:clamp(17px,2.3vw,32px); }
+.berg-tal-shot { position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.13rem;min-width:0;padding:.45rem .25rem .65rem;overflow:hidden;text-align:center;color:#17476e;background:#fff;border:1px solid #c0d1e5;border-radius:.55rem; }
+.berg-tal-shot span,.berg-tal-shot small { font-size:clamp(10px,1.1vw,15px);line-height:1.15; }
+.berg-tal-shot strong { font-size:clamp(23px,3.9vw,56px);line-height:1;font-variant-numeric:tabular-nums; }
+.berg-tal-shot i { position:absolute;left:0;bottom:0;width:var(--berg-tal-fill);height:.25rem;background:#347fb4; }
+.berg-tal-shot.is-low { color:#784f16;background:#fff7e7;border-color:#e4c58b; }
+.berg-tal-shot.is-low i { background:#d48c34; }
+.berg-tal-shot.is-result { color:#205640;background:#edf9f2;border-color:#a4ccb8; }
+.berg-tal-shot.is-result.is-negative { color:#8c3030;background:#fdeeee;border-color:#e5b4b4; }

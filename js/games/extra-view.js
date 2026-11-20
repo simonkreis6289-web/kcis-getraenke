@@ -102,6 +102,24 @@ function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
  return '<section class="ind-board extra-board round-game-board'+(dashboard&&jump?' jump-tv-board':'')+'" data-extra-game="'+key+'"><h2>'+esc(heading)+'</h2>'+(s.active?'<div class="ind-turn extra-turn">🎳 '+turn+'</div>':'')+controls+top+body+'<p class="ind-help">'+esc(g.summary(key,s.config))+'</p>'+(s.finished?'<p class="extra-result">Spiel beendet · '+(euro?'Restbeträge gebucht.':jump?(s.config.classicLosers?'1. Verlierer gebucht.':'Fehlbeträge und 1. Verlierer gebucht.'):'Verliererwertung gebucht.')+'</p>':'')+'</section>';
 }
 
+function bergTalTvThrows(s,current,escape){
+ const first=s.turn[0],last=!first?s.history.findLast(entry=>entry.action==='throw'):null;
+ const completed=last?s.rows[last.name]?.at(-1):null;
+ const [high,low]=first?[first]:completed?.throws||[];
+ const result=completed?.result;
+ const signed=value=>value>0?'+'+value:value<0?'−'+Math.abs(value):'0';
+ const kind={gosse:'Gosse',kranz:'Kranz',miss:'Vorbei'};
+ const shot=(slot,caption,roll)=>'<div class="berg-tal-shot is-'+slot+'"><span>'+caption+'</span><strong>'+
+  (roll?roll.pins:'—')+'</strong><small>'+(roll?(kind[roll.kind]||'Holz'):'Wurf ausstehend')+'</small>'+
+  '<i aria-hidden="true" style="--berg-tal-fill:'+(roll?100*roll.pins/12:0)+'%"></i></div>';
+ const label=completed?'Letzter Durchgang · '+last.name:'Am Wurf · '+current;
+ return '<section class="berg-tal-tv-throws" aria-label="Wurfdifferenz"><h3>'+escape(label)+'</h3><div class="berg-tal-equation">'+
+  shot('high','1. Wurf · Ausgangswert',high)+'<b aria-hidden="true">−</b>'+
+  shot('low','2. Wurf · Abzug',low)+'<b aria-hidden="true">=</b>'+
+  '<div class="berg-tal-shot is-result'+(result<0?' is-negative':'')+'"><span>Differenz</span><strong>'+
+  (result===undefined?'—':signed(result))+'</strong><small>'+(result===undefined?'Nach Wurf 2':'Punkte')+'</small></div></div></section>';
+}
+
 function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,abschreibungFrame=null}={}){
  if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
@@ -123,6 +141,7 @@ function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,abschreib
  }else{const end=Math.min(s.config.rounds,s.round),begin=Math.max(1,end-4),cols=Array.from({length:end-begin+1},(_,i)=>begin+i);body='<div class="ind-table-scroll"><table class="ind-table extra-score-table"><thead><tr><th>Kegler</th>'+cols.map(n=>'<th>D'+n+'</th>').join('')+'<th>Gesamt</th><th>Platz</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowNames.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+'><th>'+esc(n)+'</th>'+cols.map(r=>{const cell=s.rows[n][r-1];return '<td>'+(cell?'<strong class="'+(cell.result<0?'extra-negative':'')+'">'+(cell.result>0?'+':'')+cell.result+'</strong><small>'+cell.throws.map(t=>t.kind==='kranz'?'K('+t.pins+')':t.kind==='gosse'?'G('+t.pins+')':t.pins).join(' − ')+'</small>':'—')+'</td>';}).join('')+'<td><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+'</strong></td><td>'+place(n)+'.</td></tr>').join('')+'</tbody></table></div><p class="ind-help">Durchgang '+Math.min(s.round,s.config.rounds)+' von '+s.config.rounds+' · '+(begin>1?'Die letzten fünf Durchgänge sind sichtbar; die Gesamtsumme enthält alle Ergebnisse.':'Erster Wurf minus zweiter Wurf. Negative Ergebnisse zählen mit. '+(s.config.gutterHigh===undefined?'Diese laufende Partie: Gosse oder Vorbei ergibt Durchgang 0.':'Gosse hoch: '+s.config.gutterHigh+' · Gosse runter: '+s.config.gutterLow+' · Vorbei: 0. Auch mit Gosse wird die Differenz gewertet.'))+'</p>';}
  const context=!s.active?'':ball?esc(s.teamNames[g.team(s)])+' · '+esc(g.current(s)):esc(g.current(s))+(key==='guterschnitt'?' · Ziel '+s.config.targets[s.scores[g.current(s)]]+' · Wurf '+(s.turn.length+1)+' / '+s.attempts[g.current(s)]:key==='bergundtal'?' · Wurf '+(s.turn.length+1)+' / 2':'');
  const title=fence?'<div class="extra-fence-heading"><div><h2>🪵 Lattenzaun</h2><p class="extra-fence-next">'+(s.finished?'🏆 '+esc(winner):s.active?'Nächster Werfer: <strong>'+esc(g.current(s))+'</strong>':'Spiel beendet')+'</p></div><div class="extra-fence-last"><small>Letzter Wurf'+(s.previous?' · '+esc(s.previous.name):'')+'</small><b>'+(s.previous?s.previous.pins+' Holz':'—')+'</b></div></div>':'<h2>'+esc(header)+'</h2>'+(s.active&&!s.readyToFinish?'<div class="ind-turn extra-turn">🎳 '+context+'</div>':'');
- return '<section class="ind-board extra-board" data-extra-game="'+key+'">'+title+controls+body+(s.finished&&!ball?'<p class="extra-result">'+(fence?'Abrechnung nach gesammelten Latten.':key==='guterschnitt'?'Zahlenfolge beendet · 1./2./3. Verlierer nach Fortschritt gebucht.':'Gesamtsumme aller '+s.config.rounds+' Durchgänge · 1./2./3. Verlierer gebucht.')+'</p>':'')+'</section>';
+ const throws=dashboard&&key==='bergundtal'?bergTalTvThrows(s,g.current(s),esc):'';
+ return '<section class="ind-board extra-board" data-extra-game="'+key+'">'+title+controls+throws+body+(s.finished&&!ball?'<p class="extra-result">'+(fence?'Abrechnung nach gesammelten Latten.':key==='guterschnitt'?'Zahlenfolge beendet · 1./2./3. Verlierer nach Fortschritt gebucht.':'Gesamtsumme aller '+s.config.rounds+' Durchgänge · 1./2./3. Verlierer gebucht.')+'</p>':'')+'</section>';
 }
 function extraClockText(ms){const sec=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
