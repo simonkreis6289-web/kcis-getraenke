@@ -25,10 +25,10 @@ function clubGameImpact(roll,name,before,after,detail){
  return '<aside class="club-game-impact" aria-label="Letzter Wurf"><strong>Letzter Wurf · '+clubGameEscape(roll.name)+' · '+result+
   '</strong><span>'+name+': <b>'+before+' → '+after+' Punkte</b></span><small>'+detail+'</small></aside>';
 }
-function abschreibungEliminated(s){
+function abschreibungEliminated(s,target,badge){
  return s.eliminated.length?'<div class="abschreibung-eliminated"><h3>Ausgeschieden</h3>'+
-  s.eliminated.map(({name,place})=>'<span><b>'+clubGameEscape(name)+'</b> · Platz '+place+' · '+
-   clubGameMoney(s.bookings.find(b=>b.personName===name)?.amountCents||0)+'</span>').join('')+'</div>':'';
+  s.eliminated.map(({name,place})=>'<span'+(name===target?' class="is-deducted"':'')+'><b>'+clubGameEscape(name)+'</b> · Platz '+place+' · '+
+   clubGameMoney(s.bookings.find(b=>b.personName===name)?.amountCents||0)+(name===target?badge:'')+'</span>').join('')+'</div>':'';
 }
 function abschreibungDisplayOrder(active,current,last){
  const first=last&&last.name!==current?last.name:active.at(-1);
@@ -81,10 +81,10 @@ function createAbschreibungTvPlayback(schedule=setTimeout,cancel=clearTimeout){
   return frame;
  };
 }
-function abschreibungTvScore(name,shown,s,shot,metric){
+function abschreibungTvScore(name,shown,s,shot){
  const current=s.scores[name],before=shown.scores[name],percentage=points=>Math.round(100*points/s.config.startPoints);
  const changed=shot?.target===name&&before>current;
- const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,metric)||'')+'>'+current+'</b>';
+ const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'stand')||'')+'>'+current+'</b>';
  const meter='<span class="abschreibung-meter" aria-hidden="true"><span'+(changed?' class="abschreibung-meter-drop"':'')+
   ' style="width:'+percentage(current)+'%;--abschreibung-before:'+percentage(before)+'%"></span></span>';
  return {value,meter,changed};
@@ -92,31 +92,33 @@ function abschreibungTvScore(name,shown,s,shot,metric){
 function abschreibungTvBoard(s,frame,impact){
  const shown=frame?.holding?frame.before:s,shot=frame?.points?frame.shot:null;
  const scoredBefore=frame?.before||s;
- const [last,prior]=shown.history.filter(e=>e.action==='throw').slice(-2).reverse();
+ const last=shown.history.findLast(e=>e.action==='throw');
  const current=window.KCClubGames.current(shown);
  const active=window.KCClubGames.abschreibungOrder(shown);
  const order=abschreibungDisplayOrder(active,current,last);
  const escape=clubGameEscape;
- const roles=[['Vorletzter Wurf',prior?.name],['Letzter Wurf',last?.name],['Am Wurf',current]];
- // A player who repeats after a gutter may appear twice. Only highlight the actual destination.
- const destination=roles.findIndex(([,name])=>name&&name===shot?.target);
- const flying=name=>'<b aria-hidden="true" class="abschreibung-flying-points">−'+(scoredBefore.scores[name]-s.scores[name])+'</b>';
+ const target=shot?.target;
+ const deduction=target?scoredBefore.scores[target]-s.scores[target]:0;
+ const badge=deduction>0?'<b aria-hidden="true" class="abschreibung-flying-points">−'+deduction+'</b>':'';
  const rows=order.map(name=>{
-  const score=abschreibungTvScore(name,scoredBefore,s,shot,"stand");
+  const score=abschreibungTvScore(name,scoredBefore,s,shot);
   return '<li'+(globalThis.window?.KCPlayerRows?.row?.(name)||'')+' class="abschreibung-row'+(name===current?' is-thrower':'')+(score.changed?' is-deducted':'')+'"><span class="abschreibung-name"><strong>'+
    escape(name)+'</strong>'+(name===current?'<small>Am Wurf</small>':'')+'</span>'+score.meter+
-   '<span class="abschreibung-points">'+score.value+' Pkt.</span></li>';
+   '<span class="abschreibung-points">'+score.value+' Pkt.'+(score.changed?badge:'')+'</span></li>';
  }).join('');
- const trail=roles.map(([label,name],i)=>{
-  const score=name&&abschreibungTvScore(name,scoredBefore,s,shot,"trail-"+i);
-  return '<li class="abschreibung-tv-person'+(i===2?' is-current':'')+'"><span><small>'+label+'</small><strong>'+escape(name||'—')+'</strong></span>'+
-   (score?'<span class="abschreibung-points">'+score.value+' Pkt.</span>':'')+
-   (i===destination&&score.changed?flying(name):'')+'</li>';
+ const columns=s.players.map(name=>{
+  const points=s.scores[name],height=100*points/s.config.startPoints;
+  const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'column')||'')+'>'+points+'</b>';
+  return '<li'+(name===current?' class="is-current"':'')+'>'+
+   '<span class="abschreibung-chart-value">'+value+'</span>'+
+   '<span class="abschreibung-chart-track" aria-hidden="true"><span style="height:'+height+'%"></span></span>'+
+   '<span class="abschreibung-chart-name" title="'+escape(name)+'">'+escape(name)+'</span></li>';
  }).join('');
  const rule='Eine geworfene 6 zählt gegen dich. '+(s.config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
- return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms"><div class="abschreibung-tv-stand"><ol class="abschreibung-order" aria-label="Punktestand"'+(globalThis.window?.KCPlayerRows?.group?.('abschreibung',shown,{motionOnly:true})||'')+'>'+rows+'</ol>'+abschreibungEliminated(shown)+
-  '</div><aside class="abschreibung-details"><div class="abschreibung-tv-last">'+(impact||'<p>Noch kein Wurf</p>')+(shot&&destination<0?flying(shot.target):'')+'</div><p>'+rule+'</p>'+
-  '<ol class="abschreibung-tv-trail" aria-label="Letzte und aktuelle Werfer">'+trail+'</ol></aside></div>';
+ return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms"><div class="abschreibung-tv-stand"><ol class="abschreibung-order" aria-label="Punktestand"'+(globalThis.window?.KCPlayerRows?.group?.('abschreibung',shown,{motionOnly:true})||'')+'>'+rows+'</ol>'+abschreibungEliminated(shown,order.includes(target)?undefined:target,badge)+
+  '</div><aside class="abschreibung-details"><div class="abschreibung-tv-last">'+(impact||'<p>Noch kein Wurf</p>')+'</div><p>'+rule+'</p>'+
+  '<section class="abschreibung-chart" aria-label="Restpunkte je Kegler"><h3>Restpunkte</h3>'+
+  '<ul style="--abschreibung-columns:'+s.players.length+'">'+columns+'</ul></section></aside></div>';
 }
 function clubLottoBalls(ticket,score,next=null){
  if(!ticket)return '—';
