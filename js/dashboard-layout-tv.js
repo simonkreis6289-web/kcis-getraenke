@@ -25,7 +25,7 @@
    box.dataset.activePanel=current.key||'';const dots=box.querySelectorAll('[data-panel-key]');for(const dot of dots){const active=dot.dataset.panelKey===current.key;dot.classList.toggle('active',active);dot.setAttribute('aria-current',String(active));}}
    if(items.length>1)delay=Math.min(delay,current.remaining);
   }
-  resizeSeating();window.KCClubToasts?.positionStation?.();
+  resizeSeating();
   if(Number.isFinite(delay))rotationTimer=setTimeout(()=>rotate(),Math.max(25,delay));
  }
  function resizeSeating(){

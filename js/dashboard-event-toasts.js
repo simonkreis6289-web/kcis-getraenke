@@ -58,16 +58,16 @@
  const euro=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
  const stationQueue=[];
  let stationActive=null,stationTimer=null,stationBox=null;
+ function stationBounds({left,top,width,height}){
+  Object.assign(stationBox.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
+ }
  function positionStation(){
   if(!stationActive||!stationBox)return;
-  const panel=$('dashboard-panel-drinks');
-  const slot=panel?.parentElement;
-  const active=panel&&!panel.hidden&&(!slot?.dataset.activePanel||slot.dataset.activePanel==='drinks');
-  const target=active?panel.getBoundingClientRect():null;
-  if(target?.height>0&&target.width>0){
-   const {left,top,width,height}=target;
-   Object.assign(stationBox.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
-   stationBox.classList.toggle('station-from-left',!!panel.closest('.side.left'));
+  const {anchor}=stationActive;
+  if(anchor){
+   const slot=anchor.id?$(anchor.id):anchor;
+   const bounds=slot?.getBoundingClientRect();
+   if(bounds?.height>0&&bounds.width>0)stationBounds(bounds);
    return;
   }
   const main=document.querySelector('main.dashboard'),bounds=main?.getBoundingClientRect();
@@ -75,8 +75,7 @@
   const width=Math.min(window.innerWidth-16,Math.max(280,(bounds?.width||window.innerWidth)*stationActive.rightWidth/100));
   const height=window.innerHeight/2;
   const right=Math.min(window.innerWidth-8,(bounds?.right||window.innerWidth)-8);
-  Object.assign(stationBox.style,{left:(right-width)+'px',top:Math.max(0,bottom-height-8)+'px',width:width+'px',height:height+'px'});
-  stationBox.classList.remove('station-from-left');
+  stationBounds({left:right-width,top:Math.max(0,bottom-height-8),width,height});
  }
  function resetStation(){
   stationQueue.length=0;stationActive=null;
@@ -86,6 +85,11 @@
  function showStation(){
   if(stationActive||!stationQueue.length)return;
   stationActive=stationQueue.shift();
+  const panel=$('dashboard-panel-drinks'),slot=panel?.parentElement;
+  const visible=panel&&!panel.hidden&&(!slot?.dataset.activePanel||slot.dataset.activePanel==='drinks');
+  const target=visible?panel.getBoundingClientRect():null;
+  const anchor=target?.width>0&&target.height>0?panel.closest('.dashboard-panel-slot')||panel:null;
+  stationActive.anchor=anchor;
   const {row,root,seconds}=stationActive;
   const viewport=document.createElement('div'),card=document.createElement('article'),title=document.createElement('h2');
   stationBox=viewport;viewport.id='dashboard-station-booking';viewport.className='station-booking-viewport';
@@ -110,7 +114,9 @@
   }else{
    const detail=document.createElement('p');detail.textContent=row.description;card.append(detail);
   }
-  viewport.append(card);document.body.append(viewport);positionStation();
+  viewport.append(card);document.body.append(viewport);
+  viewport.classList.toggle('station-from-left',!!anchor?.closest('.side.left'));
+  if(anchor)stationBounds(target);else positionStation();
   const motion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:360;
   void card.offsetWidth;viewport.classList.add('station-booking-visible');
   stationTimer=setTimeout(()=>{
