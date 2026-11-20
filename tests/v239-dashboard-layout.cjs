@@ -240,3 +240,18 @@ test('dashboard indicator stays blue on a direct link independently of Firebase 
  f.status('Gerätestand · Serverbestätigung ausstehend',false,true);assert(dot.classList.contains('pending'));
  f.status('Keine Internetverbindung');assert.equal(dot.className,'dot');
 });
+
+test('Abschreibung fits the board inside the padded stage even on browsers without :has',()=>{
+ const html=read('dashboard.html'),{document}=parseHTML('<div id="game-body" class="has-abschreibung-board"><div class="tv-board"><div class="abschreibung-tv-layout"></div></div></div>');
+ const area=document.getElementById('game-body'),board=area.querySelector('.tv-board'),layout=board.firstElementChild;
+ Object.defineProperties(area,{clientHeight:{value:420},clientWidth:{value:700}});
+ Object.defineProperties(board,{scrollHeight:{get:()=>Math.max(560,Number.parseFloat(layout.style.minHeight)||0)+30},scrollWidth:{value:650}});
+ Object.defineProperty(layout,'offsetHeight',{get:()=>Math.max(560,Number.parseFloat(layout.style.minHeight)||0)});
+ const context={document,fitInProgress:false,getComputedStyle:()=>({paddingTop:'8px',paddingBottom:'8px',paddingLeft:'8px',paddingRight:'8px'})};
+ vm.createContext(context);
+ vm.runInContext(html.slice(html.indexOf('function fitTvBoard(){'),html.indexOf("if(typeof ResizeObserver!=='undefined')")),context);
+ context.fitTvBoard();
+ assert(Number(board.style.zoom)<1);
+ assert(board.scrollHeight*Number(board.style.zoom)<=420-16);
+ assert.match(html,/#game-body\.has-abschreibung-board\{overflow:hidden/);
+});
