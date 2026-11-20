@@ -35,3 +35,27 @@ test('canonical root snapshots detach legacy listeners, ignore late mirror event
 test('a new drink updates the money immediately while preserving an unchanged game board DOM',()=>{
  let receive;const root={...initial(),syncProtocol:1,syncRevision:1,dashboardActiveGame:'mensch',menschState:{active:true,playerOrder:['A','B'],currentIndex:0,scores:{A:4,B:0},throws:{}}};const d=dashboard({root:()=>root,subscribe:(_,fn)=>{receive=fn;fn(copy(root));return ()=>{};}});Object.defineProperty(d.document.getElementById('game-select'),'value',{value:'auto',writable:true});d.c.window.dashboardTest.connect('club','Club');const board=d.document.getElementById('game-body').firstChild;assert(board);const next=copy(root);next.syncRevision++;next.persons[0].drinks.beer=1;receive(copy(next));assert(d.document.getElementById('drinks-total').textContent.includes('2,00'));assert.equal(d.document.getElementById('game-body').firstChild,board,'no board rebuild, zoom or table layout for an unrelated drink');next.syncRevision++;next.menschState.scores.B=5;next.menschState.currentIndex=1;receive(copy(next));assert.notEqual(d.document.getElementById('game-body').firstChild,board,'a real throw does rebuild the board');assert(d.document.getElementById('game-body').textContent.includes('5'));
 });
+
+test('the fine list crowns the current gutter leaders next to their unchanged amounts',()=>{
+ const root={syncProtocol:1,syncRevision:1,STRAFEN:[{key:'g',label:'Pudel'},{key:'king',label:'Gossenkönig'}],persons:[
+  {name:'A',present:true,strafen:{g:2},strafTotal:4},
+  {name:'B',present:true,strafen:{g:2},strafTotal:5},
+  {name:'C',present:true,strafen:{g:1,king:10},strafTotal:6},
+  {name:'Gast',present:true,isDrinksOnly:true,strafen:{g:20},strafTotal:0}
+ ]};
+ let receive;
+ const d=dashboard({root:()=>root,subscribe:(_,fn)=>{receive=fn;fn(copy(root));return ()=>{};}});
+ d.c.window.dashboardTest.connect('club','Club');
+ const crowns=()=>[...d.document.querySelectorAll('#fines .fine-king-crown')];
+ assert.deepEqual(crowns().map(node=>node.closest('.listrow').querySelector('.name').textContent),['B','A']);
+ assert(crowns().every(node=>node.parentNode.classList.contains('value')&&node===node.parentNode.firstChild));
+ assert.match(crowns()[0].parentNode.textContent,/👑5,00/);
+ assert.match(d.document.getElementById('fines-total').textContent,/15,00/);
+ root.syncRevision++;
+ root.persons[2].strafen.g=3;
+ receive(copy(root));
+ assert.deepEqual(crowns().map(node=>node.closest('.listrow').querySelector('.name').textContent),['C']);
+ root.syncRevision++;
+ for(const person of root.persons)person.strafen.g=0;
+ receive(copy(root));assert.equal(crowns().length,0);
+});
