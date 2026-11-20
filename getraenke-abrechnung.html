@@ -833,7 +833,7 @@
 <div class="game-hub-card" onclick="showSideTab('spiele','hochsprung')"><div class="icon">🏅</div><div class="title">Hochsprung</div><div class="desc">0–7 frei belegbare Hürden, je höchstens drei Würfe und einstellbarer Fehlbetrag.</div></div>
 <div class="game-hub-card" onclick="showSideTab('spiele','guterschnitt')"><div class="icon">✂️</div><div class="title">Der gute Schnitt</div><div class="desc">Zahlenfolge treffen · steigende Versuche</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','abschreibung')"><div class="icon">📉</div><div class="title">Abschreibung</div><div class="desc">Punkte beim Vordermann abziehen · Platz × Einsatz beim Ausscheiden</div></div>
-    <div class="game-hub-card" onclick="showSideTab('spiele','lottokoenig')"><div class="icon">🍀</div><div class="title">Lottokönig</div><div class="desc">Sechs Glückszahlen · 13 Würfe reihum</div></div>
+    <div class="game-hub-card" onclick="showSideTab('spiele','lottokoenig')"><div class="icon">🍀</div><div class="title">Lottokönig</div><div class="desc">Sechs Glückszahlen · bis zu 13 Würfe reihum</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','tageskurs')"><div class="icon">💶</div><div class="title">Tageskurs</div><div class="desc">Neun Kegelwerte · ein Wurf je Runde · stehende Kegel bestimmen den Betrag</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','swingerclub')"><div class="icon">🤝</div><div class="title">Swinger Club</div><div class="desc">Zweierteams · Partnerwechsel · persönliche Gesamtpunkte</div></div>
     <div class="game-hub-card" onclick="showSideTab('spiele','tannenbaum')"><div class="icon">🌲</div><div class="title">Tannenbaum</div><div class="desc">Teamspiel mit Strafboxen, Strikes und Live-Übersicht.</div></div>
@@ -1389,7 +1389,10 @@
 </section>
 <section class="game-settings-card" id="game-property-lottokoenig" data-game-property="lottokoenig" role="tabpanel" aria-labelledby="lottokoenig-settings-title" hidden>
  <header><h3 id="lottokoenig-settings-title">🍀 Lottokönig</h3></header>
- <div class="game-settings-fields"><p>Sechs Glückszahlen, 13 Würfe und das Mindestziel von 49 Holz.</p></div>
+ <div class="game-settings-fields"><label class="game-settings-field">Wann ist ein Kegler fertig?
+  <select data-club-setting="lottoGoal"><option value="highestOr49">Höchste Glückszahl getroffen oder mindestens 49 Holz</option><option value="49">Immer mindestens 49 Holz</option></select>
+ </label></div>
+ <button class="primary-btn" type="button" onclick="saveClubGameSettings('lottokoenig')">Einstellungen speichern</button>
 </section>
 <section class="game-settings-card" id="game-property-tageskurs" data-game-property="tageskurs" role="tabpanel" aria-labelledby="tageskurs-settings-title" hidden>
  <header><h3 id="tageskurs-settings-title">💶 Tageskurs</h3></header>

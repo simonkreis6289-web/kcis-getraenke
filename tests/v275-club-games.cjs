@@ -86,7 +86,7 @@ test('Pfälzerspiel shows all nine balls, shared numbers, hits and round progres
  assert.equal(miss.querySelector('.pfaelzer-ball.is-hit'),null);
 });
 test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before qualified players',()=>{
- const f=game('lottokoenig',{},['A','B','C','D']);
+ const f=game('lottokoenig',{lottoEarlyStop:false},['A','B','C','D']);
  assert.throws(()=>f.run('numbers',{numbers:[1,2,3,4,12,40]}),/Zehnerblock/);
  const ticket=[4,12,20,28,36,44];
  for(const name of ['A','B','C','D']){assert.equal(g.current(f.s),name);f.run('numbers',{numbers:ticket});}
@@ -105,7 +105,7 @@ test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before
  f.run('undo');assert.equal(g.current(f.s),'D');
 });
 test('Lottokönig keeps reached numbers green, marks misses red and shows the next gap',()=>{
- const f=game('lottokoenig',{},['A','B']);
+ const f=game('lottokoenig',{lottoEarlyStop:false},['A','B']);
  for(const name of ['A','B'])f.run('numbers',{numbers:[4,12,20,28,36,44]});
  for(const n of [4,1,9,2])f.roll('pins',n);
  const board=parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true})).document;
@@ -119,6 +119,38 @@ test('Lottokönig keeps reached numbers green, marks misses red and shows the ne
  const over=parseHTML(c.renderClubGameBoard(f.s)).document.querySelector('.club-lotto-turn');
  assert.match(over.textContent,/Keine Glückszahl mehr offen/);
  assert.equal(over.querySelector('.is-next'),null);
+});
+test('Lottokönig skips completed players and breaks equal hits by fewer throws',()=>{
+ const f=game('lottokoenig',{},['A','B','C']);
+ for(const name of ['A','B','C'])f.run('numbers',{numbers:[4,12,20,28,36,40]});
+ for(let round=1;round<=5;round++)for(const n of [8,9,1])f.roll('pins',n);
+ assert.equal(f.s.scores.A,40);assert(g.lottoDone(f.s,'A'));assert.equal(g.current(f.s),'B');
+ assert.equal(f.s.tickets.A.hits.length,1);
+ f.roll('pins',4);
+ assert.equal(f.s.scores.B,49);assert(g.lottoDone(f.s,'B'));assert.equal(g.current(f.s),'C');
+ assert.equal(f.s.tickets.B.hits.length,1);
+ f.run('undo');assert.equal(g.current(f.s),'B');assert(!g.lottoDone(f.s,'B'));
+ f.roll('pins',4);
+ for(let i=5;i<13;i++){assert.equal(g.current(f.s),'C');f.roll('pins',1);}
+ assert(f.s.finished);assert.deepEqual(copy(f.s.winners),['A']);
+ assert.deepEqual(copy(f.s.loserGroups),[{rank:1,names:['C']},{rank:2,names:['B']}]);
+ assert.deepEqual(copy(f.s.players.map(name=>f.s.rows[name].length)),[5,6,13]);
+ const board=parseHTML(c.renderClubGameBoard(f.s)).document;
+ assert.equal(board.querySelectorAll('.club-lotto-done').length,3);
+});
+test('Lottokönig can require 49 wood even if the highest ticket number has already been hit',()=>{
+ const f=game('lottokoenig',{lottoGoal:'49'},['A','B']);
+ for(const name of ['A','B'])f.run('numbers',{numbers:[4,12,20,28,36,40]});
+ for(let i=0;i<5;i++)for(const n of [8,1])f.roll('pins',n);
+ assert.deepEqual(copy(f.s.tickets.A.hits),[40]);
+ assert(!g.lottoQualified(f.s,'A'));assert.equal(g.current(f.s),'A');
+ const board=parseHTML(c.renderClubGameBoard(f.s)).document;
+ assert.match(board.querySelector('.club-lotto-turn').textContent,/Noch 9 Holz bis 49/);
+ f.roll('pins',9);f.roll('pins',1);
+ assert(g.lottoDone(f.s,'A'));assert.equal(g.current(f.s),'B');
+ f.run('undo');f.run('undo');
+ assert.equal(f.s.config.lottoGoal,'49');
+ assert.equal(g.current(f.s),'A');
 });
 test('Tageskurs calculates and replays only the standing pins at configured prices',()=>{
  const f=game('tageskurs',{pinCents:[101,20,30,40,50,60,70,80,90],divisor:2},['A','B']);
@@ -190,6 +222,10 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
  assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(db.root().extraGameSettings.tageskurs.divisor,3);
  assert.equal(db.root().extraGameSettings.tageskurs.rounds,2);
+ const lottoGoal=a.document.querySelector('#game-property-lottokoenig [data-club-setting="lottoGoal"]');
+ lottoGoal.value='49';assert(await a.c.saveClubGameSettings('lottokoenig'));
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(db.root().extraGameSettings.lottokoenig.lottoGoal,'49');
  for(const key of g.keys){
   a.c.showSideTab('spiele',key);
   assert(!a.document.getElementById('tab-'+key).classList.contains('hidden'));
@@ -198,6 +234,7 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
   assert(a.c.indGet(key).active,key);
   assert(a.document.querySelector('#tab-'+key+' .game-input-panel'),key);
  }
+ assert.equal(a.c.indGet('lottokoenig').config.lottoGoal,'49');
  const lotto=a.document.getElementById('tab-lottokoenig'),confirm=()=>lotto.querySelector('[data-club-ticket-submit]');
  const pick=n=>a.c.clubGameLottoPick(n,lotto.querySelector('[data-lotto-number="'+n+'"]'));
  for(const n of [2,7,12,34,47])pick(n);

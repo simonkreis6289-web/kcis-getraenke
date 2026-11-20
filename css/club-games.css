@@ -168,3 +168,4 @@ tbody[data-player-rows] > tr > :last-child { border-right:1px solid #dce6f0;bord
 .club-lotto-turn .club-lotto-balls > span { width:2.2em;height:2.2em;font-size:clamp(1rem,2.4vw,1.7rem);font-weight:800; }
 .club-lotto-turn-stats { display:flex;justify-content:center;flex-wrap:wrap;gap:.45rem 1.25rem;margin-top:.6rem;text-align:center; }
 .club-lotto-turn-stats b { font-size:1.22em;font-variant-numeric:tabular-nums; }
+.club-lotto-done { display:inline-block;padding:.1rem .35rem;border-radius:.4rem;background:#e3f1e8;color:#25513c;font-weight:700; }

@@ -13,8 +13,10 @@ function clubGameRack({standing=window.KCClubGames.pins,selected=[],prices,butto
  }).join('')+'</div>';
 }
 function clubGameTable(s,headers,row){
- const current=window.KCClubGames.current(s);
- const names=window.KCPlayerRows?.order(s.players,current,{running:s.active&&!!current,unavailable:n=>s.gameKey==='abschreibung'&&!s.scores[n]})||s.players;
+ const games=window.KCClubGames,current=games.current(s);
+ const unavailable=n=>s.gameKey==='abschreibung'&&!s.scores[n]||
+  s.gameKey==='lottokoenig'&&s.config.lottoEarlyStop&&s.phase==='throw'&&games.lottoDone(s,n);
+ const names=window.KCPlayerRows?.order(s.players,current,{running:s.active&&!!current,unavailable})||s.players;
  return '<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Kegler</th>'+headers.map(x=>'<th>'+x+'</th>').join('')+
   '</tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+names.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+(s.active&&current===n?' class="club-game-active-row"':'')+'><th>'+clubGameEscape(n)+'</th>'+row(n)+'</tr>').join('')+'</tbody></table></div>';
 }
@@ -112,10 +114,12 @@ function clubLottoBalls(ticket,score,next=null){
 function clubLottoTurn(s,current,phase){
  const ticket=s.tickets[current],score=s.scores[current];
  const next=ticket.numbers.find(number=>number>score);
+ const goal=next===undefined?(s.config.lottoEarlyStop&&score<49?'<span>Noch <b>'+(49-score)+'</b> Holz bis 49</span>':
+  '<span>Keine Glückszahl mehr offen</span>'):'<span>Noch <b>'+(next-score)+'</b> Holz bis zur <b>'+next+'</b></span>';
  return '<section class="club-lotto-turn" aria-label="Glückszahlen des aktiven Werfers"><header><strong>🎳 '+clubGameEscape(current)+
   '</strong><small>'+phase+'</small></header><div class="club-lotto-turn-body"><div class="club-lotto-balls">'+clubLottoBalls(ticket,score,next)+'</div>'+
   '<div class="club-lotto-turn-stats"><span><b'+(globalThis.window?.KCPlayerRows?.score?.(current,'lotto-turn')||'')+'>'+score+
-  '</b> Holz gesamt</span>'+(next===undefined?'<span>Keine Glückszahl mehr offen</span>':'<span>Noch <b>'+(next-score)+'</b> Holz bis zur <b>'+next+'</b></span>')+
+  '</b> Holz gesamt</span>'+goal+
   '</div></div></section>';
 }
 function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=null}={}){
@@ -157,7 +161,8 @@ function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=nu
   body=clubGameTable(s,['Glückszahlen','Treffer','Holz','Würfe'],n=>{
    const ticket=s.tickets[n],score=s.scores[n];
    return '<td><div class="club-lotto-balls">'+clubLottoBalls(ticket,score)+
-    '</div></td><td>'+(ticket?.hits.length||0)+' / 6</td><td><span'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+score+'</span>'+(score>=49?' <span title="Ziel erreicht">✓</span>':'')+'</td><td>'+s.rows[n].length+' / 13</td>';
+    '</div></td><td>'+(ticket?.hits.length||0)+' / 6</td><td><span'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+score+'</span>'+(g.lottoQualified(s,n)?' <span title="Ziel erreicht">✓</span>':'')+'</td><td>'+s.rows[n].length+' / 13'+
+    (s.config.lottoEarlyStop&&g.lottoDone(s,n)?' <small class="club-lotto-done">Fertig</small>':'')+'</td>';
   });
  }else if(key==='tageskurs'){
   const rounds=s.config.rounds??1;
