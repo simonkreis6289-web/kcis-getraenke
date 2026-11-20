@@ -389,9 +389,9 @@
   .hurdle-circuit-player .hurdle-dot-current { animation:none; }
 }
 
-#game-body .tv-board:has(.jump-tv-board),
+#game-body .jump-tv-fit-board,
 #game-body .jump-tv-board { display:flex; flex-direction:column; box-sizing:border-box; }
-#game-body .tv-board:has(.jump-tv-board) { flex:none; }
+#game-body .jump-tv-fit-board { flex:none; }
 #game-body .jump-tv-board { flex:1 0 auto; }
 .jump-tv-stage { display:grid; grid-template-columns:clamp(80px,10vw,135px) minmax(0,1fr); gap:12px; flex:1 0 auto; }
 .jump-tv-stage > .ind-table-scroll { display:flex; overflow:visible; }
@@ -400,7 +400,10 @@
 .jump-tv-stage .ind-help { display:none; }
 .jump-tv-meter { display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 4px; text-align:center; background:#edf4fd; border:1px solid #bed0e8; border-radius:7px; }
 .jump-tv-scale { width:24px; flex:1 0 100px; position:relative; border-radius:4px; background:#cdddf1; margin:12px 0 6px; }
-.jump-tv-fill { position:absolute; inset:auto 0 0; height:var(--jump-height); background:#3979b9; border-radius:4px 4px 0 0; }
+.jump-tv-fill { position:absolute; left:0;right:0;bottom:0; height:var(--jump-height); background:#3979b9; border-radius:4px 4px 0 0; }
+.jump-tv-fill-moving { animation:jump-tv-grow .65s ease-out both;animation-delay:var(--jump-delay); }
+@keyframes jump-tv-grow { from {height:var(--jump-from)} }
+@media(prefers-reduced-motion:reduce) { .jump-tv-fill-moving {animation:none} }
 .jump-tv-bar { position:absolute; bottom:var(--jump-bar); left:50%; transform:translate(-50%, 50%); padding:2px 4px; width:max-content; border-bottom:3px solid #d58a28; color:#694318; background:#fff4d5; font-size:11px; font-weight:800; }
 
 .hurdle-player-choice { flex-direction:column; align-items:stretch; }

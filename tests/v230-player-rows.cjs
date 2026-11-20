@@ -209,3 +209,19 @@ test('TV scores keep counting across a redraw and never jump back when rows move
  assert.deepEqual([...scores].map(n=>n.textContent),['51','90']);
  assert.equal(frames.length,0);
 });
+
+test('Hochsprung TV animates the new height once and keeps the animation phase on a redraw',()=>{
+ const readFile=read('js/games/extra-view.js'),ctx={window:{}};
+ vm.createContext(ctx);vm.runInContext(readFile,ctx);
+ const fill=(id,from)=>parseHTML('<div class="jump-tv-fill" data-jump-throw="'+id+'" data-jump-turn="'+(id==='a'?1:2)+'" data-jump-from="'+from+'"></div>').document.querySelector('div');
+ const before=fill('a','0%'),after=fill('b','25%');
+ ctx.animateJumpMeter(before,after,1000);
+ assert(after.classList.contains('jump-tv-fill-moving'));
+ assert.equal(after.style.getPropertyValue('--jump-from'),'25%');
+ const redrawn=fill('b','25%');ctx.animateJumpMeter(after,redrawn,1200);
+ assert.equal(redrawn.style.getPropertyValue('--jump-delay'),'-200ms');
+ const still=fill('b','25%');ctx.animateJumpMeter(redrawn,still,1700);
+ assert(!still.classList.contains('jump-tv-fill-moving'));
+ const undone=fill('a','0%');ctx.animateJumpMeter(after,undone,1250);assert(!undone.classList.contains('jump-tv-fill-moving'));
+ assert.match(read('css/individual-games.css'),/#game-body \.jump-tv-fit-board/);
+});
