@@ -61,6 +61,7 @@ function clubGameControls(key,s,disabled){
    Array.from({length:5},(_,block)=>'<div class="club-lotto-choices" aria-label="'+block*10+' bis '+(block*10+9)+'">'+
     Array.from({length:10},(_,i)=>block*10+i).map(v=>'<button type="button" '+disabled+' aria-pressed="'+d.selected.includes(v)+'" data-lotto-number="'+v+'" onclick="clubGameLottoPick('+v+',this)">'+v+'</button>').join('')+'</div>').join('')+
     '<div class="ind-actions club-lotto-action"><button class="primary-btn" type="button" data-club-ticket-submit '+(disabled||!ready?'disabled':'')+' onclick="clubGameCommitTicket()">Zahlen übernehmen</button>'+
+   '<button class="secondary-btn" type="button" data-club-ticket-random '+disabled+' onclick="clubGameRandomTicket()">Zufallszahlen</button>'+
    '<span data-club-ticket-status aria-live="polite">'+clubGameTicketStatus(d.selected)+'</span></div></div>';
  }
  if(key==='swingerclub')return s.phase==='pairs'?swingerAppPairs(s,d,disabled):swingerAppTurn(s,d,disabled);
@@ -88,6 +89,23 @@ function clubGameLottoPick(n,button){
  const panel=document.getElementById('tab-lottokoenig');
  panel.querySelector('[data-club-ticket-submit]').disabled=!window.KCClubGames.validTicket(d.selected);
  panel.querySelector('[data-club-ticket-status]').textContent=clubGameTicketStatus(d.selected);
+}
+function clubGameRandomTicket(){
+ const s=indGet('lottokoenig');
+ if(!s?.active||s.phase!=='numbers'||indBusy.lottokoenig||indPending.lottokoenig)return;
+ const selected=clubGameDraft(s).selected=window.KCClubGames.randomTicket();
+ const panel=document.getElementById('tab-lottokoenig');
+ for(const button of panel.querySelectorAll('[data-lotto-number]')){
+  button.setAttribute('aria-pressed',String(selected.includes(Number(button.dataset.lottoNumber))));
+ }
+ panel.querySelector('[data-club-ticket-submit]').disabled=false;
+ panel.querySelector('[data-club-ticket-status]').textContent=clubGameTicketStatus(selected);
+}
+function clubGameRandomTickets(){
+ const s=indGet('lottokoenig');
+ if(!s?.active||s.phase!=='numbers'||indBusy.lottokoenig||indPending.lottokoenig)return;
+ const tickets=s.players.map(()=>({numbers:window.KCClubGames.randomTicket()}));
+ return indAction('lottokoenig','randomNumbers',{tickets});
 }
 function clubGameCommitTicket(){
  const s=indGet('lottokoenig');

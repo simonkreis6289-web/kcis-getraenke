@@ -233,6 +233,16 @@ function renderGameDashboardButton(key,panel,s){
   toolbar.insertBefore(undo,pause||next);
  }
  undo.disabled=!canUndoGameAction(key,s)||gameInputBusy[key]||!!(window.KCSharedSync&&!window.KCSharedSync.ready);
+ const randomTargets=toolbar.querySelector('[data-lotto-random-targets]');
+ if(key==='lottokoenig'&&s?.active&&s.phase==='numbers'){
+  const button=randomTargets||document.createElement('button');
+  if(!randomTargets){
+   button.type='button';button.className='secondary-btn';button.setAttribute('data-lotto-random-targets','');
+   button.textContent='Zufällige Zielzahlen';button.onclick=()=>clubGameRandomTickets();
+   toolbar.insertBefore(button,undo);
+  }
+  button.disabled=!!(indBusy.lottokoenig||indPending.lottokoenig||gameInputBusy[key]||window.KCSharedSync&&!window.KCSharedSync.ready);
+ }else randomTargets?.remove();
  return header;
 }
 
