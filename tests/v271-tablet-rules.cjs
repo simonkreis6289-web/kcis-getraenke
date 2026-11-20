@@ -73,7 +73,11 @@ test('the real tablet SDK commits saved V269/V270 batches with active station pr
   const reverse={sequence:5710,baseSequence:5709,state:{...saved,persons:saved.persons.map((p,i)=>
    i===0?{...p,drinks:{beer:1}}:p
   )},documents:[{path:'clubs/regression271/stationCommands/'+stationId,value:{status:'reversed'}}]};
-  await api.commitTabletBatch('regression271',reverse,context('sync_saved_reverse'));
+  await assert.rejects(api.commitTabletBatch('regression271',{...reverse,baseRevision:1806},context('sync_guard_stale')),{code:'sync-conflict'});
+  assert.equal((await receipt()).data().status,'applied');
+  const guarded={...reverse,baseRevision:1807};
+  assert.deepEqual({...await api.commitTabletBatch('regression271',guarded,context('sync_saved_reverse'))},{sequence:5710,revision:1808});
+  assert.deepEqual({...await api.commitTabletBatch('regression271',guarded,context('sync_saved_reverse'))},{sequence:5710,revision:1808});
   const reversed=(await receipt()).data();
   assert.equal(reversed.status,'reversed');
   assert(reversed.createdAt.isEqual(timestamp));

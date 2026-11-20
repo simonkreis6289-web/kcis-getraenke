@@ -14,10 +14,15 @@
  }
  function eventValue(kind,target){return ['move','setPlayer'].includes(kind)?Math.min(target-1,ruleKinds[kind]):ruleKinds[kind];}
  function ruleLabel(r){return r.kind==='start'?'Fehlstart – zurück auf 0':r.kind==='skip'?'Einmal aussetzen':r.kind==='pay'?(r.value<100?r.value+' Cent':(r.value/100).toFixed(2).replace('.',',')+' €')+' in die Kasse':r.kind==='subtract'?'Nächsten Wurf abziehen · Gosse = 9':r.kind==='reset'?'Von vorn bei 0 beginnen':r.kind==='leader'?'Zum Führenden aufschließen minus 1':r.kind==='move'?'Versetzen auf '+r.value+' Punkte':r.kind==='setPlayer'?'Beliebigen Spieler auf '+r.value+' Punkte setzen':r.kind==='double'?'Zusatzwurf – zählt doppelt':r.kind==='others'?'Alle anderen verlieren 8 Punkte':'Neustart bei 0 oder 1 € zahlen';}
- function sevenDefaults(){return {pinCents:10,kranzMode:'fixed',kranzValue:8,addLimit:1};}
- function validSevenSettings(v){return !!v&&Number.isSafeInteger(v.pinCents)&&v.pinCents>=0&&v.pinCents<=10000&&['fixed','choose'].includes(v.kranzMode)&&Number.isInteger(v.kranzValue)&&v.kranzValue>=1&&v.kranzValue<=12&&(v.addLimit===undefined||Number.isInteger(v.addLimit)&&v.addLimit>=1&&v.addLimit<=3);}
- function sevenSettings(v){return validSevenSettings(v)?{...clone(v),addLimit:v.addLimit??1}:sevenDefaults();}
- function sevenColumns(s){return s?.sevenVersion===2?columns:columns.slice(1);}
+ const sevenTargets=Object.freeze([...columns,56,63]);
+ function sevenDefaults(){return {targets:columns.slice(),divisor:1,pinCents:10,kranzMode:'fixed',kranzValue:8,addLimit:1};}
+ function validSevenSettings(v){return !!v&&Number.isSafeInteger(v.pinCents)&&v.pinCents>=0&&v.pinCents<=10000&&['fixed','choose'].includes(v.kranzMode)&&Number.isInteger(v.kranzValue)&&v.kranzValue>=1&&v.kranzValue<=12&&(v.addLimit===undefined||Number.isInteger(v.addLimit)&&v.addLimit>=1&&v.addLimit<=3)
+  &&(v.targets===undefined||Array.isArray(v.targets)&&v.targets.length>0&&Array.from(v.targets).every(n=>sevenTargets.includes(n))&&new Set(v.targets).size===v.targets.length)
+  &&(v.divisor===undefined||Number.isFinite(v.divisor)&&v.divisor>=1);
+ }
+ function sevenSettings(v){return validSevenSettings(v)?{...sevenDefaults(),...clone(v),targets:(v.targets||columns).slice().sort((a,b)=>a-b),addLimit:v.addLimit??1}:sevenDefaults();}
+ function sevenColumns(s){return s?.sevenVersion===2?sevenSettings(s.config?.seven).targets:columns.slice(1);}
+ function sevenEndCents(s,name){return Math.round((s.scores[name]||0)/(s.sevenVersion===2?sevenSettings(s.config?.seven).divisor:1));}
  function sevenAddCount(s,name){return s.addUsed?.[name]===true?1:Math.max(0,Number(s.addUsed?.[name])||0);}
  function sevenAddLimit(s){return s?.sevenVersion===2?sevenSettings(s.config?.seven).addLimit:1;}
  function sevenKranzLabel(v){const c=sevenSettings(v);return c.kranzMode==='choose'?'Kranz (Wert wählen)':'Kranz ('+c.kranzValue+')';}
@@ -87,7 +92,7 @@
   const values=Object.values(s.scores),best=s.gameKey==='siebener'?Math.min(...values):Math.max(...values);
   s.winners=s.players.filter(n=>s.scores[n]===best);
   const e={id:'finish'};if(s.gameKey==='hindernis')s.settlementVersion=2;
-  for(const n of s.players){const cents=s.gameKey==='siebener'?s.scores[n]:settlementCents(s,n);booking(s,e,n,cents,s.gameKey==='siebener'?'7er-Spiel · Abweichungen':'Hindernislauf · Endabrechnung');}
+  for(const n of s.players){const cents=s.gameKey==='siebener'?sevenEndCents(s,n):settlementCents(s,n);booking(s,e,n,cents,s.gameKey==='siebener'?'7er-Spiel · Abweichungen':'Hindernislauf · Endabrechnung');}
   s.active=false;s.finished=true;s.readyToFinish=true;
  }
  const active=p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly;
@@ -202,5 +207,5 @@
   const old=new Set((before.bookings||[]).map(x=>x.id)),next=new Set(s.bookings.map(x=>x.id));
   return {changes,added,removed,moneyAdded:req.action==='reset'?[]:s.bookings.filter(x=>!old.has(x.id)),moneyRemoved:req.action==='reset'?[]:(before.bookings||[]).filter(x=>!next.has(x.id)).map(x=>x.id)};
  }
- window.KCIndividual=Object.freeze({ruleKinds:Object.keys(ruleKinds),eventValue,maxRules,hurdleLanding,sevenColumns,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
+ window.KCIndividual=Object.freeze({ruleKinds:Object.keys(ruleKinds),eventValue,maxRules,hurdleLanding,sevenColumns,sevenTargets,sevenEndCents,sevenAddCount,sevenAddLimit,sevenDefaults,validSevenSettings,sevenSettings,sevenKranzLabel,empty,defaults,settings,hurdleEndCents,settlementCents,reachedTarget,validSettings,makeRules,recommendedCount,randomRules,rebuildSettings,shiftRule,randomizeEvents,ruleLabel,current,command,effects,columns});
 })();

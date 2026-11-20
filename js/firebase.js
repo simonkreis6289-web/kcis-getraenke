@@ -200,23 +200,16 @@ window.firestoreApi = {
 
   async sendDashboardSignal(clubId,request){
     if(!/^[a-zA-Z0-9_-]{1,80}$/.test(request.viewerId||'')||!/^[a-zA-Z0-9_-]{1,80}$/.test(request.connectionId||'')||!['offer','answer'].includes(request.action)||request.description?.type!==request.action||typeof request.description.sdp!=='string'||request.description.sdp.length>60000)throw Error('Ungültige TV-Verbindung');
-    const rootRef=doc(db,'clubs',clubId,'state','current'),target=doc(db,'clubs',clubId,'documents','dashboard_link_'+request.viewerId),opId='sync_'+crypto.randomUUID();
-    try{
-      return await runTransaction(db,async tx=>{
-        const existing=await tx.get(target),old=existing.exists()?existing.data():{};
-        if(request.action==='answer'&&old.connectionId!==request.connectionId)return false;
-        const value=request.action==='offer'?{kind:'dashboardLink',viewerId:request.viewerId,connectionId:request.connectionId,
-          offer:request.description,answer:null,expiresAt:(window.KCSharedClock?.now()??Date.now())+120000}
-          :{kind:'dashboardLink',viewerId:old.viewerId,connectionId:old.connectionId,offer:old.offer,answer:request.description,
-            source:request.source,expiresAt:old.expiresAt};
-        tx.set(target,value);return true;
-      });
-    }catch(error){if(error.code!=='permission-denied')throw error;}
-    for(let attempt=0;attempt<2;attempt++){
-      const snap=await getDocFromServer(rootRef),base=snap.exists()?snap.data():{};if(!base.syncProtocol)return false;
-      const context={method:'dashboardSignal',opId,base,eveningStartedAt:base.currentEveningStartedAt||'',sideOperations:[]};
-      try{return await sharedTransport.transaction(clubId,context,async tx=>{const existing=await tx.get(target),old=existing.exists()?existing.data():{};if(request.action==='answer'&&old.connectionId!==request.connectionId)return false;const value=request.action==='offer'?{kind:'dashboardLink',viewerId:request.viewerId,connectionId:request.connectionId,offer:request.description,answer:null,expiresAt:(window.KCSharedClock?.now()??Date.now())+120000}:{...old,answer:request.description,source:request.source};tx.set(target,value);return true;});}catch(error){if(attempt||error.code!=='sync-conflict')throw error;}
-    }
+    const target=doc(db,'clubs',clubId,'documents','dashboard_link_'+request.viewerId);
+    return runTransaction(db,async tx=>{
+      const existing=await tx.get(target),old=existing.exists()?existing.data():{};
+      if(request.action==='answer'&&(old.connectionId!==request.connectionId||old.answer||
+        old.expiresAt<=(window.KCSharedClock?.now()??Date.now())))return false;
+      const value=request.action==='offer'?{kind:'dashboardLink',viewerId:request.viewerId,connectionId:request.connectionId,
+        offer:request.description,answer:null,expiresAt:(window.KCSharedClock?.now()??Date.now())+120000}
+        :{...old,answer:request.description,source:request.source};
+      tx.set(target,value);return true;
+    });
   },
   subscribeDashboardOffers(clubId,onData){return onSnapshot(collection(db,'clubs',clubId,'documents'),snap=>onData(snap.docs.filter(x=>x.id.startsWith('dashboard_link_')).map(x=>x.data()).filter(x=>x.kind==='dashboardLink'&&x.offer&&!x.answer)),()=>{});},
   subscribeDashboardAnswer(clubId,viewerId,onData){return onSnapshot(doc(db,'clubs',clubId,'documents','dashboard_link_'+viewerId),snap=>onData(snap.exists()?snap.data():null),()=>{});},
@@ -224,22 +217,8 @@ window.firestoreApi = {
   async sendDashboardDiagnostic(clubId,request){
     if(!['presence','ping','pong'].includes(request.kind)||
        !/^[a-zA-Z0-9_-]{1,80}$/.test(request.id||''))throw Error('Ungültiger Verbindungstest');
-    const rootRef=doc(db,'clubs',clubId,'state','current');
     const target=doc(db,'clubs',clubId,'documents','dashboard_diagnostic_'+(request.kind==='presence'?'presence':'probe'));
-    try{
-      return await runTransaction(db,async tx=>{
-        const previous=await tx.get(target),old=previous.exists()?previous.data():null;
-        const time=window.KCSharedClock?.now()??Date.now();
-        if(request.kind==='pong'&&(old?.kind!=='ping'||old.id!==request.id||old.expiresAt<time))return false;
-        tx.set(target,{kind:request.kind,id:request.id,webrtc:request.webrtc===true,
-          expiresAt:time+(request.kind==='presence'?95000:15000)});
-        return true;
-      });
-    }catch(error){if(error.code!=='permission-denied')throw error;}
-    const snap=await getDocFromServer(rootRef),base=snap.exists()?snap.data():{};
-    if(!base.syncProtocol)return false;
-    const context={method:'dashboardDiagnostic',opId:'sync_'+crypto.randomUUID(),base,eveningStartedAt:base.currentEveningStartedAt||'',sideOperations:[]};
-    return sharedTransport.transaction(clubId,context,async tx=>{
+    return runTransaction(db,async tx=>{
       const previous=await tx.get(target),old=previous.exists()?previous.data():null;
       const time=window.KCSharedClock?.now()??Date.now();
       if(request.kind==='pong'&&(old?.kind!=='ping'||old.id!==request.id||old.expiresAt<time))return false;
@@ -304,6 +283,9 @@ window.firestoreApi = {
       // The sequence alone cannot prove that this tablet's batch was accepted.
       if(cloudSequence>=batch.sequence||batch.baseSequence!==undefined&&batch.baseSequence!==cloudSequence)
         throw window.KCSharedCore.conflict(['Tablet-Warteschlange']);
+      if(batch.baseOperation?current.syncOperation!==batch.baseOperation:
+         Number.isSafeInteger(batch.baseRevision)&&Number(current.syncRevision||0)!==batch.baseRevision)
+        throw window.KCSharedCore.conflict(['Tablet-Warteschlange','Firebase-Revision']);
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       const beforeDocs=await Promise.all(docs.map(row=>tx.get(row.ref)));
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
@@ -326,7 +308,8 @@ window.firestoreApi = {
           tx.set(row.ref,serialize(row.value));
         }
       }
-      return {sequence:batch.sequence};
+      return {sequence:batch.sequence,...(Number.isSafeInteger(batch.baseRevision)||batch.baseOperation?
+        {revision:Number(current.syncRevision||0)+1}:{})};
     });
   },
 

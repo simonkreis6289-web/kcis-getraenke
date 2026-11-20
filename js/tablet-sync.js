@@ -14,7 +14,7 @@
       })]);
     }finally{clearTimeout(deadline);}
   }
-  const tvLabels={direct:'TV direkt verbunden',relay:'TV über WebRTC-Relay verbunden',firebase:'TV über Firebase verbunden',connecting:'TV verbindet …',disconnected:'TV nicht verbunden'};
+  const tvLabels={direct:'TV direkt verbunden',relay:'TV über WebRTC-Relay verbunden',firebase:'TV über Firebase verbunden',connecting:'TV-Verbindung wird aufgebaut',disconnected:'TV nicht verbunden'};
   const tvMode=()=>current?.linkStatus?.mode||'connecting';
   const pendingWrites=s=>[s?.inflight,s?.pending].reduce((count,batch)=>count+(batch?1+batch.documents.length:0),0);
   let connectionMeasurement=null;
@@ -55,13 +55,15 @@
     const count=Number(!!current?.inflight)+Number(!!current?.pending),tv=tvLabels[tvMode()];
     const offline=!navigator.onLine,error=String(current?.error||'');
     el.dataset.mode=offline?'offline':error?'error':!ready?'blocked':count?'saving':'ready';
-    const cloud=offline?'Cloud offline':error?'Cloudspeicherung ausstehend':!ready?'Tablet lädt den gespeicherten Stand …':count?'Cloudspeicherung läuft …':'Cloudspeicherung bestätigt';
+    const cloud=offline?(count?'Cloudspeicherung ausstehend · offline':'Firebase offline'):error?'Cloudspeicherung ausstehend':!ready?'Tablet lädt den gespeicherten Stand …':count?'Cloudspeicherung läuft …':'Cloudspeicherung bestätigt';
     el.dataset.tvMode=tvMode();
     updateDiagnostic(cloud);
     const label=tv+' · '+cloud;
     const indicator=el.querySelector('summary');
     indicator.title=label;
-    el.querySelector('.shared-sync-caption').textContent=label;
+    el.querySelector('.shared-sync-caption').textContent=tv;
+    const cloudStatus=el.querySelector('.shared-sync-cloud');
+    if(cloudStatus)cloudStatus.textContent=cloud;
     indicator.setAttribute('aria-label',label);
     el.querySelector('.shared-sync-label').textContent=label;
     const detail=el.querySelector('.shared-sync-error-details');
@@ -93,9 +95,9 @@
       }finally{backup.disabled=false;}
     };
     const adopt=el.querySelector('.shared-sync-adopt-cloud');
-    adopt.hidden=!current?.eveningConflict||!count;
+    adopt.hidden=!current?.directConflict||!count;
     adopt.disabled=offline||!!current?.uploading||!!current?.recovering;
-    adopt.onclick ||= adoptFirebaseEvening;
+    adopt.onclick ||= adoptFirebaseState;
     const archive=el.querySelector('.shared-sync-local-archive');
     archive.hidden=!current?.hasRecoveryArchive;
     archive.onclick ||= ()=>{
@@ -140,7 +142,10 @@
       const kind=row.path.startsWith(prefix)?row.path.slice(prefix.length):'';
       if(['notes','statutes','penalties'].includes(kind))content[kind]=row.deleted?null:row.value;
     }
-    s.link?.publish(s.root,s.seq,s.cloudEvening,content);
+    const first=s.inflight||s.pending;
+    const basis={baseRevision:first?.baseRevision??s.cloudRevision,operations:[first?.baseOperation,s.inflight?.opId,s.pending?.opId,s.lastOperation].filter(Boolean),
+      conflict:s.directConflict===true};
+    s.link?.publish(s.root,s.seq,s.cloudEvening,content,basis);
   }
   function stage(state,docs=[],clockOnly=false){
     const s=current;if(!ready||!s)return false;
@@ -148,7 +153,9 @@
     const previous={seq:s.seq,pending:s.pending,root:s.root};
     const merged=new Map((s.pending?.documents||[]).map(x=>[x.path,x]));for(const doc of docs)merged.set(doc.path,doc);
     const predecessor=s.inflight;
-    s.seq++;s.root={...state,tabletSequence:s.seq};s.pending={sequence:s.seq,opId:id(),baseSequence:predecessor?.sequence??s.cloudSequence,expectedEvening:predecessor?predecessor.state.currentEveningStartedAt||'':s.cloudEvening,state:C.clean(s.root),documents:[...merged.values()]};
+    s.seq++;s.root={...state,tabletSequence:s.seq};s.pending={sequence:s.seq,opId:id(),baseSequence:predecessor?.sequence??s.cloudSequence,
+      baseRevision:predecessor?.baseRevision??s.pending?.baseRevision??s.cloudRevision,
+      baseOperation:predecessor?.opId??s.pending?.baseOperation,expectedEvening:predecessor?predecessor.state.currentEveningStartedAt||'':s.cloudEvening,state:C.clean(s.root),documents:[...merged.values()]};
     try{store(s);}catch(error){s.seq=previous.seq;s.pending=previous.pending;s.root=previous.root;throw Error('Tablet-Speicher voll. Buchung wurde nicht übernommen.');}
     if(!clockOnly)s.ownsClock=true;
     server=s.root;publish(s);cache();status();clearTimeout(timer);
@@ -172,15 +179,23 @@
           if(confirmed?.sequence!==batch.sequence)throw Error('Firebase hat diese Übertragung nicht bestätigt.');
           const previousConfirmedAt=s.lastConfirmedAt;s.inflight=null;s.lastConfirmedAt=Date.now();
           try{store(s);}catch(error){s.inflight=batch;s.lastConfirmedAt=previousConfirmedAt;throw error;}
-          s.cloudSequence=batch.sequence;s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagnostic=null;s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
+          s.cloudSequence=batch.sequence;
+          if(Number.isSafeInteger(confirmed.revision))s.cloudRevision=confirmed.revision;
+s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagnostic=null;s.retryFailures=0;s.nextRetryAt=0;s.retryStopped=false;
           s.lastOperation=batch.opId;
-          s.eveningConflict=false;
+          s.eveningConflict=false;s.directConflict=false;
+          if(!s.pending&&ctx.confirmedState){
+            const confirmedRoot=C.normalizeGameData(ctx.confirmedState);
+            s.root=confirmedRoot;if(s===current){server=confirmedRoot;publish(s);}
+          }
           const stationResults=batch.documents.filter(row=>row.value?.status==='applied'&&row.value.result?.description&&
             row.path.startsWith('clubs/'+s.club+'/stationCommands/'));
           if(s===current&&stationResults.length)
             toast('🍺 KC Theke · '+stationResults.map(row=>row.value.result.description).join(' / '),'success');
         }catch(error){
           s.retryFailures=(s.retryFailures||0)+1;
+          s.directConflict=error?.code==='sync-conflict';
+          if(s.directConflict&&s===current)publish(s);
           s.eveningConflict=error?.code==='sync-conflict'&&error.path?.[0]==='Kegelabend';
           s.failureDiagnostic=ctx?{
             batchSequence:s.inflight?.sequence,baseSequence:s.inflight?.baseSequence,
@@ -207,7 +222,7 @@
   function begin(club){
     current?.link?.close();ready=false;connectionMeasurement=null;
     current=sessions.get(club)||{club,root:null,seq:0,pending:null,inflight:null,uploading:null,error:'',docCache:new Map()};
-    current.hasRecoveryArchive=!!localStorage.getItem(recoveryKey(club));
+    current.directConflict=false;current.hasRecoveryArchive=!!localStorage.getItem(recoveryKey(club));
     sessions.set(club,current);current.linkStatus=null;current.received=null;unit=null;status();
   }
   function receive(state,metadata={}){
@@ -259,6 +274,10 @@
       s.seq=Math.max(s.cloudSequence,Number(outbox?.seq)||0);
       s.lastConfirmedAt=outbox?.lastConfirmedAt||null;
       if(!s.uploading){s.inflight=outbox?.inflight||null;s.pending=outbox?.pending||null;}
+      const first=s.inflight||s.pending;
+      s.directConflict=!!(first&&s.cloudSequence<(first.sequence||0)&&
+       (first.baseSequence!==s.cloudSequence||(first.baseOperation?first.baseOperation!==saved.syncOperation:
+        Number.isSafeInteger(first.baseRevision)&&first.baseRevision!==s.cloudRevision)));
       s.error='';activate(s,s.pending?.state||s.inflight?.state||saved);store(s);status();void drain(s);return true;
     }catch(error){
       if(current!==s)return false;
@@ -311,12 +330,12 @@
     project(state);if(method==='saveLivePersonStatus'){renderAnwesenheit();updateStats();}return state;
   }
   function local(fn){const promise=localTail.catch(()=>{}).then(fn);localTail=promise.catch(()=>{});return promise;}
-  async function adoptFirebaseEvening(){
+  async function adoptFirebaseState(){
     const s=current;
-    if(!s?.eveningConflict||s.uploading||s.recovering||!navigator.onLine)return false;
-    if(!confirm('Offene lokale Änderungen werden in diesem Browser separat gesichert. Sie werden nicht nach Firebase übertragen. Stattdessen wird der aktuelle Firebase-Kegelabend geöffnet. Fortfahren?'))return false;
+    if(!s?.directConflict||s.uploading||s.recovering||!navigator.onLine)return false;
+    if(!confirm('Offene lokale Änderungen werden in diesem Browser separat gesichert. Sie werden nicht nach Firebase übertragen. Stattdessen wird der bestätigte Firebase-Stand geladen. Fortfahren?'))return false;
     return local(async()=>{
-      if(current!==s||!s.eveningConflict||s.uploading||s.recovering)return false;
+      if(current!==s||!s.directConflict||s.uploading||s.recovering)return false;
       s.recovering=true;status();
       try{
         const stored=localStorage.getItem(key(s.club)),outbox=JSON.parse(stored||'null'),first=outbox?.inflight;
@@ -325,12 +344,12 @@
         const saved=await cloudRequest(raw.readTabletDocument(s.club,'clubs/'+s.club+'/state/current'));
         if(current!==s||localStorage.getItem(key(s.club))!==stored)
           throw Error('Der Browserstand hat sich geändert. Bitte erneut abgleichen.');
-        if(!saved?.syncInitialized||!Array.isArray(saved.persons)||!saved.currentEveningStartedAt||
-           saved.currentEveningStartedAt===first.expectedEvening)
-          throw Error('Ein anderer bestätigter Firebase-Kegelabend konnte nicht ermittelt werden.');
+        if(!saved?.syncInitialized||!Array.isArray(saved.persons)||
+           s.eveningConflict&&(!saved.currentEveningStartedAt||saved.currentEveningStartedAt===first.expectedEvening))
+          throw Error('Der bestätigte Firebase-Stand konnte nicht ermittelt werden.');
         const archives=JSON.parse(localStorage.getItem(recoveryKey(s.club))||'[]');
         if(!archives.some(row=>row.tabletOutbox.inflight.opId===first.opId&&row.tabletOutbox.pending?.opId===outbox.pending?.opId)){
-          archives.push({savedAt:new Date().toISOString(),firebaseEvening:saved.currentEveningStartedAt,
+          archives.push({savedAt:new Date().toISOString(),firebaseEvening:saved.currentEveningStartedAt||'',
             firebaseSequence:Number(saved.tabletSequence)||0,tabletOutbox:outbox});
           localStorage.setItem(recoveryKey(s.club),JSON.stringify(archives));
         }
@@ -338,9 +357,9 @@
         const cloudSequence=Number(saved.tabletSequence)||0;
         const next={seq:cloudSequence,inflight:null,pending:null,lastConfirmedAt:Date.now()};
         store({...s,...next});
-        Object.assign(s,next,{cloudSequence,cloudEvening:saved.currentEveningStartedAt,
+        Object.assign(s,next,{cloudSequence,cloudEvening:saved.currentEveningStartedAt||'',
           cloudRevision:Number(saved.syncRevision)||0,ownsClock:false,
-          error:'',failureDiagnostic:null,retryStopped:false,retryFailures:0,nextRetryAt:0,eveningConflict:false});
+          error:'',failureDiagnostic:null,retryStopped:false,retryFailures:0,nextRetryAt:0,eveningConflict:false,directConflict:false});
         s.docCache.clear();
         activate(s,C.normalizeGameData(saved));
         toast('Firebase-Kegelabend geladen. Die offenen lokalen Änderungen wurden separat gesichert.','success');

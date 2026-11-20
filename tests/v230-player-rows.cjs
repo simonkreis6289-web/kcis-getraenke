@@ -49,7 +49,17 @@ for(const key of keys)test(key+': real app and TV move rows with the actual turn
  else if(key==='plusminus')await a.c.applyPlusminusThrow(4);
  else if(key==='sichern'){await a.c.sichernThrow(4);await check(a,d,key,['A','B','C','D']);await a.c.sichernSave();}
  else if(key==='blackjack'){await a.c.tableAction(key,'throw',{kind:'pins',pins:4});await check(a,d,key,['A','B','C','D']);await a.c.tableAction(key,'stand');}
- else if(key==='siebener'){await roll(3);await roll(4);await check(a,d,key,['A','B','C','D']);await a.c.indAction(key,'place',{column:7});}
+ else if(key==='siebener'){
+  const assertTurn=async message=>{
+   assert(await a.c.KCSharedSync.waitForUpload());d.update();
+   assert(a.document.querySelector('#tab-siebener .ind-turn').textContent.includes(message));
+   assert(d.document.querySelector('#game-body .ind-turn').textContent.includes(message));
+  };
+  await roll(5);await assertTurn('1 / 2 Würfe · 5');
+  await a.c.indAction(key,'undo');await assertTurn('0 / 2 Würfe');
+  await roll(3);await roll(4);await check(a,d,key,['A','B','C','D']);await a.c.indAction(key,'place',{column:7});
+  await assertTurn('0 / 2 Würfe');
+ }
  else if(key==='bergundtal'){await roll(6);await check(a,d,key,['A','B','C','D']);await roll(3);}
  else if(key==='hochsprung'){for(const n of [4,4,4])await roll(n);}
  else if(key==='poker'){for(const n of [1,2,3,4])await roll(n);await check(a,d,key,['A','B','C','D']);await roll(5);}

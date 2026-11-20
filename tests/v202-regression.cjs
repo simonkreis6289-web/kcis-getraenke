@@ -3,7 +3,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),plain=x=>JSON.
 const config=(pinCents=17,kranzMode='fixed',kranzValue=12,addLimit=1)=>({pinCents,kranzMode,kranzValue,addLimit});
 const start=c=>step(g.empty('siebener'),'start',{players:['A','B'],sevenSettings:c}).state;
 test('7er validates money and kranz options; old games retain the 10-cent/8-wood fallback',()=>{
- assert.deepEqual(plain(g.sevenSettings(null)),config(10,'fixed',8));for(const c of [config(-1),config(1.5),config(10001),config(10,'bad'),config(10,'fixed',0),config(10,'fixed',13)]){assert(!g.validSevenSettings(c));assert.throws(()=>start(c));}
+ assert.deepEqual(plain(g.sevenSettings(null)),{...config(10,'fixed',8),targets:[7,14,21,28,35,42,49],divisor:1});for(const c of [config(-1),config(1.5),config(10001),config(10,'bad'),config(10,'fixed',0),config(10,'fixed',13)]){assert(!g.validSevenSettings(c));assert.throws(()=>start(c));}
  const s=start(config());delete s.config.seven;const out=step(roll(roll(s,6),2),'place',{column:14});assert.equal(out.state.sheet.A[14].cents,20);
 });
 test('fixed kranz values 8,12 and a custom value apply to the actual scoring, and cannot be overridden by the client',()=>{
@@ -23,4 +23,28 @@ test('actual free kranz dialog cancels without booking and retries the same sele
 });
 test('7er settings persist through both snapshots and switching club caches',async()=>{
  const source=read('tests/v182-regression.cjs'),a=source.indexOf('function persistence(){'),b=source.indexOf("\ntest('actual local",a),p=new Function('read','assert',source.slice(a,b)+';return persistence();')(read,assert);p.env.siebenerSettings=config(32,'fixed',6);assert.equal(p.getSerializableState().siebenerSettings.pinCents,32);assert.equal(p.getFirestoreState().siebenerSettings.kranzValue,6);p.syncCurrentClubToStore();p.env.siebenerSettings=null;await p.selectClub('Club A');assert.deepEqual(p.env.siebenerSettings,config(32,'fixed',6));
+});
+
+test('7er accepts selected targets up to 63 and divides the summed penalty exactly once',async()=>{
+ const c={...config(25),targets:[63,7,56],divisor:3};
+ let s=start(c);
+ assert.deepEqual(plain(g.sevenColumns(s)),[7,56,63]);
+ for(const invalid of [{targets:[]},{targets:[64]},{targets:[7,7]},{divisor:0},{divisor:Infinity}]){
+  assert.throws(()=>start({...c,...invalid}));
+ }
+ assert.throws(()=>step(roll(roll(s,3),2),'place',{column:14}),/Spalte/);
+ s=step(roll(roll(s,3),3),'place',{column:7,add:true}).state;
+ s=step(roll(roll(s,2),3),'place',{column:7}).state;
+ for(const col of [56,63])s=lib.sevenRound(s,col,[7,col/7]);
+ assert(s.readyToFinish);
+ assert.equal(s.scores.A,25);
+ const done=step(s,'finish'),store=lib.server({siebenerState:s});
+ assert.deepEqual(plain(done.effect.moneyAdded.map(b=>b.amountCents)),[8,8]);
+ await store.api.transactIndividualGame('club',done.request);
+ await store.api.transactIndividualGame('club',done.request);
+ assert.deepEqual(plain(store.root().individualGameLedger.map(b=>b.amountCents)),[8,8]);
+ assert.equal(step(done.state,'undo').state.scores.A,25);
+ const fractional=start({...c,targets:[7],divisor:2.5});
+ const completed=step(lib.sevenRound(fractional,7,[2,3]),'finish');
+ assert.equal(completed.state.bookings[0].amountCents,10);
 });
