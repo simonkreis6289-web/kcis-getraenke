@@ -63,6 +63,12 @@
    label.append(document.createTextNode(title+' '),input,document.createTextNode(' Sekunden'));
    box.append(label);
   }
+  const pauseLabel=element('label',undefined,'dashboard-popup-option');
+  pauseLabel.htmlFor='dashboard-abschreibung-pause';
+  const pause=duration(pauseLabel.htmlFor,draft.abschreibungPause,0,M.abschreibungPauseMax,value=>draft.abschreibungPause=value);
+  pause.step='0.1';
+  pauseLabel.append(document.createTextNode('Abschreibung am TV · Pause vor dem Werferwechsel '),pause,document.createTextNode(' Sekunden nach dem Punktabzug'));
+  box.append(pauseLabel);
   box=section('ticker','Laufschriften und eigene Texte');
   const tickerOptions=element('div',undefined,'dashboard-ticker-options');
   const showTicker=element('label',undefined,'dashboard-popup-option'),tickerCheck=element('input');tickerCheck.type='checkbox';tickerCheck.id='dashboard-ticker-enabled';tickerCheck.checked=draft.tickerEnabled;tickerCheck.disabled=busy;tickerCheck.onchange=()=>{draft.tickerEnabled=tickerCheck.checked;draw();};showTicker.append(tickerCheck,document.createTextNode('Laufschrift auf dem Dashboard anzeigen'));tickerOptions.append(showTicker);

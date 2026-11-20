@@ -39,6 +39,7 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  assert.deepEqual(names(dashboard),['B','C','D','E','F']);
  assert.equal(dashboard.querySelector('.is-thrower strong').textContent,'C');
  assert.equal(dashboard.querySelector('.abschreibung-chart .is-current .abschreibung-chart-name').textContent,'C');
+ assert.equal(dashboard.querySelector('.abschreibung-chart .is-target .abschreibung-chart-name').textContent,'B');
  assert.match(dashboard.querySelector('.abschreibung-eliminated').textContent,/A · Platz 6/);
  assert.equal(f.s.eliminated[0].place,6);
  f.roll('pins',9);assert.equal(f.s.scores.B,0);
@@ -51,11 +52,24 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  const wood=game('abschreibung',{woodRequired:true},['A','B']);
  wood.roll('gosse');assert.equal(g.current(wood.s),'A');assert.equal(wood.s.scores.A,100);
 });
-test('Abschreibung TV shows the deducted score before rotating and cancels animation on undo',()=>{
+test('Abschreibung applies the saved own-score numbers and preserves the rule when replaying a game',()=>{
+ const f=game('abschreibung',{selfPins:[3,7]},['A','B','C']);
+ f.roll('pins',3);assert.equal(f.s.scores.A,97);
+ f.roll('pins',6);assert.equal(f.s.scores.A,91);assert.equal(f.s.scores.B,100);
+ f.roll('pins',7);assert.equal(f.s.scores.C,93);
+ f.run('undo');assert.equal(f.s.scores.C,100);assert.equal(f.s.scores.A,91);
+ for(const dashboard of [false,true])assert.match(c.renderClubGameBoard(f.s,{dashboard}),/Gegen dich zählen: 3, 7/);
+ const legacy=game('abschreibung',{selfPins:undefined},['A','B']);
+ legacy.roll('pins',6);assert.equal(legacy.s.scores.A,94);
+ const empty=game('abschreibung',{selfPins:[]},['A','B']);
+ empty.roll('pins',6);assert.equal(empty.s.scores.B,94);
+ assert.equal(g.validSettings('abschreibung',{...g.defaults('abschreibung'),selfPins:[3,3]}),false);
+});
+test('Abschreibung TV shrinks then moves the columns, holds the previous turn and clears the deduction on undo',()=>{
  const f=game('abschreibung',{},['A','B','C','D']);
  let pending=null,delay,paints=0;
  const playback=c.createAbschreibungTvPlayback((fn,ms)=>{delay=ms;pending=fn;return 1;},()=>{pending=null;});
- const repaint=()=>paints++,update=(reduced=false,hold=900)=>playback(f.s,repaint,reduced,hold);
+ const repaint=()=>paints++,update=(reduced=false,pause=200)=>playback(f.s,repaint,reduced,pause);
  update();
  f.roll('pins',4);update();pending();pending();
  f.roll('pins',7);const frame=update();
@@ -70,7 +84,16 @@ test('Abschreibung TV shows the deducted score before rotating and cancels anima
   column.querySelector('.abschreibung-chart-track span').style.height
  ]);
  assert.deepEqual(columns(animated),[['B','100','100%'],['C','100','100%'],['D','96','96%'],['A','93','93%']]);
- assert.equal(animated.querySelector('.abschreibung-chart [aria-current="true"] .abschreibung-chart-track .abschreibung-chart-name').textContent,'C');
+ assert.equal(animated.querySelector('.abschreibung-chart [aria-current="true"] .abschreibung-chart-track .abschreibung-chart-name').textContent,'B');
+ assert.equal(animated.querySelector('.abschreibung-chart .is-target .abschreibung-chart-name').textContent,'A');
+ const layout=animated.querySelector('.abschreibung-tv-layout');
+ assert.equal(layout.style.getPropertyValue('--abschreibung-rank-delay'),layout.style.getPropertyValue('--abschreibung-shrink-duration'));
+ assert.equal(layout.style.getPropertyValue('--abschreibung-rank-delay'),'700ms');
+ const shifts=doc=>[...doc.querySelectorAll('.abschreibung-chart-move')].map(column=>[
+  column.querySelector('.abschreibung-chart-name').textContent,column.style.getPropertyValue('--abschreibung-shift')
+ ]);
+ assert.deepEqual(shifts(animated),[['B','100%'],['C','100%'],['D','100%'],['A','-300%']]);
+ assert.deepEqual(shifts(view(null)),[]);
  const shrinking=animated.querySelectorAll('.abschreibung-chart-drop');
  assert.equal(shrinking.length,1);
  assert.equal(shrinking[0].closest('li').querySelector('.abschreibung-chart-name').textContent,'A');
@@ -86,18 +109,34 @@ test('Abschreibung TV shows the deducted score before rotating and cancels anima
  assert.equal(delay,750);
  const moved=view(update());
  assert.deepEqual(names(moved),['B','C','D','A']);
+ assert.equal(moved.querySelector('.abschreibung-chart .is-current .abschreibung-chart-name').textContent,'C');
+ assert.equal(moved.querySelector('.abschreibung-chart .is-target .abschreibung-chart-name').textContent,'B');
  assert.equal(moved.querySelector('.abschreibung-row.is-deducted .abschreibung-name strong').textContent,'A');
  assert.equal(moved.querySelector('.abschreibung-row.is-deducted .abschreibung-flying-points').textContent,'−7');
  assert.deepEqual(columns(moved),columns(animated));
  pending();assert.equal(update(),null);
  f.roll('pins',3);assert(update());f.run('undo');
- assert.equal(update(),null);assert.equal(pending,null);
+ const undo=update();
+ assert.equal(undo.points,false);assert.equal(undo.holding,false);
+ assert.deepEqual(shifts(view(undo)),[['B','100%'],['C','-100%']]);
+ pending();assert.equal(update(),null);
  f.roll('pins',5);assert.equal(update(true),null);
  f.roll('pins',2);
- const immediate=update(false,0);
- assert.equal(immediate.holding,false);
+ const noPause=update(false,0);
+ assert.equal(noPause.holding,true);
+ assert.equal(delay,700);
+ assert(view(noPause).querySelector('.abschreibung-flying-points'));
+ pending();
+ assert.equal(update().holding,false);
+ pending();
+ f.roll('pins',2);
+ update(false,2500);
  assert.equal(delay,1650);
- assert(view(immediate).querySelector('.abschreibung-flying-points'));
+ pending();
+ assert.equal(update().holding,true);
+ assert.equal(delay,1550);
+ pending();
+ assert.equal(update(),null);
 });
 test('Abschreibung keeps the animated deduction on the left when a player drops to zero',()=>{
  const f=game('abschreibung',{startPoints:9},['A','B','C','D','E','F']);
@@ -283,6 +322,13 @@ const {database,initial,fullApp}=new Function('read','copy','assert','vm','parse
 test('actual app mounts all four games and saves a Tageskurs booking through the shared outbox',async()=>{
  const seed=initial();seed.persons.push({...seed.persons[0],name:'C'},{...seed.persons[1],name:'D'});
  const db=database({[rootPath]:seed}),a=fullApp(db);await a.select();
+ const selfPins=[...a.document.querySelectorAll('[data-abschreibung-self-pin]')];
+ assert.equal(selfPins.length,9);
+ assert.deepEqual(selfPins.filter(el=>el.checked).map(el=>el.dataset.abschreibungSelfPin),['6']);
+ for(const el of selfPins)el.checked=['4','5','6'].includes(el.dataset.abschreibungSelfPin);
+ assert(await a.c.saveClubGameSettings('abschreibung'));
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert.deepEqual(copy(db.root().extraGameSettings.abschreibung.selfPins),[4,5,6]);
  const divisor=a.document.querySelector('#game-property-tageskurs [data-club-setting="divisor"]');
  const rounds=a.document.querySelector('#game-property-tageskurs [data-club-setting="rounds"]');
  divisor.value='3';rounds.value='2';assert(await a.c.saveClubGameSettings('tageskurs'));
@@ -301,6 +347,7 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
   assert(a.c.indGet(key).active,key);
   assert(a.document.querySelector('#tab-'+key+' .game-input-panel'),key);
  }
+ assert.deepEqual(copy(a.c.indGet('abschreibung').config.selfPins),[4,5,6]);
  assert.equal(a.c.indGet('lottokoenig').config.lottoGoal,'49');
  const lotto=a.document.getElementById('tab-lottokoenig'),confirm=()=>lotto.querySelector('[data-club-ticket-submit]');
  const pick=n=>a.c.clubGameLottoPick(n,lotto.querySelector('[data-lotto-number="'+n+'"]'));

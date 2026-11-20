@@ -146,8 +146,8 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-tv-layout .abschreibung-details { display:flex;flex-direction:column; }
 .abschreibung-chart { flex:1;display:flex;flex-direction:column;gap:.35rem;padding:.55rem .7rem;border:1px solid #c9d8e6;border-radius:.7rem;background:#f1f6fb;color:#244762; }
 .abschreibung-chart h3 { margin:0;font-size:.9em; }
-.abschreibung-chart ul { flex:1;display:grid;grid-template-columns:repeat(var(--abschreibung-columns),minmax(0,1fr));gap:clamp(.2rem,.55vw,.6rem);margin:0;padding:0;list-style:none; }
-.abschreibung-chart li { display:grid;grid-template-rows:auto minmax(8rem,1fr);gap:.25rem;min-width:0;text-align:center;font-size:clamp(.7rem,1vw,1rem); }
+.abschreibung-chart ul { flex:1;display:grid;grid-template-columns:repeat(var(--abschreibung-columns),minmax(0,1fr));margin:0;padding:0;list-style:none; }
+.abschreibung-chart li { display:grid;grid-template-rows:auto minmax(8rem,1fr);gap:.25rem;box-sizing:border-box;padding:0 .15em;min-width:0;text-align:center;font-size:clamp(.7rem,1vw,1rem); }
 .abschreibung-chart-value { font-variant-numeric:tabular-nums;line-height:1.25; }
 .abschreibung-chart-track { position:relative;display:flex;align-items:flex-end;justify-content:center;min-width:0;border-bottom:2px solid #b0c6d9; }
 .abschreibung-chart-fill { width:88%;max-width:3rem;border-radius:.28rem .28rem 0 0;background:#5282aa; }
@@ -156,14 +156,23 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-chart .is-current .abschreibung-chart-track { border-color:#a86400;background:#ffe4a5;border-radius:.28rem .28rem 0 0;box-shadow:inset 0 0 0 1px #aa6a00; }
 .abschreibung-chart .is-current .abschreibung-chart-fill { background:#f2ab2c; }
 .abschreibung-chart .is-current .abschreibung-chart-name { background:#724600; }
+.abschreibung-chart .is-target { color:#712d20;font-weight:800; }
+.abschreibung-chart .is-target .abschreibung-chart-track { border-color:#ad4335;background:#ffe6df;border-radius:.28rem .28rem 0 0;box-shadow:inset 0 0 0 1px #bc5033; }
+.abschreibung-chart .is-target .abschreibung-chart-fill { background:#c14f3c; }
+.abschreibung-chart .is-target .abschreibung-chart-name { background:#792d23; }
+.abschreibung-chart-move { animation:abschreibung-chart-slide var(--abschreibung-rank-duration) cubic-bezier(.3,.7,.2,1) backwards;animation-delay:calc(var(--abschreibung-rank-delay) - var(--abschreibung-elapsed,0ms)); }
+@keyframes abschreibung-chart-slide {
+ from { transform:translateX(var(--abschreibung-shift));z-index:1; }
+ to { transform:translateX(0);z-index:1; }
+}
 .abschreibung-flying-points { position:absolute;z-index:1;right:calc(100% + .3rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly var(--abschreibung-points-duration) ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
 .abschreibung-tv-stand .abschreibung-eliminated .abschreibung-flying-points { right:.25em; }
 .abschreibung-meter-drop { animation:abschreibung-drop .44s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
 @keyframes abschreibung-fly { 0% {opacity:0;transform:translate(.65rem,.7rem) scale(.7)} 15%,84% {opacity:1;transform:translate(0,-50%)} 100% {opacity:0;transform:translate(.65rem,-50%)} }
 @keyframes abschreibung-drop { from {width:var(--abschreibung-before)} }
-.abschreibung-chart-drop { animation:abschreibung-chart-shrink .7s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
+.abschreibung-chart-drop { animation:abschreibung-chart-shrink var(--abschreibung-shrink-duration) ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
 @keyframes abschreibung-chart-shrink { from {height:var(--abschreibung-before)} }
-@media(prefers-reduced-motion:reduce) { .abschreibung-chart-drop { animation:none; } }
+@media(prefers-reduced-motion:reduce) { .abschreibung-chart-drop,.abschreibung-chart-move { animation:none; } }
 @media(max-width:640px) { .abschreibung-tv-layout { grid-template-columns:minmax(0,1fr); } }
 
 /* Spielerzeilen behalten die Tabellenstruktur und sind als einzelne Karten lesbar. */

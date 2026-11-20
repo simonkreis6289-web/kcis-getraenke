@@ -5,8 +5,9 @@
  const keys=Object.keys(titles),pins=Array.from({length:9},(_,i)=>i+1);
  const physical=key=>key==='tageskurs'||key==='swingerclub';
  const int=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
+ const selfPins=c=>c.selfPins??[6];
  const defaults=key=>{
-  if(key==='abschreibung')return {startPoints:100,lastPlace:4,placeCents:50,woodRequired:false,kranzMode:'choose',kranzValue:8};
+  if(key==='abschreibung')return {startPoints:100,lastPlace:4,placeCents:50,woodRequired:false,selfPins:[6],kranzMode:'choose',kranzValue:8};
   if(key==='lottokoenig')return {kranzMode:'fixed',kranzValue:8,lottoEarlyStop:true,lottoGoal:'highestOr49'};
   if(key==='tageskurs')return {pinCents:[10,20,30,40,50,60,70,80,90],divisor:2,rounds:1};
   return {rounds:4,throws:4};
@@ -14,7 +15,9 @@
  function validSettings(key,c){
   if(!c)return false;
   const kranz=['choose','fixed'].includes(c.kranzMode)&&int(c.kranzValue,1,12);
-  if(key==='abschreibung')return kranz&&int(c.startPoints,1,300)&&int(c.lastPlace,2,16)&&int(c.placeCents,0,10000)&&typeof c.woodRequired==='boolean';
+  if(key==='abschreibung')return kranz&&int(c.startPoints,1,300)&&int(c.lastPlace,2,16)&&int(c.placeCents,0,10000)&&typeof c.woodRequired==='boolean'&&
+   (c.selfPins===undefined||Array.isArray(c.selfPins)&&c.selfPins.length<=pins.length&&
+    new Set(c.selfPins).size===c.selfPins.length&&c.selfPins.every(n=>pins.includes(n)));
   if(key==='lottokoenig')return kranz&&(c.lottoEarlyStop===undefined||typeof c.lottoEarlyStop==='boolean')&&
    (c.lottoGoal===undefined||['highestOr49','49'].includes(c.lottoGoal));
   if(key==='tageskurs')return Array.isArray(c.pinCents)&&c.pinCents.length===9&&pins.every(n=>int(c.pinCents[n-1],0,10000))&&int(c.divisor,1,100)&&int(c.rounds===undefined?1:c.rounds,1,12);
@@ -127,7 +130,7 @@
   return [...s.players.slice(s.index),...s.players.slice(0,s.index)].filter(name=>s.scores[name]>0);
  }
  function abschreibung(s,e){
-  const self=e.kind==='gosse'||e.kind==='pins'&&e.pins===6;
+  const self=e.kind==='gosse'||e.kind==='pins'&&selfPins(s.config).includes(e.pins);
   const name=self?e.name:abschreibungOrder(s).at(-1),amount=e.kind==='gosse'?(s.config.woodRequired?0:9):e.pins;
   e.target=name;e.amount=amount;e.beforePoints=s.scores[name];
   s.rows[e.name].push({amount,target:name,kind:e.kind});
@@ -223,5 +226,5 @@
   if(key==='tageskurs')return ((c.rounds??1)===1?'1 Runde':c.rounds+' Runden')+' · 1 Wurf pro Person und Runde · Summe der stehenden Kegel ÷ '+c.divisor;
   return c.rounds+' Runden · '+c.throws+' Würfe auf Abräumen je Zweierteam · Partnerwechsel nach jeder Runde';
  }
- window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,randomTicket,abschreibungOrder,lottoQualified,lottoDone});
+ window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,selfPins,setup,current,fields,play,summary,validTicket,randomTicket,abschreibungOrder,lottoQualified,lottoDone});
 })();

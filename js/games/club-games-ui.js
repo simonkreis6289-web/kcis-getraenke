@@ -150,6 +150,7 @@ function renderClubGameSettings(){
  for(const key of g.keys){
   const panel=document.getElementById('game-property-'+key);if(!panel||panel.contains(document.activeElement))continue;
   const config=extraConfig(key);
+  for(const el of panel.querySelectorAll('[data-abschreibung-self-pin]'))el.checked=g.selfPins(config).includes(Number(el.dataset.abschreibungSelfPin));
   for(const el of panel.querySelectorAll('[data-club-setting]')){
    const field=el.dataset.clubSetting,value=el.dataset.pinIndex===undefined?config[field]:config[field][Number(el.dataset.pinIndex)];
    if(el.type==='checkbox')el.checked=value;else el.value=value;
@@ -163,6 +164,8 @@ async function saveClubGameSettings(key){
   const field=el.dataset.clubSetting,value=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?NaN:Number(el.value)):el.value;
   if(el.dataset.pinIndex===undefined)config[field]=value;else config[field][Number(el.dataset.pinIndex)]=value;
  }
+ if(key==='abschreibung')config.selfPins=[...panel.querySelectorAll('[data-abschreibung-self-pin]')]
+  .filter(el=>el.checked).map(el=>Number(el.dataset.abschreibungSelfPin));
  if(!g.validSettings(key,config)){showToast('Bitte die Werte und Grenzen prüfen.','error');return false;}
  const club=ACTIVE_CLUB;extraGameSettings={...extraGameSettings,[key]:config};extraSettingsBusy=true;persistState();
  try{
