@@ -80,6 +80,10 @@ test('Pfälzerspiel shows all nine balls, shared numbers, hits and round progres
  assert.equal(balls[3].querySelector('.is-current').textContent,'A');
  assert.match(doc.querySelector('.ind-turn').textContent,/Runde 2 von 3/);
  assert.equal(doc.querySelector('.pfaelzer-current .pfaelzer-marks').children.length,2);
+ f.roll('pins',8);
+ const miss=parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true})).document;
+ assert.equal(miss.querySelector('.pfaelzer-ball.is-unassigned').textContent,'8');
+ assert.equal(miss.querySelector('.pfaelzer-ball.is-hit'),null);
 });
 test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before qualified players',()=>{
  const f=game('lottokoenig',{},['A','B','C','D']);
