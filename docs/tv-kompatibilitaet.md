@@ -41,11 +41,21 @@ Vorübergehende Fehler werden erneut versucht. Der bereits aufgebaute
 Direktweg kann ohne Internet weiterlaufen. Für einen neuen Verbindungsaufbau
 nach einem Neustart oder Abbruch ist Firebase für die Signalisierung nötig.
 
+### Direktverbindung am TV prüfen
+
+Ab V293 gibt es unten rechts neben „Vollbild“ den Button „TV-Verbindung
+prüfen“. Eine laufende Direktverbindung wird bestätigt. Sonst stößt der
+Button den Aufbau ohne die automatische Wartezeit an. Fehlt die
+Browser-Unterstützung oder kommt nach 16 Sekunden keine Verbindung zustande,
+zeigt das Dashboard eine Rückmeldung an. Live-Updates über Firebase laufen
+während der Prüfung weiter, wenn der TV mit Firebase verbunden ist.
+
 ### Praxisprüfung am Samsung-TV
 
 | Versuch | Erwartung |
 | --- | --- |
 | Heim-WLAN, Smartphone-Hotspot und Hotspot des Tablets jeweils einzeln | Gleichen Club auf beiden Geräten öffnen. Bei erlaubtem Geräteverkehr und unterstütztem TV-Browser meldet die App „TV direkt verbunden“. |
+| „TV-Verbindung prüfen“ am TV drücken | Eine aktive Direktverbindung bleibt bestehen. Im isolierten Netz meldet das Dashboard den fehlgeschlagenen Direktaufbau und zeigt weiterhin Firebase-Updates an. |
 | Gast-WLAN mit Client-Isolation oder unterschiedliche Netzwerke | Weiterhin Live-Updates über Firebase. Es wird keine Direktverbindung gemeldet. |
 | WLAN-Wechsel bei laufendem Spiel | Firebase übernimmt bei erreichbarem Internet. Nach wiederhergestelltem LAN baut der TV den Direktweg neu auf. |
 | Internet kurz trennen, LAN und Browser geöffnet lassen | Direkte Anzeige kann weiterlaufen. Die App zeigt offene Speichervorgänge, bis Firebase bestätigt. |
