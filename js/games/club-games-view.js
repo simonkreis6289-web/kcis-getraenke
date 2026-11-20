@@ -109,12 +109,15 @@ function abschreibungTvBoard(s,frame,impact){
  const thrower=s.active&&!s.finished?window.KCClubGames.current(s):'';
  const ranked=s.players.map((name,index)=>({name,index,points:s.scores[name]}))
   .sort((a,b)=>b.points-a.points||a.index-b.index);
+ const percent=points=>100*points/s.config.startPoints+'%';
  const columns=ranked.map(({name,points})=>{
-  const height=100*points/s.config.startPoints,isCurrent=name===thrower;
+  const isCurrent=name===thrower,shrinking=name===target&&deduction>0;
+  const from=shrinking?';--abschreibung-before:'+percent(scoredBefore.scores[name]):'';
   const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'column')||'')+'>'+points+'</b>';
   return '<li'+(isCurrent?' class="is-current" aria-current="true"':'')+'>'+
    '<span class="abschreibung-chart-value">'+value+'</span>'+
-   '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill" aria-hidden="true" style="height:'+height+'%"></span>'+
+   '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill'+(shrinking?' abschreibung-chart-drop':'')+
+    '" aria-hidden="true" style="height:'+percent(points)+from+'"></span>'+
    '<span class="abschreibung-chart-name" title="'+escape(name+(isCurrent?' · Am Wurf':''))+'">'+escape(name)+'</span></span></li>';
  }).join('');
  const rule='Eine geworfene 6 zählt gegen dich. '+(s.config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
