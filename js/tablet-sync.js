@@ -43,10 +43,22 @@
     const session=current;
     if(!session?.link?.test||connectionMeasurement?.running)return;
     const measurement={running:true,message:'Warte auf Antwort vom TV …'};connectionMeasurement=measurement;status();
-    const result=await session.link.test().catch(()=>null);
+    const steps={
+      'direct-wait':'Warte auf die Antwort über den direkten Kanal …',
+      'firebase-send':'Sende die Testanfrage über Firebase …',
+      'firebase-wait':'Anfrage über Firebase gesendet. Warte auf Antwort vom TV …',
+      'firebase-failed':'Firebase hat die Testanfrage nicht bestätigt.',
+      offline:'Tablet ist offline. Firebase ist nicht erreichbar.',
+      unavailable:'Der Firebase-Test ist derzeit nicht verfügbar.'
+    };
+    const result=await session.link.test(step=>{
+      if(session!==current||connectionMeasurement!==measurement)return;
+      measurement.message=steps[step];
+      status();
+    }).catch(()=>null);
     if(session!==current||connectionMeasurement!==measurement)return;
     const names={webrtc:'WebRTC',browser:'gleicher Browser',firebase:'Firebase'};
-    connectionMeasurement={running:false,message:result?Math.round(result.ms)+' ms hin und zurück · '+names[result.via]:'Keine Antwort vom TV erhalten.'};
+    connectionMeasurement={running:false,message:result?Math.round(result.ms)+' ms hin und zurück · '+names[result.via]:'Test beendet · '+(measurement.message.endsWith(' …')?measurement.message.slice(0,-2)+'. Zeitlimit erreicht.':measurement.message)};
     status();
   }
   function status(){

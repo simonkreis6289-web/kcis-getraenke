@@ -212,7 +212,7 @@ window.firestoreApi = {
     });
   },
   subscribeDashboardOffers(clubId,onData){return onSnapshot(collection(db,'clubs',clubId,'documents'),snap=>onData(snap.docs.filter(x=>x.id.startsWith('dashboard_link_')).map(x=>x.data()).filter(x=>x.kind==='dashboardLink'&&x.offer&&!x.answer)),()=>{});},
-  subscribeDashboardAnswer(clubId,viewerId,onData){return onSnapshot(doc(db,'clubs',clubId,'documents','dashboard_link_'+viewerId),snap=>onData(snap.exists()?snap.data():null),()=>{});},
+  subscribeDashboardAnswer(clubId,viewerId,onData,onError=()=>{}){return onSnapshot(doc(db,'clubs',clubId,'documents','dashboard_link_'+viewerId),snap=>onData(snap.exists()?snap.data():null),onError);},
 
   async sendDashboardDiagnostic(clubId,request){
     if(!['presence','ping','pong'].includes(request.kind)||

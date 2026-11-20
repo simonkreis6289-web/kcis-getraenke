@@ -69,6 +69,16 @@
   const created=Date.now(),monotonic=()=>window.performance?.now()??Date.now();
   const diagnosticOff=[];
   let lastViaPeer=false,presence=null,lastPresence=0,presenceBusy=false,lastProbe='',probe=null,directCheck=null;
+  let viewerStep='club',viewerIssue=null;
+  function notifyViewer(listener){
+   try{listener?.({step:viewerStep,issue:viewerIssue});}catch{}
+  }
+  function viewerProgress(step,issue){
+   if(role!=='viewer'||closed)return;
+   viewerStep=step||viewerStep;
+   if(issue)viewerIssue={code:issue,step:viewerStep};
+   for(const listener of directCheck?.listeners||[])notifyViewer(listener);
+  }
   const diagnosticAvailable=!!(api?.subscribeDashboardDiagnostic&&api?.sendDashboardDiagnostic);
   const source=uid(),peers=new Map(),acks=new Map(),assembling=new Map();let viewerId=uid();
   try{if(role==='viewer'&&window.sessionStorage){const key='kcis_tv_peer_'+club,saved=window.sessionStorage.getItem(key);if(/^[a-zA-Z0-9_-]{1,80}$/.test(saved||''))viewerId=saved;else window.sessionStorage.setItem(key,viewerId);}}catch{}
@@ -88,7 +98,7 @@
    const acknowledged=[...acks.values()].sort((a,b)=>Number(!!b.peer)-Number(!!a.peer))[0];
    const cloud=!!(presence?.expiresAt>stamp()&&window.navigator?.onLine!==false);
    const direct=acknowledged?.peer?.local===true||role==='viewer'&&viewerDirect(now);
-   if(directCheck&&viewerDirect(now))settleDirectCheck('direct');
+   if(directCheck&&direct)settleDirectCheck('direct');
    const mode=direct?'direct':cloud?'firebase':now-created<12000?'connecting':'disconnected';
    try{onStatus({mode,direct,peers:acks.size,webrtc:typeof PC==='function',
     tvWebrtc:acknowledged?.webrtc??(cloud?presence.webrtc:undefined),
@@ -133,28 +143,38 @@
    }
    return false;
   }
-  function measure(via,peer){
+  function measure(via,peer,progress){
    return new Promise(resolve=>{
     const id=uid(),started=monotonic(),timer=setTimeout(()=>settleProbe(id,null),via==='direct'?2500:10000);
     probe={id,started,timer,resolve,via,peer};
     const msg={kind:'ping',club,id};
+    progress(via==='direct'?'direct-wait':'firebase-send');
     if(via==='direct'){
      if(peer)channelSend(peer,msg);else post(msg);
-    }else void Promise.resolve().then(()=>api.sendDashboardDiagnostic(club,msg)).then(ok=>{if(!ok)settleProbe(id,null);},()=>settleProbe(id,null));
+    }else{
+     const failed=()=>{if(probe?.id===id){progress('firebase-failed');settleProbe(id,null);}};
+     void Promise.resolve().then(()=>api.sendDashboardDiagnostic(club,msg)).then(ok=>{
+      if(!ok){failed();return;}
+      if(probe?.id===id)progress('firebase-wait');
+     },failed);
+    }
    });
   }
   let testing=false;
-  async function test(){
+  async function test(onProgress){
    if(closed||role!=='publisher'||testing)return null;
    testing=true;
+   const progress=step=>{try{onProgress?.(step);}catch{}};
    try{
     const live=[...acks.values()].filter(row=>Date.now()-row.at<=8000);
     const peer=live.find(row=>row.peer?.local&&row.peer.dc?.readyState==='open')?.peer;
     if(peer||live.some(row=>!row.peer)){
-     const result=await measure('direct',peer);
+     const result=await measure('direct',peer,progress);
      if(result||closed)return result;
     }
-    return diagnosticAvailable&&window.navigator?.onLine!==false?await measure('firebase'):null;
+    if(window.navigator?.onLine===false){progress('offline');return null;}
+    if(!diagnosticAvailable){progress('unavailable');return null;}
+    return await measure('firebase',null,progress);
    }finally{testing=false;}
   }
   function sendPresence(){
@@ -179,8 +199,11 @@
    if(row.parts.size===row.total){assembling.delete(msg.id);try{received(JSON.parse(Array.from({length:row.total},(_,i)=>row.parts.get(i)).join('')),'peer',peer);}catch{}}
   }
   function hello(peer){channelSend(peer,{kind:'hello',club,connectionId:peer.id,viewerId});}
-  function drop(peer){
-   if(peer===viewerPeer){viewerPeer=null;lastViaPeer=false;}
+  function drop(peer,issue){
+   if(peer===viewerPeer){
+    if(issue)viewerProgress(null,issue);
+    viewerPeer=null;lastViaPeer=false;
+   }
    if(peers.get(peer.viewerId)===peer)peers.delete(peer.viewerId);
    for(const [id,row] of acks)if(row.peer===peer)acks.delete(id);
    closePeer(peer);report();
@@ -189,28 +212,29 @@
    peer.dc=dc;dc.bufferedAmountLowThreshold=65536;
    dc.onmessage=e=>input(e.data,peer);
    dc.onopen=()=>{void verifyRoute(peer);};
-   dc.onclose=()=>drop(peer);
+   dc.onclose=()=>drop(peer,'channel-closed');
    dc.onbufferedamountlow=()=>{if(peer.pending){const next=peer.pending;peer.pending=null;send(peer,next);}};
   }
   async function verifyRoute(peer){
    if(peer.checking||!peer.localLan||!peer.remoteLan||peer.dc?.readyState!=='open')return;
    const dc=peer.dc;
+   if(peer===viewerPeer&&!peer.local)viewerProgress('route');
    peer.checking=true;peer.checkedAt=Date.now();
    try{
     const selected=await route(peer.pc);
     if(closed||peer.dc!==dc||dc.readyState!=='open')return;
     if(selected==='unknown'&&!peer.local)return; // Older engines may report the pair after opening the channel.
-    if(selected!=='local'){drop(peer);return;}
+    if(selected!=='local'){drop(peer,'non-local-route');return;}
     if(!peer.local){
      peer.local=true;peer.route='local';peer.heard=Date.now();
-     if(role==='viewer')hello(peer);
+     if(role==='viewer'){viewerProgress('data');hello(peer);}
      report();
     }
    }finally{peer.checking=false;}
   }
   function makePeer(){
    const pc=new PC({iceServers:[]}),peer={pc,dc:null,pending:null,created:Date.now()};
-   const check=()=>{if(['failed','closed'].includes(pc.connectionState)||['failed','closed'].includes(pc.iceConnectionState))drop(peer);};
+   const check=()=>{if(['failed','closed'].includes(pc.connectionState)||['failed','closed'].includes(pc.iceConnectionState))drop(peer,'ice-failed');};
    pc.onconnectionstatechange=check;pc.oniceconnectionstatechange=check;
    return peer;
   }
@@ -244,18 +268,26 @@
   }
   async function offer(){
    const now=Date.now();
-   if(closed||typeof PC!=='function'||busy||window.navigator?.onLine===false||!getBase()?.syncProtocol||
-      viewerPeer||now<nextOfferAt)return;
+   if(closed||typeof PC!=='function'||busy||window.navigator?.onLine===false||viewerPeer||now<nextOfferAt)return;
+   if(!getBase()?.syncProtocol){if(viewerStep!=='club')viewerProgress('club');return;}
    busy=true;nextOfferAt=now+Math.min(60000,2000*2**Math.min(attempts++,5));let peer;const connectionId=uid();
+   let sending=false;
+   viewerProgress('network');
    try{
     peer=viewerPeer=makePeer();peer.id=connectionId;
     attach(peer,peer.pc.createDataChannel('kcis-display',{ordered:true}));
     await peer.pc.setLocalDescription(await peer.pc.createOffer());await gather(peer.pc);
     if(closed||viewerPeer!==peer)return;
-    const description=lanDescription(peer.pc.localDescription);if(!description){drop(peer);return;}
+    const description=lanDescription(peer.pc.localDescription);
+    if(!description){drop(peer,'no-local-candidates');return;}
     peer.localLan=true;
-    if(!await signal({action:'offer',viewerId,connectionId,description}))drop(peer);
-   }catch{if(peer)drop(peer);}finally{busy=false;}
+    sending=true;viewerProgress('offer');
+    if(!await signal({action:'offer',viewerId,connectionId,description}))drop(peer,'firebase-write');
+    else if(viewerPeer===peer&&!peer.answering)viewerProgress('answer');
+   }catch{
+    if(peer)drop(peer,sending?'firebase-write':'browser-start');
+    else viewerProgress(null,'browser-start');
+   }finally{busy=false;}
   }
   try{if(BC){bc=new BC('kcis_dashboard_'+club);bc.onmessage=e=>{const msg=e.data;if(msg?.club!==club)return;if(role==='publisher'&&msg.kind==='hello'&&latest)post({kind:'frame',club,frame:latest});else if(role==='viewer'&&msg.kind==='frame'&&!viewerPeer?.local)received(msg.frame,'local');else peerMessage(msg,undefined);};}}catch{}
   if(PC&&api?.sendDashboardSignal){try{
@@ -264,11 +296,14 @@
     const peer=viewerPeer;
     if(closed||!peer||row?.connectionId!==peer.id||!row.answer||peer.answering||peer.pc.remoteDescription)return;
     const description=lanDescription(row.answer);
-    if(!description||typeof row.source!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(row.source))return;
+    if(!description||typeof row.source!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(row.source)){
+     viewerProgress('answer','unusable-answer');return;
+    }
     peer.source=row.source;peer.answering=true;peer.remoteLan=true;
-    try{await peer.pc.setRemoteDescription(description);}catch{drop(peer);}
-   });
-  }catch{}}
+    viewerProgress('channel');
+    try{await peer.pc.setRemoteDescription(description);}catch{drop(peer,'answer-rejected');}
+   },()=>viewerProgress(null,'firebase-read'));
+  }catch{viewerProgress(null,'firebase-read');}}
   if(diagnosticAvailable)try{
    if(role==='publisher')diagnosticOff.push(api.subscribeDashboardDiagnostic(club,'presence',row=>{presence=row;report();}));
    diagnosticOff.push(api.subscribeDashboardDiagnostic(club,'probe',row=>{
@@ -283,20 +318,25 @@
   }catch{}
   if(role==='viewer')post({kind:'hello',club,viewerId});
   function refresh(){if(role==='viewer'&&api?.sendDashboardSignal)void offer();}
-  async function checkDirect(){
+  async function checkDirect(onProgress){
    if(closed||role!=='viewer')return 'unavailable';
    if(viewerDirect())return 'direct';
    if(typeof PC!=='function'||typeof PC.prototype?.createDataChannel!=='function'||typeof PC.prototype?.getStats!=='function')return 'unsupported';
    if(window.navigator?.onLine===false)return 'offline';
    if(!api?.sendDashboardSignal||!api?.subscribeDashboardAnswer)return 'unavailable';
-   if(directCheck)return directCheck.result;
+   if(directCheck){
+    if(typeof onProgress==='function'){directCheck.listeners.add(onProgress);notifyViewer(onProgress);}
+    return directCheck.result;
+   }
 
    let resolve;
    const result=new Promise(done=>{resolve=done;});
    const timer=setTimeout(()=>{
     settleDirectCheck(window.navigator?.onLine===false?'offline':getBase()?.syncProtocol?'timeout':'unavailable');
    },16000);
-   directCheck={result,resolve,timer};
+   if(viewerIssue?.code!=='firebase-read')viewerIssue=null;
+   directCheck={result,resolve,timer,listeners:new Set(typeof onProgress==='function'?[onProgress]:[])};
+   notifyViewer(onProgress);
    nextOfferAt=0;
    refresh();
    return result;
@@ -308,7 +348,7 @@
    if(closed)return;
    const now=Date.now();
    for(const peer of [...peers.values(),...(viewerPeer?[viewerPeer]:[])]){
-    if(now-(peer.heard||peer.created)>12000){drop(peer);continue;}
+    if(now-(peer.heard||peer.created)>12000){drop(peer,'attempt-timeout');continue;}
     if(peer.dc?.readyState==='open'&&now-(peer.checkedAt||0)>(peer.local?10000:1000))void verifyRoute(peer);
     if(!peer.local)continue;
     if(role==='viewer'&&peer.sequence===undefined)hello(peer);
