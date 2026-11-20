@@ -18,21 +18,40 @@ function pokerTableCards(s,name){
  }).join('');
 }
 function indPokerEscape(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function pfaelzerNumberBoard(s,current){
+ const last=s.history.at(-1);
+ return '<ol class="pfaelzer-numbers" aria-label="Zielzahlen und zugeordnete Kegler">'+Array.from({length:9},(_,i)=>{
+  const number=i+1,names=s.players.filter(name=>s.ownNumbers[name]===number);
+  const hit=last?.struck?.some(name=>names.includes(name))&&last.pins===number;
+  return '<li><span class="pfaelzer-ball'+(hit?' is-hit':'')+'">'+number+'</span>'+
+   names.map(name=>'<span class="pfaelzer-name'+(s.active&&name===current?' is-current':'')+'">'+indPokerEscape(name)+'</span>').join('')+'</li>';
+ }).join('')+'</ol>';
+}
+function pfaelzerTable(s,players,current,money){
+ return '<table class="ind-table pfaelzer-table"><thead><tr><th>Kegler</th><th>Eigene Zahl</th><th>Striche</th><th>Betrag</th><th>Würfe</th></tr></thead><tbody>'+
+  players.map(name=>{
+   const count=s.scores[name],number=s.ownNumbers[name];
+   const marks=count<=10?'<span aria-hidden="true" class="pfaelzer-marks">'+Array.from({length:count},()=>'<i></i>').join('')+'</span>':'';
+   return '<tr'+(s.active&&name===current?' class="pfaelzer-current"':'')+'><th scope="row">'+indPokerEscape(name)+'</th><td>'+
+    (number?'<span class="pfaelzer-ball">'+number+'</span>':'—')+'</td><td><span class="pfaelzer-strikes">'+marks+'<strong>'+count+'</strong></span></td><td>'+
+    money(count*s.config.strichCents)+'</td><td>'+s.rows[name].length+'</td></tr>';
+  }).join('')+'</tbody></table>';
+}
 function renderClassicGameBoard(s,{controls=''}={}){
  if(!s?.id)return '';const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=v=>(v/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,current=window.KCExtraGames.current(s),g=window.KCRoundGames;
  const rowPlayers=window.KCPlayerRows?.order(s.players,current,{running:s.active&&!s.finished,unavailable:n=>s.phase==='tiebreak'&&!s.tiePlayers.includes(n)})||s.players;
- const phase=s.phase==='tiebreak'?'Stechen '+s.tieRound+' · Wurf '+(s.turn.length+1)+' / '+s.config.tieThrows:key==='poker'?({deal:'Erste Hand · Wurf '+((s.hands[current]?.length||0)+1)+' / 5',select:'Tauschpositionen wählen',redraw:'Tauschen · Wurf '+(s.turn.length+1)+' / '+s.exchanges[current]?.length}[s.phase]||''):key==='pfaelzer'?(s.phase==='numbers'?'Eigene Zahl bestimmen':'Runde '+s.round+' / '+s.config.rounds):'Runde '+s.round+' / '+s.config.rounds+' · '+g.thousandModeLabel(g.thousandMode(s.config,s.round))+' · '+(s.pendingArrange?'Zahl anordnen':'Wurf '+(s.turn.length+1)+' / 3');
+ const phase=s.phase==='tiebreak'?'Stechen '+s.tieRound+' · Wurf '+(s.turn.length+1)+' / '+s.config.tieThrows:key==='poker'?({deal:'Erste Hand · Wurf '+((s.hands[current]?.length||0)+1)+' / 5',select:'Tauschpositionen wählen',redraw:'Tauschen · Wurf '+(s.turn.length+1)+' / '+s.exchanges[current]?.length}[s.phase]||''):key==='pfaelzer'?(s.phase==='numbers'?'Eigene Zahl bestimmen':'Runde '+s.round+' von '+s.config.rounds):'Runde '+s.round+' / '+s.config.rounds+' · '+g.thousandModeLabel(g.thousandMode(s.config,s.round))+' · '+(s.pendingArrange?'Zahl anordnen':'Wurf '+(s.turn.length+1)+' / 3');
  const head=s.finished&&key!=='pfaelzer'?'':s.finished?(s.winners.length?'🏆 '+s.winners.map(esc).join(' · '):'🏁 Alle ohne Kombination'):g.icons[key]+' '+g.titles[key];
  const distanceFee=key==='tausend'&&s.finished&&s.config.distanceFee;let body='';
  if(key==='poker')body='<table class="ind-table"><thead><tr><th>Kegler</th>'+[1,2,3,4,5].map(i=>'<th>'+i+'</th>').join('')+'<th>Wertung</th><th>Würfe</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th>'+pokerTableCards(s,n)+'<td>'+esc(g.pokerHand(s.hands[n]).label)+'</td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table>';
- else if(key==='pfaelzer')body='<p class="ind-help">Noch nicht vergebene Zahlen: '+Array.from({length:9},(_,i)=>i+1).filter(v=>!Object.values(s.ownNumbers).includes(v)).join(' · ')+'</p><table class="ind-table"><thead><tr><th>Kegler</th><th>Eigene Zahl</th><th>Striche</th><th>Betrag</th><th>Würfe</th></tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th><td>'+esc(s.ownNumbers[n]??'—')+'</td><td><strong>'+s.scores[n]+'</strong></td><td>'+money(s.scores[n]*s.config.strichCents)+'</td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table>';
+ else if(key==='pfaelzer')body=pfaelzerTable(s,rowPlayers,current,money);
  else body='<table class="ind-table"><thead><tr><th>Kegler</th>'+Array.from({length:s.config.rounds},(_,i)=>'<th>R'+(i+1)+'</th>').join('')+'<th>Gesamt</th><th>Abstand</th>'+(distanceFee?'<th>Strafe</th>':'')+'</tr></thead><tbody>'+rowPlayers.map(n=>'<tr><th>'+esc(n)+'</th>'+Array.from({length:s.config.rounds},(_,i)=>'<td>'+(s.results[n][i]?'<strong>'+s.results[n][i].value+'</strong><small>'+s.results[n][i].throws.map(t=>t.kind==='gosse'?'G('+t.pins+')':t.kind==='kranz'?'K('+t.pins+')':t.pins).join(' · ')+'</small>':'—')+'</td>').join('')+'<td><strong>'+s.scores[n]+'</strong></td><td>'+Math.abs(s.config.target-s.scores[n])+'</td>'+(distanceFee?'<td>'+money((s.bookings||[]).find(b=>b.personName===n)?.amountCents||0)+'</td>':'')+'</tr>').join('')+'</tbody></table>';
  if(s.phase==='tiebreak')body+='<div class="classic-tie"><strong>Stechen · '+s.config.tieThrows+' Würfe pro Kegler</strong><p>'+s.tiePlayers.map(n=>esc(n)+': '+s.tieScores[n]).join(' · ')+'</p></div>';
  if(s.finished){
   const booked=key==='pfaelzer'?['Strichbeträge']:key==='tausend'?[...(s.config.classicLosers!==false?['Verliererwertung']:[]),...(s.config.distanceFee?['Geldbeträge nach Abstand']:[])]:['Verliererwertung'];
   body+='<p class="extra-result">Spiel beendet'+(booked.length?' · '+booked.join(' und ')+' gebucht':'')+'.</p>';
  }
- return '<section class="ind-board extra-board classic-game-board" data-extra-game="'+key+'">'+(head?'<h2>'+head+'</h2>':'')+(s.active?'<div class="extra-turn ind-turn">🎳 '+esc(current)+' · '+esc(phase)+'</div>':'')+controls+'<div class="classic-table-and-ranking"><div class="ind-table-scroll">'+body+'</div>'+(key==='poker'?pokerRankingPanel():'')+'</div><p class="ind-help">'+esc(g.summary(key,s.config))+'</p></section>';
+ return '<section class="ind-board extra-board classic-game-board" data-extra-game="'+key+'">'+(head?'<h2>'+head+'</h2>':'')+(s.active?'<div class="extra-turn ind-turn">🎳 '+esc(current)+' · '+esc(phase)+'</div>':'')+controls+(key==='pfaelzer'?pfaelzerNumberBoard(s,current)+(s.finished?'<p class="pfaelzer-final-round">Runde '+s.config.rounds+' von '+s.config.rounds+'</p>':''):'')+'<div class="classic-table-and-ranking"><div class="ind-table-scroll">'+body+'</div>'+(key==='poker'?pokerRankingPanel():'')+'</div><p class="ind-help">'+esc(g.summary(key,s.config))+'</p></section>';
 }
 
 /* Die gleiche Spieltafel wird in der App und auf dem TV verwendet. */
@@ -65,8 +84,8 @@ function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
  return '<section class="ind-board extra-board round-game-board'+(dashboard&&jump?' jump-tv-board':'')+'" data-extra-game="'+key+'"><h2>'+esc(heading)+'</h2>'+(s.active?'<div class="ind-turn extra-turn">🎳 '+turn+'</div>':'')+controls+top+body+'<p class="ind-help">'+esc(g.summary(key,s.config))+'</p>'+(s.finished?'<p class="extra-result">Spiel beendet · '+(euro?'Restbeträge gebucht.':jump?'Fehlbeträge und 1. Verlierer gebucht.':'Verliererwertung gebucht.')+'</p>':'')+'</section>';
 }
 
-function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false}={}){
- if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
+function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,abschreibungFrame=null}={}){
+ if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
  const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?s.previous?.name:g.current(s),{running:fence?!!s.previous:s.active&&!s.readyToFinish})||names;
  const winner=s.winners.map(label).join(' · '),header=s.finished?(ball&&s.winners.length===2?'🤝 Unentschieden':'🏆 '+winner):s.readyToFinish?'🏁 Alle Durchgänge gespielt':g.icons[key]+' '+g.titles[key];

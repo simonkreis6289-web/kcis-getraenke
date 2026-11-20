@@ -121,3 +121,21 @@
   gap: 8px;
 }
 .thousand-penalty-settings input[type=checkbox] { width: 18px; height: 18px; }
+
+/* Pfälzerspiel */
+.pfaelzer-numbers { display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:clamp(.2rem,1vw,.75rem);margin:.55rem 0 .85rem;padding:0;list-style:none; }
+.pfaelzer-numbers li { display:flex;flex-direction:column;align-items:center;gap:.27rem;min-width:0;padding:.45rem .2rem;border:1px solid #d7e0ec;border-radius:.75rem;background:#f4f7fb; }
+.pfaelzer-ball { display:inline-grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;color:#fff;background:radial-gradient(circle at 31% 23%,#4789c3,#24588b 62%,#173b60);box-shadow:0 2px 5px #173b6040;font-weight:850;line-height:1; }
+.pfaelzer-numbers .pfaelzer-ball { width:clamp(1.55rem,4.5vw,4.4rem);height:clamp(1.55rem,4.5vw,4.4rem);font-size:clamp(1rem,2.6vw,2.4rem);margin-bottom:.2rem; }
+.pfaelzer-ball.is-hit { background:radial-gradient(circle at 31% 23%,#ffe1a1,#dea63f 66%,#9e6114);color:#352203; }
+.pfaelzer-name { box-sizing:border-box;max-width:100%;border-radius:.45rem;padding:.18rem .38rem;background:#e1ebf8;color:#1a4169;overflow-wrap:anywhere;text-align:center;font-size:clamp(.7rem,1.15vw,1rem); }
+.pfaelzer-name.is-current,.pfaelzer-table .pfaelzer-current > * { background:#ddf1fb;color:#134762; }
+.pfaelzer-table tbody tr:nth-child(even):not(.pfaelzer-current) > * { background:#f2f6fb; }
+.pfaelzer-table .pfaelzer-current th { box-shadow:inset .26rem 0 #2783ac; }
+.pfaelzer-strikes,.pfaelzer-marks { display:inline-flex;align-items:center;gap:.3rem;vertical-align:middle; }
+.pfaelzer-marks i { width:.14rem;height:.8em;border-radius:.08rem;background:#ad493c;transform:skew(-10deg); }
+.pfaelzer-marks i:nth-child(5n) { margin-right:.16rem; }
+.pfaelzer-strikes strong { color:#873527;font-variant-numeric:tabular-nums; }
+.pfaelzer-final-round { margin:.3rem 0 .65rem;color:#315471;font-weight:800; }
+#game-body .pfaelzer-table td,#game-body .pfaelzer-table th { padding:.32rem .6rem;font-size:clamp(.95rem,1.25vw,1.25rem); }
+@media(max-width:520px) { .pfaelzer-numbers { grid-template-columns:repeat(5,minmax(0,1fr)); } }
