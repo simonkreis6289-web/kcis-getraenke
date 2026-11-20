@@ -142,8 +142,7 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-tv-stand .abschreibung-row.is-deducted { border-color:#df946f; }
 .abschreibung-tv-stand .abschreibung-points { position:relative;text-align:right; }
 .abschreibung-tv-stand .abschreibung-eliminated .is-deducted { position:relative;padding-right:3em; }
-.abschreibung-tv-last { text-align:right; }
-.abschreibung-tv-last .club-game-impact { border-left:0;border-right:4px solid #26708f; }
+.abschreibung-tv-last { text-align:left; }
 .abschreibung-tv-layout .abschreibung-details { display:flex;flex-direction:column; }
 .abschreibung-chart { flex:1;display:flex;flex-direction:column;gap:.35rem;padding:.55rem .7rem;border:1px solid #c9d8e6;border-radius:.7rem;background:#f1f6fb;color:#244762; }
 .abschreibung-chart h3 { margin:0;font-size:.9em; }
@@ -162,6 +161,9 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-meter-drop { animation:abschreibung-drop .44s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
 @keyframes abschreibung-fly { 0% {opacity:0;transform:translate(.65rem,.7rem) scale(.7)} 15%,84% {opacity:1;transform:translate(0,-50%)} 100% {opacity:0;transform:translate(.65rem,-50%)} }
 @keyframes abschreibung-drop { from {width:var(--abschreibung-before)} }
+.abschreibung-chart-drop { animation:abschreibung-chart-shrink .7s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
+@keyframes abschreibung-chart-shrink { from {height:var(--abschreibung-before)} }
+@media(prefers-reduced-motion:reduce) { .abschreibung-chart-drop { animation:none; } }
 @media(max-width:640px) { .abschreibung-tv-layout { grid-template-columns:minmax(0,1fr); } }
 
 /* Spielerzeilen behalten die Tabellenstruktur und sind als einzelne Karten lesbar. */

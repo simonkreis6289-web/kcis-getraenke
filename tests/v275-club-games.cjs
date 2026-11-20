@@ -71,6 +71,12 @@ test('Abschreibung TV shows the deducted score before rotating and cancels anima
  ]);
  assert.deepEqual(columns(animated),[['B','100','100%'],['C','100','100%'],['D','96','96%'],['A','93','93%']]);
  assert.equal(animated.querySelector('.abschreibung-chart [aria-current="true"] .abschreibung-chart-track .abschreibung-chart-name').textContent,'C');
+ const shrinking=animated.querySelectorAll('.abschreibung-chart-drop');
+ assert.equal(shrinking.length,1);
+ assert.equal(shrinking[0].closest('li').querySelector('.abschreibung-chart-name').textContent,'A');
+ assert.equal(shrinking[0].style.getPropertyValue('--abschreibung-before'),'100%');
+ assert.equal(shrinking[0].style.height,'93%');
+ assert.equal(view(null).querySelector('.abschreibung-chart-drop'),null);
  assert.equal(animated.querySelector('.abschreibung-row.is-deducted .abschreibung-flying-points').textContent,'−7');
  assert(!animated.querySelector('.abschreibung-details .abschreibung-flying-points'));
  assert.equal(animated.querySelector('.abschreibung-row .abschreibung-points b').textContent,'93');
@@ -102,7 +108,10 @@ test('Abschreibung keeps the animated deduction on the left when a player drops 
  const badge=document.querySelector('.abschreibung-tv-stand .abschreibung-eliminated .abschreibung-flying-points');
  assert.equal(badge.textContent,'−9');
  assert.equal(badge.parentElement.querySelector('b').textContent,'F');
- assert.equal(document.querySelector('.abschreibung-chart li:last-child .abschreibung-chart-track span').style.height,'0%');
+ const column=document.querySelector('.abschreibung-chart li:last-child .abschreibung-chart-drop');
+ assert.equal(column.style.height,'0%');
+ assert.equal(column.style.getPropertyValue('--abschreibung-before'),'100%');
+ assert.match(read('css/club-games.css'),/\.abschreibung-tv-last \{ text-align:left; \}/);
  assert.match(read('css/club-games.css'),/\.abschreibung-tv-stand \.abschreibung-row \{ grid-template-columns:[^;]+8ch;/);
 });
 test('Pfälzerspiel shows all nine balls, shared numbers, hits and round progress',()=>{
