@@ -19,7 +19,58 @@
 .tree-v138 .tree-strikes-empty{font-size:16px;color:#929bab}
 .tree-v138 .tree-win{max-width:100%;overflow-wrap:anywhere}
 @media(max-width:650px){.tree-v138{--tree-ball-size:24px;--tree-middle-width:28px}.tree-v138 .tree-header{font-size:11px}}
-.tree-v138 .tree-history{display:grid;grid-template-columns:repeat(2,minmax(max-content,1fr));column-gap:var(--tree-middle-width);flex:none}
-.tree-v138 .tree-history-team{display:flex;flex-wrap:nowrap;justify-content:flex-start;gap:clamp(2px,.35vw,6px);min-width:0}
-.tree-v138 .tree-history-team[data-team=T2]{flex-direction:row-reverse}
-.tree-v138 .tree-history-throw{padding:2px clamp(2px,.35vw,6px);border:1px solid var(--team-color);border-radius:6px;background:#fff;color:#232840;font-size:clamp(10px,1vw,17px);font-weight:700;white-space:nowrap}
+
+.tree-v138 .tree-history {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(max-content, 1fr));
+  gap: 8px;
+  flex: none;
+}
+.tree-v138 .tree-history-team {
+  display: flex;
+  align-items: center;
+  gap: clamp(3px, .5vw, 8px);
+  padding: clamp(4px, .65vw, 10px);
+  border: 1px solid #dedee8;
+  border-right: 4px solid var(--team-color);
+  border-radius: 10px;
+  background: #f4f4f7;
+}
+.tree-v138 .tree-history-team[data-team=T2] {
+  flex-direction: row-reverse;
+  border-left: 4px solid var(--team-color);
+  border-right-width: 1px;
+}
+.tree-v138 .tree-history-name {
+  margin-left: auto;
+  max-width: 10ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #26283b;
+  font-size: clamp(12px, 1.2vw, 20px);
+}
+.tree-v138 .tree-history-team[data-team=T2] .tree-history-name {
+  margin-left: 0;
+  margin-right: auto;
+}
+.tree-v138 .tree-history-throw {
+  padding: 4px clamp(3px, .55vw, 9px);
+  min-width: 2em;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  background: #fff;
+  color: #232840;
+  text-align: center;
+  font-size: clamp(13px, 1.45vw, 24px);
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.tree-v138 .tree-history-latest {
+  border-color: var(--team-color);
+}
+.tree-v138 .tree-history-empty {
+  color: #5f6374;
+  font-weight: 800;
+}
