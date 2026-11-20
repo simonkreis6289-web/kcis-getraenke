@@ -60,7 +60,13 @@ for(const key of keys)test(key+': real app and TV move rows with the actual turn
   await roll(3);await roll(4);await check(a,d,key,['A','B','C','D']);await a.c.indAction(key,'place',{column:7});
   await assertTurn('0 / 2 Würfe');
  }
- else if(key==='bergundtal'){await roll(6);await check(a,d,key,['A','B','C','D']);await roll(3);}
+ else if(key==='bergundtal'){
+  await roll(6);await check(a,d,key,['A','B','C','D']);
+  assert.equal(d.document.querySelector('.berg-tal-shot.is-high strong').textContent,'6');
+  assert.equal(d.document.querySelector('.berg-tal-shot.is-low strong').textContent,'—');
+  assert(!a.document.querySelector('.berg-tal-tv-throws'));
+  await roll(3);
+ }
  else if(key==='hochsprung'){for(const n of [4,4,4])await roll(n);}
  else if(key==='poker'){for(const n of [1,2,3,4])await roll(n);await check(a,d,key,['A','B','C','D']);await roll(5);}
  else if(key==='tausend'){for(const n of [1,2,3])await roll(n);await check(a,d,key,['A','B','C','D']);await a.c.indAction(key,'arrange',{order:[0,1,2]});}
@@ -68,6 +74,10 @@ for(const key of keys)test(key+': real app and TV move rows with the actual turn
  else await roll(4);
  await check(a,d,key,['B','C','D','A']);
  if(key==='lattenzaun'){for(const doc of [a.document,d.document])assert.equal(doc.querySelector('.extra-fence-last b').textContent,'6 Holz');}
+ if(key==='bergundtal'){
+  assert.equal(d.document.querySelector('.berg-tal-shot.is-result strong').textContent,'+3');
+  assert.match(d.document.querySelector('.berg-tal-tv-throws h3').textContent,/Letzter Durchgang · A/);
+ }
  if(key==='hochsprung'){
   assert.match(d.document.querySelector('.jump-tv-meter').textContent,/12 Holz.*Latte · 12/);
   await roll(2);assert(await a.c.KCSharedSync.waitForUpload());d.update();
