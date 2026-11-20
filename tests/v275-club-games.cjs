@@ -153,6 +153,37 @@ test('Abschreibung keeps the animated deduction on the left when a player drops 
  assert.match(read('css/club-games.css'),/\.abschreibung-tv-last \{ text-align:left; \}/);
  assert.match(read('css/club-games.css'),/\.abschreibung-tv-stand \.abschreibung-row \{ grid-template-columns:[^;]+8ch;/);
 });
+test('Abschreibung colors continue fading across a redraw and start from the visible color on a new turn',()=>{
+ const f=game('abschreibung',{},['A','B','C']);
+ const view=()=>parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true})).document;
+ const column=(doc,name)=>doc.querySelector('[data-abschreibung-column="'+name+'"]');
+ const fill=(doc,name)=>column(doc,name).querySelector('.abschreibung-chart-fill');
+ const color=node=>node.closest('[data-abschreibung-column]').dataset.abschreibungRole||'neutral';
+ let samplingOverride=null;
+ c.getComputedStyle=node=>({getPropertyValue:property=>samplingOverride?.(node,property)||color(node)+'-'+property});
+ try{
+  const initial=view(),origins=c.captureAbschreibungColumns(initial);
+  f.roll('pins',3);
+  const moved=view();
+  c.fadeAbschreibungColumns(origins,moved,1000);
+  assert.equal(fill(moved,'A').style.getPropertyValue('--abschreibung-from-background-color'),'is-current-background-color');
+  assert.equal(fill(moved,'B').style.getPropertyValue('--abschreibung-from-background-color'),'neutral-background-color');
+  assert.equal(fill(moved,'C').style.getPropertyValue('--abschreibung-from-background-color'),'is-target-background-color');
+  const redrawn=view();
+  c.fadeAbschreibungColumns(c.captureAbschreibungColumns(moved),redrawn,1200);
+  assert.equal(column(redrawn,'B').style.getPropertyValue('--abschreibung-color-delay'),'-200ms');
+  assert.equal(fill(redrawn,'B').style.getPropertyValue('--abschreibung-from-background-color'),'neutral-background-color');
+  samplingOverride=(node,property)=>node===fill(redrawn,'B')&&property==='background-color'?'rgb(140, 129, 110)':null;
+  const interrupted=c.captureAbschreibungColumns(redrawn);
+  f.run('undo');
+  const reverted=view();
+  c.fadeAbschreibungColumns(interrupted,reverted,1250);
+  assert.equal(fill(reverted,'B').style.getPropertyValue('--abschreibung-from-background-color'),'rgb(140, 129, 110)');
+  const settled=view();
+  c.fadeAbschreibungColumns(c.captureAbschreibungColumns(reverted),settled,1800);
+  assert.equal(settled.querySelectorAll('.abschreibung-chart-fade').length,0);
+ }finally{delete c.getComputedStyle;}
+});
 test('Pfälzerspiel shows all nine balls, shared numbers, hits and round progress',()=>{
  const f=game('pfaelzer',{rounds:3},['A','B','C']);
  for(const n of [4,4,7,4,7,4])f.roll('pins',n);

@@ -112,6 +112,44 @@ function abschreibungTvScore(name,shown,s,shot){
   ' style="width:'+percentage(current)+'%;--abschreibung-before:'+percentage(before)+'%"></span></span>';
  return {value,meter,changed};
 }
+const ABSCHREIBUNG_COLOR_MS=460;
+const abschreibungColorFades=new WeakMap();
+const abschreibungColorParts=[
+ ['.abschreibung-chart-value',['color']],
+ ['.abschreibung-chart-track',['background-color','border-bottom-color','box-shadow']],
+ ['.abschreibung-chart-fill',['background-color']],
+ ['.abschreibung-chart-name',['background-color']]
+];
+function fadeAbschreibungColumns(previous,next,now=Date.now()){
+ if(!previous||!next)return;
+ for(const column of next.querySelectorAll('[data-abschreibung-column]')){
+  const old=previous.get(column.dataset.abschreibungColumn);
+  if(!old)continue;
+  const changed=old.role!==column.dataset.abschreibungRole;
+  const fade=changed?{started:now,colors:old.colors}:old.fade;
+  if(!fade||now-fade.started>=ABSCHREIBUNG_COLOR_MS)continue;
+  abschreibungColorFades.set(column,fade);
+  column.classList.add('abschreibung-chart-fade');
+  column.style.setProperty('--abschreibung-color-duration',ABSCHREIBUNG_COLOR_MS+'ms');
+  column.style.setProperty('--abschreibung-color-delay',Math.min(0,fade.started-now)+'ms');
+  abschreibungColorParts.forEach(([selector,properties],index)=>{
+   const part=column.querySelector(selector);
+   properties.forEach((property,i)=>part.style.setProperty('--abschreibung-from-'+property,fade.colors[index][i]));
+  });
+ }
+}
+function captureAbschreibungColumns(board){
+ if(typeof window.getComputedStyle!=='function'||window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return null;
+ return new Map([...board.querySelectorAll('[data-abschreibung-column]')].map(column=>[
+  column.dataset.abschreibungColumn,{
+   role:column.dataset.abschreibungRole,fade:abschreibungColorFades.get(column),
+   colors:abschreibungColorParts.map(([selector,properties])=>{
+    const style=window.getComputedStyle(column.querySelector(selector));
+    return properties.map(property=>style.getPropertyValue(property));
+   })
+  }
+ ]));
+}
 function abschreibungTvBoard(s,frame,impact){
  const shown=frame?.holding?frame.before:s,shot=frame?.points?frame.shot:null;
  const scoredBefore=frame?.before||s;
@@ -137,15 +175,16 @@ function abschreibungTvBoard(s,frame,impact){
  const columns=ranked.map(({name,points})=>{
   const isCurrent=name===thrower,isTarget=name===throwTarget&&!isCurrent,shrinking=name===target&&deduction>0;
   const shift=frame?.ranks?.get(name)||0;
-  const role=isCurrent?' · Am Wurf':isTarget?' · Wurfziel':'';
+  const role=isCurrent?'is-current':isTarget?'is-target':'';
+  const label=isCurrent?' · Am Wurf':isTarget?' · Wurfziel':'';
   const from=shrinking?';--abschreibung-before:'+percent(scoredBefore.scores[name]):'';
   const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'column')||'')+'>'+points+'</b>';
-  return '<li class="'+(isCurrent?'is-current':isTarget?'is-target':'')+(shift?' abschreibung-chart-move':'')+'"'+
+  return '<li data-abschreibung-column="'+escape(name)+'" data-abschreibung-role="'+role+'" class="'+role+(shift?' abschreibung-chart-move':'')+'"'+
    (isCurrent?' aria-current="true"':'')+ (shift?' style="--abschreibung-shift:'+(shift*100)+'%"':'')+'>'+
    '<span class="abschreibung-chart-value">'+value+'</span>'+
    '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill'+(shrinking?' abschreibung-chart-drop':'')+
     '" aria-hidden="true" style="height:'+percent(points)+from+'"></span>'+
-   '<span class="abschreibung-chart-name" title="'+escape(name+role)+'">'+escape(name)+'</span></span></li>';
+   '<span class="abschreibung-chart-name" title="'+escape(name+label)+'">'+escape(name)+'</span></span></li>';
  }).join('');
  const rule=abschreibungRule(s.config);
  return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms;--abschreibung-shrink-duration:'+ABSCHREIBUNG_SHRINK_MS+
