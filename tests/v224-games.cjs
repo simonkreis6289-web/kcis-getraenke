@@ -38,6 +38,17 @@ test('Hochsprung ties on the failed hurdle use total actual throws; every elimin
  assert(s.finished);assert.deepEqual(copy(s.winners),['A']);assert.equal(s.jumps.A.totalThrows,4);assert.equal(s.jumps.B.totalThrows,5);assert.deepEqual(copy(s.finishPenalties.map(p=>p.personName)),['A','B']);assert.deepEqual(copy(s.bookings.map(p=>p.amountCents)),[20,20]);
  const undo=step(s,'undo');assert(undo.state.active);assert.equal(undo.state.bookings.length,0);assert.equal(undo.effect.moneyRemoved.length,2);assert.equal(undo.effect.changes.filter(p=>p.key==='l1'&&p.delta===-1).length,2);
 });
+test('Hochsprung classic valuation gives each failed jumper one first-loser counter and no money booking',()=>{
+ let s=start('hochsprung',{targets:[12],classicLosers:true}),out;
+ for(const n of [3,3,3,4,4,4]){out=roll(s,n);s=out.state;}
+ assert(s.finished);
+ assert.deepEqual(copy(s.finishPenalties),[{personName:'A',key:'l1',delta:1}]);
+ assert.equal(s.jumps.A.feeCents,0);
+ assert.equal(s.bookings.length,0);
+ assert.equal(out.effect.moneyAdded.length,0);
+ const undo=step(s,'undo');
+ assert.deepEqual(copy(undo.effect.changes.filter(row=>row.key==='l1')),[{personName:'A',key:'l1',delta:-1}]);
+});
 test('new games freeze their own config, keep Kranz distinct from a numerical trigger and replay throws exactly once',()=>{
  for(const key of newKeys){const config={...G.defaults(key),...(key==='hochsprung'?{targets:[12]}:{}),kranzMode:'choose'},s=step(G.empty(key),'start',{players:['A','B'],config}).state;
   assert.throws(()=>roll(s,0,'kranz'),/Kranzwert/);const out=roll(s,5,'kranz');assert.equal(out.state.history[0].pins,5);if(key==='dreieuro')assert.equal(out.state.scores.A,250);if(key==='ebbeflut')assert.equal(out.state.tide,'normal');const repeat=G.command(out.state,out.request,ctx);assert(repeat.repeat);assert.equal(repeat.state.history.length,1);config.kranzValue=12;assert.equal(out.state.config.kranzValue,8);
@@ -64,7 +75,11 @@ test('Hochsprung posts both first-loser counters and exact missing-pin fees at c
 test('Hochsprung settings support zero and seven target fields; navigation hides other game panels and settings freeze at start',async()=>{
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();const count=a.document.getElementById('round-hochsprung-count');assert.equal(Number(count.getAttribute('max')),7);count.value='0';a.c.roundTargetsChanged();assert(await a.c.saveRoundSettings('hochsprung'));assert.equal(a.c.extraConfig('hochsprung').targets.length,0);assert(a.document.querySelector('#hochsprung-setup button[onclick="indStart(\'hochsprung\')"]').disabled);
  count.value='7';a.c.roundTargetsChanged();for(let i=0;i<7;i++)a.document.getElementById('round-hochsprung-target-'+i).value=String(10+i);assert(await a.c.saveRoundSettings('hochsprung'));assert.equal(a.c.extraConfig('hochsprung').targets.length,7);a.c.showSideTab('spiele','hochsprung');a.c.showSideTab('spiele','ebbeflut');assert(a.document.getElementById('tab-hochsprung').classList.contains('hidden'));assert(!a.document.getElementById('tab-ebbeflut').classList.contains('hidden'));
- await a.c.indStart('hochsprung');assert.equal(a.c.indGet('hochsprung').config.targets[0],10);a.document.getElementById('round-hochsprung-target-0').value='12';assert(await a.c.saveRoundSettings('hochsprung'));assert.equal(a.c.indGet('hochsprung').config.targets[0],10);assert.equal(a.c.extraConfig('hochsprung').targets[0],12);
+ const classic=a.document.getElementById('round-hochsprung-classicLosers');
+ classic.checked=true;a.c.updateJumpValuation(classic);assert(await a.c.saveRoundSettings('hochsprung'));
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert.equal(db.root().extraGameSettings.hochsprung.classicLosers,true);
+ await a.c.indStart('hochsprung');assert.equal(a.c.indGet('hochsprung').config.classicLosers,true);assert.equal(a.c.indGet('hochsprung').config.targets[0],10);a.document.getElementById('round-hochsprung-target-0').value='12';assert(await a.c.saveRoundSettings('hochsprung'));assert.equal(a.c.indGet('hochsprung').config.targets[0],10);assert.equal(a.c.extraConfig('hochsprung').targets[0],12);
 });
 test('new game settings save round variants and euro prices and keep each game independent',async()=>{
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();const input=(key,name,value)=>{const el=a.document.getElementById('round-'+key+'-'+name);if(el.tagName==='SELECT')Object.defineProperty(el,'value',{value,writable:true,configurable:true});else el.value=value;};
