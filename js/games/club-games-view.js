@@ -106,13 +106,16 @@ function abschreibungTvBoard(s,frame,impact){
    escape(name)+'</strong>'+(name===current?'<small>Am Wurf</small>':'')+'</span>'+score.meter+
    '<span class="abschreibung-points">'+score.value+' Pkt.'+(score.changed?badge:'')+'</span></li>';
  }).join('');
- const columns=s.players.map(name=>{
-  const points=s.scores[name],height=100*points/s.config.startPoints;
+ const thrower=s.active&&!s.finished?window.KCClubGames.current(s):'';
+ const ranked=s.players.map((name,index)=>({name,index,points:s.scores[name]}))
+  .sort((a,b)=>b.points-a.points||a.index-b.index);
+ const columns=ranked.map(({name,points})=>{
+  const height=100*points/s.config.startPoints,isCurrent=name===thrower;
   const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'column')||'')+'>'+points+'</b>';
-  return '<li'+(name===current?' class="is-current"':'')+'>'+
+  return '<li'+(isCurrent?' class="is-current" aria-current="true"':'')+'>'+
    '<span class="abschreibung-chart-value">'+value+'</span>'+
-   '<span class="abschreibung-chart-track" aria-hidden="true"><span style="height:'+height+'%"></span></span>'+
-   '<span class="abschreibung-chart-name" title="'+escape(name)+'">'+escape(name)+'</span></li>';
+   '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill" aria-hidden="true" style="height:'+height+'%"></span>'+
+   '<span class="abschreibung-chart-name" title="'+escape(name+(isCurrent?' · Am Wurf':''))+'">'+escape(name)+'</span></span></li>';
  }).join('');
  const rule='Eine geworfene 6 zählt gegen dich. '+(s.config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
  return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms"><div class="abschreibung-tv-stand"><ol class="abschreibung-order" aria-label="Punktestand"'+(globalThis.window?.KCPlayerRows?.group?.('abschreibung',shown,{motionOnly:true})||'')+'>'+rows+'</ol>'+abschreibungEliminated(shown,order.includes(target)?undefined:target,badge)+
