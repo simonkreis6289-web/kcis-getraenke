@@ -150,16 +150,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.hurdle-tv-turn { height: 62px; }
-.hurdle-tv-turn .ind-turn {
-  height: 100%;
-  margin: 0;
-  padding: 6px 10px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.hurdle-tv-turn {
+  display:flex;flex-wrap:wrap;align-items:stretch;gap:.45rem;margin-bottom:.35rem;
 }
-.hurdle-tv-turn .hurdle-next-throws { flex-wrap: nowrap; overflow: hidden; }
+.hurdle-tv-turn .ind-turn {
+  flex:0 1 auto;align-self:stretch;display:flex;flex-direction:column;justify-content:center;
+  min-width:clamp(9rem,17vw,13rem);margin:0;padding:.42rem .7rem;border:1px solid #e8ce87;
+  color:#41340f;font-size:clamp(.9rem,1.15vw,1.15rem);
+}
+.hurdle-turn-score { display:block;margin-top:.14rem;font-size:.85em;color:#5c4918; }
+.hurdle-turn-score strong { font-size:1.22em; }
 .hurdle-tv-fit { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 #game-body .hurdle-tv-board {
   display: flex;
@@ -332,13 +332,20 @@
   transform-origin: 0 0;
 }
 .hurdle-next-throws {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 3px;
-  font-size: .72em;
+  flex:1 1 12rem;display:flex;flex-wrap:wrap;gap:.35rem;color:#24415e;
 }
-.hurdle-next-throws span { background: #fffaf0; border-radius: 4px; padding: 3px 6px; }
+.hurdle-throw-card {
+  min-width:7.25rem;display:grid;align-content:center;gap:.23rem;
+  padding:.34rem .55rem;border:1px solid #c1d3e5;border-radius:.52rem;background:#edf5fc;
+}
+.hurdle-throw-card.is-goal { background:#e5f4e9;border-color:#a1c7ac;color:#224e35; }
+.hurdle-throw-card-top { display:flex;align-items:baseline;gap:.45rem; }
+.hurdle-throw-card-top strong { font-size:clamp(1rem,1.5vw,1.35rem);font-variant-numeric:tabular-nums; }
+.hurdle-throw-card-top small,.hurdle-throw-card-top > span { font-size:.72rem; }
+.hurdle-throw-card-top > span { font-weight:750;white-space:nowrap; }
+.hurdle-throw-options { display:flex;flex-wrap:wrap;gap:.2rem;font-size:.72rem; }
+.hurdle-throw-options > span { padding:.11rem .32rem;border-radius:.25rem;background:#fff;font-weight:650; }
+.hurdle-throw-options > small { font-size:inherit; }
 
 @media (max-width: 760px) {
   .hurdle-circuit-stop { font-size: 10px; }

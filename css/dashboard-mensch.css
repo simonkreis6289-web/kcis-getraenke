@@ -1,0 +1,65 @@
+.mensch-track {
+  --mensch-edge:clamp(2.5rem,6vw,4.5rem);
+  display:grid;
+  grid-template-columns:var(--mensch-edge) repeat(8,minmax(0,1fr)) var(--mensch-edge);
+  grid-template-rows:minmax(2.8rem,auto) repeat(8,minmax(2rem,1fr)) minmax(2.8rem,auto);
+  gap:clamp(2px,.36vw,6px);
+  padding:clamp(4px,.65vw,10px);
+  border:1px solid #bdc8d8;border-radius:1rem;background:#e9eef5;
+}
+.mensch-board-center {
+  grid-area:2 / 2 / 10 / 10;
+  min-width:0;align-self:stretch;display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(.25rem,.65vw,.65rem);border-radius:.6rem;background:#fff;
+}
+.mensch-board-info {
+  display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.35rem .6rem;
+  padding:.2rem .25rem .45rem;color:#263b55;font-size:clamp(.75rem,1vw,1rem);
+}
+.mensch-start,.mensch-turn { display:flex;align-items:center;gap:.35rem; }
+.mensch-start {
+  flex:1;flex-wrap:wrap;min-height:2rem;padding:.2rem .4rem;border:1px dashed #8497ac;border-radius:.6rem;background:#f1f5fa;
+}
+.mensch-start > strong,.mensch-turn { white-space:nowrap; }
+.mensch-turn { font-size:.94em; }
+.mensch-field {
+  position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:2px;padding:2px;border:1px solid var(--mensch-field-border);border-radius:.55rem;
+  color:#203650;background:var(--mensch-field-bg);font-weight:800;font-size:clamp(.72rem,1vw,1rem);
+}
+.mensch-sector-1 { --mensch-field-bg:#d9f1e4;--mensch-field-border:#75b496; }
+.mensch-sector-2 { --mensch-field-bg:#daeaf9;--mensch-field-border:#80a5ce; }
+.mensch-sector-3 { --mensch-field-bg:#fff1cd;--mensch-field-border:#d3ad56; }
+.mensch-sector-4 { --mensch-field-bg:#fbe1e6;--mensch-field-border:#c98799; }
+.mensch-field.mensch-goal { background:#263b55;color:#fff;border-color:#263b55; }
+.mensch-field-number {
+  display:grid;place-items:center;min-width:1.55em;min-height:1.55em;padding:0 .15em;
+  border-radius:50%;background:#ffffffa0;font-variant-numeric:tabular-nums;
+}
+.mensch-goal .mensch-field-number { line-height:1;background:none; }
+.mensch-goal .mensch-field-number small { font-size:.65em; }
+.mensch-pawns { display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.2rem; }
+.mensch-pawns:empty { display:none; }
+.mensch-pawn {
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.35rem;height:1.03rem;padding:0 .17rem;margin-top:.32rem;
+  border-radius:.52rem .52rem .2rem .2rem;background:var(--mensch-player-color);color:#fff;
+  box-shadow:0 1px 2px #1b2c4850;box-sizing:border-box;white-space:nowrap;
+}
+.mensch-pawn::before {
+  content:"";position:absolute;top:-.39rem;left:50%;transform:translateX(-50%);
+  width:.62rem;height:.62rem;border-radius:50%;background:var(--mensch-player-color);
+}
+.mensch-pawn b { position:relative;font-size:.65rem;line-height:1; }
+.mensch-pawn.is-current { outline:2px solid #ed9c12;outline-offset:1px; }
+.mensch-color-dot {
+  display:inline-block;width:.64rem;height:.64rem;margin-right:.32em;border-radius:50%;
+  background:var(--mensch-player-color);vertical-align:.04em;
+}
+#game-body .mensch-table th { white-space:normal; }
+#game-body .mensch-table th:first-child { width:31%; }
+#game-body .mensch-table th:nth-child(2) { width:15%; }
+#game-body .mensch-table .tv-progress { min-width:0; }
+.mensch-table .tv-progress span { background:var(--mensch-player-color); }
+#game-body .mensch-table .mensch-current td { background:#fff2cb; }
+.mensch-tv-board > .tv-note { padding:6px 0 0; }

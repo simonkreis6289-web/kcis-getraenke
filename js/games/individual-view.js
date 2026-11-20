@@ -148,8 +148,21 @@ function hurdleThrowPreview(s,name){
   if(rule){add(hits,rule.id,attempt.label);add(targets,score,attempt.label);}
   else if(score>=s.config.target)add(targets,s.config.target,attempt.label);
  }
- const help=[...targets].sort(([a],[b])=>a-b).map(([score,throws])=>'<span><strong>'+(score===s.config.target?'Ziel':score+' Pkt.')+'</strong> mit '+throws.join(' / ')+'</span>').join('');
- return {hits,help};
+ return {hits,targets};
+}
+function hurdleThrowCards(s,name,targets){
+ const current=s.scores[name];
+ const next=Math.min(s.config.target,...s.config.rules.filter(rule=>rule.enabled&&rule.from>current).map(rule=>rule.from));
+ const options=targets.size?[...targets].sort(([a],[b])=>Math.abs(a-current)-Math.abs(b-current)||a-b):[[next,[]]];
+ return '<div class="hurdle-next-throws" role="group" aria-label="Abstand zu den nächsten Feldern">'+options.map(([score,throws])=>{
+  const delta=score-current,sign=delta>0?'+':delta<0?'−':'';
+  const regular=throws.filter(label=>!label.startsWith('Kranz '));
+  const wreaths=throws.filter(label=>label.startsWith('Kranz ')).map(label=>label.slice(7,-1));
+  const choices=[...regular,...(wreaths.length?['👑 '+wreaths.join(', ')]:[])];
+  return '<div class="hurdle-throw-card'+(score===s.config.target?' is-goal':'')+'">'+
+   '<div class="hurdle-throw-card-top"><strong>'+sign+Math.abs(delta)+' <small>Pkt.</small></strong><span>'+(score===s.config.target?'Ziel '+score:'Feld '+score)+'</span></div>'+
+   '<div class="hurdle-throw-options">'+(choices.length?choices.map(label=>'<span>'+label+'</span>').join(''):'<small>Außer Wurfreichweite</small>')+'</div></div>';
+ }).join('')+'</div>';
 }
 function renderHurdleTables(s,rowPlayers,{dashboard,preview,colors,current}){
  const status=n=>s.skip[n]?'⏸ Einmal aussetzen':s.subtract[n]?'− Nächster Wurf':s.double[n]?'×2 Zusatzwurf':s.finished&&s.winners.includes(n)?'🏆 Sieger':'';
@@ -171,9 +184,8 @@ function renderIndividualBoard(s,options={}){
  const openNumbers=seven&&options.dashboard&&running?KCIndividual.sevenColumns(s).filter(number=>!s.sheet[name]?.[number]):[];
  const openTargets=openNumbers.length?'<span class="ind-seven-open"><span>Offen</span>'+
   openNumbers.map(number=>'<b>'+number+'</b>').join('')+'</span>':'';
- const turn=running?'<div class="ind-turn'+(openTargets?' ind-seven-tv-turn':'')+'">'+(openTargets?'<span>':'')+'🎳 <strong>'+indEscape(name)+'</strong>'+(s.pendingChoice?' · Hindernis entscheiden':seven?' · '+s.turn.length+' / 2 Würfe':s.double[name]?' · Zusatzwurf ×2':s.subtract[name]?' · Nächsten Wurf abziehen':' am Wurf')+
-  (dashboard?'<span class="hurdle-turn-score"> · <strong>'+s.scores[name]+' Pkt.</strong></span>':'')+(openTargets?'</span>'+openTargets:'')+
-  (preview?.help?'<div class="hurdle-next-throws" aria-label="Mit einem Wurf erreichbar">'+preview.help+'</div>':'')+'</div>':'';
+ const turn=running?'<div class="ind-turn'+(openTargets?' ind-seven-tv-turn':'')+'">'+(dashboard||openTargets?'<span>':'')+'🎳 <strong>'+indEscape(name)+'</strong>'+(s.pendingChoice?' · Hindernis entscheiden':seven?' · '+s.turn.length+' / 2 Würfe':s.double[name]?' · Zusatzwurf ×2':s.subtract[name]?' · Nächsten Wurf abziehen':' am Wurf')+
+  (dashboard||openTargets?'</span>':'')+(dashboard?'<span class="hurdle-turn-score"><strong>'+s.scores[name]+'</strong> Pkt.</span>':'')+openTargets+'</div>':'';
  const rowPlayers=(typeof window==='undefined'?null:window.KCPlayerRows)?.order(s.players,name,{running:s.active&&!ready})||s.players;
  let body;
  if(seven)body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Name</th>'+KCIndividual.sevenColumns(s).map(n=>'<th>'+n+'</th>').join('')+'<th>Strafe</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowPlayers.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+(options.dashboard&&running&&n===name?' class="ind-current" aria-current="true"':'')+'><th>'+indEscape(n)+('<small class="ind-add-count">➕ '+KCIndividual.sevenAddCount(s,n)+' / '+KCIndividual.sevenAddLimit(s)+' genutzt · '+Math.max(0,KCIndividual.sevenAddLimit(s)-KCIndividual.sevenAddCount(s,n))+' übrig</small>')+'</th>'+KCIndividual.sevenColumns(s).map(col=>{const cell=s.sheet[n][col];return '<td>'+(cell?'<strong>'+cell.value+'</strong><small>'+cell.throws.join(cell.add?' + ':' × ')+' · '+indEuro(cell.cents)+'</small>':'—')+'</td>';}).join('')+'<td><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+indEuro(s.scores[n])+'</strong></td></tr>').join('')+'</tbody></table></div>';
@@ -185,7 +197,7 @@ function renderIndividualBoard(s,options={}){
  }
  if(dashboard){
   return '<div class="hurdle-tv-frame"><div class="hurdle-tv-header"><h2>'+head+'</h2>'+
-   '<div class="hurdle-tv-turn">'+turn+'</div></div><div class="hurdle-tv-fit" data-hurdle-game="'+indEscape(s.id)+'">'+
+   (turn?'<div class="hurdle-tv-turn">'+turn+(preview?hurdleThrowCards(s,name,preview.targets):'')+'</div>':'')+'</div><div class="hurdle-tv-fit" data-hurdle-game="'+indEscape(s.id)+'">'+
    '<div class="tv-board ind-tv-board hurdle-tv-board"><section class="ind-board ind-hindernis-board ind-hurdle-tv">'+body+'</section></div></div></div>';
  }
  const events=seven?'':(s.events||[]).slice(-3).reverse().map(e=>'<div class="ind-event">'+indEscape(e.name)+' · '+(e.point??'')+' · '+indEscape(e.text)+'</div>').join('');

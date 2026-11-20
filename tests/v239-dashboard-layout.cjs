@@ -125,6 +125,13 @@ test('TV hurdles show player names at occupied positions, matching the colored s
  assert.deepEqual([...root.querySelector('.ind-hurdle-split').children].map(x=>x.className),['hurdle-circuit','hurdle-scores','hurdle-rules']);
  const header=root.querySelector('.hurdle-tv-header'),fitArea=root.querySelector('.hurdle-tv-fit');
  assert.match(header.querySelector('h2').textContent,/Hindernislauf/);
+ assert.equal(header.querySelector('.hurdle-turn-score strong').textContent,'12');
+ const cards=[...header.querySelectorAll('.hurdle-throw-card')];
+ assert.equal(cards[0].querySelector('.hurdle-throw-card-top strong').textContent,'+3 Pkt.');
+ assert.match(cards[0].textContent,/Feld 15.*3 Holz/);
+ const far=f.document.createElement('div');
+ far.innerHTML=f.renderIndividualBoard({...s,scores:{...s.scores,Daniel:1}},{dashboard:true});
+ assert.match(far.querySelector('.hurdle-throw-card').textContent,/\+14 Pkt.*Feld 15.*Außer Wurfreichweite/);
  assert.equal(header.nextElementSibling,fitArea);
  assert.equal(fitArea.dataset.hurdleGame,s.id);
  assert.equal(fitArea.querySelector('h2,.ind-turn'),null);
@@ -157,7 +164,8 @@ test('TV hurdles show player names at occupied positions, matching the colored s
  assert.deepEqual([marks[0].style.left,marks[0].style.top],['63px','297px']);
  assert.deepEqual([marks[1].style.left,marks[1].style.top],['63px','49px']);
  assert.deepEqual([marks.at(-1).style.left,marks.at(-1).style.top],['763px','297px']);
- assert.match(root.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt.*15 Pkt.*3 Holz.*17 Pkt.*5 Holz.*Ziel.*Kranz/);
+ assert.match(header.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt./);
+ assert.match(header.querySelector('.hurdle-next-throws').textContent,/Feld 15.*3 Holz.*Feld 17.*5 Holz.*Ziel 24.*👑/);
  assert.deepEqual([...root.querySelectorAll('.ind-rule-reachable th')].map(x=>x.textContent),['15','17–18']);
  assert.match(root.querySelectorAll('.hurdle-scores .ind-penalty')[1].querySelector('strong').textContent,/1,00/);
  assert.match(root.querySelector('.hurdle-penalty-preview').textContent,/^\+0,50/);
