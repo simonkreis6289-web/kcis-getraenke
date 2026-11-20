@@ -223,13 +223,13 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261120-v288">
-<link rel="stylesheet" href="css/dashboard-layout.css?v=20261120-v288">
-<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261120-v288">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261120-v288">
-<link rel="stylesheet" href="css/club-content.css?v=20261120-v288">
-<link rel="stylesheet" href="css/extra-games.css?v=20261120-v288">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261120-v288">
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261120-v289">
+<link rel="stylesheet" href="css/dashboard-layout.css?v=20261120-v289">
+<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261120-v289">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261120-v289">
+<link rel="stylesheet" href="css/club-content.css?v=20261120-v289">
+<link rel="stylesheet" href="css/extra-games.css?v=20261120-v289">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261120-v289">
 </head>
 <body>
 <section id="club-content-dashboard" role="dialog" aria-modal="true" aria-labelledby="club-content-dashboard-title" hidden><div><h2 id="club-content-dashboard-title">Clubunterlagen</h2><p id="club-content-dashboard-help"></p></div><p id="club-content-dashboard-status" class="club-content-status" role="status"></p><div id="club-content-dashboard-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div></section>
@@ -256,46 +256,47 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 
 <footer class="dashboard-footer"><div class="dashboard-ticker-region" id="dashboard-ticker-region"><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-left"><div class="dashboard-ticker" id="dashboard-ticker" tabindex="0" aria-label="Clubtermine und Informationen · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-ticker-track"><div class="dashboard-ticker-copy"><span id="kc-next-birthdays"></span><span id="kc-next-tour"></span><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span></div></div></div></div><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-right"><div class="dashboard-ticker" id="dashboard-football-ticker" tabindex="0" aria-label="Bundesliga-Ergebnisse · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-football-ticker-track"><div class="dashboard-ticker-copy"><span>⚽ Bundesliga-Live</span></div></div></div></div></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</div><div id="version">Dashboard V239 · Update 16.11.2026, 21:20 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></footer>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261120-v288">
-<link rel="stylesheet" href="css/table-games.css?v=20261120-v288">
-<link rel="stylesheet" href="css/individual-games.css?v=20261120-v288">
-<link rel="stylesheet" href="css/game-rules.css?v=20261120-v288">
-<script src="js/shared-clock.js?v=20261120-v288"></script>
-<script src="js/game-stopwatch.js?v=20261120-v288"></script>
-<script src="js/dashboard-layout.js?v=20261120-v288"></script>
-<script src="js/dashboard-link.js?v=20261120-v288"></script>
-<script src="js/kranz-policy.js?v=20261120-v288"></script>
-<script src="js/game-player-rows.js?v=20261120-v288"></script>
-<link rel="stylesheet" href="css/club-games.css?v=20261120-v288">
-<script src="js/games/club-games-core.js?v=20261120-v288"></script><script src="js/games/club-games-view.js?v=20261120-v288"></script>
-<script src="js/games/extra-core.js?v=20261120-v288"></script><script src="js/games/extra-view.js?v=20261120-v288"></script>
-<script src="js/games/individual-core.js?v=20261120-v288"></script><script src="js/games/individual-view.js?v=20261120-v288"></script>
-<script src="js/game-rules.js?v=20261120-v288"></script>
-<link rel="stylesheet" href="css/starter-draw.css?v=20261120-v288"><script src="js/starter-draw.js?v=20261120-v288"></script>
-<script src="js/birthdays.js?v=20261120-v288"></script>
-<script src="js/games/sechstage-core.js?v=20261120-v288"></script>
-<script src="js/games/table-games-core.js?v=20261120-v288"></script>
-<script src="js/dashboard-sounds.js?v=20261120-v288"></script>
-<script src="js/cash-book.js?v=20261120-v288"></script>
-<script src="js/payment-visibility.js?v=20261120-v288"></script><script src="js/cash-overview.js?v=20261120-v288"></script>
-<script src="js/penalty-table.js?v=20261120-v288"></script>
-<script src="js/club-content.js?v=20261120-v288"></script><script src="js/club-content-pager.js?v=20261120-v288"></script><script src="js/club-content-dashboard.js?v=20261120-v288"></script>
-<script src="js/penalty-statistics.js?v=20261120-v288"></script><script src="js/activity-reports.js?v=20261120-v288"></script>
-<script src="js/cash-dashboard.js?v=20261120-v288"></script>
-<link rel="stylesheet" href="css/game-overview.css?v=20261120-v288"><script src="js/game-overview.js?v=20261120-v288"></script>
-<script src="js/table-alignment.js?v=20261120-v288"></script>
-<script src="js/shared-sync-core.js?v=20261120-v288"></script>
-<script src="js/shared-sync-transport.js?v=20261120-v288"></script>
-<script src="js/football-live.js?v=20261120-v288"></script>
-<script src="js/game-results.js?v=20261120-v288"></script>
-<script src="js/dashboard-event-toasts.js?v=20261120-v288"></script>
-<script src="js/dashboard-lotto-animations.js?v=20261120-v288"></script>
-<script src="js/dashboard-layout-tv.js?v=20261120-v288"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261120-v289">
+<link rel="stylesheet" href="css/table-games.css?v=20261120-v289">
+<link rel="stylesheet" href="css/individual-games.css?v=20261120-v289">
+<link rel="stylesheet" href="css/dashboard-mensch.css?v=20261120-v289">
+<link rel="stylesheet" href="css/game-rules.css?v=20261120-v289">
+<script src="js/shared-clock.js?v=20261120-v289"></script>
+<script src="js/game-stopwatch.js?v=20261120-v289"></script>
+<script src="js/dashboard-layout.js?v=20261120-v289"></script>
+<script src="js/dashboard-link.js?v=20261120-v289"></script>
+<script src="js/kranz-policy.js?v=20261120-v289"></script>
+<script src="js/game-player-rows.js?v=20261120-v289"></script>
+<link rel="stylesheet" href="css/club-games.css?v=20261120-v289">
+<script src="js/games/club-games-core.js?v=20261120-v289"></script><script src="js/games/club-games-view.js?v=20261120-v289"></script>
+<script src="js/games/extra-core.js?v=20261120-v289"></script><script src="js/games/extra-view.js?v=20261120-v289"></script>
+<script src="js/games/individual-core.js?v=20261120-v289"></script><script src="js/games/individual-view.js?v=20261120-v289"></script>
+<script src="js/game-rules.js?v=20261120-v289"></script>
+<link rel="stylesheet" href="css/starter-draw.css?v=20261120-v289"><script src="js/starter-draw.js?v=20261120-v289"></script>
+<script src="js/birthdays.js?v=20261120-v289"></script>
+<script src="js/games/sechstage-core.js?v=20261120-v289"></script>
+<script src="js/games/table-games-core.js?v=20261120-v289"></script>
+<script src="js/dashboard-sounds.js?v=20261120-v289"></script>
+<script src="js/cash-book.js?v=20261120-v289"></script>
+<script src="js/payment-visibility.js?v=20261120-v289"></script><script src="js/cash-overview.js?v=20261120-v289"></script>
+<script src="js/penalty-table.js?v=20261120-v289"></script>
+<script src="js/club-content.js?v=20261120-v289"></script><script src="js/club-content-pager.js?v=20261120-v289"></script><script src="js/club-content-dashboard.js?v=20261120-v289"></script>
+<script src="js/penalty-statistics.js?v=20261120-v289"></script><script src="js/activity-reports.js?v=20261120-v289"></script>
+<script src="js/cash-dashboard.js?v=20261120-v289"></script>
+<link rel="stylesheet" href="css/game-overview.css?v=20261120-v289"><script src="js/game-overview.js?v=20261120-v289"></script>
+<script src="js/table-alignment.js?v=20261120-v289"></script>
+<script src="js/shared-sync-core.js?v=20261120-v289"></script>
+<script src="js/shared-sync-transport.js?v=20261120-v289"></script>
+<script src="js/football-live.js?v=20261120-v289"></script>
+<script src="js/game-results.js?v=20261120-v289"></script>
+<script src="js/dashboard-event-toasts.js?v=20261120-v289"></script>
+<script src="js/dashboard-lotto-animations.js?v=20261120-v289"></script>
+<script src="js/dashboard-layout-tv.js?v=20261120-v289"></script>
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V288";
-const DASH_RELEASE="20.11.2026, 12:24 Uhr";
+const DASH_VERSION="V289";
+const DASH_RELEASE="20.11.2026, 12:31 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -691,7 +692,50 @@ function renderPlusminusBoard(d){
  }).join('');
  return `<div class="tv-board plusminus-board"><h2 class="tv-headline">➕ + − × ÷</h2><div class="tv-stats"><div class="tv-stat">${d.finished?'Spiel abgeschlossen':'Aktueller Spieler'}<strong>${safe(d.finished?'🏁':current)}</strong></div><div class="tv-stat">Gewähltes Feld<strong>${d.finished?'–':(Number(d.selectedSlot)||0)+1}</strong></div></div><table class="tv-table tv-plusminus"><thead><tr><th>Spieler</th>${places.map((x,j)=>`<th>${x}</th>${j<4?`<th class="pm-operator">${operators[j]}</th>`:''}`).join('')}<th>Ergebnis</th></tr></thead><tbody${globalThis.window?.KCPlayerRows?.group?.('plusminus',d,{turn:Object.values(rows).reduce((count,r)=>count+(Array.isArray(r)?r.filter(Boolean).length:0),0)})||''}>${tableRows}</tbody></table></div>`;
 }
-function renderMenschBoard(d){const names=activeNames(d.playerOrder),scores=d.scores||{};if(!names.length)return null;const displayNames=window.KCPlayerRows?.order(names,names[d.currentIndex],{running:d.active&&!d.finished})||names;return `<div class="tv-board"><h2 class="tv-headline">🎲 Mensch ärgere dich nicht</h2><div class="tv-stats"><div class="tv-stat">Ziel<strong>36 Punkte</strong></div><div class="tv-stat">Am Wurf<strong>${safe(names[d.currentIndex]||'–')}</strong></div></div><table class="tv-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody${globalThis.window?.KCPlayerRows?.group?.('mensch',d,{turn:Object.values(d.throws||{}).reduce((count,r)=>count+(r?.length||0),0)})||''}>${displayNames.map(n=>{const score=Number(scores[n])||0;const throws=(d.throws?.[n]||[]).slice(-5).map(t=>t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+t.pins+')':safe(t.pins)).join(' · ');return `<tr${globalThis.window?.KCPlayerRows?.row?.(n)||''}><td class="tv-name">${safe(n)} ${d.winner===n?'🏆':''}</td><td><strong${globalThis.window?.KCPlayerRows?.score?.(n)||''}>${score}</strong></td><td><div class="tv-progress"><span style="width:${Math.min(100,Math.max(0,score/36*100))}%"></span></div></td><td>${throws||'–'}</td></tr>`}).join('')}</tbody></table><div class="tv-note">Bei 6 nochmal werfen · Punktgleichheit wirft zurück auf 0 · über 36 rückwärts zählen</div></div>`}
+const menschColors=['#3063a8','#b83948','#187856','#8e4da8','#b76714','#097587','#755342','#a43c77',
+ '#416526','#52429d','#8b5e13','#ac4d2a','#196992','#67718b','#824763','#66442c'];
+function renderMenschBoard(d){
+ const names=activeNames(d.playerOrder),target=36;
+ if(!names.length)return null;
+ const running=d.active&&!d.finished,current=running?names[d.currentIndex]:'';
+ const displayNames=window.KCPlayerRows?.order(names,current,{running})||names;
+ const score=name=>Math.max(0,Math.min(target,Math.trunc(Number(d.scores?.[name])||0)));
+ const colors=new Map(names.map((name,i)=>[name,menschColors[i%menschColors.length]]));
+ const positions=Array.from({length:target+1},()=>[]);
+ for(const name of names){
+  const initials=name.trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]).join('').toUpperCase();
+  const points=score(name),label=name+' · '+points+' Punkte'+(name===current?' · am Wurf':'');
+  positions[points].push(`<span class="mensch-pawn${name===current?' is-current':''}" data-mensch-player="${safe(name)}" style="--mensch-player-color:${colors.get(name)}" role="img" title="${safe(label)}" aria-label="${safe(label)}"><b aria-hidden="true">${safe(initials)}</b></span>`);
+ }
+ const fields=positions.slice(1).map((pawns,index)=>{
+  const col=index<10?index+1:index<19?10:index<28?28-index:1;
+  const row=index<10?1:index<19?index-8:index<28?10:37-index;
+  const number=index+1,goal=number===target;
+  return `<div class="mensch-field mensch-sector-${Math.floor(index/9)+1}${goal?' mensch-goal':''}" data-mensch-position="${number}" style="grid-column:${col};grid-row:${row}"><span class="mensch-field-number">${goal?'<small>Ziel</small>':''}${number}</span><div class="mensch-pawns">${pawns.join('')}</div></div>`;
+ }).join('');
+ const tableRows=displayNames.map(name=>{
+  const points=score(name);
+  const throws=(d.throws?.[name]||[]).slice(-5).map(t=>t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+safe(t.pins)+')':safe(t.pins)).join(' · ');
+  const highlight=name===current?' class="mensch-current" aria-current="true"':'';
+  return `<tr${globalThis.window?.KCPlayerRows?.row?.(name)||''}${highlight} style="--mensch-player-color:${colors.get(name)}"><td class="tv-name"><i class="mensch-color-dot" aria-hidden="true"></i>${safe(name)} ${d.winner===name?'🏆':''}</td><td><strong${globalThis.window?.KCPlayerRows?.score?.(name)||''}>${points}</strong></td><td><div class="tv-progress"><span style="width:${points/target*100}%"></span></div></td><td>${throws||'–'}</td></tr>`;
+ }).join('');
+ const turn=Object.values(d.throws||{}).reduce((count,rolls)=>count+(rolls?.length||0),0);
+ return `<div class="tv-board mensch-tv-board">
+  <div class="mensch-track" role="group" aria-label="Spielstrecke von Start bis Ziel 36">
+   ${fields}
+   <div class="mensch-board-center">
+    <div class="mensch-board-info">
+     <div class="mensch-start" data-mensch-position="0"><strong>Start · 0</strong><div class="mensch-pawns">${positions[0].join('')}</div></div>
+     ${current?`<div class="mensch-turn" style="--mensch-player-color:${colors.get(current)}"><i class="mensch-color-dot" aria-hidden="true"></i>Am Wurf <strong>${safe(current)}</strong></div>`:''}
+    </div>
+    <table class="tv-table mensch-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead>
+     <tbody${globalThis.window?.KCPlayerRows?.group?.('mensch',d,{turn})||''}>${tableRows}</tbody>
+    </table>
+   </div>
+  </div>
+  <div class="tv-note">Bei 6 nochmal werfen · Punktgleichheit wirft zurück auf 0 · über 36 rückwärts zählen</div>
+ </div>`;
+}
 function renderDartsBoard(d){
  const scores=d.scores||{}, start=Number(d.startValue)||301;
  const roundThrows=d.roundThrows||{}, keys=['T2','T1'];

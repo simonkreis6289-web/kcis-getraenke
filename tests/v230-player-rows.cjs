@@ -19,7 +19,27 @@ const keys=['mensch','plusminus','sichern','blackjack','siebener','hindernis','b
 for(const key of keys)test(key+': real app and TV move rows with the actual turn, preserve inputs and undo to the original order',{timeout:60000},async()=>{
  const a=await app();if(key==='mensch')await a.c.startMenschGameFinal('A');else if(key==='plusminus')await a.c.startPlusminusGame();else if(key==='sichern'){a.document.getElementById('sichern-mode').value='solo';await a.c.startSichernGame();}else if(key==='blackjack')await a.c.startTableGame(key);else await a.c.indStart(key,key==='hindernis'?a.c.gameSetupNames(key)[0]:null);const d=tv(a.db);await check(a,d,key,['A','B','C','D']);
  const roll=pins=>a.c.indAction(key,'throw',{kind:'pins',pins});
- if(key==='mensch'){await a.c.applyMenschThrow(6);await check(a,d,key,['A','B','C','D']);await a.c.applyMenschThrow(1);}
+ if(key==='mensch'){
+  const field=name=>Number(d.document.querySelector('[data-mensch-player="'+name+'"]').closest('[data-mensch-position]').dataset.menschPosition);
+  const track=d.document.querySelector('.mensch-track');
+  const fields=[...track.querySelectorAll('.mensch-field')];
+  assert.equal(fields.length,36);
+  assert.equal(new Set(fields.map(cell=>cell.style.gridColumn+'/'+cell.style.gridRow)).size,36);
+  const cell=number=>[fields[number-1].style.gridColumn,fields[number-1].style.gridRow];
+  assert.deepEqual([cell(1),cell(10),cell(19),cell(28),cell(36)],[['1','1'],['10','1'],['10','10'],['1','10'],['1','2']]);
+  assert(fields[35].classList.contains('mensch-goal'));
+  assert.deepEqual(['A','B','C','D'].map(field),[0,0,0,0]);
+  await a.c.applyMenschThrow(6);await check(a,d,key,['A','B','C','D']);
+  assert.equal(field('A'),6);
+  assert.equal(d.document.querySelector('.mensch-pawn.is-current').dataset.menschPlayer,'A');
+  await a.c.applyMenschThrow(1);assert(await a.c.KCSharedSync.waitForUpload());d.update();
+  assert.equal(field('A'),7);
+  assert.equal(d.document.querySelector('.mensch-pawn.is-current').dataset.menschPlayer,'B');
+  await a.c.applyMenschThrow(7);assert(await a.c.KCSharedSync.waitForUpload());d.update();
+  assert.deepEqual(['A','B'].map(field),[0,7]);
+  await a.c.undoMenschThrow();assert(await a.c.KCSharedSync.waitForUpload());d.update();
+  assert.deepEqual(['A','B'].map(field),[7,0]);
+ }
  else if(key==='plusminus')await a.c.applyPlusminusThrow(4);
  else if(key==='sichern'){await a.c.sichernThrow(4);await check(a,d,key,['A','B','C','D']);await a.c.sichernSave();}
  else if(key==='blackjack'){await a.c.tableAction(key,'throw',{kind:'pins',pins:4});await check(a,d,key,['A','B','C','D']);await a.c.tableAction(key,'stand');}

@@ -125,6 +125,13 @@ test('TV hurdles show player names at occupied positions, matching the colored s
  assert.deepEqual([...root.querySelector('.ind-hurdle-split').children].map(x=>x.className),['hurdle-circuit','hurdle-scores','hurdle-rules']);
  const header=root.querySelector('.hurdle-tv-header'),fitArea=root.querySelector('.hurdle-tv-fit');
  assert.match(header.querySelector('h2').textContent,/Hindernislauf/);
+ assert.equal(header.querySelector('.hurdle-turn-score strong').textContent,'12');
+ const cards=[...header.querySelectorAll('.hurdle-throw-card')];
+ assert.equal(cards[0].querySelector('.hurdle-throw-card-top strong').textContent,'+3 Pkt.');
+ assert.match(cards[0].textContent,/Feld 15.*3 Holz/);
+ const far=f.document.createElement('div');
+ far.innerHTML=f.renderIndividualBoard({...s,scores:{...s.scores,Daniel:1}},{dashboard:true});
+ assert.match(far.querySelector('.hurdle-throw-card').textContent,/\+14 Pkt.*Feld 15.*Außer Wurfreichweite/);
  assert.equal(header.nextElementSibling,fitArea);
  assert.equal(fitArea.dataset.hurdleGame,s.id);
  assert.equal(fitArea.querySelector('h2,.ind-turn'),null);
