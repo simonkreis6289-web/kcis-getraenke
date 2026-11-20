@@ -72,6 +72,20 @@ function animateJumpMeter(previous,fill,now=Date.now()){
  fill.style.setProperty('--jump-delay',(started-now)+'ms');
  fill.classList.add('jump-tv-fill-moving');
 }
+function euroTvSummary(s,current,escape,money){
+ const last=s.history.findLast(entry=>entry.action==='throw');
+ const row=last?s.rows[last.name]?.at(-1):null;
+ const currentCard=s.active&&current?'<div class="euro-tv-current"><span>🎳 '+escape(current)+' · Am Wurf</span><strong>'+
+  money(Math.max(0,s.scores[current]))+'</strong><small>Restbetrag</small></div>':'';
+ if(!row)return '<section class="euro-tv-summary" aria-label="Spielkonto">'+currentCard+'</section>';
+ const type=row.kind==='gosse'?'Gosse':row.kind==='kranz'?'Kranz · '+row.pins+' Holz':row.kind==='miss'?'Vorbei':row.pins+' Holz';
+ const change=row.deltaCents,after=row.balance,before=after-change;
+ const signed=(change>0?'+':change<0?'−':'')+money(Math.abs(change));
+ return '<section class="euro-tv-summary" aria-label="Spielkonto">'+currentCard+
+  '<div class="euro-tv-last"><h3>Letzter Wurf · '+escape(last.name)+' · '+type+'</h3><div class="euro-tv-flow"><div><small>Vor dem Wurf</small><strong>'+money(before)+
+  '</strong></div><div class="euro-tv-delta '+(change>0?'is-plus':change<0?'is-minus':'')+'"><small>'+(change>0?'Zuschlag':change<0?'Abzug':'Ohne Änderung')+
+  '</small><strong>'+signed+'</strong></div><div><small>'+(after<0?'Rechenstand':'Restbetrag')+'</small><strong>'+money(after)+'</strong></div></div></div></section>';
+}
 /* Die gleiche Spieltafel wird in der App und auf dem TV verwendet. */
 function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
  if(!s?.id)return '';if(['poker','pfaelzer','tausend'].includes(s.gameKey))return renderClassicGameBoard(s,{controls});const g=window.KCRoundGames,key=s.gameKey,esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=v=>(v/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),number=n=>Number(n).toLocaleString('de-DE',{maximumFractionDigits:2}),current=window.KCExtraGames.current(s),party=key==='parteienspiel',jump=key==='hochsprung',euro=key==='dreieuro',end=s.round,begin=Math.max(1,end-5),rounds=Array.from({length:end-begin+1},(_,i)=>begin+i),name=n=>party?s.teamNames[n]:n;
@@ -95,6 +109,7 @@ function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
    body='<div class="jump-tv-stage">'+meter+body+'</div>';
   }
  }else{
+  if(euro&&dashboard)top=euroTvSummary(s,current,esc,money);
   if(key==='ebbeflut')top='<div class="round-tide round-tide-'+s.tide+'"><strong>Aktuell: '+({ebbe:'🌘 Ebbe · × 0,5',normal:'〰️ Normal · × 1',flut:'🌊 Flut · × 2'}[s.tide])+'</strong><span>3 → nächste Würfe halb · 5 → nächste Würfe einfach · 7 → sofort doppelt</span></div><div class="round-tide-legend" aria-label="Farben der Wurfwertung"><span class="round-tide-cell-ebbe">Ebbe · × 0,5</span><span class="round-tide-cell-normal">Normal · × 1</span><span class="round-tide-cell-flut">Flut · × 2</span></div>';
   turn+=' · '+(euro?'Wurf ':'Runde ')+s.round+' / '+(euro?s.config.throws:s.config.rounds);
   body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Kegler</th>'+rounds.map(r=>'<th>'+(euro?'Wurf ':'R')+r+'</th>').join('')+'<th>'+(euro?'Restbetrag':'Gesamt')+'</th><th>Würfe</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowPlayers.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+'><th>'+esc(n)+'</th>'+rounds.map(r=>{const v=s.rows[n][r-1],tide=key==='ebbeflut'&&v?(v.factor===.5?'ebbe':v.factor===2?'flut':'normal'):'';return '<td'+(tide?' class="round-tide-cell round-tide-cell-'+tide+'"':'')+'>'+(v?'<strong>'+(v.kind==='kranz'?'K('+v.pins+')':v.kind==='gosse'?'G':v.pins)+'</strong><small'+(tide?' class="round-tide-value"':'')+'>'+(euro?(v.deltaCents>0?'+':'')+money(v.deltaCents):(tide?{ebbe:'Ebbe',normal:'Normal',flut:'Flut'}[tide]+' · ':'')+'× '+number(v.factor)+' = '+number(v.result))+'</small>':'—')+'</td>';}).join('')+'<td><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+(euro?money(Math.max(0,s.scores[n])):number(s.scores[n]))+'</strong></td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table></div>';

@@ -19,6 +19,28 @@ test('3-Euro-Spiel uses adjustable prices, adds the exception surcharge and book
  s=roll(s,8,'kranz').state;assert.equal(s.scores.A,70);const out=roll(s,0,'gosse');assert(out.state.finished);assert.deepEqual(copy(out.effect.moneyAdded.map(x=>[x.personName,x.amountCents])),[['A',70],['B',60]]);assert.equal(out.state.finishPenalties.length,0);assert.equal(out.state.loserGroups.length,0);
  let negative=start('dreieuro',{throws:1,startCents:0});negative=roll(negative,9).state;const end=roll(negative,9);assert.equal(end.state.bookings.length,0);assert.equal(end.effect.moneyAdded.length,0);assert.equal(end.state.winners.length,2);
 });
+test('3-Euro-Spiel adds configured wood values, deducts other values and shows the amount change on TV',()=>{
+ let s=start('dreieuro',{throws:2,bonusPins:[3,7]});
+ s=roll(s,3).state;
+ assert.equal(s.scores.A,330);
+ const display=(state,dashboard=true)=>parseHTML(c.renderExtraGameBoard(state,{dashboard})).document;
+ const tv=display(s);
+ assert.match(tv.querySelector('.euro-tv-last h3').textContent,/A · 3 Holz/);
+ assert.match(tv.querySelector('.euro-tv-delta.is-plus strong').textContent,/^\+0,30/);
+ assert.match(tv.querySelector('.euro-tv-current strong').textContent,/^3,00/);
+ assert.equal(display(s,false).querySelector('.euro-tv-summary'),null);
+ s=roll(s,5).state;
+ assert.equal(s.scores.B,250);
+ assert.match(display(s).querySelector('.euro-tv-delta.is-minus strong').textContent,/^−0,50/);
+ s=roll(s,7).state;assert.equal(s.scores.A,400);
+ s=roll(s,0,'gosse').state;assert.equal(s.scores.B,300);
+ s=step(s,'undo').state;assert.equal(s.scores.B,250);
+ const legacy=start('dreieuro',{bonusPins:undefined,penaltyCents:75});
+ assert.equal(roll(legacy,5).state.scores.A,375);
+ const none=start('dreieuro',{bonusPins:[]});
+ assert.equal(roll(none,5).state.scores.A,250);
+ assert(!G.validSettings('dreieuro',{...G.defaults('dreieuro'),bonusPins:[3,3]}));
+});
 test('Ebbe und Flut preserves half points and applies 3/5 after the throw but 7 immediately',()=>{
  let s=start('ebbeflut',{rounds:3}),events=[];for(const n of [3,5,7,3,5,7]){const out=roll(s,n);s=out.state;events.push(s.history.at(-1));}
  assert.deepEqual(events.map(e=>e.result),[3,2.5,14,6,2.5,14]);assert.deepEqual(copy(s.scores),{A:19.5,B:22.5});assert.equal(s.tide,'flut');assert(s.finished);assert.deepEqual(copy(s.winners),['B']);
@@ -84,8 +106,11 @@ test('Hochsprung settings support zero and seven target fields; navigation hides
 test('new game settings save round variants and euro prices and keep each game independent',async()=>{
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();const input=(key,name,value)=>{const el=a.document.getElementById('round-'+key+'-'+name);if(el.tagName==='SELECT')Object.defineProperty(el,'value',{value,writable:true,configurable:true});else el.value=value;};
  input('parteienspiel','mode','lead');input('parteienspiel','rounds','3');input('parteienspiel','lead','8');assert(await a.c.saveRoundSettings('parteienspiel'));assert.equal(a.c.extraConfig('parteienspiel').mode,'lead');assert.equal(a.c.extraConfig('parteienspiel').rounds,3);assert.equal(a.c.extraConfig('parteienspiel').lead,8);
- for(const [name,value] of Object.entries({throws:'7',startCents:'4.50',pinCents:'0.15',penaltyCents:'0.75'}))input('dreieuro',name,value);assert(await a.c.saveRoundSettings('dreieuro'));assert.deepEqual(copy(a.c.extraConfig('dreieuro')),{kranzMode:'fixed',kranzValue:8,throws:7,startCents:450,pinCents:15,penaltyCents:75});
- input('ebbeflut','rounds','9');assert(await a.c.saveRoundSettings('ebbeflut'));assert.equal(a.c.extraConfig('ebbeflut').rounds,9);assert.equal(a.c.extraConfig('parteienspiel').rounds,3);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().extraGameSettings.dreieuro.pinCents,15);
+ for(const [name,value] of Object.entries({throws:'7',startCents:'4.50',pinCents:'0.15',penaltyCents:'0.75'}))input('dreieuro',name,value);
+ for(const checkbox of a.document.querySelectorAll('[data-euro-bonus-pin]'))checkbox.checked=['3','7'].includes(checkbox.dataset.euroBonusPin);
+ assert(await a.c.saveRoundSettings('dreieuro'));
+ assert.deepEqual(copy(a.c.extraConfig('dreieuro')),{kranzMode:'fixed',kranzValue:8,throws:7,startCents:450,pinCents:15,penaltyCents:75,bonusPins:[3,7]});
+ input('ebbeflut','rounds','9');assert(await a.c.saveRoundSettings('ebbeflut'));assert.equal(a.c.extraConfig('ebbeflut').rounds,9);assert.equal(a.c.extraConfig('parteienspiel').rounds,3);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().extraGameSettings.dreieuro.pinCents,15);assert.deepEqual(db.root().extraGameSettings.dreieuro.bonusPins,[3,7]);
 });
 test('Ebbe und Flut cells keep the color and readable label of their applied factor, including a Kranz',()=>{
  let state=start('ebbeflut',{rounds:4,kranzValue:12});for(const [pins,kind] of [[3,'pins'],[3,'pins'],[5,'pins'],[7,'pins'],[12,'kranz'],[5,'pins'],[4,'pins'],[3,'pins']])state=roll(state,pins,kind).state;

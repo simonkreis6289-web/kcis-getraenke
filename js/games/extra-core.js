@@ -2,12 +2,13 @@
 (() => {
  const keys=['parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend'],titles={poker:'Poker',pfaelzer:'Pfälzerspiel',tausend:'1000 in 9 Würfen',parteienspiel:'Parteienspiel',dreieuro:'3-Euro-Spiel',ebbeflut:'Ebbe und Flut',hochsprung:'Hochsprung'},icons={poker:'🃏',pfaelzer:'🎯',tausend:'🔢',parteienspiel:'⚖️',dreieuro:'💶',ebbeflut:'🌊',hochsprung:'🏅'},clone=x=>JSON.parse(JSON.stringify(x));
  const int=(n,lo,hi)=>Number.isSafeInteger(n)&&n>=lo&&n<=hi;
- function defaults(key){if(classicKeys.includes(key))return classicDefaults(key);return {kranzMode:'fixed',kranzValue:8,...(key==='parteienspiel'?{rounds:5,mode:'fixed',lead:5}:key==='dreieuro'?{throws:5,startCents:300,pinCents:10,penaltyCents:50}:key==='ebbeflut'?{rounds:5}:{targets:[12,14,16,17,18,19,20],missingPinCents:10,classicLosers:false})};}
+ function defaults(key){if(classicKeys.includes(key))return classicDefaults(key);return {kranzMode:'fixed',kranzValue:8,...(key==='parteienspiel'?{rounds:5,mode:'fixed',lead:5}:key==='dreieuro'?{throws:5,startCents:300,pinCents:10,penaltyCents:50,bonusPins:[5]}:key==='ebbeflut'?{rounds:5}:{targets:[12,14,16,17,18,19,20],missingPinCents:10,classicLosers:false})};}
  function validSettings(key,c){
   if(classicKeys.includes(key))return classicValid(key,c);
   if(!keys.includes(key)||!c||!['fixed','choose'].includes(c.kranzMode)||!int(c.kranzValue,1,12))return false;
   if(key==='parteienspiel')return int(c.rounds,1,100)&&['fixed','lead'].includes(c.mode)&&int(c.lead,1,10000);
-  if(key==='dreieuro')return int(c.throws,1,100)&&int(c.startCents,0,100000)&&int(c.pinCents,0,10000)&&int(c.penaltyCents,0,100000);
+  if(key==='dreieuro')return int(c.throws,1,100)&&int(c.startCents,0,100000)&&int(c.pinCents,0,10000)&&int(c.penaltyCents,0,100000)&&
+   (c.bonusPins===undefined||Array.isArray(c.bonusPins)&&c.bonusPins.length<=9&&new Set(c.bonusPins).size===c.bonusPins.length&&Array.from(c.bonusPins).every(n=>int(n,1,9)));
   if(key==='ebbeflut')return int(c.rounds,1,100);
   return Array.isArray(c.targets)&&c.targets.length<=7&&c.targets.every(n=>int(n,1,36))&&int(c.missingPinCents,0,10000)&&(c.classicLosers===undefined||typeof c.classicLosers==='boolean');
  }
@@ -132,7 +133,12 @@
    if(key==='parteienspiel'){
     e.team=s.participantTeams.T1.includes(e.name)?'T1':'T2';s.roundTotals[e.team]+=e.pins;s.rows[e.name].push({pins:e.pins,kind:e.kind});
    }else if(key==='dreieuro'){
-    const raised=e.kind==='gosse'||e.kind==='pins'&&e.pins===5,delta=raised?s.config.penaltyCents:-e.pins*s.config.pinCents;s.scores[e.name]+=delta;e.deltaCents=delta;s.rows[e.name].push({pins:e.pins,kind:e.kind,deltaCents:delta,balance:s.scores[e.name]});
+    const {bonusPins,pinCents,penaltyCents}=s.config;
+    const fixedSurcharge=e.kind==='gosse'||e.kind==='pins'&&bonusPins===undefined&&e.pins===5;
+    const add=e.kind==='pins'&&bonusPins?.includes(e.pins);
+    const delta=fixedSurcharge?penaltyCents:e.pins*pinCents*(add?1:-1);
+    s.scores[e.name]+=delta;e.deltaCents=delta;
+    s.rows[e.name].push({pins:e.pins,kind:e.kind,deltaCents:delta,balance:s.scores[e.name]});
    }else{
     const physical=e.kind==='pins';e.tideBefore=s.tide;if(physical&&e.pins===7)s.tide='flut';const factor=s.tide==='ebbe'?.5:s.tide==='flut'?2:1,result=e.pins*factor;e.factor=factor;e.result=result;
     s.scores[e.name]+=result;if(physical&&e.pins===3)s.tide='ebbe';else if(physical&&e.pins===5)s.tide='normal';e.tideAfter=s.tide;s.rows[e.name].push({pins:e.pins,kind:e.kind,result,factor});
@@ -150,7 +156,13 @@
   }
   s.history.push(e);
  }
- function summary(key,c){if(key==='poker')return '5 Würfe · bis zu '+c.maxExchange+' tauschen · Blattwertung ohne Stechen · Gleichstand teilt den Verliererrang';if(key==='pfaelzer')return c.rounds+' Runden · '+(c.strichCents/100).toFixed(2)+' € pro Strich · kein Stechen, keine Verliererstrafen';if(key==='tausend')return c.rounds+' Runden à 3 Würfe · Ziel '+c.target+' · Gosse '+c.gutterValue+' · '+Array.from({length:c.rounds},(_,i)=>'R'+(i+1)+': '+thousandModeLabel(thousandMode(c,i+1))).join(' / ');return key==='parteienspiel'?(c.mode==='lead'?'Mindestens '+c.rounds+' Runden · '+c.lead+' Punkte Vorsprung':c.rounds+' Runden')+' · Differenzpunkte je Runde':key==='dreieuro'?c.throws+' Würfe · Start '+(c.startCents/100).toFixed(2)+' € · '+(c.pinCents/100).toFixed(2)+' € pro Pin · +'+(c.penaltyCents/100).toFixed(2)+' € bei 5/Gosse':key==='ebbeflut'?c.rounds+' Runden · Ebbe ×½ · Normal ×1 · Flut ×2':c.targets.length+' Hürden: '+(c.targets.join(' → ')||'keine')+' · je höchstens 3 Würfe · '+(c.classicLosers?'1. Verlierer bei nicht geschaffter Hürde':(c.missingPinCents/100).toFixed(2)+' € je fehlendem Pin × verbleibende Hürden');}
+ function euroSummary(c){
+  const money=cents=>(cents/100).toFixed(2).replace('.',',')+' €';
+  const bonus=c.bonusPins===undefined?'Fester Zuschlag bei 5 und Gosse: '+money(c.penaltyCents):
+   (c.bonusPins.length?'Zuschlag bei '+c.bonusPins.join(', '):'Geldabzug bei allen Holzzahlen')+' · Gosse: +'+money(c.penaltyCents);
+  return c.throws+' Würfe · Start '+money(c.startCents)+' · '+money(c.pinCents)+' pro Pin · '+bonus;
+ }
+ function summary(key,c){if(key==='poker')return '5 Würfe · bis zu '+c.maxExchange+' tauschen · Blattwertung ohne Stechen · Gleichstand teilt den Verliererrang';if(key==='pfaelzer')return c.rounds+' Runden · '+(c.strichCents/100).toFixed(2)+' € pro Strich · kein Stechen, keine Verliererstrafen';if(key==='tausend')return c.rounds+' Runden à 3 Würfe · Ziel '+c.target+' · Gosse '+c.gutterValue+' · '+Array.from({length:c.rounds},(_,i)=>'R'+(i+1)+': '+thousandModeLabel(thousandMode(c,i+1))).join(' / ');return key==='parteienspiel'?(c.mode==='lead'?'Mindestens '+c.rounds+' Runden · '+c.lead+' Punkte Vorsprung':c.rounds+' Runden')+' · Differenzpunkte je Runde':key==='dreieuro'?euroSummary(c):key==='ebbeflut'?c.rounds+' Runden · Ebbe ×½ · Normal ×1 · Flut ×2':c.targets.length+' Hürden: '+(c.targets.join(' → ')||'keine')+' · je höchstens 3 Würfe · '+(c.classicLosers?'1. Verlierer bei nicht geschaffter Hürde':(c.missingPinCents/100).toFixed(2)+' € je fehlendem Pin × verbleibende Hürden');}
  window.KCRoundGames=Object.freeze({keys,titles,icons,defaults,validSettings,setup,play,summary,pokerHand,thousandMode,thousandModeLabel});
 })();
 

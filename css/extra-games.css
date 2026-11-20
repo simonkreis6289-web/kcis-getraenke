@@ -164,3 +164,16 @@
 .berg-tal-shot.is-low i { background:#d48c34; }
 .berg-tal-shot.is-result { color:#205640;background:#edf9f2;border-color:#a4ccb8; }
 .berg-tal-shot.is-result.is-negative { color:#8c3030;background:#fdeeee;border-color:#e5b4b4; }
+
+/* Spielkonto des 3-Euro-Spiels auf dem TV */
+.euro-tv-summary{display:flex;flex-wrap:wrap;gap:.6rem;margin:0 0 .7rem;color:#203d57}
+.euro-tv-current,.euro-tv-last{padding:.55rem .7rem;border:1px solid #c7d8e8;border-radius:.65rem;background:#eef5fb}
+.euro-tv-current{display:flex;flex:1 0 10ch;flex-direction:column;justify-content:center;gap:.15rem;background:#e0edf9}
+.euro-tv-current strong,.euro-tv-flow strong{font-size:clamp(20px,2.65vw,39px);line-height:1.12;font-variant-numeric:tabular-nums;white-space:nowrap}
+.euro-tv-current span,.euro-tv-last h3{font-size:clamp(12px,1.2vw,17px);font-weight:750}
+.euro-tv-last{flex:3 1 36ch;min-width:0}
+.euro-tv-last h3{margin:0 0 .35rem}
+.euro-tv-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}
+.euro-tv-flow>div{display:flex;flex-direction:column;justify-content:center;gap:.1rem;padding:.3rem .4rem;background:#fff;border-radius:.35rem}
+.euro-tv-flow>.is-plus{background:#ffebcf;color:#824500}
+.euro-tv-flow>.is-minus{background:#deefe8;color:#185642}
