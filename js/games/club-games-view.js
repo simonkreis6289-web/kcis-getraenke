@@ -34,6 +34,11 @@ function abschreibungDisplayOrder(active,current,last){
  const first=last&&last.name!==current?last.name:active.at(-1);
  return [...new Set([first,current,...active].filter(Boolean))];
 }
+function abschreibungRule(config){
+ const numbers=window.KCClubGames.selfPins(config);
+ const own=numbers.length?'Gegen dich zählen: '+numbers.join(', ')+'. ':'';
+ return own+(config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
+}
 function abschreibungBoard(s,active,last,impact){
  const escape=clubGameEscape;
  const current=window.KCClubGames.current(s),target=active.at(-1);
@@ -45,15 +50,27 @@ function abschreibungBoard(s,active,last,impact){
    (label?'<small>'+label+'</small>':'')+'</span><span class="abschreibung-meter" aria-hidden="true"><span style="width:'+percent+'%"></span></span>'+
    '<span class="abschreibung-points"><b>'+points+'</b> Pkt.</span></li>';
  }).join('');
- const rule='Eine geworfene 6 zählt gegen dich. '+(s.config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
+ const rule=abschreibungRule(s.config);
  return '<div class="abschreibung-layout"><div><ol class="abschreibung-order" aria-label="Punktestand"'+(globalThis.window?.KCPlayerRows?.group?.('abschreibung',s,{simpleMotion:true})||'')+'>'+rows+'</ol>'+abschreibungEliminated(s)+
   '</div><aside class="abschreibung-details">'+(impact||'')+'<p>'+rule+'</p></aside></div>';
 }
 // Keep the booked results separate from the turn order held on the TV.
-const ABSCHREIBUNG_POINTS_MS=1650;
+const ABSCHREIBUNG_POINTS_MS=1650,ABSCHREIBUNG_SHRINK_MS=700,ABSCHREIBUNG_RANK_MS=720;
+function abschreibungRanking(s){
+ return s.players.map((name,index)=>({name,index,points:s.scores[name]}))
+  .sort((a,b)=>b.points-a.points||a.index-b.index);
+}
+function abschreibungRankChanges(before,after){
+ const previous=new Map(abschreibungRanking(before).map(({name},index)=>[name,index]));
+ if(previous.size!==after.players.length||after.players.some(name=>!previous.has(name)))return new Map();
+ return new Map(abschreibungRanking(after).flatMap(({name},index)=>{
+  const shift=previous.get(name)-index;
+  return shift?[[name,shift]]:[];
+ }));
+}
 function createAbschreibungTvPlayback(schedule=setTimeout,cancel=clearTimeout){
  let previous=null,frame=null,timer=null;
- return function update(state,repaint,reducedMotion=false,holdMs=1500){
+ return function update(state,repaint,reducedMotion=false,pauseMs=2500){
   const old=previous;
   previous=state;
   if(!state||state.id!==old?.id||state.revision<old.revision||reducedMotion){
@@ -61,12 +78,15 @@ function createAbschreibungTvPlayback(schedule=setTimeout,cancel=clearTimeout){
   }
   if(state.revision!==old.revision){
    cancel(timer);timer=null;frame=null;
-   const shot=state.history.at(-1);
+   const shot=state.history.at(-1),ranks=abschreibungRankChanges(old,state);
+   const finish=()=>{frame=null;timer=null;repaint();};
    if(old.active&&state.history.length===old.history.length+1&&shot?.action==='throw'&&
       (old.history.at(-1)?.id??null)===(state.history.at(-2)?.id??null)){
-    const pointsMs=shot.amount>0?ABSCHREIBUNG_POINTS_MS:0;
-    frame={before:old,shot,startedAt:Date.now(),holding:holdMs>0,points:pointsMs>0};
-    const finish=()=>{frame=null;timer=null;repaint();};
+    const deducted=old.scores[shot.target]>state.scores[shot.target];
+    const pointsMs=deducted?ABSCHREIBUNG_POINTS_MS:0;
+    const turnChanged=state.finished||window.KCClubGames.current(old)!==window.KCClubGames.current(state);
+    const holdMs=turnChanged?pauseMs+(deducted?ABSCHREIBUNG_SHRINK_MS:0):0;
+    frame={before:old,shot,ranks,startedAt:Date.now(),holding:holdMs>0,points:pointsMs>0};
     const first=Math.min(holdMs||Infinity,pointsMs||Infinity);
     const last=Math.max(holdMs,pointsMs);
     if(!last)frame=null;
@@ -76,6 +96,9 @@ function createAbschreibungTvPlayback(schedule=setTimeout,cancel=clearTimeout){
      timer=schedule(finish,last-first);
      repaint();
     },first);
+   }else if(state.active&&ranks.size){
+    frame={before:old,ranks,startedAt:Date.now(),holding:false,points:false};
+    timer=schedule(finish,ABSCHREIBUNG_RANK_MS);
    }
   }
   return frame;
@@ -106,22 +129,27 @@ function abschreibungTvBoard(s,frame,impact){
    escape(name)+'</strong>'+(name===current?'<small>Am Wurf</small>':'')+'</span>'+score.meter+
    '<span class="abschreibung-points">'+score.value+' Pkt.'+(score.changed?badge:'')+'</span></li>';
  }).join('');
- const thrower=s.active&&!s.finished?window.KCClubGames.current(s):'';
- const ranked=s.players.map((name,index)=>({name,index,points:s.scores[name]}))
-  .sort((a,b)=>b.points-a.points||a.index-b.index);
+ const thrower=shown.active&&!shown.finished?current:'';
+ const throwTarget=thrower?active.at(-1):'';
+ const ranked=abschreibungRanking(s);
+ const rankDelay=frame?.shot&&scoredBefore.scores[frame.shot.target]>s.scores[frame.shot.target]?ABSCHREIBUNG_SHRINK_MS:0;
  const percent=points=>100*points/s.config.startPoints+'%';
  const columns=ranked.map(({name,points})=>{
-  const isCurrent=name===thrower,shrinking=name===target&&deduction>0;
+  const isCurrent=name===thrower,isTarget=name===throwTarget&&!isCurrent,shrinking=name===target&&deduction>0;
+  const shift=frame?.ranks?.get(name)||0;
+  const role=isCurrent?' · Am Wurf':isTarget?' · Wurfziel':'';
   const from=shrinking?';--abschreibung-before:'+percent(scoredBefore.scores[name]):'';
   const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'column')||'')+'>'+points+'</b>';
-  return '<li'+(isCurrent?' class="is-current" aria-current="true"':'')+'>'+
+  return '<li class="'+(isCurrent?'is-current':isTarget?'is-target':'')+(shift?' abschreibung-chart-move':'')+'"'+
+   (isCurrent?' aria-current="true"':'')+ (shift?' style="--abschreibung-shift:'+(shift*100)+'%"':'')+'>'+
    '<span class="abschreibung-chart-value">'+value+'</span>'+
    '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill'+(shrinking?' abschreibung-chart-drop':'')+
     '" aria-hidden="true" style="height:'+percent(points)+from+'"></span>'+
-   '<span class="abschreibung-chart-name" title="'+escape(name+(isCurrent?' · Am Wurf':''))+'">'+escape(name)+'</span></span></li>';
+   '<span class="abschreibung-chart-name" title="'+escape(name+role)+'">'+escape(name)+'</span></span></li>';
  }).join('');
- const rule='Eine geworfene 6 zählt gegen dich. '+(s.config.woodRequired?'Bei einer Gosse wiederholst du den Wurf.':'Eine Gosse kostet dich 9 Punkte.');
- return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms"><div class="abschreibung-tv-stand"><ol class="abschreibung-order" aria-label="Punktestand"'+(globalThis.window?.KCPlayerRows?.group?.('abschreibung',shown,{motionOnly:true})||'')+'>'+rows+'</ol>'+abschreibungEliminated(shown,order.includes(target)?undefined:target,badge)+
+ const rule=abschreibungRule(s.config);
+ return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms;--abschreibung-shrink-duration:'+ABSCHREIBUNG_SHRINK_MS+
+  'ms;--abschreibung-rank-duration:'+ABSCHREIBUNG_RANK_MS+'ms;--abschreibung-rank-delay:'+rankDelay+'ms"><div class="abschreibung-tv-stand"><ol class="abschreibung-order" aria-label="Punktestand"'+(globalThis.window?.KCPlayerRows?.group?.('abschreibung',shown,{motionOnly:true})||'')+'>'+rows+'</ol>'+abschreibungEliminated(shown,order.includes(target)?undefined:target,badge)+
   '</div><aside class="abschreibung-details"><div class="abschreibung-tv-last">'+(impact||'<p>Noch kein Wurf</p>')+'</div><p>'+rule+'</p>'+
   '<section class="abschreibung-chart" aria-label="Restpunkte je Kegler"><h3>Restpunkte</h3>'+
   '<ul style="--abschreibung-columns:'+s.players.length+'">'+columns+'</ul></section></aside></div>';

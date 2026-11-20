@@ -40,7 +40,7 @@ test('real app saves panel choices and ordering, reloads them and keeps them on 
   const field=a.document.getElementById('dashboard-mensch-popup-'+key);
   field.value=value;field.oninput();
  }
- for(const [id,value] of [['dashboard-table-height-left','67'],['dashboard-table-height-right','35'],['dashboard-station-seconds','8']]){
+ for(const [id,value] of [['dashboard-table-height-left','67'],['dashboard-table-height-right','35'],['dashboard-station-seconds','8'],['dashboard-abschreibung-pause','3.2']]){
   const field=a.document.getElementById(id);
   field.value=value;field.oninput();
  }
@@ -49,6 +49,7 @@ test('real app saves panel choices and ordering, reloads them and keeps them on 
  assert.deepEqual(copy(a.db.root().dashboardSettings.menschPopup),{seconds:4,color:'#19447a'});
  assert.deepEqual(copy(a.db.root().dashboardSettings.tableHeight),{left:67,right:35});
  assert.equal(a.db.root().dashboardSettings.eventToasts.stationSeconds,8);
+ assert.equal(a.db.root().dashboardSettings.abschreibungPause,3.2);
  const b=fullApp(a.db);await b.select();assert.equal(b.document.getElementById('dashboard-lotto-animation-hit').value,'2.4');assert.equal(b.document.getElementById('dashboard-show-drinks').checked,false);assert.equal(b.document.getElementById('game-row-hold-seconds').value,'2.4');assert.equal(b.document.getElementById('game-row-move-seconds').value,'1.1');assert.equal(b.document.getElementById('dashboard-position-seating').value,'left-top');const saved=copy(b.db?.root?.()?.dashboardSettings||a.db.root().dashboardSettings);assert(await b.c.startNewKegelabend());assert(await b.c.KCSharedSync.waitForUpload());assert.deepEqual(a.db.root().dashboardSettings,saved);
 });
 test('ticker birthday window ends at the next bowling date, includes every matching birthday, and does not stop at an earlier tour',()=>{
