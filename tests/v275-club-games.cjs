@@ -104,6 +104,22 @@ test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before
  assert.match(html.querySelector('.club-game-impact').textContent,/D: 24 → 26 Punkte/);
  f.run('undo');assert.equal(g.current(f.s),'D');
 });
+test('Lottokönig keeps reached numbers green, marks misses red and shows the next gap',()=>{
+ const f=game('lottokoenig',{},['A','B']);
+ for(const name of ['A','B'])f.run('numbers',{numbers:[4,12,20,28,36,44]});
+ for(const n of [4,1,9,2])f.roll('pins',n);
+ const board=parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true})).document;
+ const panel=board.querySelector('.club-lotto-turn');
+ assert.match(panel.querySelector('header').textContent,/A.*Wurf 3/);
+ assert.equal(panel.querySelector('.is-hit').textContent,'4');
+ assert.equal(panel.querySelector('.is-missed').textContent,'12');
+ assert.equal(panel.querySelector('.is-next').textContent,'20');
+ assert.match(panel.querySelector('.club-lotto-turn-stats').textContent,/13 Holz gesamt.*7 Holz bis zur 20/);
+ for(const n of [9,1,9,1,9,1,9,1])f.roll('pins',n);
+ const over=parseHTML(c.renderClubGameBoard(f.s)).document.querySelector('.club-lotto-turn');
+ assert.match(over.textContent,/Keine Glückszahl mehr offen/);
+ assert.equal(over.querySelector('.is-next'),null);
+});
 test('Tageskurs calculates and replays only the standing pins at configured prices',()=>{
  const f=game('tageskurs',{pinCents:[101,20,30,40,50,60,70,80,90],divisor:2},['A','B']);
  assert.throws(()=>f.run('throw',{kind:'pins',knocked:[2,2]}),/gefallenen Kegel/);

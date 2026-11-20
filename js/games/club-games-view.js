@@ -100,10 +100,28 @@ function abschreibungTvBoard(s,frame,impact){
   '</div><aside class="abschreibung-details"><div class="abschreibung-tv-last">'+(impact||'<p>Noch kein Wurf</p>')+'</div><p>'+rule+'</p>'+
   '<ol class="abschreibung-tv-trail" aria-label="Letzte und aktuelle Werfer">'+trail+'</ol></aside></div>';
 }
+function clubLottoBalls(ticket,score,next=null){
+ if(!ticket)return '—';
+ return ticket.numbers.map(number=>{
+  const hit=ticket.hits.includes(number),missed=!hit&&number<score;
+  const status=hit?'is-hit':missed?'is-missed':number===next?'is-next':'';
+  const label=hit?' getroffen':missed?' übersprungen':number===next?' · nächste Glückszahl':'';
+  return '<span class="'+status+'" aria-label="'+number+label+'">'+number+'</span>';
+ }).join('');
+}
+function clubLottoTurn(s,current,phase){
+ const ticket=s.tickets[current],score=s.scores[current];
+ const next=ticket.numbers.find(number=>number>score);
+ return '<section class="club-lotto-turn" aria-label="Glückszahlen des aktiven Werfers"><header><strong>🎳 '+clubGameEscape(current)+
+  '</strong><small>'+phase+'</small></header><div class="club-lotto-turn-body"><div class="club-lotto-balls">'+clubLottoBalls(ticket,score,next)+'</div>'+
+  '<div class="club-lotto-turn-stats"><span><b'+(globalThis.window?.KCPlayerRows?.score?.(current,'lotto-turn')||'')+'>'+score+
+  '</b> Holz gesamt</span>'+(next===undefined?'<span>Keine Glückszahl mehr offen</span>':'<span>Noch <b>'+(next-score)+'</b> Holz bis zur <b>'+next+'</b></span>')+
+  '</div></div></section>';
+}
 function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=null}={}){
  const g=window.KCClubGames,key=s.gameKey,current=g.current(s),escape=clubGameEscape,money=clubGameMoney;
  const last=s.history.findLast(e=>e.action==='throw');
- let phase='',body='',visual='',impact='',turnDetail='';
+ let phase='',body='',visual='',impact='',turnDetail='',showTurn=true;
  if(key==='abschreibung'){
   phase='Runde '+s.round;
   if(last){
@@ -128,13 +146,17 @@ function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=nu
   });
  }else if(key==='lottokoenig'){
   phase=s.phase==='numbers'?'Glückszahlen eingeben':'Wurf '+((s.rows[current]?.length||0)+1)+' / 13';
+  if(s.active&&s.phase==='throw'&&s.tickets[current]){
+   visual=clubLottoTurn(s,current,phase);
+   showTurn=false;
+  }
   if(last){
    const points=s.scores[last.name],row=s.rows[last.name].at(-1);
    impact=clubGameImpact(last,escape(last.name),points-last.pins,points,row.hit?'Glückszahl '+points+' getroffen':'Keine neue Glückszahl');
   }
   body=clubGameTable(s,['Glückszahlen','Treffer','Holz','Würfe'],n=>{
    const ticket=s.tickets[n],score=s.scores[n];
-   return '<td><div class="club-lotto-balls">'+(ticket?.numbers.map(v=>'<span class="'+(ticket.hits.includes(v)?'is-hit':'')+'" aria-label="'+v+(ticket.hits.includes(v)?' getroffen':'')+'">'+v+'</span>').join('')||'—')+
+   return '<td><div class="club-lotto-balls">'+clubLottoBalls(ticket,score)+
     '</div></td><td>'+(ticket?.hits.length||0)+' / 6</td><td><span'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+score+'</span>'+(score>=49?' <span title="Ziel erreicht">✓</span>':'')+'</td><td>'+s.rows[n].length+' / 13</td>';
   });
  }else if(key==='tageskurs'){
@@ -160,7 +182,7 @@ function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=nu
  }
  const animatedTv=dashboard&&key==='abschreibung'&&(s.active||abschreibungFrame);
  return '<section class="ind-board extra-board club-game-board" data-extra-game="'+key+'">'+(animatedTv?'<div class="abschreibung-tv-round">'+phase+'</div>':s.active?
-  key==='swingerclub'&&controls?'':'<div class="ind-turn extra-turn">'+(current?'🎳 '+escape(current)+' · ':'')+phase+turnDetail+'</div>':
+  !showTurn||key==='swingerclub'&&controls?'':'<div class="ind-turn extra-turn">'+(current?'🎳 '+escape(current)+' · ':'')+phase+turnDetail+'</div>':
   '<p class="club-game-highlight">Spiel beendet'+(key==='swingerclub'&&s.winners.length?' · 🏆 '+s.winners.map(escape).join(' · '):'')+'</p>')+
   controls+visual+body+impact+'<p class="ind-help">'+escape(g.summary(key,s.config))+'</p></section>';
 }
