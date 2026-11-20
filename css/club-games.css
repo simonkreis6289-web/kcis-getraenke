@@ -139,7 +139,7 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-tv-stand { display:flex;flex-direction:column;min-width:0; }
 .abschreibung-tv-stand .abschreibung-order { grid-auto-rows:minmax(min-content,1fr);flex:1; }
 .abschreibung-tv-stand .abschreibung-row.is-deducted { border-color:#df946f; }
-.abschreibung-tv-last { text-align:right; }
+.abschreibung-tv-last { position:relative;text-align:right; }
 .abschreibung-tv-last .club-game-impact { border-left:0;border-right:4px solid #26708f; }
 .abschreibung-tv-layout .abschreibung-details { display:flex;flex-direction:column; }
 .abschreibung-tv-trail { display:grid;gap:.55rem;margin:0;padding:0;list-style:none; }
@@ -147,9 +147,10 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-tv-person.is-current { background:#e0f3fd;border-color:#8cc3df; }
 .abschreibung-tv-person strong,.abschreibung-tv-person small { display:block;overflow-wrap:anywhere; }
 .abschreibung-tv-person small { font-size:.74em;color:#3e5b72; }
-.abschreibung-flying-points { position:absolute;z-index:1;right:clamp(4.25rem,8vw,7.5rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly .82s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
+.abschreibung-flying-points { position:absolute;z-index:1;right:clamp(4.25rem,8vw,7.5rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly var(--abschreibung-points-duration) ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
+.abschreibung-tv-last .abschreibung-flying-points { right:auto;left:.65rem; }
 .abschreibung-meter-drop { animation:abschreibung-drop .44s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
-@keyframes abschreibung-fly { 0% {opacity:0;transform:translate(2rem,1.6rem) scale(.7)} 30%,68% {opacity:1;transform:translate(0,-50%)} 100% {opacity:0;transform:translate(2.8rem,-50%)} }
+@keyframes abschreibung-fly { 0% {opacity:0;transform:translate(2rem,1.6rem) scale(.7)} 15%,84% {opacity:1;transform:translate(0,-50%)} 100% {opacity:0;transform:translate(2.8rem,-50%)} }
 @keyframes abschreibung-drop { from {width:var(--abschreibung-before)} }
 @media(max-width:640px) { .abschreibung-tv-layout { grid-template-columns:minmax(0,1fr); } }
 

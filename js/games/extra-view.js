@@ -36,7 +36,9 @@ function pfaelzerTable(s,players,current,money){
    const count=s.scores[name],number=s.ownNumbers[name];
    const marks=count<=10?'<span aria-hidden="true" class="pfaelzer-marks">'+Array.from({length:count},()=>'<i></i>').join('')+'</span>':'';
    return '<tr'+(globalThis.window?.KCPlayerRows?.row?.(name)||'')+(s.active&&name===current?' class="pfaelzer-current"':'')+'><th scope="row">'+indPokerEscape(name)+'</th><td>'+
-    (number?'<span class="pfaelzer-ball">'+number+'</span>':'—')+'</td><td><span class="pfaelzer-strikes">'+marks+'<strong'+(globalThis.window?.KCPlayerRows?.score?.(name)||'')+'>'+count+'</strong></span></td><td>'+
+    (number?'<span class="pfaelzer-ball">'+number+'</span>':'—')+'</td><td><span class="pfaelzer-strikes">'+
+    '<span class="pfaelzer-gain-slot"><span class="pfaelzer-gain" data-pfaelzer-gain="'+count+'" aria-hidden="true" hidden></span></span>'+
+    marks+'<strong'+(globalThis.window?.KCPlayerRows?.score?.(name)||'')+'>'+count+'</strong></span></td><td>'+
     money(count*s.config.strichCents)+'</td><td>'+s.rows[name].length+'</td></tr>';
   }).join('')+'</tbody></table>';
 }

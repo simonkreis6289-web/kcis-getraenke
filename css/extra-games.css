@@ -133,6 +133,12 @@
 .pfaelzer-table tbody tr:nth-child(even):not(.pfaelzer-current) > * { background:#f2f6fb; }
 .pfaelzer-table .pfaelzer-current th { box-shadow:inset .26rem 0 #2783ac; }
 .pfaelzer-strikes,.pfaelzer-marks { display:inline-flex;align-items:center;gap:.3rem;vertical-align:middle; }
+.pfaelzer-gain-slot { display:inline-flex;align-items:center;justify-content:center;width:1.7rem;height:1.5rem;flex:none; }
+.pfaelzer-gain:not([hidden]) { display:inline-grid;place-items:center;min-width:1.45rem;height:1.45rem;padding:0 .11rem;border-radius:50%;background:radial-gradient(circle at 30% 25%,#d9735d,#a03526 70%);color:#fff;font-size:.72rem;font-weight:850;line-height:1;box-shadow:0 1px 4px #872a3440; }
+@media(prefers-reduced-motion:no-preference) {
+ .pfaelzer-gain:not([hidden]) { animation:pfaelzer-gain-in .18s ease-out both; }
+}
+@keyframes pfaelzer-gain-in { from { opacity:0;transform:scale(.8); } to { opacity:1;transform:scale(1); } }
 .pfaelzer-marks i { width:.14rem;height:.8em;border-radius:.08rem;background:#ad493c;transform:skew(-10deg); }
 .pfaelzer-marks i:nth-child(5n) { margin-right:.16rem; }
 .pfaelzer-strikes strong { color:#873527;font-variant-numeric:tabular-nums; }
