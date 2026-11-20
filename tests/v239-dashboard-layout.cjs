@@ -32,8 +32,14 @@ test('real app saves panel choices and ordering, reloads them and keeps them on 
   const field=a.document.getElementById('dashboard-lotto-animation-'+key);
   field.value=value;field.oninput();
  }
+ assert.deepEqual(copy(M.menschPopup({seconds:50,color:'invalid'})),{seconds:30,color:'#ffd36a'});
+ for(const [key,value] of [['seconds','4'],['color','#19447a']]){
+  const field=a.document.getElementById('dashboard-mensch-popup-'+key);
+  field.value=value;field.oninput();
+ }
  const check=a.document.getElementById('dashboard-show-drinks');check.checked=false;check.onchange();const select=a.document.getElementById('dashboard-position-seating');for(const option of select.querySelectorAll('option'))if(option.value==='left-top')option.setAttribute('selected','');else option.removeAttribute('selected');select.onchange();const counters=people=>people.map(p=>({name:p.name,drinks:p.drinks,strafen:p.strafen,paid:p.paid,freeStrafen:p.freeStrafen,rounds:p.rounds,boughtThrows:p.boughtThrows})),people=copy(counters(a.db.root().persons));assert(await a.c.KCDashboardSettingsApp.save());assert(await a.c.KCSharedSync.waitForUpload());assert.equal(a.db.root().dashboardSettings.panels.drinks.enabled,false);assert.equal(a.db.root().dashboardSettings.panels.seating.position,'left-top');assert.deepEqual(counters(a.db.root().persons),people);assert.deepEqual(copy(a.db.root().dashboardSettings.playerRows),{holdSeconds:2.4,moveSeconds:1.1});
  assert.deepEqual(copy(a.db.root().dashboardSettings.lottoAnimations),{hit:2.4,miss:0});
+ assert.deepEqual(copy(a.db.root().dashboardSettings.menschPopup),{seconds:4,color:'#19447a'});
  const b=fullApp(a.db);await b.select();assert.equal(b.document.getElementById('dashboard-lotto-animation-hit').value,'2.4');assert.equal(b.document.getElementById('dashboard-show-drinks').checked,false);assert.equal(b.document.getElementById('game-row-hold-seconds').value,'2.4');assert.equal(b.document.getElementById('game-row-move-seconds').value,'1.1');assert.equal(b.document.getElementById('dashboard-position-seating').value,'left-top');const saved=copy(b.db?.root?.()?.dashboardSettings||a.db.root().dashboardSettings);assert(await b.c.startNewKegelabend());assert(await b.c.KCSharedSync.waitForUpload());assert.deepEqual(a.db.root().dashboardSettings,saved);
 });
 test('ticker birthday window ends at the next bowling date, includes every matching birthday, and does not stop at an earlier tour',()=>{

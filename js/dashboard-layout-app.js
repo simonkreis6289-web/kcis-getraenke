@@ -100,6 +100,17 @@
    label.append(document.createTextNode(title+' '),input,document.createTextNode(' Sekunden · 0 = aus'));
    box.append(label);
   }
+  box.append(element('h3','Mensch ärgere dich nicht'));
+  const menschDuration=element('label',undefined,'dashboard-popup-option');
+  menschDuration.htmlFor='dashboard-mensch-popup-seconds';
+  menschDuration.append(document.createTextNode('Rauswurf-Popup anzeigen für '),
+   duration(menschDuration.htmlFor,draft.menschPopup.seconds,0,30,value=>draft.menschPopup.seconds=value),
+   document.createTextNode(' Sekunden · 0 = aus'));
+  const menschColor=element('label',undefined,'dashboard-popup-option'),menschPicker=element('input');
+  menschPicker.type='color';menschPicker.id='dashboard-mensch-popup-color';menschPicker.value=draft.menschPopup.color;menschPicker.disabled=busy;
+  menschPicker.oninput=()=>{draft.menschPopup.color=menschPicker.value;};
+  menschColor.htmlFor=menschPicker.id;menschColor.append(document.createTextNode('Hintergrundfarbe des Rauswurf-Popups '),menschPicker);
+  box.append(menschDuration,menschColor);
   box.append(element('h3','Weitere TV-Toasts'),element('p','Neue Meldungen erscheinen erst nach einer tatsächlichen Änderung. Beim Öffnen des Dashboards werden alte Ereignisse nicht nachgespielt.'));
   for(const [key,title] of [['arrival','👋 Mitglied/Gast wird als Da markiert'],['departure','🚪 Mitglied/Gast wird als weg markiert'],['round','🍻 Eine Person gibt eine Runde (Prost!)'],['loser','🏅 1., 2. oder 3. Verlierer'],['teamLoss','🏆 Verliererteam'],['station','🍺 KC Theke · Buchungen']]){
    const line=element('div',undefined,'dashboard-event-toast-color-row'),label=element('label',undefined,'dashboard-popup-option'),checkbox=element('input');
