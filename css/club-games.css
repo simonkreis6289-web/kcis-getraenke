@@ -147,14 +147,25 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-tv-person.is-current { background:#e0f3fd;border-color:#8cc3df; }
 .abschreibung-tv-person strong,.abschreibung-tv-person small { display:block;overflow-wrap:anywhere; }
 .abschreibung-tv-person small { font-size:.74em;color:#3e5b72; }
-.abschreibung-flying-points { position:absolute;z-index:1;right:clamp(4.25rem,8vw,7.5rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly .82s ease-out both; }
-.abschreibung-score-swap { display:inline-grid; }
-.abschreibung-score-swap span { grid-area:1/1;text-align:right; }
-.abschreibung-score-swap span:first-child { animation:abschreibung-hide .01s .52s both; }
-.abschreibung-score-swap span:last-child { animation:abschreibung-show .01s .52s both; }
-.abschreibung-meter-drop { animation:abschreibung-drop .42s .47s ease-out both; }
+.abschreibung-flying-points { position:absolute;z-index:1;right:clamp(4.25rem,8vw,7.5rem);top:50%;padding:.12rem .45rem;border-radius:.55rem;background:#9e3927;color:#fff;white-space:nowrap;animation:abschreibung-fly .82s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
+.abschreibung-meter-drop { animation:abschreibung-drop .44s ease-out both;animation-delay:calc(0ms - var(--abschreibung-elapsed,0ms)); }
 @keyframes abschreibung-fly { 0% {opacity:0;transform:translate(2rem,1.6rem) scale(.7)} 30%,68% {opacity:1;transform:translate(0,-50%)} 100% {opacity:0;transform:translate(2.8rem,-50%)} }
-@keyframes abschreibung-hide { to {visibility:hidden} }
-@keyframes abschreibung-show { from {visibility:hidden} }
 @keyframes abschreibung-drop { from {width:var(--abschreibung-before)} }
 @media(max-width:640px) { .abschreibung-tv-layout { grid-template-columns:minmax(0,1fr); } }
+
+/* Spielerzeilen behalten die Tabellenstruktur und sind als einzelne Karten lesbar. */
+tbody[data-player-rows] > tr > * { border-top:1px solid #dce6f0; }
+tbody[data-player-rows] > tr > :first-child { border-left:1px solid #dce6f0;border-radius:.45rem 0 0 .45rem; }
+tbody[data-player-rows] > tr > :last-child { border-right:1px solid #dce6f0;border-radius:0 .45rem .45rem 0; }
+
+.club-lotto-balls .is-missed { background:#f8dedc;border-color:#c47771;color:#7d201a; }
+.club-lotto-balls .is-next { border:2px solid #2d7caa;box-shadow:0 0 0 .16rem #cce6f4; }
+.club-lotto-turn { max-width:54rem;margin:0 auto .75rem;border:1px solid #bdcfde;border-radius:.85rem;background:#f3f8fc;color:#153650; }
+.club-lotto-turn header { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem .85rem;padding:.55rem .85rem;background:#203e5d;color:#fff;border-radius:.8rem .8rem 0 0; }
+.club-lotto-turn header strong { font-size:clamp(1.05rem,2vw,1.55rem); }
+.club-lotto-turn-body { padding:.65rem .7rem; }
+.club-lotto-turn .club-lotto-balls { gap:clamp(.3rem,1.4vw,.8rem); }
+.club-lotto-turn .club-lotto-balls > span { width:2.2em;height:2.2em;font-size:clamp(1rem,2.4vw,1.7rem);font-weight:800; }
+.club-lotto-turn-stats { display:flex;justify-content:center;flex-wrap:wrap;gap:.45rem 1.25rem;margin-top:.6rem;text-align:center; }
+.club-lotto-turn-stats b { font-size:1.22em;font-variant-numeric:tabular-nums; }
+.club-lotto-done { display:inline-block;padding:.1rem .35rem;border-radius:.4rem;background:#e3f1e8;color:#25513c;font-weight:700; }

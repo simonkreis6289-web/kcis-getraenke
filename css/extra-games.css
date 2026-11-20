@@ -139,3 +139,4 @@
 .pfaelzer-final-round { margin:.3rem 0 .65rem;color:#315471;font-weight:800; }
 #game-body .pfaelzer-table td,#game-body .pfaelzer-table th { padding:.32rem .6rem;font-size:clamp(.95rem,1.25vw,1.25rem); }
 @media(max-width:520px) { .pfaelzer-numbers { grid-template-columns:repeat(5,minmax(0,1fr)); } }
+.pfaelzer-ball.is-unassigned { background:radial-gradient(circle at 31% 23%,#ec7d72,#a92d24 66%,#781f18);color:#fff; }

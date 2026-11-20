@@ -40,3 +40,77 @@ for(const key of keys)test(key+': real app and TV move rows with the actual turn
 });
 test('Blackjack card editing follows the named player after card reveal rotates the table',{timeout:60000},async()=>{const a=await app();await a.c.startTableGame('blackjack');for(const name of ['A','B','C','D']){await a.c.tableAction('blackjack','throw',{kind:'pins',pins:4});await a.c.tableAction('blackjack','stand');}const d=tv(a.db);await a.c.tableAction('blackjack','card',{value:2});await check(a,d,'blackjack',['B','C','D','A']);const row=[...a.document.querySelectorAll('#tab-blackjack .tg-table-scroll tbody tr')].find(r=>r.querySelector('th').textContent==='A');assert.equal(row.querySelector('.bj-card-edit').getAttribute('onclick'),'tableEditCard(0)');await a.c.tableAction('blackjack','card',{value:3});await check(a,d,'blackjack',['C','D','A','B']);const rowB=[...a.document.querySelectorAll('#tab-blackjack .tg-table-scroll tbody tr')].find(r=>r.querySelector('th').textContent==='B');assert.equal(rowB.querySelector('.bj-card-edit').getAttribute('onclick'),'tableEditCard(1)');});
 test('house-number tables keep their existing seat order even when the next player is B',{timeout:60000},async()=>{const a=await app(),d=tv(a.db);for(const mode of ['hoch','tief']){await a.c.startHausGame(mode);await a.c.hausThrow(mode,4,false,0);assert(await a.c.KCSharedSync.waitForUpload());d.update();const key='haus'+mode;assert.deepEqual(names(a.document,'#tab-'+key+' tbody tr'),['A','B','C','D']);assert.deepEqual(names(d.document,'#game-body table tbody tr'),['A','B','C','D']);assert.equal(a.c.gameSetupState(key).currentPlayerIndex,1);}});
+
+test('animated rows show the new booking in place, then slide into the game’s requested order',()=>{
+ const {document}=parseHTML('<html><body><main></main></body></html>');
+ const clock=new Map(),animations=[],window={};let serial=0,reduce=false;
+ vm.runInNewContext(read('js/game-player-rows.js'),{window,document});
+ const {group,row,createMotion}=window.KCPlayerRows;
+ const update=createMotion({schedule(fn,ms){const id=++serial;clock.set(id,{fn,ms});return id;},
+  cancel:id=>clock.delete(id),reduced:()=>reduce});
+ const root=document.querySelector('main');
+ function render(key,order,turn,values={},options={}){
+  root.innerHTML='<table><tbody'+group(key,{id:'game'}, {turn,...options})+'>'+
+   order.map(name=>'<tr'+row(name)+'><th>'+name+'</th><td>'+(values[name]||0)+'</td></tr>').join('')+'</tbody></table>';
+  const body=root.querySelector('tbody');body.getClientRects=()=>[{}];
+  for(const item of body.children){
+   item.getBoundingClientRect=()=>({left:0,top:[...body.children].indexOf(item)*50});
+   item.animate=(frames,settings)=>animations.push([item.dataset.playerRow,frames,settings]);
+  }
+  update(body);return body;
+ }
+ const names=body=>[...body.children].map(element=>element.dataset.playerRow);
+ const release=()=>{const [id,entry]=[...clock.entries()][0];clock.delete(id);entry.fn();};
+ render('mensch',['A','B','C'],1);
+ let body=render('mensch',['B','C','A'],2,{A:7});
+ assert.deepEqual(names(body),['A','B','C']);assert.equal(body.firstElementChild.lastElementChild.textContent,'7');
+ assert([...clock.values()][0].ms>0);assert.equal(animations.length,0);
+ body=render('mensch',['B','C','A'],2,{A:7});
+ assert.equal(clock.size,1);assert.deepEqual(names(body),['A','B','C']);
+ release();
+ assert.deepEqual(names(body),['B','C','A']);
+ assert.equal(animations.find(entry=>entry[0]==='A')[1].length,3);
+ assert(animations.some(entry=>entry[0]==='B'&&entry[1][0].transform==='translate(0px,50px)'));
+ render('lattenzaun',['A','B','C'],3);
+ body=render('lattenzaun',['C','A','B'],4);
+ assert.deepEqual(names(body),['A','B','C']);release();
+ assert.deepEqual(names(body),['C','A','B']);
+ render('lattenzaun',['A','B','C'],5);
+ body=render('lattenzaun',['C','A','B'],4);
+ assert.equal(clock.size,0);assert.deepEqual(names(body),['C','A','B']);
+ reduce=true;
+ body=render('lattenzaun',['B','C','A'],5);
+ assert.equal(clock.size,0);assert.deepEqual(names(body),['B','C','A']);
+ reduce=false;
+ render('abschreibung',['A','B','C'],2,{}, {motionOnly:true});
+ body=render('abschreibung',['B','C','A'],3,{}, {motionOnly:true});
+ assert.equal([...clock.values()][0].ms,0);release();
+ assert.deepEqual(names(body),['B','C','A']);
+});
+
+test('TV scores keep counting across a redraw and never jump back when rows move',()=>{
+ const {document}=parseHTML('<html><body><main data-score-game="abschreibung"></main></body></html>');
+ const frames=[],window={};let time=0;
+ vm.runInNewContext(read('js/game-player-rows.js'),{window,document});
+ const {score,createCounters}=window.KCPlayerRows;
+ const paint=createCounters({request:callback=>frames.push(callback),now:()=>time});
+ const board=document.querySelector('main');
+ board.getClientRects=()=>[{}];
+ const render=(a,b,reverse=false)=>{
+  const items=['<b'+score('A')+'>'+a+'</b>','<b'+score('B')+'>'+b+'</b>'];
+  board.innerHTML=(reverse?items.reverse():items).join('');
+  paint(board);return board.querySelectorAll('[data-tv-score]');
+ };
+ const flush=()=>frames.splice(0).forEach(callback=>callback());
+ render(100,43);let scores=render(90,51);
+ assert.deepEqual([...scores].map(n=>n.textContent),['100','43']);
+ time=220;flush();
+ assert.deepEqual([...scores].map(n=>n.textContent),['95','47']);
+ scores=render(90,51);
+ assert.deepEqual([...scores].map(n=>n.textContent),['95','47']);
+ time=450;flush();
+ assert.deepEqual([...scores].map(n=>n.textContent),['90','51']);
+ scores=render(90,51,true);
+ assert.deepEqual([...scores].map(n=>n.textContent),['51','90']);
+ assert.equal(frames.length,0);
+});

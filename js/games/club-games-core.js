@@ -7,7 +7,7 @@
  const int=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
  const defaults=key=>{
   if(key==='abschreibung')return {startPoints:100,lastPlace:4,placeCents:50,woodRequired:false,kranzMode:'choose',kranzValue:8};
-  if(key==='lottokoenig')return {kranzMode:'fixed',kranzValue:8};
+  if(key==='lottokoenig')return {kranzMode:'fixed',kranzValue:8,lottoEarlyStop:true,lottoGoal:'highestOr49'};
   if(key==='tageskurs')return {pinCents:[10,20,30,40,50,60,70,80,90],divisor:2,rounds:1};
   return {rounds:4,throws:4};
  };
@@ -15,7 +15,8 @@
   if(!c)return false;
   const kranz=['choose','fixed'].includes(c.kranzMode)&&int(c.kranzValue,1,12);
   if(key==='abschreibung')return kranz&&int(c.startPoints,1,300)&&int(c.lastPlace,2,16)&&int(c.placeCents,0,10000)&&typeof c.woodRequired==='boolean';
-  if(key==='lottokoenig')return kranz;
+  if(key==='lottokoenig')return kranz&&(c.lottoEarlyStop===undefined||typeof c.lottoEarlyStop==='boolean')&&
+   (c.lottoGoal===undefined||['highestOr49','49'].includes(c.lottoGoal));
   if(key==='tageskurs')return Array.isArray(c.pinCents)&&c.pinCents.length===9&&pins.every(n=>int(c.pinCents[n-1],0,10000))&&int(c.divisor,1,100)&&int(c.rounds===undefined?1:c.rounds,1,12);
   return int(c.rounds,1,12)&&int(c.throws,1,12);
  }
@@ -95,9 +96,11 @@
    s.throwerOffset=1-s.throwerOffset;
   }
   else{
-   if(s.index+1>=s.players.length)throw Error('Den letzten Pflichtwurf der Runde zuerst abschließen.');
+   const nextIndex=s.players.findIndex((name,index)=>index>s.index&&
+    (s.gameKey!=='lottokoenig'||!s.config.lottoEarlyStop||!lottoDone(s,name)));
+   if(nextIndex<0)throw Error('Den letzten Pflichtwurf der Runde zuerst abschließen.');
    if(!s.originalPlayerOrder)s.originalPlayerOrder=s.players.slice();
-   [s.players[s.index],s.players[s.index+1]]=[s.players[s.index+1],s.players[s.index]];
+   [s.players[s.index],s.players[nextIndex]]=[s.players[nextIndex],s.players[s.index]];
   }
  }
  function settleRanks(s,value,winner){
@@ -126,9 +129,17 @@
   }
   advance(s,n=>s.scores[n]>0);
  }
+ function lottoQualified(s,name){
+  const ticket=s.tickets[name];
+  return s.scores[name]>=49||!!(s.config.lottoEarlyStop&&s.config.lottoGoal!=='49'&&ticket?.hits.includes(ticket.numbers.at(-1)));
+ }
+ function lottoDone(s,name){
+  return s.rows[name].length>=13||lottoQualified(s,name);
+ }
  function lottoRank(s,n){
   const hits=s.tickets[n].hits.length;
-  return s.scores[n]>=49?1000+hits:hits*50+s.scores[n];
+  if(s.config.lottoEarlyStop)return (lottoQualified(s,n)?1000:0)+hits*16+13-s.rows[n].length;
+  return lottoQualified(s,n)?1000+hits:hits*50+s.scores[n];
  }
  function lottokoenig(s,e){
   if(e.action==='numbers'){
@@ -141,8 +152,13 @@
   const ticket=s.tickets[e.name],score=s.scores[e.name],hit=ticket.numbers.includes(score)&&!ticket.hits.includes(score);
   if(hit)ticket.hits.push(score);
   s.rows[e.name].push({pins:e.pins,score,hit});
-  advance(s);
-  if(s.round>13){s.round=13;settleRanks(s,n=>lottoRank(s,n),n=>s.scores[n]>=49);}
+  if(s.config.lottoEarlyStop){
+   if(s.players.every(name=>lottoDone(s,name)))settleRanks(s,n=>lottoRank(s,n),n=>lottoQualified(s,n));
+   else advance(s,name=>!lottoDone(s,name));
+  }else{
+   advance(s);
+   if(s.round>13){s.round=13;settleRanks(s,n=>lottoRank(s,n),n=>lottoQualified(s,n));}
+  }
  }
  function tageskurs(s,e){
   const standing=pins.filter(n=>!e.knocked.includes(n));
@@ -182,9 +198,10 @@
  }
  function summary(key,c){
   if(key==='abschreibung')return c.startPoints+' Startpunkte · '+c.placeCents+' Cent × Platz · bis Platz '+c.lastPlace+' · '+(c.woodRequired?'mit Holzpflicht':'ohne Holzpflicht');
-  if(key==='lottokoenig')return 'Sechs Glückszahlen · 13 Würfe · mindestens 49 Holz';
+  if(key==='lottokoenig')return 'Sechs Glückszahlen · '+(c.lottoEarlyStop?'bis zu ':'')+'13 Würfe · '+
+   (c.lottoEarlyStop&&c.lottoGoal!=='49'?'höchste Glückszahl treffen oder mindestens 49 Holz':'mindestens 49 Holz');
   if(key==='tageskurs')return ((c.rounds??1)===1?'1 Runde':c.rounds+' Runden')+' · 1 Wurf pro Person und Runde · Summe der stehenden Kegel ÷ '+c.divisor;
   return c.rounds+' Runden · '+c.throws+' Würfe auf Abräumen je Zweierteam · Partnerwechsel nach jeder Runde';
  }
- window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,abschreibungOrder});
+ window.KCClubGames=Object.freeze({titles,icons,keys,pins,physical,defaults,validSettings,setup,current,fields,play,summary,validTicket,abschreibungOrder,lottoQualified,lottoDone});
 })();
