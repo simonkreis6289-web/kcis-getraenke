@@ -164,7 +164,8 @@ test('TV hurdles show player names at occupied positions, matching the colored s
  assert.deepEqual([marks[0].style.left,marks[0].style.top],['63px','297px']);
  assert.deepEqual([marks[1].style.left,marks[1].style.top],['63px','49px']);
  assert.deepEqual([marks.at(-1).style.left,marks.at(-1).style.top],['763px','297px']);
- assert.match(root.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt.*15 Pkt.*3 Holz.*17 Pkt.*5 Holz.*Ziel.*Kranz/);
+ assert.match(header.querySelector('.ind-turn').textContent,/Daniel.*12 Pkt./);
+ assert.match(header.querySelector('.hurdle-next-throws').textContent,/Feld 15.*3 Holz.*Feld 17.*5 Holz.*Ziel 24.*👑/);
  assert.deepEqual([...root.querySelectorAll('.ind-rule-reachable th')].map(x=>x.textContent),['15','17–18']);
  assert.match(root.querySelectorAll('.hurdle-scores .ind-penalty')[1].querySelector('strong').textContent,/1,00/);
  assert.match(root.querySelector('.hurdle-penalty-preview').textContent,/^\+0,50/);
