@@ -52,6 +52,26 @@ test('Abschreibung charges only eliminated ranks, skips them, and safely reverse
  const wood=game('abschreibung',{woodRequired:true},['A','B']);
  wood.roll('gosse');assert.equal(g.current(wood.s),'A');assert.equal(wood.s.scores.A,100);
 });
+test('Abschreibung pin valuation books the leader’s remaining score for the eliminated player and undoes it',()=>{
+ const f=game('abschreibung',{startPoints:45,valuation:'pins',pinCents:10,divisor:2.5},['A','B']);
+ for(const kind of ['gosse','pins','gosse','pins'])assert.equal(f.roll(kind,9).moneyAdded.length,0);
+ const last=f.roll('gosse',9);
+ assert.equal(f.s.scores.B,45);
+ assert.equal(last.moneyAdded.length,1);
+ const [charge]=last.moneyAdded;
+ assert.equal(charge.personName,'A');
+ assert.equal(charge.amountCents,180);
+ assert.match(charge.reason,/45 Restpunkte × 10 Cent ÷ 2.5/);
+ assert.deepEqual(copy(f.run('undo').moneyRemoved),[charge.id]);
+ assert.equal(f.s.scores.A,9);
+ assert.equal(f.roll('gosse',9).moneyAdded[0].amountCents,180);
+ const rounded=game('abschreibung',{startPoints:9,valuation:'pins',pinCents:5,divisor:2},['A','B']);
+ assert.equal(rounded.roll('gosse',9).moneyAdded[0].amountCents,23);
+ const defaults=g.defaults('abschreibung');
+ assert.equal(g.validSettings('abschreibung',{...defaults,valuation:'pins',divisor:0}),false);
+ const legacy=game('abschreibung',{startPoints:9,valuation:undefined,pinCents:undefined,divisor:undefined},['A','B']);
+ assert.equal(legacy.roll('gosse',9).moneyAdded[0].amountCents,100);
+});
 test('Abschreibung applies the saved own-score numbers and preserves the rule when replaying a game',()=>{
  const f=game('abschreibung',{selfPins:[3,7]},['A','B','C']);
  f.roll('pins',3);assert.equal(f.s.scores.A,97);
@@ -357,9 +377,19 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
  assert.equal(selfPins.length,9);
  assert.deepEqual(selfPins.filter(el=>el.checked).map(el=>el.dataset.abschreibungSelfPin),['6']);
  for(const el of selfPins)el.checked=['4','5','6'].includes(el.dataset.abschreibungSelfPin);
+ const valuation=a.document.querySelector('#game-property-abschreibung [data-club-setting="valuation"]');
+ const cents=a.document.querySelector('#game-property-abschreibung [data-club-setting="pinCents"]');
+ const teiler=a.document.querySelector('#game-property-abschreibung [data-club-setting="divisor"]');
+ assert(cents.closest('label').hidden);
+ Object.defineProperty(valuation,'value',{value:'pins',writable:true});
+ a.c.updateAbschreibungValuation(valuation);
+ assert(!cents.closest('label').hidden);cents.value='20';teiler.value='2.5';
+ a.document.querySelector('#game-property-abschreibung [data-club-setting="startPoints"]').value='9';
  assert(await a.c.saveClubGameSettings('abschreibung'));
  assert(await a.c.KCSharedSync.waitForUpload());
  assert.deepEqual(copy(db.root().extraGameSettings.abschreibung.selfPins),[4,5,6]);
+ assert.equal(db.root().extraGameSettings.abschreibung.pinCents,20);
+ assert.equal(db.root().extraGameSettings.abschreibung.divisor,2.5);
  const divisor=a.document.querySelector('#game-property-tageskurs [data-club-setting="divisor"]');
  const rounds=a.document.querySelector('#game-property-tageskurs [data-club-setting="rounds"]');
  divisor.value='3';rounds.value='2';assert(await a.c.saveClubGameSettings('tageskurs'));
@@ -379,6 +409,16 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
   assert(a.document.querySelector('#tab-'+key+' .game-input-panel'),key);
  }
  assert.deepEqual(copy(a.c.indGet('abschreibung').config.selfPins),[4,5,6]);
+ assert.equal(a.c.indGet('abschreibung').config.valuation,'pins');
+ const eliminated=g.current(a.c.indGet('abschreibung'));
+ await a.c.indAction('abschreibung','throw',{kind:'gosse'});
+ assert(await a.c.KCSharedSync.waitForUpload());
+ const penalty=db.root().individualGameLedger.find(row=>row.gameKey==='abschreibung');
+ assert.equal(penalty.personName,eliminated);
+ assert.equal(penalty.amountCents,72);
+ await a.c.indAction('abschreibung','undo');
+ assert(await a.c.KCSharedSync.waitForUpload());
+ assert(!db.root().individualGameLedger.some(row=>row.gameKey==='abschreibung'));
  assert.equal(a.c.indGet('lottokoenig').config.lottoGoal,'49');
  const lotto=a.document.getElementById('tab-lottokoenig'),confirm=()=>lotto.querySelector('[data-club-ticket-submit]');
  const pick=n=>a.c.clubGameLottoPick(n,lotto.querySelector('[data-lotto-number="'+n+'"]'));

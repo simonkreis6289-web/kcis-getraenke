@@ -144,6 +144,10 @@ function clubGameTogglePin(n,button){
 function clubGameBookPins(key,all=false){
  return indAction(key,'throw',{kind:'pins',knocked:all?window.KCClubGames.pins.slice():clubGameDraft(indGet(key)).selected.slice()});
 }
+function updateAbschreibungValuation(select){
+ for(const field of select.closest('#game-property-abschreibung').querySelectorAll('[data-abschreibung-valuation]'))
+  field.hidden=field.dataset.abschreibungValuation!==select.value;
+}
 function renderClubGameSettings(){
  const g=window.KCClubGames,rack=document.querySelector('[data-tageskurs-settings-rack]');
  if(rack&&!rack.firstElementChild)rack.innerHTML=clubGameRack();
@@ -155,12 +159,18 @@ function renderClubGameSettings(){
    const field=el.dataset.clubSetting,value=el.dataset.pinIndex===undefined?config[field]:config[field][Number(el.dataset.pinIndex)];
    if(el.type==='checkbox')el.checked=value;else el.value=value;
   }
+  if(key==='abschreibung'){
+   const select=panel.querySelector('[data-club-setting="valuation"]');
+   if(select)updateAbschreibungValuation(select);
+  }
  }
 }
 async function saveClubGameSettings(key){
  if(extraSettingsBusy||!ACTIVE_CLUB)return false;
  const g=window.KCClubGames,panel=document.getElementById('game-property-'+key),config=extraConfig(key);
  for(const el of panel.querySelectorAll('[data-club-setting]')){
+  const valuation=el.closest('[data-abschreibung-valuation]')?.dataset.abschreibungValuation;
+  if(valuation&&valuation!==config.valuation)continue;
   const field=el.dataset.clubSetting,value=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?NaN:Number(el.value)):el.value;
   if(el.dataset.pinIndex===undefined)config[field]=value;else config[field][Number(el.dataset.pinIndex)]=value;
  }

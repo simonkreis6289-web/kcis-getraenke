@@ -92,3 +92,5 @@
 [data-game-fine-panel][hidden]{display:none!important}label:has(> #tannenbaum-ontop-check),label:has(> #lotterie-ontop-check),label:has(> #tiberius-ontop-check){display:none!important}
 
 .game-settings-card > .game-settings-back { width:fit-content;max-width:100%;min-height:40px;justify-self:start; }
+
+#game-property-abschreibung [data-abschreibung-valuation][hidden]{display:none}

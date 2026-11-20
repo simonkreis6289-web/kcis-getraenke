@@ -7,7 +7,7 @@
  const int=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
  const selfPins=c=>c.selfPins??[6];
  const defaults=key=>{
-  if(key==='abschreibung')return {startPoints:100,lastPlace:4,placeCents:50,woodRequired:false,selfPins:[6],kranzMode:'choose',kranzValue:8};
+  if(key==='abschreibung')return {startPoints:100,lastPlace:4,valuation:'place',placeCents:50,pinCents:10,divisor:1,woodRequired:false,selfPins:[6],kranzMode:'choose',kranzValue:8};
   if(key==='lottokoenig')return {kranzMode:'fixed',kranzValue:8,lottoEarlyStop:true,lottoGoal:'highestOr49'};
   if(key==='tageskurs')return {pinCents:[10,20,30,40,50,60,70,80,90],divisor:2,rounds:1};
   return {rounds:4,throws:4};
@@ -16,6 +16,9 @@
   if(!c)return false;
   const kranz=['choose','fixed'].includes(c.kranzMode)&&int(c.kranzValue,1,12);
   if(key==='abschreibung')return kranz&&int(c.startPoints,1,300)&&int(c.lastPlace,2,16)&&int(c.placeCents,0,10000)&&typeof c.woodRequired==='boolean'&&
+   (c.valuation===undefined||['place','pins'].includes(c.valuation))&&
+   (c.pinCents===undefined?c.valuation!=='pins':int(c.pinCents,0,10000))&&
+   (c.divisor===undefined?c.valuation!=='pins':Number.isFinite(c.divisor)&&c.divisor>=1)&&
    (c.selfPins===undefined||Array.isArray(c.selfPins)&&c.selfPins.length<=pins.length&&
     new Set(c.selfPins).size===c.selfPins.length&&c.selfPins.every(n=>pins.includes(n)));
   if(key==='lottokoenig')return kranz&&(c.lottoEarlyStop===undefined||typeof c.lottoEarlyStop==='boolean')&&
@@ -139,7 +142,11 @@
   if(!s.scores[name]){
    const place=s.players.length-s.eliminated.length;
    s.eliminated.push({name,place});
-   charge(s,name,s.config.placeCents*place,'Platz '+place+' × '+s.config.placeCents+' Cent');
+   const {valuation,placeCents,pinCents,divisor}=s.config;
+   if(valuation==='pins'){
+    const highest=Math.max(...s.players.map(player=>s.scores[player]));
+    charge(s,name,Math.round(highest*pinCents/divisor),highest+' Restpunkte × '+pinCents+' Cent ÷ '+divisor);
+   }else charge(s,name,placeCents*place,'Platz '+place+' × '+placeCents+' Cent');
    if(place===s.lastPlace){s.winners=s.players.filter(n=>s.scores[n]>0);finish(s);return;}
   }
   advance(s,n=>s.scores[n]>0);
@@ -220,7 +227,10 @@
   s.history.push(e);
  }
  function summary(key,c){
-  if(key==='abschreibung')return c.startPoints+' Startpunkte · '+c.placeCents+' Cent × Platz · bis Platz '+c.lastPlace+' · '+(c.woodRequired?'mit Holzpflicht':'ohne Holzpflicht');
+  if(key==='abschreibung'){
+   const valuation=c.valuation==='pins'?'Höchste Restpunkte × '+c.pinCents+' Cent ÷ '+c.divisor:c.placeCents+' Cent × Platz';
+   return c.startPoints+' Startpunkte · '+valuation+' · bis Platz '+c.lastPlace+' · '+(c.woodRequired?'mit Holzpflicht':'ohne Holzpflicht');
+  }
   if(key==='lottokoenig')return 'Sechs Glückszahlen · '+(c.lottoEarlyStop?'bis zu ':'')+'13 Würfe · '+
    (c.lottoEarlyStop&&c.lottoGoal!=='49'?'höchste Glückszahl treffen oder mindestens 49 Holz':'mindestens 49 Holz');
   if(key==='tageskurs')return ((c.rounds??1)===1?'1 Runde':c.rounds+' Runden')+' · 1 Wurf pro Person und Runde · Summe der stehenden Kegel ÷ '+c.divisor;
