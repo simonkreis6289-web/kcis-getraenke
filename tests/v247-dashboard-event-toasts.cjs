@@ -2,11 +2,15 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {parseHTML}=require('linkedom');
 const source=fs.readFileSync(path.join(__dirname,'../js/dashboard-event-toasts.js'),'utf8');
 function setup(){
- const {document}=parseHTML('<html><body><main class="dashboard"><div class="stage"></div><section class="side left"><div data-active-panel="drinks"><article id="dashboard-panel-drinks"></article></div></section><footer class="dashboard-footer"></footer></main></body></html>');
+ const {document}=parseHTML('<html><body><main class="dashboard"><div class="stage"></div><section class="side left"><div class="dashboard-panel-slot" id="dashboard-slot-left-top" data-active-panel="drinks"><article id="dashboard-panel-drinks"></article></div></section><section class="side right"><div class="dashboard-panel-slot" id="dashboard-slot-right-top"></div></section><footer class="dashboard-footer"></footer></main></body></html>');
  document.querySelector('.stage').getBoundingClientRect=()=>({left:150,width:700});
  document.querySelector('main').getBoundingClientRect=()=>({width:1200,right:1200,bottom:800});
  document.querySelector('footer').getBoundingClientRect=()=>({top:750});
- document.getElementById('dashboard-panel-drinks').getBoundingClientRect=()=>({left:8,top:60,width:200,height:310});
+ const left=document.querySelector('.side.left .dashboard-panel-slot'),right=document.querySelector('.side.right .dashboard-panel-slot');
+ left.getBoundingClientRect=()=>({left:8,top:60,width:200,height:310});
+ right.getBoundingClientRect=()=>({left:992,top:60,width:200,height:310});
+ const panel=document.getElementById('dashboard-panel-drinks');
+ panel.getBoundingClientRect=()=>panel.parentElement.getBoundingClientRect();
  const timers=new Map();let id=0;const now=Date.now();
  const context={document,Date,console,innerWidth:1200,innerHeight:800,requestAnimationFrame:fn=>fn(),setTimeout:(fn,ms)=>{timers.set(++id,{fn,ms});return id;},clearTimeout:key=>timers.delete(key)};
  context.window=context;vm.createContext(context);vm.runInContext(source,context);
@@ -75,7 +79,7 @@ test('invalid persisted toast colors cannot become CSS properties',()=>{
  assert.equal(f.box.style.background,'#40cf88');
 });
 
-test('confirmed KC Theke bookings use the drinks panel or the lower-right fallback without replaying',()=>{
+test('confirmed KC Theke bookings keep their entry side and use the fallback only when initially hidden',()=>{
  const f=setup(),evening='evening-1',panel=f.document.getElementById('dashboard-panel-drinks');
  const event=id=>({id,evening,at:new Date(f.now).toISOString(),name:'A',description:'A · 1 × Bier',
   items:[{name:'A',drink:'Bier',quantity:1,cents:235},{name:'B',drink:'Wasser',quantity:2,cents:300}]});
@@ -91,11 +95,48 @@ test('confirmed KC Theke bookings use the drinks panel or the lower-right fallba
  assert.equal(f.booking.firstChild.style.background,'#aa1133');assert.equal(f.delay,7360);
  assert.equal(f.booking.style.left,'8px');assert.equal(f.booking.style.top,'60px');assert.equal(f.booking.style.width,'200px');assert.equal(f.booking.style.height,'310px');
  assert(f.booking.classList.contains('station-from-left'));
+ const leftBooking=f.booking;
  panel.parentElement.dataset.activePanel='fines';
+ panel.hidden=true;
  f.tool.positionStation();
- assert.equal(f.booking.style.left,'912px');assert.equal(f.booking.style.top,'342px');assert.equal(f.booking.style.height,'400px');
- assert(!f.booking.classList.contains('station-from-left'));
- f.tool.feed(root,'club',f.now);f.advance();assert(!f.booking.classList.contains('station-booking-visible'));f.advance();assert.equal(f.booking,null);
+ assert.equal(f.booking,leftBooking);
+ assert.equal(leftBooking.style.left,'8px');
+ assert.equal(leftBooking.style.top,'60px');
+ assert(leftBooking.classList.contains('station-from-left'));
+ f.tool.feed(root,'club',f.now);f.advance();
+ assert.equal(f.booking,leftBooking);
+ assert(!leftBooking.classList.contains('station-booking-visible'));
+ assert(leftBooking.classList.contains('station-from-left'));
+ f.advance();assert.equal(f.booking,null);
+
+ root.stationEvents.push(event('station_hidden'));
+ f.tool.feed(root,'club',f.now);
+ const fallback=f.booking;
+ assert.equal(fallback.style.left,'912px');
+ assert.equal(fallback.style.top,'342px');
+ assert.equal(fallback.style.height,'400px');
+ const right=f.document.getElementById('dashboard-slot-right-top');
+ right.append(panel);right.dataset.activePanel='drinks';panel.hidden=false;
+ f.tool.positionStation();
+ assert.equal(f.booking,fallback);
+ assert.equal(fallback.style.left,'912px');
+ assert.equal(fallback.style.top,'342px');
+ assert(!fallback.classList.contains('station-from-left'));
+ root.stationEvents.push(event('station_right'));
+ f.tool.feed(root,'club',f.now);
+ f.advance();assert.equal(f.booking,fallback);
+ f.advance();const rightBooking=f.booking;
+ assert.notEqual(rightBooking,fallback);
+ assert.equal(rightBooking.style.left,'992px');
+ assert.equal(rightBooking.style.top,'60px');
+ assert(!rightBooking.classList.contains('station-from-left'));
+ right.dataset.activePanel='fines';panel.hidden=true;
+ f.tool.positionStation();f.advance();
+ assert.equal(f.booking,rightBooking);
+ assert.equal(rightBooking.style.left,'992px');
+ assert(!rightBooking.classList.contains('station-from-left'));
+ assert(!rightBooking.classList.contains('station-booking-visible'));
+ f.advance();assert.equal(f.booking,null);
  root.dashboardSettings.eventToasts.station=false;
  root.stationEvents.push(event('station_disabled'));
  f.tool.feed(root,'club',f.now);assert.equal(f.booking,null);
