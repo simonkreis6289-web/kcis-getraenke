@@ -14,10 +14,6 @@ function renderHurdleTrack(s,current){
  const groups=stops.map((stop,i)=>runners[i].length?'<div class="hurdle-runners"><span class="hurdle-runner-station">'+stop.label+'</span>'+runners[i].join('')+'</div>':'').join('');
  return '<section class="hurdle-track" aria-label="Position aller Kegler auf der Hindernisstrecke"><ol>'+markers+'</ol><div class="hurdle-runner-groups">'+groups+'</div></section>';
 }
-const HURDLE_PLAYER_COLORS=[
- '#0072b2','#d14d00','#008463','#993a9b','#e8a000','#c42042','#31a7d3','#563a92',
- '#729000','#a15a19','#df6fa1','#006c74','#566376','#afa300','#825d7d','#423528'
-];
 function hurdlePlayerDot(color,current=false){
  return '<span class="hurdle-player-dot'+(current?' hurdle-dot-current':'')+'" style="--player-color:'+color+'" aria-hidden="true"></span>';
 }
@@ -192,7 +188,8 @@ function renderIndividualBoard(s,options={}){
  if(seven)body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Name</th>'+KCIndividual.sevenColumns(s).map(n=>'<th>'+n+'</th>').join('')+'<th>'+(divided&&!s.finished?'Strafe vor Teilung':'Strafe')+'</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowPlayers.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+(options.dashboard&&running&&n===name?' class="ind-current" aria-current="true"':'')+'><th>'+indEscape(n)+('<small class="ind-add-count">➕ '+KCIndividual.sevenAddCount(s,n)+' / '+KCIndividual.sevenAddLimit(s)+' genutzt · '+Math.max(0,KCIndividual.sevenAddLimit(s)-KCIndividual.sevenAddCount(s,n))+' übrig</small>')+'</th>'+KCIndividual.sevenColumns(s).map(col=>{const cell=s.sheet[n][col];return '<td>'+(cell?'<strong>'+cell.value+'</strong><small>'+cell.throws.join(cell.add?' + ':' × ')+' · '+indEuro(cell.cents)+'</small>':'—')+'</td>';}).join('')+'<td><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+indEuro(s.finished?KCIndividual.sevenEndCents(s,n):s.scores[n])+'</strong></td></tr>').join('')+'</tbody></table></div>';
  else {
   const current=dashboard&&running?name:null;
-  const colors=dashboard?new Map(s.players.map((player,i)=>[player,HURDLE_PLAYER_COLORS[i%HURDLE_PLAYER_COLORS.length]])):null;
+  const playerColor=options.playerColor||globalThis.window?.KCPlayerColors?.defaultColor;
+  const colors=dashboard?new Map(s.players.map(player=>[player,playerColor?.(player)||'#0072b2'])):null;
   body='<div class="ind-hurdle-split">'+(dashboard?renderHurdleCircuit(s,colors,current):'')+
    renderHurdleTables(s,rowPlayers,{dashboard,preview,colors,current})+'</div>';
  }

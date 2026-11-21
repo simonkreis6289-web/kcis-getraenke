@@ -27,6 +27,7 @@ function profileFixture(person = {name:'Anna', present:true}) {
   vm.createContext(c);
   vm.runInContext(read('js/birthdays.js'), c); c.KCBirthdays=c.window.KCBirthdays;
   vm.runInContext(read('js/persons.js'), c);
+  vm.runInContext(read('js/player-colors.js'), c);
   vm.runInContext(read('js/member-profiles.js'), c);
   return {c, document, dom, messages, get:id=>document.getElementById('member-profile-'+id),
     cloud:()=>cloud, local:()=>local, writes:()=>writes};

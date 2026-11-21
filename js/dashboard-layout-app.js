@@ -36,6 +36,15 @@
    for(const slot of positions){const option=element('option',r.count===1?(slot.startsWith('left')?'Links · volle Höhe':'Rechts · volle Höhe'):slotNames[slot]);option.value=slot;option.selected=slot===draft.panels[key].position;select.append(option);}select.value=draft.panels[key].position;select.onchange=()=>{draft=M.move(draft,key,select.value);draw();};row.append(select);
    const dwell=element('label',undefined,'dashboard-dwell');dwell.hidden=!check.checked;const input=duration('dashboard-seconds-'+key,draft.panels[key].seconds,1,300,v=>draft.panels[key].seconds=v);input.setAttribute('aria-label','Anzeigedauer '+M.labels[key]+' in Sekunden');dwell.append(input,document.createTextNode('Sekunden'));row.append(dwell);rows.append(row);
   }box.append(rows,preview(r));
+  for(const key of ['fines','drinks']){
+   const label=element('label',undefined,'dashboard-popup-option');
+   const check=element('input');
+   check.type='checkbox';check.id='dashboard-player-tint-'+key;
+   check.checked=draft.playerRowTint[key];check.disabled=busy;
+   check.onchange=()=>{draft.playerRowTint[key]=check.checked;};
+   label.append(check,document.createTextNode(M.labels[key]+' in Spielerfarben hinterlegen'));
+   box.append(label);
+  }
   for(const [side,title] of [['left','links'],['right','rechts']]){
    const id='dashboard-table-width-'+side,label=element('label',undefined,'dashboard-popup-option');
    label.htmlFor=id;
