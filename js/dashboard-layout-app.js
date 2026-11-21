@@ -169,17 +169,6 @@
   for(const [key,label,available] of [['goal','⚽ Tor',true],['kickoff','▶ Geplante Anstoßzeit erreicht',true],['halftime','⏸ Halbzeitstand eingetragen',true],['fulltime','■ Spielende bestätigt',true],['red','🟥 Rote Karte (Datenquelle fehlt)',false],['secondYellow','🟨🟥 Gelb-Rote Karte (Datenquelle fehlt)',false]]){
    const line=element('label',undefined,'dashboard-popup-option'),check=element('input');check.type='checkbox';check.checked=!!draft.football.events[key];check.disabled=busy||!available;check.setAttribute('aria-label',label);check.onchange=()=>draft.football.events[key]=check.checked;line.append(check,document.createTextNode(label));box.append(line);
   }
-  box.append(element('h3','🧪 Bundesliga-Testspiel'),element('p','Nur Simulation: BVB gegen Schalke. Starten, Tore buchen und auf dem TV die Laufschrift sowie den Tor-Toast prüfen. Keine echten Ergebnisse oder Strafen werden verändert.'));
-  const demoRow=element('div',undefined,'dashboard-layout-actions'),demo=draft.football.demo;
-  const makeTestButton=(caption,id,action)=>{const button=element('button',caption,'secondary-btn');button.type='button';button.id=id;button.disabled=busy;button.onclick=async()=>{action();draw();await store();};demoRow.append(button);};
-  if(!demo?.active){makeTestButton('▶ Testspiel starten (0:0)','dashboard-demo-start',()=>{draft.football.demo={active:true,id:'demo-'+Date.now().toString(36),league:'bl1',home:0,away:0};});}
-  else {
-   box.append(element('p','🧪 BVB '+demo.home+':'+demo.away+' Schalke · simuliertes Spiel'));
-   makeTestButton('⚽ Tor BVB','dashboard-demo-home',()=>{draft.football.demo.home++;});
-   makeTestButton('⚽ Tor Schalke','dashboard-demo-away',()=>{draft.football.demo.away++;});
-   makeTestButton('■ Testspiel beenden','dashboard-demo-stop',()=>{draft.football.demo=null;});
-  }
-  box.append(demoRow);
   box=section('connection','Verbindungsdiagnose');
   const diagnostics=element('dl',undefined,'dashboard-connection-diagnostics');
   for(const [field,label] of [['transport','Übertragungsweg'],['tablet','WebRTC am Tablet'],['tv','WebRTC am TV'],

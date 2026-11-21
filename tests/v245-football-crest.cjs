@@ -21,13 +21,17 @@ function fixture(reduced=false){
 
 const home={teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:'https://example.org/bvb.png'};
 const away={teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:'https://example.org/s04.png'};
-const demo={active:true,id:'check1',league:'bl1',home:0,away:0};
 
-test('demo toast shows both full names and crests, then increments and highlights only the scoring side',async()=>{
+test('live toast shows both full names and crests, then increments and highlights only the scoring side',async()=>{
  const f=fixture();
- f.ctx.fetch=async()=>({ok:true,json:async()=>[home,away]});
- f.live.configure({demo});await new Promise(resolve=>setImmediate(resolve));
- f.live.configure({demo:{...demo,home:1}});
+ let goals=[],revision=0;
+ const match={matchID:1,matchDateTimeUTC:new Date(Date.now()-60000).toISOString(),leagueShortcut:'bl1',team1:home,team2:away,matchResults:[]};
+ f.ctx.fetch=async url=>({ok:true,json:async()=>url.includes('getcurrentgroup')?{groupOrderID:10}:url.includes('getlastchangedate')?revision:[{...match,goals}]});
+ f.live.configure({bl1:true,demo:{active:true,id:'old-demo',league:'bl1',home:5,away:2}});await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(f.live.ticker().length,1);
+ assert.equal(f.live.ticker()[0][0],'football-bl1-1');
+ goals=[{matchMinute:12,scoreTeam1:1,scoreTeam2:0}];revision++;
+ await f.live.refresh();
  const box=f.box();
  assert.equal(box.style.left,'50%');assert.equal(box.style.width,'calc(100vw - 32px)');
  assert.deepEqual([...box.querySelectorAll('.football-goal-club-name')].map(n=>n.textContent),[home.teamName,away.teamName]);
@@ -38,7 +42,8 @@ test('demo toast shows both full names and crests, then increments and highlight
  assert.deepEqual(f.points(),['1','0']);
  assert(f.digits()[0].classList.contains('football-goal-pop'));
  assert(!f.digits()[1].classList.contains('football-goal-pop'));
- f.live.configure({demo:{...demo,home:1,away:1}});
+ goals.push({matchMinute:23,scoreTeam1:1,scoreTeam2:1});revision++;
+ await f.live.refresh();
  assert.deepEqual(f.points(),['1','0']);
  f.runTimer(550);
  assert.deepEqual(f.points(),['1','1']);
@@ -46,8 +51,6 @@ test('demo toast shows both full names and crests, then increments and highlight
  assert(f.digits()[1].classList.contains('football-goal-pop'));
  const logo=box.querySelectorAll('img')[1],crest=logo.parentElement;logo.onerror();
  assert(!crest.querySelector('.dashboard-football-crest-fallback').hidden);
- f.live.configure({demo:null});
- assert(!f.live.ticker().some(item=>item[0]==='football-demo'));
 });
 
 test('live goal uses its reported minute and scorer, including stoppage time and reduced motion',async()=>{
