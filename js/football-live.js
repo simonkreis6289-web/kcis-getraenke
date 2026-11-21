@@ -2,7 +2,7 @@
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
  const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set(),clocks=new Map();
- let settings=null,timer=null,clockTimer=null,toastTimer=null,scoreTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
+ let settings=null,timer=null,clockTimer=null,toastTimer=null,scoreTimer=null,seenPhases=new Map(),seenKickoffs=new Set();
  const minuteMs=60000,breakMs=15*minuteMs;
  const finalScoreWindow=120*minuteMs,typicalMatchDuration=105*minuteMs;
  const finishedAt=new Map();
@@ -241,35 +241,14 @@
   if(!settings||document.hidden)return;
   await Promise.all(leagues.filter(enabled).map(league=>refreshLeague(league,Date.now())));
  }
- function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:demoTeams?.bvb||''},team2:{teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:demoTeams?.schalke||''},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,matchMinute:Math.min(90,12+(demo.home+demo.away-1)*11),goalGetterName:'Testtor'}]:[],matchResults:[]};}
- async function loadDemoCrests(){
-  if(demoTeamsLoading||demoTeams)return;demoTeamsLoading=true;
-  try{
-   const matches=(await Promise.allSettled(leagues.map(l=>fetchJSON('/getavailableteams/'+l+'/'+season())))).filter(r=>r.status==='fulfilled').flatMap(r=>Array.isArray(r.value)?r.value:[]);
-   const lookup=(pattern)=>matches.find(t=>pattern.test(String(t.teamName||'')))?.teamIconUrl||'';
-   demoTeams={bvb:lookup(/dortmund/i),schalke:lookup(/schalke/i)};
-   if(settings?.demo?.active){demoMatch=mockMatch(settings.demo);window.dispatchEvent(new Event('kc-football-updated'));}
-  }catch(error){console.warn('Test-Wappen konnten nicht geladen werden',error);}
-  finally{demoTeamsLoading=false;}
- }
- function syncDemo(demo){
-  if(!demo?.active){demoSeen=null;demoMatch=null;window.dispatchEvent(new Event('kc-football-updated'));return;}
-  const match=mockMatch(demo),next=[demo.home,demo.away];
-  if(demoSeen?.id===demo.id&&(next[0]>demoSeen.home||next[1]>demoSeen.away))announce(match,[demoSeen.home,demoSeen.away],next);
-  demoSeen={id:demo.id,home:next[0],away:next[1]};demoMatch=match;
-  if(!demoTeams)void loadDemoCrests();
-  window.dispatchEvent(new Event('kc-football-updated'));
- }
  function configure(value){
-  const next={bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),events:value?.events||{goal:true,kickoff:true,halftime:true,fulltime:true},demo:value?.demo?.active?value.demo:null};
+  const next={bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),events:value?.events||{goal:true,kickoff:true,halftime:true,fulltime:true}};
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
-  const demoChanged=JSON.stringify(settings?.demo??null)!==JSON.stringify(next.demo??null);
   settings=next;if(!timer)timer=setInterval(refresh,30000);
   if(!clockTimer)clockTimer=setInterval(()=>{
    if(!document.hidden&&leagues.some(league=>enabled(league)&&state.get(league)?.length))window.dispatchEvent(new Event('kc-football-clock'));
   },5000);
   if(sourceChanged)void refresh();
-  if(demoChanged)syncDemo(next.demo);
  }
  function ticker(now=Date.now()){
   if(!settings)return [];
@@ -280,7 +259,6 @@
     return {league,match,clock,label:clockLabel(match,clock,now)};
    }));
   const live=matches.map(({league,match,clock})=>['football-'+league+'-'+match.matchID,'⚽ '+label(match),tickerClock(match,clock,matches,now)]);
-  if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);
   return live;
  }
  window.KCFootballLive=Object.freeze({configure,ticker,refresh,observeClock,clockLabel,status:()=>Object.fromEntries([...failures].map(([league,v])=>[league,{tries:v.tries,retryAt:new Date(v.next).toISOString(),message:v.message}]))});
