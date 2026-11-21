@@ -29,7 +29,7 @@
   copy.append(headline,subtitle);if(person)row.append(avatar(root,person));row.append(copy);box.replaceChildren(row);
  }
  let scope='',initialized=false,snapshot=new Map(),historySeen=new Set(),stationSeen=new Set(),queue=[],showing=false,activeTimer=null,exitTimer=null;
- const clear=()=>{queue=[];showing=false;if(activeTimer!==null)clearTimeout(activeTimer);if(exitTimer!==null)clearTimeout(exitTimer);activeTimer=null;exitTimer=null;const box=$('dashboard-club-event-toast');if(box){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');}};
+ const clear=()=>{queue=[];showing=false;if(activeTimer!==null)clearTimeout(activeTimer);if(exitTimer!==null)clearTimeout(exitTimer);activeTimer=null;exitTimer=null;const box=$('dashboard-club-event-toast');if(box){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');window.KCToastStack?.release(box);}};
  function toast(entry){if(queue.length<15)queue.push(entry);if(!showing)next();}
  const defaults={arrival:'#40cf88',departure:'#7ba3ed',round:'#f9ba3e',loser:'#df83e7',teamLoss:'#fc977d',station:'#76d5c2'};
  const colorFor=(kind,root)=>{
@@ -51,9 +51,12 @@
   const stage=document.querySelector('main.dashboard .stage'),bounds=stage?.getBoundingClientRect();
   if(bounds){box.style.left=(bounds.left+bounds.width/2)+'px';box.style.width=Math.max(200,Math.min(bounds.width-24,760))+'px';}
   decorate(box,event.root,event.title,event.detail,event.name);
-  box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;
+  box.hidden=true;box.classList.remove('toast-visible','toast-leaving');
+  const show=()=>{box.hidden=false;void box.offsetHeight;
   requestAnimationFrame(()=>box.classList.add('toast-visible'));
-  activeTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');exitTimer=setTimeout(()=>{box.hidden=true;exitTimer=null;next();},420);},Math.max(1,event.seconds)*1000);
+  activeTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');exitTimer=setTimeout(()=>{box.hidden=true;window.KCToastStack?.release(box);exitTimer=null;next();},420);},Math.max(1,event.seconds)*1000);
+  };
+  if(window.KCToastStack)window.KCToastStack.present(box,show);else show();
  }
  const euro=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
  const stationQueue=[];

@@ -2,7 +2,7 @@
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
  const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set(),clocks=new Map();
- let settings=null,timer=null,clockTimer=null,toastTimer=null,scoreTimer=null,seenPhases=new Map(),seenKickoffs=new Set();
+ let settings=null,timer=null,clockTimer=null,toastSerial=0,seenPhases=new Map(),seenKickoffs=new Set();
  const minuteMs=60000,breakMs=15*minuteMs;
  const finalScoreWindow=120*minuteMs,typicalMatchDuration=105*minuteMs;
  const finishedAt=new Map();
@@ -132,10 +132,30 @@
   box.style.setProperty('--football-toast-background',background);
   box.style.setProperty('--football-toast-foreground',foreground);
  }
+ function toastBox(id,className){
+  let box=document.getElementById(id);
+  if(box?.dataset.toastReserved==='true')box=null;
+  if(!box){
+   box=document.createElement('div');
+   box.id=document.getElementById(id)?id+'-'+(++toastSerial):id;
+   document.body.append(box);
+  }
+  box.className=className;box.dataset.toastReserved='true';
+  return box;
+ }
+ function finishToast(box){
+  box.hidden=true;delete box.dataset.toastReserved;window.KCToastStack?.release(box);
+  if(/-\d+$/.test(box.id))box.remove();
+ }
+ function presentToast(box,start){
+  box.hidden=true;box.classList.remove('toast-visible','toast-leaving');
+  const reveal=()=>{box.hidden=false;void box.offsetHeight;start();};
+  if(window.KCToastStack)window.KCToastStack.present(box,reveal);else reveal();
+ }
  function announce(m,old,next,estimatedMinute='',league='bl1'){
   if(!settings?.goalToastSeconds||!settings.events?.goal||document.hidden)return;
-  const box=document.getElementById('dashboard-football-toast')||document.createElement('div');
-  box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';
+  const box=toastBox('dashboard-football-toast','dashboard-throw-popup is-nine dashboard-football-toast');
+  let scoreTimer=null;
   paintToast(box,league);
   box.style.left='50%';box.style.width='calc(100vw - 32px)';
   const goal=(m.goals||[]).slice().reverse().find(g=>Number(g.scoreTeam1)===next[0]&&Number(g.scoreTeam2)===next[1]);
@@ -157,47 +177,48 @@
    'Tor'+(minute?' in der '+minute:'')+'. '+[m.team1?.teamName||m.team1?.shortName||'Heim',next[0]+' zu '+next[1],m.team2?.teamName||m.team2?.shortName||'Gast'].join(' '));
   announcement.setAttribute('role','status');
   box.replaceChildren(row,announcement);
-  if(!box.isConnected)document.body.append(box);
-  clearTimeout(toastTimer);clearTimeout(scoreTimer);
-  box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;
-  requestAnimationFrame(()=>{
-   if(row.parentNode!==box)return;
-   box.classList.add('toast-visible');
-   if(!animate)return;
-   const start=Math.min(550,duration/2);
-   const largestChange=Math.max(...next.map((value,index)=>value-shown[index]));
-   const step=Math.max(80,Math.min(180,(duration-start-100)/Math.max(1,largestChange)));
-   const count=()=>{
-    if(row.parentNode!==box||!box.classList.contains('toast-visible'))return;
-    digits.forEach((digit,index)=>{
-     if(shown[index]===next[index])return;
-     if(shown[index]<next[index]){
-      digit.classList.remove('football-goal-pop');
-      void digit.offsetWidth;
-      digit.classList.add('football-goal-pop');
-      shown[index]++;
-     }else shown[index]=next[index];
-     digit.textContent=String(shown[index]);
-    });
-    if(shown.some((value,index)=>value!==next[index]))scoreTimer=setTimeout(count,step);
-   };
-   scoreTimer=setTimeout(count,start);
+  presentToast(box,()=>{
+   requestAnimationFrame(()=>{
+    if(row.parentNode!==box)return;
+    box.classList.add('toast-visible');
+    if(!animate)return;
+    const start=Math.min(550,duration/2);
+    const largestChange=Math.max(...next.map((value,index)=>value-shown[index]));
+    const step=Math.max(80,Math.min(180,(duration-start-100)/Math.max(1,largestChange)));
+    const count=()=>{
+     if(row.parentNode!==box||!box.classList.contains('toast-visible'))return;
+     digits.forEach((digit,index)=>{
+      if(shown[index]===next[index])return;
+      if(shown[index]<next[index]){
+       digit.classList.remove('football-goal-pop');
+       void digit.offsetWidth;
+       digit.classList.add('football-goal-pop');
+       shown[index]++;
+      }else shown[index]=next[index];
+      digit.textContent=String(shown[index]);
+     });
+     if(shown.some((value,index)=>value!==next[index]))scoreTimer=setTimeout(count,step);
+    };
+    scoreTimer=setTimeout(count,start);
+   });
+   setTimeout(()=>{
+    clearTimeout(scoreTimer);
+    box.classList.remove('toast-visible');box.classList.add('toast-leaving');
+    setTimeout(()=>{if(row.parentNode===box&&!box.classList.contains('toast-visible'))finishToast(box);},450);
+   },duration);
   });
-  toastTimer=setTimeout(()=>{
-   clearTimeout(scoreTimer);
-   box.classList.remove('toast-visible');box.classList.add('toast-leaving');
-   setTimeout(()=>{if(row.parentNode===box&&!box.classList.contains('toast-visible'))box.hidden=true;},450);
-  },duration);
  }
  function announceStatus(m,kind,league){
   if(!settings?.goalToastSeconds||!settings.events?.[kind]||document.hidden)return;
-  const box=document.getElementById('dashboard-football-status-toast')||document.createElement('div');box.id='dashboard-football-status-toast';box.className='dashboard-throw-popup dashboard-football-toast is-wreath';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
+  const box=toastBox('dashboard-football-status-toast','dashboard-throw-popup dashboard-football-toast dashboard-football-status-toast is-wreath');box.setAttribute('role','status');box.setAttribute('aria-live','polite');
   paintToast(box,league);
   const title=document.createElement('strong'),detail=document.createElement('span');
   title.textContent={kickoff:'▶ Anstoßzeit erreicht',halftime:'⏸ Halbzeit',fulltime:'■ Abpfiff'}[kind];detail.textContent=label(m);
-  box.style.left='50%';box.style.width='calc(100vw - 32px)';box.replaceChildren(title,detail);box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;
-  requestAnimationFrame(()=>box.classList.add('toast-visible'));
-  clearTimeout(box._hideTimer);box._hideTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');setTimeout(()=>{if(!box.classList.contains('toast-visible'))box.hidden=true;},450);},settings.goalToastSeconds*1000);
+  box.style.left='50%';box.style.width='calc(100vw - 32px)';box.replaceChildren(title,detail);
+  presentToast(box,()=>{
+   requestAnimationFrame(()=>box.classList.add('toast-visible'));
+   setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');setTimeout(()=>{if(!box.classList.contains('toast-visible'))finishToast(box);},450);},settings.goalToastSeconds*1000);
+  });
  }
  const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
@@ -257,8 +278,7 @@
   const next={colors,bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),events:value?.events||{goal:true,kickoff:true,halftime:true,fulltime:true}};
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
   settings=next;
-  for(const id of ['dashboard-football-toast','dashboard-football-status-toast']){
-   const box=document.getElementById?.(id);
+  for(const box of document.querySelectorAll?.('.dashboard-football-toast')||[]){
    if(box?.dataset.footballLeague)paintToast(box,box.dataset.footballLeague);
   }
   if(!timer)timer=setInterval(refresh,30000);

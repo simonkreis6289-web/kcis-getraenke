@@ -8,13 +8,13 @@ function fixture(reduced=false){
  const timers=new Map();
  const ctx={document,console,Date,Event:class Event{constructor(type){this.type=type;}},AbortController,
   setTimeout(fn,ms){timers.set(++serial,{fn,ms});return serial;},clearTimeout:id=>timers.delete(id),
-  setInterval:()=>1,requestAnimationFrame:fn=>fn(),matchMedia:()=>({matches:reduced}),dispatchEvent(){}};
+  innerHeight:1080,addEventListener(){},setInterval:()=>1,requestAnimationFrame:fn=>fn(),matchMedia:()=>({matches:reduced}),dispatchEvent(){}};
  const runTimer=ms=>{
   const task=[...timers].find(([,timer])=>timer.ms===ms);
   assert(task,'expected timer at '+ms+' ms');timers.delete(task[0]);task[1].fn();
  };
- ctx.window=ctx;vm.createContext(ctx);vm.runInContext(read('js/football-live.js'),ctx);
- const box=()=>document.getElementById('dashboard-football-toast');
+ ctx.window=ctx;vm.createContext(ctx);vm.runInContext(read('js/dashboard-toast-stack.js'),ctx);vm.runInContext(read('js/football-live.js'),ctx);
+ const box=()=>[...document.querySelectorAll('[id^="dashboard-football-toast"]')].at(-1);
  const digits=()=>[...box().querySelectorAll('.football-goal-digit')];
  return {ctx,live:ctx.KCFootballLive,box,digits,points:()=>digits().map(d=>d.textContent),runTimer};
 }
@@ -78,10 +78,11 @@ for(const league of ['bl1','bl2'])test(league+': goal and status toasts share th
  assert.equal(f.box().style.getPropertyValue('--football-toast-background'),colors[league]);
  assert.equal(f.box().style.getPropertyValue('--football-toast-foreground'),league==='bl1'?'#ffffff':'#102239');
  matchResults=[{resultTypeID:1,pointsTeam1:1,pointsTeam2:0}];revision++;await f.live.refresh();
- const status=f.ctx.document.getElementById('dashboard-football-status-toast');
+ let status=f.ctx.document.getElementById('dashboard-football-status-toast');
  assert.match(status.textContent,/Halbzeit/);
  assert.equal(status.style.getPropertyValue('--football-toast-background'),colors[league]);
  finished=true;revision++;await f.live.refresh();
+ status=[...f.ctx.document.querySelectorAll('.dashboard-football-status-toast')].at(-1);
  assert.match(status.textContent,/Abpfiff/);
  assert.equal(status.style.getPropertyValue('--football-toast-background'),colors[league]);
  f.live.configure({[league]:true},{...colors,[league]:'#ffffff'});
@@ -89,6 +90,28 @@ for(const league of ['bl1','bl2'])test(league+': goal and status toasts share th
   assert.equal(box.style.getPropertyValue('--football-toast-background'),'#ffffff');
   assert.equal(box.style.getPropertyValue('--football-toast-foreground'),'#102239');
  }
+});
+
+test('simultaneous goals from both leagues remain separate, animate independently and release their own stack position',async()=>{
+ const f=fixture();let revision=0;
+ f.ctx.fetch=async url=>({ok:true,json:async()=>url.includes('getcurrentgroup')?{groupOrderID:10}:url.includes('getlastchangedate')?revision:[{
+  matchID:1,matchDateTimeUTC:new Date(Date.now()-600000).toISOString(),team1:home,team2:away,matchResults:[],
+  goals:revision?[{matchMinute:12,scoreTeam1:1,scoreTeam2:0}]:[]
+ }]});
+ f.live.configure({bl1:true,bl2:true});await new Promise(resolve=>setImmediate(resolve));
+ revision++;await f.live.refresh();
+ const boxes=[...f.ctx.document.querySelectorAll('[id^="dashboard-football-toast"]')];
+ assert.equal(boxes.length,2);assert.notEqual(boxes[0].id,boxes[1].id);
+ for(const box of boxes)assert(box.classList.contains('toast-visible'));
+ const bottom=box=>parseFloat(box.style.getPropertyValue('--toast-stack-bottom'));
+ assert(bottom(boxes[1])>=bottom(boxes[0])+100+12);
+ f.runTimer(550);f.runTimer(550);
+ for(const box of boxes)assert.equal(box.querySelector('.football-goal-digit').textContent,'1');
+ f.runTimer(5000);f.runTimer(450);
+ assert(boxes[0].hidden);assert(boxes[1].classList.contains('toast-visible'));
+ assert.equal(bottom(boxes[1]),bottom(boxes[0]));
+ f.runTimer(5000);f.runTimer(450);
+ assert(!boxes[1].isConnected);
 });
 
 test('main app link with the club crest appears among the footer buttons on both dashboards',()=>{
