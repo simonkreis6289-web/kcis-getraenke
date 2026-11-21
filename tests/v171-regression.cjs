@@ -98,7 +98,7 @@ test('archive deletion rejects wrong categories and path injection',async()=>{
 function profileContext(){
   const nodes={};const get=id=>nodes[id]||(nodes[id]={value:'',textContent:'',disabled:false,focus(){},classList:{add(){},remove(){},contains(){return false}}});
   let saved,local;
-  const ctx=context(['js/birthdays.js','js/member-profiles.js'],{
+  const ctx=context(['js/birthdays.js','js/player-colors.js','js/member-profiles.js'],{
     document:{getElementById:get,querySelectorAll:()=>[],addEventListener(){},activeElement:null},
     persons:[{name:'Anna'}],clubTermine:[{type:'geburtstag',date:'2026-11-06',note:'Anna'}],ACTIVE_CLUB:'club',navigator:{onLine:true},lastLocalChangeAt:1,
     persistState(){local=JSON.stringify({persons:ctx.persons,clubTermine:ctx.clubTermine})},

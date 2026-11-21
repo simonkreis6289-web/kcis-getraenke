@@ -142,3 +142,10 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 .station-booking-list b,.station-booking-list li span{display:block}
 .station-booking-list li strong,.station-booking-total strong{white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){.station-booking-card{transition:none}}
+
+#game-body [data-dashboard-player]::before{
+ content:"";display:inline-block;width:.65em;height:.65em;margin-inline-end:.35em;
+ background:var(--dashboard-player-color);border-radius:50%;vertical-align:.065em;
+ box-shadow:0 0 0 1px #17284035;
+}
+#game-body .fox-race-runner[data-dashboard-player]::before{margin-inline-end:.12em;flex:none}

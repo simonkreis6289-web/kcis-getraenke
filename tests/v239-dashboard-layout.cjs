@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{parseHTML}=require('linkedom');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),copy=x=>JSON.parse(JSON.stringify(x));
-function ui(html='dashboard.html'){const {document}=parseHTML(read(html)),c={document,Intl,Date,console,requestAnimationFrame:()=>1,setInterval:()=>1,setTimeout:()=>1,clearTimeout(){},addEventListener(){}};c.window=c;vm.createContext(c);for(const f of ['birthdays','dashboard-layout'])vm.runInContext(read('js/'+f+'.js'),c);return c;}
+function ui(html='dashboard.html'){const {document}=parseHTML(read(html)),c={document,Intl,Date,console,requestAnimationFrame:()=>1,setInterval:()=>1,setTimeout:()=>1,clearTimeout(){},addEventListener(){}};c.window=c;vm.createContext(c);for(const f of ['birthdays','player-colors','dashboard-layout'])vm.runInContext(read('js/'+f+'.js'),c);return c;}
 const c=ui(),M=c.KCDashboardLayout;
 const source=read('tests/v230-player-rows.cjs'),{app,tv,fullApp}=new Function('require','__dirname',source.slice(0,source.indexOf('const keys='))+';return {app,tv,fullApp};')(require,__dirname);
 function selection(enabled){const s=M.defaults();for(const key of M.keys)s.panels[key].enabled=enabled.includes(key);return s;}
@@ -254,4 +254,49 @@ test('Abschreibung fits the board inside the padded stage even on browsers witho
  assert(Number(board.style.zoom)<1);
  assert(board.scrollHeight*Number(board.style.zoom)<=420-16);
  assert.match(html,/#game-body\.has-abschreibung-board\{overflow:hidden/);
+});
+
+test('member colors update running TV games and optional table tints, and persist across reload and evening reset',{timeout:60000},async()=>{
+ const a=await app(),d=tv(a.db),colors=a.c.KCPlayerColors;
+ assert.equal(colors.forPerson({name:'Simon Kreis'}),'#fde100');
+ assert.equal(colors.forPerson({name:'Marco'}),'#004d9d');
+ assert.equal(colors.forPerson({name:'Marco',playerColor:'red;display:none'}),'#004d9d');
+ assert(await a.c.startMenschGameFinal('A')!==false);
+ assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ const pawn=()=>d.document.querySelector('[data-mensch-player="A"]').style.getPropertyValue('--mensch-player-color');
+ assert.equal(pawn(),colors.defaultColor('A'));
+ a.c.openMemberProfile('A');
+ const color=a.document.getElementById('member-profile-color');
+ color.value='#95CF25';await a.c.saveMemberProfile();
+ assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ assert.equal(a.db.root().persons.find(p=>p.name==='A').playerColor,'#95cf25');
+ assert.equal(pawn(),'#95cf25');
+ const row=id=>[...d.document.querySelectorAll('#'+id+' .listrow')].find(x=>x.querySelector('.name').textContent==='A');
+ assert(!row('drinks').style.backgroundColor);assert(!row('fines').style.backgroundColor);
+ const drinks=a.document.getElementById('dashboard-player-tint-drinks');
+ drinks.checked=true;drinks.onchange();assert(await a.c.KCDashboardSettingsApp.save());
+ assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ assert.equal(row('drinks').style.backgroundColor,colors.tint('#95cf25'));
+ assert(!row('fines').style.backgroundColor);
+ const fines=a.document.getElementById('dashboard-player-tint-fines');
+ fines.checked=true;fines.onchange();assert(await a.c.KCDashboardSettingsApp.save());
+ assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ assert.equal(row('fines').style.backgroundColor,colors.tint('#95cf25'));
+ await a.c.indStart('hindernis','A');assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ const dot=d.document.querySelector('#game-body [data-player-row="A"] .hurdle-player-dot');
+ assert.equal(dot.style.getPropertyValue('--player-color'),'#95cf25');
+ await a.c.indAction('hindernis','throw',{kind:'pins',pins:3});assert(await a.c.KCSharedSync.waitForUpload());d.update();
+ assert.equal(d.document.querySelector('.hurdle-circuit-player[title^="A ·"] .hurdle-player-dot').style.getPropertyValue('--player-color'),'#95cf25');
+ const b=fullApp(a.db);await b.select();b.c.openMemberProfile('A');
+ assert.equal(b.document.getElementById('member-profile-color').value,'#95cf25');
+ b.c.closeMemberProfile();assert(await b.c.startNewKegelabend());assert(await b.c.KCSharedSync.waitForUpload());
+ assert.equal(a.db.root().persons.find(p=>p.name==='A').playerColor,'#95cf25');
+ assert.deepEqual(copy(a.db.root().dashboardSettings.playerRowTint),{fines:true,drinks:true});
+ assert.equal(b.c.KCDashboardLink.project(a.db.root()).persons.find(p=>p.name==='A').playerColor,'#95cf25');
+ const disable=b.document.getElementById('dashboard-player-tint-drinks');
+ assert(disable.checked);disable.checked=false;disable.onchange();
+ assert(await b.c.KCDashboardSettingsApp.save());assert(await b.c.KCSharedSync.waitForUpload());
+ assert.deepEqual(copy(a.db.root().dashboardSettings.playerRowTint),{fines:true,drinks:false});
+ b.c.openMemberProfile('A');b.c.resetMemberProfileColor();await b.c.saveMemberProfile();assert(await b.c.KCSharedSync.waitForUpload());
+ const saved=a.db.root().persons.find(p=>p.name==='A');assert.equal(saved.playerColor,'');assert.equal(colors.forPerson(saved),colors.defaultColor('A'));
 });

@@ -106,10 +106,12 @@ test('Tannenbaum table fills the stage below the scores and above the throw hist
 
 test('Mensch pins hop through every field, reflect at 36 and return to Start on a collision',()=>{
  const source=read('dashboard.html');
- const code=source.slice(source.indexOf('const menschColors='),source.indexOf('function renderDartsBoard('));
+ const code=source.slice(source.indexOf('function menschThrowCount('),source.indexOf('function renderDartsBoard('));
  const timers=new Map();let serial=0;
  const env={window:{KCDashboardLayout:{menschPopup:value=>value}},activeNames:names=>names,safe:String,
+  dashboardPlayerColor:()=>env.window.KCPlayerColors.defaultColor,
   setTimeout:(fn,ms)=>{const id=++serial;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
+ new Function('window',read('js/player-colors.js'))(env.window);
  const {menschHopFields,menschPawnOrigins,animateMenschPawns,menschKnockout,showMenschPopup,clearMenschPopup,renderMenschBoard}=new Function('env','with(env){'+code+
   ';return {menschHopFields,menschPawnOrigins,animateMenschPawns,menschKnockout,showMenschPopup,clearMenschPopup,renderMenschBoard};}')(env);
  assert.deepEqual(menschHopFields(0,4,4),[1,2,3,4]);
@@ -119,7 +121,7 @@ test('Mensch pins hop through every field, reflect at 36 and return to Start on 
  env.document=document;
  const body=document.getElementById('game-body');body.dataset.scoreGame='same-game';
  body.innerHTML=renderMenschBoard(base);
- assert.equal(body.querySelector('[data-mensch-player=Simon]').style.getPropertyValue('--mensch-player-color'),'#ffd326');
+ assert.equal(body.querySelector('[data-mensch-player=Simon]').style.getPropertyValue('--mensch-player-color'),'#fde100');
  assert.equal(body.querySelector('.mensch-active-field').dataset.menschPosition,'1');
  const seedRects=()=>{
   for(const item of body.querySelectorAll('.mensch-field,.mensch-pawn')){

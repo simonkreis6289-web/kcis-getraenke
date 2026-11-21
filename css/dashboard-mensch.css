@@ -48,7 +48,7 @@
 }
 .mensch-pawn::before {
   content:"";position:absolute;top:-.55rem;left:50%;transform:translateX(-50%);
-  width:.83rem;height:.83rem;border-radius:50%;background:var(--mensch-player-color);
+  width:.83rem;height:.83rem;border-radius:50%;background:var(--mensch-player-color);box-shadow:0 0 0 1px #17284035;
 }
 .mensch-pawn > .mensch-pawn-head {
   position:absolute;top:-.92rem;left:50%;transform:translateX(-50%);
@@ -56,8 +56,6 @@
 }
 .mensch-pawn-head .seat-avatar-initials { font-size:.72rem; }
 .mensch-pawn b { position:relative;font-size:.85rem;line-height:1; }
-.mensch-pawn.is-simon { color:#432e00;box-shadow:0 0 0 1px #a36c00; }
-.mensch-pawn.is-simon::before { box-shadow:0 0 0 1px #a36c00; }
 .mensch-pawn.is-current { outline:2px solid #ed9c12;outline-offset:1px; }
 .mensch-color-dot {
   display:inline-block;width:.64rem;height:.64rem;margin-right:.32em;border-radius:50%;
