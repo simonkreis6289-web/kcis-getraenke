@@ -97,7 +97,7 @@
   const splitLabel=element('label',undefined,'dashboard-popup-option');splitLabel.append(document.createTextNode('Breite links bei zwei nebeneinanderliegenden Laufbändern: '),duration('dashboard-ticker-left-percent',draft.tickerStreams.leftPercent,25,75,v=>draft.tickerStreams.leftPercent=v),document.createTextNode(' %'));
   splitLabel.hidden=!(draft.tickerStreams.club.enabled&&draft.tickerStreams.football.enabled&&draft.tickerStreams.club.position!==draft.tickerStreams.football.position);
   streamBox.append(splitLabel);box.append(streamBox);
-  box.append(element('h3','Farben der Lauftext-Kacheln'),element('p','Jeder Bereich bekommt eine eigene Hintergrundfarbe. Die Textfarbe wird automatisch gut lesbar gewählt.'));
+  box.append(element('h3','Farben der Lauftext-Kacheln und Bundesliga-Meldungen'),element('p','Jeder Bereich bekommt eine eigene Hintergrundfarbe. Für die 1. und 2. Bundesliga gilt die gewählte Farbe auch für Tor-, Halbzeit-, Anstoß- und Abpfiffmeldungen. Die Textfarbe wird automatisch gut lesbar gewählt.'));
   const palette=element('div',undefined,'dashboard-ticker-palette');
   for(const [key,name] of Object.entries(M.tickerTypes)){
    const label=element('label',undefined,'dashboard-ticker-color-row'),color=element('input');color.type='color';color.id='dashboard-ticker-color-'+key;color.value=draft.tickerColors[key];color.disabled=busy;color.setAttribute('aria-label','Kachelfarbe '+name);color.oninput=()=>{draft.tickerColors[key]=color.value;};label.append(document.createTextNode(name),color);palette.append(label);

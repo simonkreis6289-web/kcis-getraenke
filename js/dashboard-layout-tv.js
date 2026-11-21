@@ -134,7 +134,7 @@
   lastTickerRoot=root;
   const settings=M.normalize(root?.dashboardSettings);
   arrangeTickers(settings);
-  window.KCFootballLive?.configure(settings.football);
+  window.KCFootballLive?.configure(settings.football,settings.tickerColors);
   const data=M.upcoming(root,now),date=day=>new Date(day+'T12:00:00Z').toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'medium'}),
    when=e=>date(e.date)+(e.endDate&&e.endDate>e.date?' – '+date(e.endDate):e.time?', '+e.time+' Uhr':'')+(e.note?' · '+e.note:'');
   const club=[['kc-next-birthdays',data.birthdays.length?'🎂 Geburtstage bis zum nächsten Kegeln: '+data.birthdays.map(e=>e.date.slice(8,10)+'.'+e.date.slice(5,7)+'. '+(e.note||e.personName||'')).join(' · '):'',settings.tickerColors.birthdays],

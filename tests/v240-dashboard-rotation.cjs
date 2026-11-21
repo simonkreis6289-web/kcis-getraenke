@@ -157,9 +157,11 @@ test('ticker chips use configured colors and keep text as safe text nodes',()=>{
 test('two ticker lanes split independently, preserve their tracks and use the configured width',()=>{
  const f=setup(),settings=f.model.defaults();
  settings.tickerStreams.leftPercent=65;
- f.c.KCFootballLive={configure(){},ticker(){return [['football-bl1-123','⚽ BVB 2:1 S04'],['football-bl2-321','⚽ Zweite Liga 0:0']];}};
+ let configuredColors;
+ f.c.KCFootballLive={configure(value,colors){configuredColors=colors;},ticker(){return [['football-bl1-123','⚽ BVB 2:1 S04'],['football-bl2-321','⚽ Zweite Liga 0:0']];}};
  const original=f.document.getElementById('dashboard-ticker-track');
  f.tv.ticker({dashboardSettings:settings});
+ assert.deepEqual(copy(configuredColors),copy(settings.tickerColors));
  const region=f.document.getElementById('dashboard-ticker-region'),club=f.document.getElementById('dashboard-ticker'),football=f.document.getElementById('dashboard-football-ticker');
  assert(!region.hidden);
  assert.equal(club.parentNode.id,'dashboard-ticker-slot-left');
