@@ -30,7 +30,9 @@
     const entry=waiting[0];
     if(!entry.box.isConnected){waiting.shift();continue;}
     if(active.length&&layout()+measure(entry.box)>viewport()-12)break;
-    waiting.shift();active.push(entry);entry.box.hidden=false;
+    waiting.shift();
+    entry.box.style.setProperty('--toast-stack-bottom',layout()+'px');
+    active.push(entry);entry.box.hidden=false;
     resize?.observe(entry.box);layout();entry.start();
    }
   }finally{draining=false;}
