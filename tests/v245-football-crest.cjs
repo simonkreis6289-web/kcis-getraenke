@@ -67,6 +67,30 @@ test('live goal uses its reported minute and scorer, including stoppage time and
  assert(!f.box().querySelector('.football-goal-pop'));
 });
 
+for(const league of ['bl1','bl2'])test(league+': goal and status toasts share the configured ticker color and follow live color edits',async()=>{
+ const f=fixture();
+ const colors={bl1:'#123456',bl2:'#fef3c7'};
+ let goals=[],matchResults=[],finished=false,revision=0;
+ const match={matchID:9,matchDateTimeUTC:new Date(Date.now()-600000).toISOString(),leagueShortcut:league,team1:home,team2:away};
+ f.ctx.fetch=async url=>({ok:true,json:async()=>url.includes('getcurrentgroup')?{groupOrderID:10}:url.includes('getlastchangedate')?revision:[{...match,goals,matchResults,matchIsFinished:finished}]});
+ f.live.configure({[league]:true},colors);await new Promise(resolve=>setImmediate(resolve));
+ goals=[{matchMinute:12,scoreTeam1:1,scoreTeam2:0}];revision++;await f.live.refresh();
+ assert.equal(f.box().style.getPropertyValue('--football-toast-background'),colors[league]);
+ assert.equal(f.box().style.getPropertyValue('--football-toast-foreground'),league==='bl1'?'#ffffff':'#102239');
+ matchResults=[{resultTypeID:1,pointsTeam1:1,pointsTeam2:0}];revision++;await f.live.refresh();
+ const status=f.ctx.document.getElementById('dashboard-football-status-toast');
+ assert.match(status.textContent,/Halbzeit/);
+ assert.equal(status.style.getPropertyValue('--football-toast-background'),colors[league]);
+ finished=true;revision++;await f.live.refresh();
+ assert.match(status.textContent,/Abpfiff/);
+ assert.equal(status.style.getPropertyValue('--football-toast-background'),colors[league]);
+ f.live.configure({[league]:true},{...colors,[league]:'#ffffff'});
+ for(const box of [f.box(),status]){
+  assert.equal(box.style.getPropertyValue('--football-toast-background'),'#ffffff');
+  assert.equal(box.style.getPropertyValue('--football-toast-foreground'),'#102239');
+ }
+});
+
 test('main app link with the club crest appears among the footer buttons on both dashboards',()=>{
  for(const file of ['dashboard.html','dashboard-compat.html']){
   const {document}=parseHTML(read(file));

@@ -124,10 +124,19 @@
   if(/^[1-9]\d{0,2}(?:\s*\+\s*[1-9]\d?)?$/.test(minute))return minute.replace(/\s+/g,'')+'′';
   return estimate.startsWith('≈')?estimate:'';
  }
- function announce(m,old,next,estimatedMinute=''){
+ function paintToast(box,league){
+  const background=settings.colors[league]||settings.colors.bl1;
+  const rgb=background.match(/[a-f0-9]{2}/gi).map(value=>parseInt(value,16));
+  const foreground=(.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2])<145?'#ffffff':'#102239';
+  box.dataset.footballLeague=league;
+  box.style.setProperty('--football-toast-background',background);
+  box.style.setProperty('--football-toast-foreground',foreground);
+ }
+ function announce(m,old,next,estimatedMinute='',league='bl1'){
   if(!settings?.goalToastSeconds||!settings.events?.goal||document.hidden)return;
   const box=document.getElementById('dashboard-football-toast')||document.createElement('div');
   box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';
+  paintToast(box,league);
   box.style.left='50%';box.style.width='calc(100vw - 32px)';
   const goal=(m.goals||[]).slice().reverse().find(g=>Number(g.scoreTeam1)===next[0]&&Number(g.scoreTeam2)===next[1]);
   const minute=goalMinute(goal,estimatedMinute);
@@ -180,9 +189,10 @@
    setTimeout(()=>{if(row.parentNode===box&&!box.classList.contains('toast-visible'))box.hidden=true;},450);
   },duration);
  }
- function announceStatus(m,kind){
+ function announceStatus(m,kind,league){
   if(!settings?.goalToastSeconds||!settings.events?.[kind]||document.hidden)return;
   const box=document.getElementById('dashboard-football-status-toast')||document.createElement('div');box.id='dashboard-football-status-toast';box.className='dashboard-throw-popup dashboard-football-toast is-wreath';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
+  paintToast(box,league);
   const title=document.createElement('strong'),detail=document.createElement('span');
   title.textContent={kickoff:'▶ Anstoßzeit erreicht',halftime:'⏸ Halbzeit',fulltime:'■ Abpfiff'}[kind];detail.textContent=label(m);
   box.style.left='50%';box.style.width='calc(100vw - 32px)';box.replaceChildren(title,detail);box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;
@@ -192,7 +202,7 @@
  const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
   const now=Date.now(),list=matches;state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
-  for(const m of list){const id=matchKey(league,m),next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next,clockLabel(m,clocks.get(id),now));
+  for(const m of list){const id=matchKey(league,m),next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next,clockLabel(m,clocks.get(id),now),league);
    seen.set(id,next);
    const previous=seenPhases.get(id),current=phase(m);
    if(current.finished&&!finishedAt.has(id)){
@@ -201,8 +211,8 @@
     finishedAt.set(id,previous&&!previous.finished?now:Number.isFinite(estimatedEnd)?Math.min(now,estimatedEnd):now);
    }else if(!current.finished)finishedAt.delete(id);
    if(previous&&initialized.has(league)&&enabled(league)){
-    if(!previous.finished&&current.finished)announceStatus(m,'fulltime');
-    else if(!previous.half&&current.half)announceStatus(m,'halftime');
+    if(!previous.finished&&current.finished)announceStatus(m,'fulltime',league);
+    else if(!previous.half&&current.half)announceStatus(m,'halftime',league);
    }
    seenPhases.set(id,current);}
   window.dispatchEvent(new Event('kc-football-updated'));
@@ -212,7 +222,7 @@
    const id=league+':'+m.matchID,start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');
    if(!Number.isFinite(start)||seenKickoffs.has(id))continue;
    if(start<now-90000){seenKickoffs.add(id);continue;}
-   if(start<=now&&now-start<=90000){seenKickoffs.add(id);if(!m.matchIsFinished)announceStatus(m,'kickoff');}
+   if(start<=now&&now-start<=90000){seenKickoffs.add(id);if(!m.matchIsFinished)announceStatus(m,'kickoff',league);}
   }
  }
  async function refreshLeague(league,now){
@@ -241,10 +251,17 @@
   if(!settings||document.hidden)return;
   await Promise.all(leagues.filter(enabled).map(league=>refreshLeague(league,Date.now())));
  }
- function configure(value){
-  const next={bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),events:value?.events||{goal:true,kickoff:true,halftime:true,fulltime:true}};
+ function configure(value,tickerColors){
+  const defaults=window.KCDashboardLayout?.defaults().tickerColors||{bl1:'#dbeafe',bl2:'#ede9fe'};
+  const colors=Object.fromEntries(leagues.map(league=>[league,/^#[0-9a-f]{6}$/i.test(tickerColors?.[league]||'')?tickerColors[league].toLowerCase():defaults[league]]));
+  const next={colors,bl1:value?.bl1===true,bl2:value?.bl2===true,goalToastSeconds:Math.max(0,Math.min(30,Number(value?.goalToastSeconds??5)||0)),events:value?.events||{goal:true,kickoff:true,halftime:true,fulltime:true}};
   const sourceChanged=!settings||settings.bl1!==next.bl1||settings.bl2!==next.bl2;
-  settings=next;if(!timer)timer=setInterval(refresh,30000);
+  settings=next;
+  for(const id of ['dashboard-football-toast','dashboard-football-status-toast']){
+   const box=document.getElementById?.(id);
+   if(box?.dataset.footballLeague)paintToast(box,box.dataset.footballLeague);
+  }
+  if(!timer)timer=setInterval(refresh,30000);
   if(!clockTimer)clockTimer=setInterval(()=>{
    if(!document.hidden&&leagues.some(league=>enabled(league)&&state.get(league)?.length))window.dispatchEvent(new Event('kc-football-clock'));
   },5000);
