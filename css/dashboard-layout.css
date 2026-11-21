@@ -10,6 +10,8 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 @keyframes dashboard-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .dashboard-footer .header-actions{flex:none;gap:5px;margin:0;position:relative}.dashboard-footer .header-details>summary,.dashboard-footer .dashboard-sound-toggle,.dashboard-footer .tv-link-check,.dashboard-footer .fullscreen-btn{min-height:25px;padding:3px 8px;font-size:11px;line-height:1.35;border-radius:5px}.dashboard-footer .header-details>summary{color:#213550;background:#fff;border-color:#afbdd0}.dashboard-footer .fullscreen-btn{background:#f5b638;color:#192333;border-color:#d69b22}.dashboard-footer .header-detail-menu{top:auto;bottom:calc(100% + 10px);right:0;max-height:min(75vh,600px);overflow:auto}
 .dashboard-footer .tv-link-check{background:#fff;color:#213550;border:1px solid #afbdd0;font-weight:700;white-space:nowrap;cursor:pointer}
+.dashboard-footer .dashboard-main-app{display:inline-flex;align-items:center;gap:5px;min-height:25px;padding:2px 6px;border:1px solid #afbdd0;border-radius:5px;background:#fff;color:#213550;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap}
+.dashboard-main-app img{display:block;width:20px;height:20px;object-fit:contain}
 .dashboard-footer .tv-link-check[aria-disabled=true]{cursor:wait}
 .tv-link-feedback{position:absolute;right:0;bottom:calc(100% + 10px);z-index:10;width:360px;max-width:90vw;pointer-events:none;white-space:pre-line}
 .tv-link-feedback.is-visible{padding:10px 12px;background:#fff;color:#213550;border:1px solid #afbdd0;border-radius:7px;box-shadow:0 4px 12px #15294033;font-size:14px;font-weight:600}
@@ -62,24 +64,23 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 
 .dashboard-football-toast{border-color:#2387e0!important;background:linear-gradient(135deg,#d8edff,#51a8f5)!important;color:#072c55!important}
 
-/* Tor-Toast: Vereinswappen links, grosses Ergebnis rechts. */
-.dashboard-football-toast .dashboard-football-toast-content{display:flex;align-items:center;justify-content:center;gap:clamp(15px,2.5vw,34px);width:100%;min-width:0}
-.dashboard-football-toast .dashboard-football-crest{display:grid;place-items:center;flex:none;width:clamp(85px,9vw,145px);height:clamp(85px,9vw,145px);border-radius:18px;background:#ffffffd9;border:2px solid #ffffff;box-shadow:0 4px 18px #0c3b7040;overflow:hidden;padding:10px;box-sizing:border-box}
-.dashboard-football-toast .dashboard-football-crest img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
-.dashboard-football-toast .dashboard-football-crest-fallback{font-size:clamp(24px,3vw,44px);font-weight:900;color:#15395d}
-.dashboard-football-toast .dashboard-football-crest-fallback[hidden]{display:none!important}
-.dashboard-football-toast .dashboard-football-toast-copy{display:flex;flex-direction:column;gap:8px;min-width:0;text-align:left}
-.dashboard-football-toast .dashboard-football-toast-copy strong{font-size:clamp(30px,4vw,60px);line-height:1.08;font-weight:900}
-.dashboard-football-toast .dashboard-football-toast-copy span{font-size:clamp(20px,2.5vw,36px);line-height:1.15;font-weight:800;overflow-wrap:anywhere}
-@media(max-width:700px){.dashboard-football-toast .dashboard-football-crest{width:76px;height:76px}.dashboard-football-toast .dashboard-football-toast-content{gap:12px}.dashboard-football-toast .dashboard-football-toast-copy strong{font-size:27px}.dashboard-football-toast .dashboard-football-toast-copy span{font-size:19px}}
-
-/* Torjubel ueber die komplette Dashboard-Breite, unabhaengig von den Seitenleisten. */
-.dashboard-football-toast{width:calc(100vw - 32px)!important;max-width:calc(100vw - 32px)!important;min-height:clamp(170px,23vh,260px);padding:22px clamp(24px,5vw,85px);border-width:5px;box-shadow:0 20px 65px #07172baf,0 0 0 4px #ffffffbd}
-.dashboard-football-toast .dashboard-football-toast-content{gap:clamp(20px,4vw,64px)}
-.dashboard-football-toast .dashboard-football-crest{width:clamp(105px,13vw,195px);height:clamp(105px,13vw,195px)}
-.dashboard-football-toast .dashboard-football-toast-copy strong{font-size:clamp(38px,5.5vw,84px)}
-.dashboard-football-toast .dashboard-football-toast-copy span{font-size:clamp(23px,3.2vw,48px)}
-@media(max-width:700px){.dashboard-football-toast{padding:20px 16px;min-height:140px}.dashboard-football-toast .dashboard-football-crest{width:80px;height:80px}.dashboard-football-toast .dashboard-football-toast-copy strong{font-size:29px}.dashboard-football-toast .dashboard-football-toast-copy span{font-size:20px}}
+/* Torjubel über die komplette Dashboardbreite. */
+.dashboard-football-toast{width:calc(100vw - 32px)!important;max-width:calc(100vw - 32px)!important;min-height:clamp(170px,23vh,260px);padding:18px clamp(10px,3vw,48px);border-width:5px;box-shadow:0 20px 65px #07172baf,0 0 0 4px #ffffffbd}
+.dashboard-football-toast-content{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:clamp(6px,2.5vw,40px);width:100%}
+.football-goal-club,.football-goal-center{display:grid;justify-items:center;gap:8px;min-width:0}
+.dashboard-football-crest{display:grid;place-items:center;width:clamp(54px,9vw,152px);height:clamp(54px,9vw,152px);border-radius:14px;background:#fff;border:2px solid #fff;box-shadow:0 4px 18px #0c3b7040;overflow:hidden;padding:7px;box-sizing:border-box}
+.dashboard-football-crest img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}
+.dashboard-football-crest-fallback{font-size:clamp(14px,2.3vw,36px);font-weight:900}
+.dashboard-football-crest-fallback[hidden]{display:none}
+.football-goal-club-name{font-size:clamp(12px,2.35vw,38px);line-height:1.12;overflow-wrap:anywhere;word-wrap:break-word;max-width:100%}
+.football-goal-heading{font-size:clamp(13px,2.3vw,36px);line-height:1.1}
+.football-goal-score{display:flex;align-items:center;justify-content:center;padding:.08em .25em;border-radius:.2em;background:#0b3056;color:#fff;font-size:clamp(32px,6.5vw,108px);font-weight:900;line-height:1.12;font-variant-numeric:tabular-nums}
+.football-goal-digit{display:block;min-width:1.15em}
+.football-goal-pop{animation:football-goal-pop 560ms ease-out}
+@keyframes football-goal-pop{45%{transform:scale(1.3);color:#ffe16b}100%{transform:scale(1)}}
+.football-goal-scorer{max-width:clamp(82px,23vw,360px);font-size:clamp(11px,1.6vw,25px);line-height:1.15;overflow-wrap:anywhere;word-wrap:break-word}
+.dashboard-football-toast>.football-goal-announcement{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(prefers-reduced-motion:reduce){.football-goal-pop{animation:none}}
 
 /* Jede Meldung als separate farbige Kachel, die im Laufband mitfaehrt. */
 .dashboard-ticker-copy{gap:12px;padding-right:12px;align-items:center;height:100%}
