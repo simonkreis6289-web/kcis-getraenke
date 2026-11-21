@@ -4,6 +4,9 @@
  const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set(),clocks=new Map();
  let settings=null,timer=null,clockTimer=null,toastTimer=null,scoreTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
  const minuteMs=60000,breakMs=15*minuteMs;
+ const finalScoreWindow=120*minuteMs,typicalMatchDuration=105*minuteMs;
+ const finishedAt=new Map();
+ const matchKey=(league,match)=>league+':'+match.matchID;
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{
   const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),12000);
@@ -66,6 +69,30 @@
   // Die laufende Uhr ist geschätzt. Ohne bestätigte Halbzeit wird kein Wiederanpfiff unterstellt.
   if(minute>limit)return minute>limit+15?'≈'+limit+'′+':'≈'+limit+'+'+(minute-limit)+'′';
   return '≈'+minute+'′';
+ }
+ function visibleMatch(league,match,now){
+  const start=kickoff(match);
+  if(!Number.isFinite(start)||start>=now+60*minuteMs||start<=now-24*60*minuteMs)return false;
+  return !match.matchIsFinished||now<(finishedAt.get(matchKey(league,match))??start+typicalMatchDuration)+finalScoreWindow;
+ }
+ const clockMinutes=label=>label.match(/\d+/g).reduce((sum,part)=>sum+Number(part),0);
+ function tickerClock(match,clock,peers,now){
+  const own=clockLabel(match,clock,now);
+  if(match.matchIsFinished||!clock||now<clock.start||clock.anchor||own==='Halbzeit')return own;
+  const nearby=peers.filter(peer=>peer.match!==match&&!peer.match.matchIsFinished&&peer.clock&&
+   now>=peer.clock.start&&Math.abs(peer.clock.start-clock.start)<=2*minuteMs);
+  const synced=nearby.filter(peer=>peer.clock.anchor||peer.clock.halfAt!==null);
+  if(!synced.length)return own;
+  const half=clock.halfAt!==null;
+  const candidates=synced
+   .filter(peer=>!half||peer.label==='Halbzeit'||peer.clock.anchor?.second||peer.clock.halfAt!==null&&now>=peer.clock.halfAt+breakMs)
+   .filter(peer=>peer.label);
+  if(!candidates.length)return own;
+  const breaks=candidates.filter(peer=>peer.label==='Halbzeit');
+  if(breaks.length>candidates.length/2)return '≈Halbzeit';
+  const running=candidates.filter(peer=>peer.label!=='Halbzeit');
+  running.sort((a,b)=>clockMinutes(a.label)-clockMinutes(b.label));
+  return running[Math.floor(running.length/2)]?.label||own;
  }
  const label=(m)=>{const s=score(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(m.matchIsFinished?' (Ende)':'');};
  function toastElement(tag,className,text){
@@ -165,9 +192,14 @@
  const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
   const now=Date.now(),list=matches;state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
-  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next,clockLabel(m,clocks.get(id),now));
+  for(const m of list){const id=matchKey(league,m),next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next,clockLabel(m,clocks.get(id),now));
    seen.set(id,next);
    const previous=seenPhases.get(id),current=phase(m);
+   if(current.finished&&!finishedAt.has(id)){
+    const estimatedEnd=kickoff(m)+typicalMatchDuration;
+    // Ein beobachteter Abpfiff zählt ab Empfang. Beim Öffnen nach dem Spiel dient die Anstoßzeit als Schätzung.
+    finishedAt.set(id,previous&&!previous.finished?now:Number.isFinite(estimatedEnd)?Math.min(now,estimatedEnd):now);
+   }else if(!current.finished)finishedAt.delete(id);
    if(previous&&initialized.has(league)&&enabled(league)){
     if(!previous.finished&&current.finished)announceStatus(m,'fulltime');
     else if(!previous.half&&current.half)announceStatus(m,'halftime');
@@ -239,6 +271,17 @@
   if(sourceChanged)void refresh();
   if(demoChanged)syncDemo(next.demo);
  }
- function ticker(now=Date.now()){if(!settings)return [];const live=leagues.filter(enabled).flatMap(league=>(state.get(league)||[]).map(m=>['football-'+league+'-'+m.matchID,'⚽ '+label(m),clockLabel(m,clocks.get(league+':'+m.matchID),now)]));if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);return live;}
+ function ticker(now=Date.now()){
+  if(!settings)return [];
+  const matches=leagues.filter(enabled).flatMap(league=>(state.get(league)||[])
+   .filter(match=>visibleMatch(league,match,now))
+   .map(match=>{
+    const clock=clocks.get(matchKey(league,match));
+    return {league,match,clock,label:clockLabel(match,clock,now)};
+   }));
+  const live=matches.map(({league,match,clock})=>['football-'+league+'-'+match.matchID,'⚽ '+label(match),tickerClock(match,clock,matches,now)]);
+  if(demoMatch)live.unshift(['football-demo','🧪 TESTSPIEL · '+label(demoMatch)]);
+  return live;
+ }
  window.KCFootballLive=Object.freeze({configure,ticker,refresh,observeClock,clockLabel,status:()=>Object.fromEntries([...failures].map(([league,v])=>[league,{tries:v.tries,retryAt:new Date(v.next).toISOString(),message:v.message}]))});
 })();
