@@ -2,7 +2,7 @@
 (()=>{
  const base='https://api.openligadb.de',leagues=['bl1','bl2'];
  const state=new Map(),seen=new Map(),groups=new Map(),stamps=new Map(),initialized=new Set(),refreshing=new Set(),clocks=new Map();
- let settings=null,timer=null,clockTimer=null,toastTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
+ let settings=null,timer=null,clockTimer=null,toastTimer=null,scoreTimer=null,demoSeen=null,demoMatch=null,demoTeams=null,demoTeamsLoading=false,seenPhases=new Map(),seenKickoffs=new Set();
  const minuteMs=60000,breakMs=15*minuteMs;
  const season=()=>{const d=new Date(),year=d.getFullYear();return d.getMonth()<6?year-1:year;};
  const fetchJSON=async path=>{
@@ -68,21 +68,90 @@
   return '≈'+minute+'′';
  }
  const label=(m)=>{const s=score(m);return (m.leagueShortcut==='bl2'?'2. BL':'1. BL')+' · '+(m.team1?.shortName||m.team1?.teamName||'?')+' '+s[0]+':'+s[1]+' '+(m.team2?.shortName||m.team2?.teamName||'?')+(m.matchIsFinished?' (Ende)':'');};
- function announce(m,old,next){
+ function toastElement(tag,className,text){
+  const element=document.createElement(tag);
+  element.className=className;
+  if(text!==undefined)element.textContent=text;
+  return element;
+ }
+ function toastClub(team){
+  const short=String(team?.shortName||team?.teamName||'⚽').trim();
+  const name=team?.teamName||short||'Verein unbekannt';
+  const initials=short.length<=4?short:short.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase();
+  const club=toastElement('div','football-goal-club'),crest=toastElement('div','dashboard-football-crest');
+  const fallback=toastElement('span','dashboard-football-crest-fallback',initials||'⚽');
+  const url=String(team?.teamIconUrl||'').trim();
+  if(/^https:\/\/[^\s<>"']+$/i.test(url)){
+   const logo=document.createElement('img');
+   logo.alt='';logo.loading='eager';logo.referrerPolicy='no-referrer';
+   logo.onerror=()=>{logo.remove();fallback.hidden=false;};
+   fallback.hidden=true;crest.append(logo);logo.src=url;
+  }
+  crest.append(fallback);
+  crest.setAttribute('aria-hidden','true');
+  club.append(crest,toastElement('strong','football-goal-club-name',name));
+  return club;
+ }
+ function goalMinute(goal,estimate){
+  const minute=String(goal?.matchMinute??'').trim();
+  if(/^[1-9]\d{0,2}(?:\s*\+\s*[1-9]\d?)?$/.test(minute))return minute.replace(/\s+/g,'')+'′';
+  return estimate.startsWith('≈')?estimate:'';
+ }
+ function announce(m,old,next,estimatedMinute=''){
   if(!settings?.goalToastSeconds||!settings.events?.goal||document.hidden)return;
-  const box=document.getElementById('dashboard-football-toast')||document.createElement('div');box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.append(box);
-  // Torjubel spannt die ganze TV-Breite auf, auch bei seitlichen Tabellen.
+  const box=document.getElementById('dashboard-football-toast')||document.createElement('div');
+  box.id='dashboard-football-toast';box.className='dashboard-throw-popup is-nine dashboard-football-toast';
   box.style.left='50%';box.style.width='calc(100vw - 32px)';
-  const scoring=next[0]>old[0]?m.team1:m.team2,goal=(m.goals||[]).at(-1);
-  const row=document.createElement('div'),crest=document.createElement('div'),caption=document.createElement('div'),title=document.createElement('strong'),detail=document.createElement('span');
-  row.className='dashboard-football-toast-content';crest.className='dashboard-football-crest';caption.className='dashboard-football-toast-copy';
-  const short=String(scoring?.shortName||scoring?.teamName||'⚽').trim(),initials=short.length<=4?short:short.split(/\s+/).map(x=>x[0]).join('').slice(0,3).toUpperCase();
-  const fallback=document.createElement('span');fallback.className='dashboard-football-crest-fallback';fallback.textContent=initials||'⚽';
-  const candidate=String(scoring?.teamIconUrl||'').trim();
-  if(/^https:\/\/[^\s<>"']+$/i.test(candidate)){const logo=document.createElement('img');logo.src=candidate;logo.alt='Wappen '+String(scoring?.teamName||short);logo.loading='eager';logo.referrerPolicy='no-referrer';logo.onerror=()=>{logo.remove();fallback.hidden=false;};fallback.hidden=true;crest.append(logo);}
-  crest.append(fallback);title.textContent='⚽ TOR! '+next[0]+':'+next[1];detail.textContent=(scoring?.teamName||'Bundesliga')+(goal?.goalGetterName?' · '+goal.goalGetterName:'');
-  caption.append(title,detail);row.append(crest,caption);box.replaceChildren(row);
-  clearTimeout(toastTimer);box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));toastTimer=setTimeout(()=>{box.classList.remove('toast-visible');box.classList.add('toast-leaving');setTimeout(()=>{if(!box.classList.contains('toast-visible'))box.hidden=true;},450);},settings.goalToastSeconds*1000);
+  const goal=(m.goals||[]).slice().reverse().find(g=>Number(g.scoreTeam1)===next[0]&&Number(g.scoreTeam2)===next[1]);
+  const minute=goalMinute(goal,estimatedMinute);
+  const row=toastElement('div','dashboard-football-toast-content');
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const duration=settings.goalToastSeconds*1000;
+  const animate=!reduced&&duration>250;
+  const shown=(animate?old:next).slice();
+  const digits=shown.map(value=>toastElement('span','football-goal-digit',String(value)));
+  const scoreBox=toastElement('div','football-goal-score');
+  scoreBox.setAttribute('aria-hidden','true');
+  scoreBox.append(digits[0],toastElement('span','football-goal-separator',':'),digits[1]);
+  const center=toastElement('div','football-goal-center');
+  center.append(toastElement('strong','football-goal-heading','⚽ Tor!'+(minute?' · '+minute:'')),scoreBox);
+  if(goal?.goalGetterName)center.append(toastElement('span','football-goal-scorer',goal.goalGetterName));
+  row.append(toastClub(m.team1),center,toastClub(m.team2));
+  const announcement=toastElement('span','football-goal-announcement',
+   'Tor'+(minute?' in der '+minute:'')+'. '+[m.team1?.teamName||m.team1?.shortName||'Heim',next[0]+' zu '+next[1],m.team2?.teamName||m.team2?.shortName||'Gast'].join(' '));
+  announcement.setAttribute('role','status');
+  box.replaceChildren(row,announcement);
+  if(!box.isConnected)document.body.append(box);
+  clearTimeout(toastTimer);clearTimeout(scoreTimer);
+  box.hidden=true;box.classList.remove('toast-visible','toast-leaving');box.hidden=false;void box.offsetHeight;
+  requestAnimationFrame(()=>{
+   if(row.parentNode!==box)return;
+   box.classList.add('toast-visible');
+   if(!animate)return;
+   const start=Math.min(550,duration/2);
+   const largestChange=Math.max(...next.map((value,index)=>value-shown[index]));
+   const step=Math.max(80,Math.min(180,(duration-start-100)/Math.max(1,largestChange)));
+   const count=()=>{
+    if(row.parentNode!==box||!box.classList.contains('toast-visible'))return;
+    digits.forEach((digit,index)=>{
+     if(shown[index]===next[index])return;
+     if(shown[index]<next[index]){
+      digit.classList.remove('football-goal-pop');
+      void digit.offsetWidth;
+      digit.classList.add('football-goal-pop');
+      shown[index]++;
+     }else shown[index]=next[index];
+     digit.textContent=String(shown[index]);
+    });
+    if(shown.some((value,index)=>value!==next[index]))scoreTimer=setTimeout(count,step);
+   };
+   scoreTimer=setTimeout(count,start);
+  });
+  toastTimer=setTimeout(()=>{
+   clearTimeout(scoreTimer);
+   box.classList.remove('toast-visible');box.classList.add('toast-leaving');
+   setTimeout(()=>{if(row.parentNode===box&&!box.classList.contains('toast-visible'))box.hidden=true;},450);
+  },duration);
  }
  function announceStatus(m,kind){
   if(!settings?.goalToastSeconds||!settings.events?.[kind]||document.hidden)return;
@@ -96,7 +165,7 @@
  const phase=m=>({half:Array.isArray(m.matchResults)&&m.matchResults.some(x=>x.resultTypeID===1),finished:!!m.matchIsFinished});
  function ingest(league,matches){
   const now=Date.now(),list=matches;state.set(league,list.filter(m=>{const start=Date.parse(m.matchDateTimeUTC||m.matchDateTime||'');return Number.isFinite(start)&&start<now+3600000&&start>now-86400000;}));
-  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next);
+  for(const m of list){const id=league+':'+m.matchID,next=score(m),old=seen.get(id);clocks.set(id,observeClock(clocks.get(id),m,now));if(old&&initialized.has(league)&&enabled(league)&&!m.matchIsFinished&&(next[0]>old[0]||next[1]>old[1]))announce(m,old,next,clockLabel(m,clocks.get(id),now));
    seen.set(id,next);
    const previous=seenPhases.get(id),current=phase(m);
    if(previous&&initialized.has(league)&&enabled(league)){
@@ -140,7 +209,7 @@
   if(!settings||document.hidden)return;
   await Promise.all(leagues.filter(enabled).map(league=>refreshLeague(league,Date.now())));
  }
- function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:demoTeams?.bvb||''},team2:{teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:demoTeams?.schalke||''},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,goalGetterName:'Testtor'}]:[],matchResults:[]};}
+ function mockMatch(demo){return {matchID:'test-'+demo.id,leagueShortcut:demo.league,team1:{teamName:'Borussia Dortmund',shortName:'BVB',teamIconUrl:demoTeams?.bvb||''},team2:{teamName:'FC Schalke 04',shortName:'S04',teamIconUrl:demoTeams?.schalke||''},matchDateTimeUTC:new Date().toISOString(),matchIsFinished:false,goals:demo.home+demo.away?[{scoreTeam1:demo.home,scoreTeam2:demo.away,matchMinute:Math.min(90,12+(demo.home+demo.away-1)*11),goalGetterName:'Testtor'}]:[],matchResults:[]};}
  async function loadDemoCrests(){
   if(demoTeamsLoading||demoTeams)return;demoTeamsLoading=true;
   try{
