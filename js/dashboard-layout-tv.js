@@ -152,9 +152,9 @@
   if(popupTimer!==null){clearTimeout(popupTimer);popupTimer=null;}
   if(popupExitTimer!==null){clearTimeout(popupExitTimer);popupExitTimer=null;}
   const box=$('dashboard-throw-popup');if(!box)return;
-  if(immediate||box.hidden){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');return;}
+  if(immediate||box.hidden){box.hidden=true;box.classList.remove('toast-visible','toast-leaving');window.KCToastStack?.release(box);return;}
   box.classList.remove('toast-visible');box.classList.add('toast-leaving');
-  popupExitTimer=setTimeout(()=>{box.hidden=true;box.classList.remove('toast-leaving');popupExitTimer=null;},420);
+  popupExitTimer=setTimeout(()=>{box.hidden=true;box.classList.remove('toast-leaving');window.KCToastStack?.release(box);popupExitTimer=null;},420);
  }
  function feed(root,club,now=Date.now()){
   const scope=String(club||'')+'|'+String(root?.currentEveningStartedAt||''),seconds=M.normalize(root?.dashboardSettings).popupSeconds;
@@ -172,8 +172,9 @@
   const event=fresh.sort((a,b)=>a.at-b.at).at(-1);let box=$('dashboard-throw-popup');
   if(!box){box=document.createElement('div');box.id='dashboard-throw-popup';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.hidden=true;document.body.append(box);}
   hidePopup(true);box.className='dashboard-throw-popup is-'+event.kind;
-  const titleText={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!',through:'🎳 Durchgeworfen!'}[event.kind];if(window.KCClubToasts)window.KCClubToasts.decorate(box,root,titleText,event.name,event.name);else{const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent=titleText;box.replaceChildren(title,name);}positionPopup();box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));
-  popupTimer=setTimeout(hidePopup,popupSeconds*1000);
+  const titleText={gutter:'💀 Gosse!',wreath:'👑 Kranz!',nine:'🎯 Alle Neune!',through:'🎳 Durchgeworfen!'}[event.kind];if(window.KCClubToasts)window.KCClubToasts.decorate(box,root,titleText,event.name,event.name);else{const name=document.createElement('span'),title=document.createElement('strong');name.textContent=event.name;name.hidden=!event.name;title.textContent=titleText;box.replaceChildren(title,name);}positionPopup();
+  const show=()=>{box.hidden=false;void box.offsetHeight;requestAnimationFrame(()=>box.classList.add('toast-visible'));popupTimer=setTimeout(hidePopup,popupSeconds*1000);};
+  if(window.KCToastStack)window.KCToastStack.present(box,show);else show();
  }
  window.addEventListener('kc-football-updated',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
  window.addEventListener('kc-football-clock',()=>{if(lastTickerRoot)ticker(lastTickerRoot);});
