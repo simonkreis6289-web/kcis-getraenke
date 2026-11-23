@@ -171,3 +171,6 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 #gutters .gutter-count.is-empty{border-color:#cbd6e4;background:#eef3f9;color:#60718a;box-shadow:none}
 #gutters .gutter-leader .gutter-count{border-color:#d5a546;background:#ffe9a8;color:#744b06}
 #gutters .gutter-leader .gutter-count::before{content:'👑';margin-right:.25em;font-size:.75em}
+
+/* Schmale Überschriften geben die Höhe an die Tabellen zurück. */
+.dashboard .panel>h2{padding:5px 10px;line-height:1.15;border-bottom-width:1px;flex:none}

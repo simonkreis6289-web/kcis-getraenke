@@ -22,6 +22,7 @@ function openMemberProfile(name) {
   const role = document.getElementById('member-profile-role');
   role.innerHTML = MEMBER_ROLES.map(item => '<option value="'+item.key+'">'+item.label+' · '+item.purpose+'</option>').join('');
   role.value = getMemberRole(person).key;
+  document.getElementById('member-profile-alias').value = person.gameAlias || '';
   document.getElementById('member-profile-color').value = window.KCPlayerColors.forPerson(person);
   document.getElementById('member-profile-show-payment').checked=person.showPaymentStatus!==false;
   document.getElementById('member-profile-modal').classList.remove('hidden');
@@ -51,7 +52,7 @@ async function saveMemberProfile(event) {
   const color = window.KCPlayerColors.normalize(document.getElementById('member-profile-color').value);
   if (!color) {showToast('Bitte eine gültige Spielerfarbe auswählen.','error');return;}
   if (!navigator.onLine || !window.firestoreApi) {showToast('Für persönliche Daten bitte eine Verbindung herstellen.','error');return;}
-  const previousProfile={birthDate:person.birthDate, memberSince:person.memberSince, memberRole:person.memberRole,showPaymentStatus:person.showPaymentStatus,playerColor:person.playerColor}, previousEvents=clubTermine, previousChange=lastLocalChangeAt;
+  const previousProfile={birthDate:person.birthDate, memberSince:person.memberSince, memberRole:person.memberRole,showPaymentStatus:person.showPaymentStatus,playerColor:person.playerColor,gameAlias:person.gameAlias}, previousEvents=clubTermine, previousChange=lastLocalChangeAt;
   let saved=false;
   memberProfileBusy = true;
   const controls = [...document.querySelectorAll('#member-profile-modal button, #member-profile-modal input, #member-profile-modal select')];
@@ -60,6 +61,8 @@ async function saveMemberProfile(event) {
     person.birthDate = value;
     person.memberSince = since;
     person.memberRole = role;
+    const alias=document.getElementById('member-profile-alias').value.trim().replace(/\s+/g,' ').slice(0,40);
+    if(alias||person.gameAlias)person.gameAlias=alias;
     const customColor = color === window.KCPlayerColors.defaultColor(person.name) ? '' : color;
     if (customColor || person.playerColor) person.playerColor = customColor;
     person.showPaymentStatus=document.getElementById('member-profile-show-payment').checked;
@@ -69,6 +72,7 @@ async function saveMemberProfile(event) {
     lastLocalChangeAt=Date.now();
     if (!(await saveToFirestore(false))) throw new Error('Persönliche Daten konnten nicht synchronisiert werden');
     saved=true;persistState();
+    window.KCPlayerNames?.refresh(persons);
     if(typeof renderAll==='function')renderAll();else renderMemberManagement();kcRenderTermine();
     showToast('Persönliche Daten gespeichert','success');
   } catch(error) {

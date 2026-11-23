@@ -1,0 +1,12 @@
+/* Ein gemeinsamer Stil für alle Spielersäulen in App und Dashboard. */
+.kc-player-column{box-sizing:border-box;background:var(--player-chart-fill,#edf2f8);border:2px solid var(--player-chart-color,#405ab0)}
+.kc-player-column-name{color:#000;background:#ffffffcf;font-size:clamp(14px,1.2vw,20px);font-weight:650;line-height:1.15}
+.abschreibung-chart .kc-player-column,.euro-chart .kc-player-column{background:var(--player-chart-fill,#edf2f8)}
+.abschreibung-chart .kc-player-column-name,.euro-chart .kc-player-column-name{color:#000;background:#ffffffcf;font-size:clamp(14px,1.2vw,20px);line-height:1.15}
+.abschreibung-chart .is-current .abschreibung-chart-track{background:#f8f6ef;box-shadow:inset 0 0 0 1px #b69353}
+.abschreibung-chart .is-target .abschreibung-chart-track{background:#fbf3f0;box-shadow:inset 0 0 0 1px #c38b7e}
+.euro-game-layout .ind-table th:first-child{white-space:nowrap}
+.euro-game-layout .ind-table th:first-child::before{flex-shrink:0}
+
+.jump-tv-meter .kc-player-column{background:var(--player-chart-fill,#edf2f8)}
+.jump-tv-meter>small:first-of-type{font-size:clamp(14px,1.2vw,20px);color:#000}
