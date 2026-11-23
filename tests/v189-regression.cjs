@@ -56,7 +56,7 @@ test('TV gutter tally retains the exact count, limits marks to 15 and highlights
  const {document}=parseHTML('<div id="gutters"></div>'),html=read('dashboard.html');
  const listLine=html.split('\n').find(line=>line.startsWith('function list('));
  const env={document,$:id=>document.getElementById(id)};
- const {list,decorateGutterRows}=new Function('env','with(env){'+listLine+'\n'+extract(html,'decorateGutterRows')+';return {list,decorateGutterRows};}')(env);
+ const {list,decorateGutterRows}=new Function('env','with(env){'+listLine+'\n'+extract(html,'fitGutterText')+'\n'+extract(html,'decorateGutterRows')+';return {list,decorateGutterRows};}')(env);
  const scores=[{name:'A',count:19},{name:'B',count:19},{name:'C',count:5},{name:'D',count:0},{name:'E',count:-1}];
  list('gutters',scores,row=>row.count+' ×','Leer');
  decorateGutterRows(scores,['A','B']);
