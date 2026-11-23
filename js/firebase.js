@@ -206,7 +206,7 @@ window.firestoreApi = {
       if(request.action==='answer'&&(old.connectionId!==request.connectionId||old.answer||
         old.expiresAt<=(window.KCSharedClock?.now()??Date.now())))return false;
       const value=request.action==='offer'?{kind:'dashboardLink',viewerId:request.viewerId,connectionId:request.connectionId,
-        offer:request.description,answer:null,expiresAt:(window.KCSharedClock?.now()??Date.now())+120000}
+        offer:request.description,answer:null,expiresAt:Math.round(window.KCSharedClock?.now()??Date.now())+120000}
         :{...old,answer:request.description,source:request.source};
       tx.set(target,value);return true;
     });
@@ -220,7 +220,7 @@ window.firestoreApi = {
     const target=doc(db,'clubs',clubId,'documents','dashboard_diagnostic_'+(request.kind==='presence'?'presence':'probe'));
     return runTransaction(db,async tx=>{
       const previous=await tx.get(target),old=previous.exists()?previous.data():null;
-      const time=window.KCSharedClock?.now()??Date.now();
+      const time=Math.round(window.KCSharedClock?.now()??Date.now());
       if(request.kind==='pong'&&(old?.kind!=='ping'||old.id!==request.id||old.expiresAt<time))return false;
       tx.set(target,{kind:request.kind,id:request.id,webrtc:request.webrtc===true,
         expiresAt:time+(request.kind==='presence'?95000:15000)});

@@ -103,6 +103,21 @@ test('team drink dropdown excludes solo games and bills the actual cross-side pa
 test('peer signaling stays outside accounting state and a stale answer cannot replace a newer offer',async()=>{
  const db=database({[rootPath]:initial()}),c=apiClient(db);await c.firestoreApi.initializeSharedState('club',{},'sync_peer_init');const root=copy(db.root());await c.firestoreApi.sendDashboardSignal('club',{action:'offer',viewerId:'viewer_one',connectionId:'connection_one',description:{type:'offer',sdp:'v=0 offer'}});await c.firestoreApi.sendDashboardSignal('club',{action:'offer',viewerId:'viewer_one',connectionId:'connection_two',description:{type:'offer',sdp:'v=0 offer 2'}});assert.equal(await c.firestoreApi.sendDashboardSignal('club',{action:'answer',viewerId:'viewer_one',connectionId:'connection_one',source:'publisher',description:{type:'answer',sdp:'v=0 stale'}}),false);const key='clubs/club/documents/dashboard_link_viewer_one';assert.equal(db.data.get(key).answer,null);await c.firestoreApi.sendDashboardSignal('club',{action:'answer',viewerId:'viewer_one',connectionId:'connection_two',source:'publisher',description:{type:'answer',sdp:'v=0 answer'}});assert.equal(db.data.get(key).answer.sdp,'v=0 answer');assert.deepEqual(db.root(),root);assert.equal(db.data.get(key).syncRevision,undefined);
 });
+test('peer signals and diagnostic probes use integer expiries with a fractional synchronized clock',async()=>{
+ const db=database({[rootPath]:initial()}),c=apiClient(db),now=Date.now()+.375;
+ c.KCSharedClock={now:()=>now};
+ await c.firestoreApi.sendDashboardSignal('club',{action:'offer',viewerId:'fractional',connectionId:'connection',description:{type:'offer',sdp:'v=0 offer'}});
+ const link=db.data.get('clubs/club/documents/dashboard_link_fractional');
+ assert(Number.isSafeInteger(link.expiresAt));assert(Math.abs(link.expiresAt-now-120000)<=.5);
+ await c.firestoreApi.sendDashboardSignal('club',{action:'answer',viewerId:'fractional',connectionId:'connection',source:'tablet',description:{type:'answer',sdp:'v=0 answer'}});
+ assert(Number.isSafeInteger(db.data.get('clubs/club/documents/dashboard_link_fractional').expiresAt));
+ for(const kind of ['presence','ping','pong']){
+  await c.firestoreApi.sendDashboardDiagnostic('club',{kind,id:'probe',webrtc:true});
+  const row=db.data.get('clubs/club/documents/dashboard_diagnostic_'+(kind==='presence'?'presence':'probe'));
+  assert(Number.isSafeInteger(row.expiresAt));assert.equal(row.kind,kind);
+ }
+ assert.deepEqual(db.root(),initial(),'connection checks never change accounting state');
+});
 test('display frames omit persistence history and cannot roll back a confirmed sequence or cross into an unrelated evening',()=>{
  const w={};new Function('window',read('js/dashboard-link.js'))(w);const link=w.KCDashboardLink,base={tabletSequence:10,currentEveningStartedAt:'old',eveningResetRevision:2,persons:[{name:'A'}],strafenHistory:[{id:'book'}]},frame={sequence:11,baseEvening:'old',state:{persons:[{name:'B'}],currentEveningStartedAt:'new',eveningResetRevision:3},clock:{time:100}};assert.equal(link.reconcile(base,{...frame,sequence:9}),base);assert.equal(link.reconcile({...base,currentEveningStartedAt:'unrelated'},frame).currentEveningStartedAt,'unrelated');const view=link.reconcile(base,frame);assert.equal(view.currentEveningStartedAt,'new');assert.deepEqual(view.strafenHistory,base.strafenHistory);const compact=link.project({...base,strafenHistory:[{large:'x'}],menschState:{scores:{A:4},undoStack:[{huge:'x'}],commands:['x'],receipts:['x']}});assert(!compact.strafenHistory);assert(!compact.menschState.undoStack);assert(!compact.menschState.commands);assert.equal(compact.menschState.scores.A,4);
 });
