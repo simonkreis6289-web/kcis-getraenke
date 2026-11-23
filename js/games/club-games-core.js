@@ -60,17 +60,18 @@
   return s.players[s.index]||'';
  }
  function validTicket(numbers){
-  return Array.isArray(numbers)&&numbers.length===6&&numbers.every(n=>int(n,0,49))&&new Set(numbers).size===6&&new Set(numbers.map(n=>Math.floor(n/10))).size===5;
+  return Array.isArray(numbers)&&numbers.length===6&&numbers.every(n=>int(n,1,49))&&new Set(numbers).size===6&&new Set(numbers.map(n=>Math.floor(n/10))).size===5;
  }
  function randomTicket(random=Math.random){
-  const numbers=Array.from({length:5},(_,block)=>block*10+Math.floor(random()*10));
-  const block=Math.floor(random()*5),extra=block*10+Math.floor(random()*9);
-  numbers.push(extra+(extra>=numbers[block]?1:0));
+  const pools=Array.from({length:5},(_,block)=>Array.from({length:block?10:9},(_,i)=>block*10+i+(block?0:1)));
+  const numbers=pools.map(pool=>pool[Math.floor(random()*pool.length)]);
+  const block=Math.floor(random()*5),remaining=pools[block].filter(number=>number!==numbers[block]);
+  numbers.push(remaining[Math.floor(random()*remaining.length)]);
   return numbers.sort((a,b)=>a-b);
  }
  function fields(s,req){
   if(req.action==='numbers'&&s.gameKey==='lottokoenig'&&s.phase==='numbers'){
-   if(!validTicket(req.numbers))throw Error('Sechs verschiedene Zahlen von 0 bis 49 wählen, mindestens eine je Zehnerblock.');
+   if(!validTicket(req.numbers))throw Error('Sechs verschiedene Zahlen von 1 bis 49 wählen, mindestens eine je Zehnerblock.');
    return {numbers:req.numbers.slice().sort((a,b)=>a-b)};
   }
   if(req.action==='randomNumbers'&&s.gameKey==='lottokoenig'&&s.phase==='numbers'){
