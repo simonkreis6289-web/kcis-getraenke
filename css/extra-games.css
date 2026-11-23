@@ -4,9 +4,9 @@
 
 /* Gemeinsame Spalten halten Namen, Zaun, Latten und Preis bündig. */
 .extra-fences{--fence-columns:minmax(95px,140px) minmax(160px,1fr) 100px 120px;display:grid;gap:6px;overflow-x:auto}
-.extra-fence-row{display:grid;grid-template-columns:var(--fence-columns);column-gap:12px;align-items:stretch;min-width:740px;height:64px;border:1px solid #c8d2e3;border-radius:9px;background:#f7f9fc;overflow:hidden;box-sizing:border-box}
-.extra-fence-name{display:flex;align-items:center;min-width:0;padding-left:12px}
-.extra-fence-name>strong{font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.extra-fence-row{display:grid;grid-template-columns:var(--fence-columns);column-gap:12px;align-items:stretch;min-width:740px;height:64px;border:1px solid #c8d2e3;border-left:4px solid var(--player-chart-color,#c8d2e3);border-radius:9px;background:#f7f9fc;overflow:hidden;box-sizing:border-box}
+.extra-fence-name{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0;padding-left:12px}
+.extra-fence-name>strong{max-width:100%;font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .extra-fence{display:grid;grid-template-columns:repeat(var(--fence-groups),minmax(0,1fr));gap:8px;min-width:0;width:100%;max-width:calc(var(--fence-groups) * 62px + (var(--fence-groups) - 1) * 8px);margin:7px 0;align-self:stretch}
 .extra-fence-group{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:min(3px,10%);min-width:0;align-items:stretch}
 .extra-fence i{display:block;min-width:0;height:auto;border:0;box-shadow:inset 0 0 0 1px #c2cad6;border-radius:3px 3px 0 0;background:#e5eaf1;box-sizing:border-box}
@@ -53,9 +53,10 @@
 .round-tide-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 .round-tide-legend>span{padding:5px 10px;border:1px solid #b7c8d8;border-radius:7px;font-size:14px;font-weight:800}
 
-/* Der nächste Werfer fällt am TV auf, die Reihenfolge bleibt beim letzten Werfer beginnend. */
-#game-body .extra-fence-row.extra-fence-next-thrower{background:#fff0aa;border:3px solid #dc8b08;box-shadow:inset 6px 0 #dc8b08}
-#game-body .extra-fence-next-thrower .extra-fence-name>strong{color:#754100}
+/* Persönliche Farben und aktuelle Zeile gelten in App und Dashboard. */
+.extra-fence-name>strong::before{content:"";display:inline-block;width:.65em;height:.65em;margin-right:.35em;border-radius:50%;vertical-align:.065em;background:var(--player-chart-color,#405ab0);box-shadow:0 0 0 1px #17284035}
+.extra-fence-row.extra-fence-next-thrower{background:var(--player-chart-fill,#e3f3fb);border:2px solid var(--player-chart-color,#8cc3df);box-shadow:inset 4px 0 var(--player-chart-color,#8cc3df)}
+.extra-fence-next-thrower .extra-fence-name::after{content:"Am Wurf";display:block;margin-top:3px;font-size:12px;line-height:1.2;font-weight:700;color:#172b44}
 
 /* V251: Pokerwertungen dauerhaft rechts neben der Spieltabelle. */
 [data-extra-game="poker"] .classic-table-and-ranking{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px);gap:14px;align-items:start;min-width:0}
