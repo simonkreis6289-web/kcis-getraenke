@@ -81,8 +81,8 @@ function euroMoneyChart(s,current,escape,money,playerColor){
  const gain=Math.max(0,s.config.penaltyCents,...(s.config.bonusPins||[5]).map(pins=>pins*s.config.pinCents));
  const scale=Math.max(100,Math.ceil(Math.max(s.config.startCents+s.config.throws*gain,...amounts)/100)*100);
  return '<aside class="euro-chart" data-euro-game="'+escape(s.id)+'" aria-label="Zu zahlender Betrag je Kegler"><h3>Zu zahlen</h3><small>0 bis '+money(scale)+'</small><ul style="--euro-columns:'+s.players.length+'">'+s.players.map((name,index)=>{
-  const amount=amounts[index],color=euroPlayerColor(name,playerColor),ink=window.KCPlayerColors?.ink(color)||'#fff';
-  return '<li'+(s.active&&name===current?' class="is-current" aria-current="true"':'')+'><strong class="euro-chart-value"'+(window.KCPlayerRows?.score?.(name,'euro-column')||'')+'>'+money(amount)+'</strong><div class="euro-chart-track"><i class="euro-chart-fill" data-euro-player="'+escape(name)+'" data-euro-percent="'+100*amount/scale+'" style="height:'+100*amount/scale+'%;background:'+color+'"></i><span class="euro-chart-name" style="background:'+color+';color:'+ink+'" title="'+escape(name)+'">'+escape(name)+'</span></div></li>';
+  const amount=amounts[index],color=euroPlayerColor(name,playerColor),style=window.KCPlayerColors?.chartStyle(color)||'';
+  return '<li'+(s.active&&name===current?' class="is-current" aria-current="true"':'')+'><strong class="euro-chart-value"'+(window.KCPlayerRows?.score?.(name,'euro-column')||'')+'>'+money(amount)+'</strong><div class="euro-chart-track"><i class="euro-chart-fill kc-player-column" data-euro-player="'+escape(name)+'" data-euro-percent="'+100*amount/scale+'" style="height:'+100*amount/scale+'%;'+style+'"></i><span class="euro-chart-name kc-player-column-name" title="'+escape(name)+'">'+escape(name)+'</span></div></li>';
  }).join('')+'</ul></aside>';
 }
 function animateEuroChart(previous,chart,now=Date.now()){
@@ -136,7 +136,7 @@ function renderRoundGameBoard(s,{controls='',dashboard=false,playerColor}={}){
    const target=s.active?s.config.targets[index]:last?.target??s.config.targets[index];
    const scale=Math.max(1,height,...s.config.targets);
    const meter='<aside class="jump-tv-meter" aria-label="Sprunghöhe"><strong>'+height+' Holz</strong><small>'+esc(last?.name||current)+'</small>'+
-    '<div class="jump-tv-scale"><div class="jump-tv-fill" data-jump-throw="'+esc(last?.id||'')+'" data-jump-turn="'+s.history.length+'" data-jump-from="'+100*Math.max(0,height-(last?.pins||0))/scale+'%" style="--jump-height:'+100*height/scale+'%"></div><span class="jump-tv-bar" style="--jump-bar:'+100*target/scale+'%">Latte · '+target+'</span></div><small>0 Holz</small></aside>';
+    '<div class="jump-tv-scale"><div class="jump-tv-fill kc-player-column" data-jump-throw="'+esc(last?.id||'')+'" data-jump-turn="'+s.history.length+'" data-jump-from="'+100*Math.max(0,height-(last?.pins||0))/scale+'%" style="'+(window.KCPlayerColors?.chartStyle(euroPlayerColor(last?.name||current,playerColor))||'')+';--jump-height:'+100*height/scale+'%"></div><span class="jump-tv-bar" style="--jump-bar:'+100*target/scale+'%">Latte · '+target+'</span></div><small>0 Holz</small></aside>';
    body='<div class="jump-tv-stage">'+meter+body+'</div>';
   }
  }else{
@@ -196,7 +196,7 @@ function createFenceTvPlayback(schedule=setTimeout,cancel=clearTimeout,now=()=>D
 }
 
 function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,playerColor,abschreibungFrame=null,fenceFrame=null}={}){
- if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard,playerColor});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
+ if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame,playerColor});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard,playerColor});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
  const fenceElapsed=fenceFrame?Math.max(0,Date.now()-fenceFrame.started):0;
  const fenceOrder=fenceFrame&&!fenceFrame.reordering?fenceFrame.before:s;

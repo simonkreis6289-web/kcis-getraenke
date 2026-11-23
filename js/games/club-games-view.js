@@ -150,7 +150,7 @@ function captureAbschreibungColumns(board){
   }
  ]));
 }
-function abschreibungTvBoard(s,frame,impact){
+function abschreibungTvBoard(s,frame,impact,playerColor){
  const shown=frame?.holding?frame.before:s,shot=frame?.points?frame.shot:null;
  const scoredBefore=frame?.before||s;
  const last=shown.history.findLast(e=>e.action==='throw');
@@ -177,14 +177,15 @@ function abschreibungTvBoard(s,frame,impact){
   const shift=frame?.ranks?.get(name)||0;
   const role=isCurrent?'is-current':isTarget?'is-target':'';
   const label=isCurrent?' · Am Wurf':isTarget?' · Wurfziel':'';
+  const chartStyle=window.KCPlayerColors?.chartStyle(playerColor?.(name)||window.KCPlayerColors.defaultColor(name))||'';
   const from=shrinking?';--abschreibung-before:'+percent(scoredBefore.scores[name]):'';
   const value='<b'+(globalThis.window?.KCPlayerRows?.score?.(name,'column')||'')+'>'+points+'</b>';
   return '<li data-abschreibung-column="'+escape(name)+'" data-abschreibung-role="'+role+'" class="'+role+(shift?' abschreibung-chart-move':'')+'"'+
    (isCurrent?' aria-current="true"':'')+ (shift?' style="--abschreibung-shift:'+(shift*100)+'%"':'')+'>'+
    '<span class="abschreibung-chart-value">'+value+'</span>'+
-   '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill'+(shrinking?' abschreibung-chart-drop':'')+
-    '" aria-hidden="true" style="height:'+percent(points)+from+'"></span>'+
-   '<span class="abschreibung-chart-name" title="'+escape(name+label)+'">'+escape(name)+'</span></span></li>';
+   '<span class="abschreibung-chart-track"><span class="abschreibung-chart-fill kc-player-column'+(shrinking?' abschreibung-chart-drop':'')+
+    '" aria-hidden="true" style="height:'+percent(points)+';'+chartStyle+from+'"></span>'+
+   '<span class="abschreibung-chart-name kc-player-column-name" title="'+escape(name+label)+'">'+escape(name)+'</span></span></li>';
  }).join('');
  const rule=abschreibungRule(s.config);
  return '<div class="abschreibung-layout abschreibung-tv-layout" style="--abschreibung-elapsed:'+Math.max(0,Date.now()-(frame?.startedAt??Date.now()))+'ms;--abschreibung-points-duration:'+ABSCHREIBUNG_POINTS_MS+'ms;--abschreibung-shrink-duration:'+ABSCHREIBUNG_SHRINK_MS+
@@ -213,7 +214,7 @@ function clubLottoTurn(s,current,phase){
   '</b> Holz gesamt</span>'+goal+
   '</div></div></section>';
 }
-function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=null}={}){
+function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=null,playerColor}={}){
  const g=window.KCClubGames,key=s.gameKey,current=g.current(s),escape=clubGameEscape,money=clubGameMoney;
  const last=s.history.findLast(e=>e.action==='throw');
  let phase='',body='',visual='',impact='',turnDetail='',showTurn=true;
@@ -228,7 +229,7 @@ function renderClubGameBoard(s,{controls='',dashboard=false,abschreibungFrame=nu
   }
   if(dashboard&&(s.active||abschreibungFrame)){
    phase='Runde '+(abschreibungFrame?.holding?abschreibungFrame.before.round:s.round);
-   body=abschreibungTvBoard(s,abschreibungFrame,impact);
+   body=abschreibungTvBoard(s,abschreibungFrame,impact,playerColor);
    impact='';
   }else if(s.active){
    const order=g.abschreibungOrder(s);

@@ -135,10 +135,10 @@ button.club-game-pin { cursor:pointer; }
 
 /* Abschreibung auf dem TV */
 .abschreibung-tv-round { margin-bottom:.55rem;color:#34546c;font-size:clamp(1rem,1.4vw,1.35rem);font-weight:800; }
-.abschreibung-tv-layout { align-items:stretch;grid-template-columns:minmax(0,1.15fr) minmax(15rem,1fr); }
+.abschreibung-tv-layout { align-items:stretch;grid-template-columns:minmax(0,.72fr) minmax(0,1.4fr); }
 .abschreibung-tv-stand { display:flex;flex-direction:column;min-width:0; }
 .abschreibung-tv-stand .abschreibung-order { grid-auto-rows:minmax(min-content,1fr);flex:1; }
-.abschreibung-tv-stand .abschreibung-row { grid-template-columns:minmax(0,1.2fr) minmax(1.5rem,1fr) 8ch; }
+.abschreibung-tv-stand .abschreibung-row { grid-template-columns:minmax(0,1fr) minmax(1rem,.35fr) 8ch; }
 .abschreibung-tv-stand .abschreibung-row.is-deducted { border-color:#df946f; }
 .abschreibung-tv-stand .abschreibung-points { position:relative;text-align:right; }
 .abschreibung-tv-stand .abschreibung-eliminated .is-deducted { position:relative;padding-right:3em; }
@@ -154,12 +154,8 @@ button.club-game-pin { cursor:pointer; }
 .abschreibung-chart-name { position:absolute;bottom:.22rem;left:50%;transform:translateX(-50%) rotate(180deg);writing-mode:vertical-rl;max-height:calc(100% - .44rem);max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.25rem .12rem;border-radius:.22rem;background:#183b56;color:#fff;font-weight:700;line-height:1; }
 .abschreibung-chart .is-current { color:#694000;font-weight:800; }
 .abschreibung-chart .is-current .abschreibung-chart-track { border-color:#a86400;background:#ffe4a5;border-radius:.28rem .28rem 0 0;box-shadow:inset 0 0 0 1px #aa6a00; }
-.abschreibung-chart .is-current .abschreibung-chart-fill { background:#f2ab2c; }
-.abschreibung-chart .is-current .abschreibung-chart-name { background:#724600; }
 .abschreibung-chart .is-target { color:#712d20;font-weight:800; }
 .abschreibung-chart .is-target .abschreibung-chart-track { border-color:#ad4335;background:#ffe6df;border-radius:.28rem .28rem 0 0;box-shadow:inset 0 0 0 1px #bc5033; }
-.abschreibung-chart .is-target .abschreibung-chart-fill { background:#c14f3c; }
-.abschreibung-chart .is-target .abschreibung-chart-name { background:#792d23; }
 /* Positions-, Höhen- und Farbanimationen laufen auf getrennten Ebenen. */
 .abschreibung-chart-fade .abschreibung-chart-value { animation:abschreibung-value-color var(--abschreibung-color-duration) ease-in-out both;animation-delay:var(--abschreibung-color-delay); }
 .abschreibung-chart-fade .abschreibung-chart-track { animation:abschreibung-track-color var(--abschreibung-color-duration) ease-in-out both;animation-delay:var(--abschreibung-color-delay); }

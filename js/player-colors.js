@@ -32,6 +32,12 @@
     return 'rgba(' + rgb(color).join(',') + ',0.14)';
   }
 
+  function chartStyle(value) {
+    const color=normalize(value)||'#405ab0';
+    const fill='#'+rgb(color).map(channel=>Math.round(255*.9+channel*.1).toString(16).padStart(2,'0')).join('');
+    return '--player-chart-color:'+color+';--player-chart-fill:'+fill;
+  }
+
   function ink(color) {
     const [red, green, blue] = rgb(color).map(value => {
       const channel = value / 255;
@@ -40,5 +46,5 @@
     return 0.2126 * red + 0.7152 * green + 0.0722 * blue > 0.179 ? '#000' : '#fff';
   }
 
-  window.KCPlayerColors = Object.freeze({normalize, defaultColor, forPerson, tint, ink});
+  window.KCPlayerColors = Object.freeze({normalize, defaultColor, forPerson, tint, ink, chartStyle});
 })();

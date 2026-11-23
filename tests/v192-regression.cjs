@@ -175,3 +175,13 @@ test('header retains the before-next-event birthday window and legacy calendar b
   f.api.renderNextClubEvents();const text=f.document.getElementById('kc-next-birthdays').textContent;
   assert(text.includes('bis zum nächsten Termin'));assert(text.includes('Anna'));assert(text.includes('Celina'));assert(!text.includes('Bernd'));
 });
+
+test('optional game alias saves with the profile, reopens, clears and rolls back on failed sync',async()=>{
+ const f=profileFixture({name:'Alexander',gameAlias:'Alex'});f.c.openMemberProfile('Alexander');
+ assert.equal(f.get('alias').value,'Alex');f.get('alias').value='  Alexander   S.  ';
+ await f.c.saveMemberProfile();assert.equal(f.cloud()[0].gameAlias,'Alexander S.');assert.equal(f.cloud()[0].name,'Alexander');
+ f.c.openMemberProfile('Alexander');assert.equal(f.get('alias').value,'Alexander S.');
+ f.get('alias').value='';await f.c.saveMemberProfile();assert.equal(f.cloud()[0].gameAlias,'');
+ f.c.openMemberProfile('Alexander');f.c.saveToFirestore=async()=>false;f.get('alias').value='Al';
+ await f.c.saveMemberProfile();assert.equal(f.c.persons[0].gameAlias,'');
+});

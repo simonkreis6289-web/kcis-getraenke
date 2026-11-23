@@ -14,7 +14,7 @@ test('Euro board shares a narrower table with colored account columns, clamps de
  const tv=f.view(s),app=f.view(s,false),column=tv.querySelector('[data-euro-player="A"]');
  assert(tv.querySelector('.euro-game-layout>.ind-table-scroll'));assert(tv.querySelector('.euro-game-layout>.euro-chart'));
  assert.equal(tv.querySelectorAll('.euro-chart li').length,2);assert(app.querySelector('.euro-chart'));
- assert.equal(column.style.background,'#fde100');assert(Number(column.dataset.euroPercent)>initial);
+ assert.equal(column.style.getPropertyValue('--player-chart-color'),'#fde100');assert.equal(column.style.getPropertyValue('--player-chart-fill'),'#fffce6');assert(Number(column.dataset.euroPercent)>initial);
  assert.equal(tv.querySelector('.euro-tv-last').style.getPropertyValue('--euro-last-color'),'#fde100');
  assert.match(tv.querySelector('.euro-chart-value').textContent,/3,50/);
  s=f.roll(s,9).state;
