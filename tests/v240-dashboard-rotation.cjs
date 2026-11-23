@@ -98,7 +98,7 @@ test('Lattenzaun reveals slats in sequence, then moves rows, then marks the next
  const a=await app();await a.c.indStart('lattenzaun');assert(await a.c.KCSharedSync.waitForUpload());const d=tv(a.db);
  const names=()=>[...d.document.querySelectorAll('.extra-fence-row')].map(x=>x.querySelector('.extra-fence-name').textContent),marked=()=>[...d.document.querySelectorAll('.extra-fence-next-thrower')].map(x=>x.querySelector('.extra-fence-name').textContent);
  d.update();assert.deepEqual(marked(),['A']);
- await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:6});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);assert(d.document.querySelector('.extra-fence-next-thrower').getAttribute('aria-label').includes('Als Nächstes'));assert(!a.document.querySelector('.extra-fence-next-thrower'));
+ await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:6});assert(await a.c.KCSharedSync.waitForUpload());d.update();assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);assert(d.document.querySelector('.extra-fence-next-thrower').getAttribute('aria-label').includes('Als Nächstes'));assert.equal(a.document.querySelector('.extra-fence-next-thrower .extra-fence-name').textContent,'B');
  const timersBefore=new Set(d.timers.keys());
  await a.c.indAction('lattenzaun','throw',{kind:'pins',pins:4});assert(await a.c.KCSharedSync.waitForUpload());d.update();
  assert.equal(names()[0],'A');assert.deepEqual(marked(),['B']);

@@ -201,22 +201,25 @@ function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,playerCol
  const fenceElapsed=fenceFrame?Math.max(0,Date.now()-fenceFrame.started):0;
  const fenceOrder=fenceFrame&&!fenceFrame.reordering?fenceFrame.before:s;
  const fenceNext=g.current(fenceFrame?.before||s);
- const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?fenceOrder.previous?.name:g.current(s),{running:fence?!!fenceOrder.previous:s.active&&!s.readyToFinish})||names;
+ const fenceManualNext=fenceOrder.history?.at(-1)?.action==='next';
+ const fenceAnchor=fenceManualNext?g.current(fenceOrder):fenceOrder.previous?.name;
+ const rowNames=ball?names:window.KCPlayerRows?.order(names,fence?fenceAnchor:g.current(s),{running:fence?!!fenceAnchor:s.active&&!s.readyToFinish})||names;
  const winner=s.winners.map(label).join(' · '),header=s.finished?(ball&&s.winners.length===2?'🤝 Unentschieden':'🏆 '+winner):s.readyToFinish?'🏁 Alle Durchgänge gespielt':g.icons[key]+' '+g.titles[key];
  let body='';
  if(ball){body='<div class="extra-clock" data-extra-clock="'+s.id+'"><small>'+esc(s.teamNames[g.team(s)]||'Spiel beendet')+' · Spielzeit</small><strong data-extra-time>'+extraClockText(g.remaining(s))+'</strong><span data-extra-clock-status>'+(!s.active?'Beendet':s.timer.running?(g.remaining(s)>0?'Zeit läuft':s.timer.lastThrowUsed?'Letzter Wurf gebucht':'Zeit abgelaufen · Ein letzter Wurf möglich'):s.timer.endsAt?'Pausiert':'Bereit · Zeit in der App starten')+'</span></div><div class="extra-team-grid">'+names.map(n=>'<article class="extra-team-card '+(n===g.team(s)&&s.active?'extra-current':'')+'"><small>'+(n==='T1'?'⚫':'🔴')+' '+esc(label(n))+'</small><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+'</strong><span>'+s.participantTeams[n].map(name=>dashboard?'<span data-dashboard-player="'+esc(name)+'">'+esc(name)+'</span>':esc(name)).join(' · ')+'</span></article>').join('')+'</div>';
  }else if(key==='guterschnitt'){body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Kegler</th>'+s.config.targets.map((n,i)=>'<th>'+(i+1)+'.<br><strong>'+n+'</strong></th>').join('')+'<th>Fortschritt</th><th>Würfe</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowNames.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+'><th>'+esc(n)+'</th>'+s.config.targets.map((v,i)=>'<td>'+(i<s.scores[n]?'✅':i===s.scores[n]?'🎯':'·')+'</td>').join('')+'<td><span'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+'</span> / '+s.config.targets.length+'</td><td><strong>'+(s.rows[n]||[]).length+'</strong></td></tr>').join('')+'</tbody></table></div><p><strong>Bisher '+names.reduce((sum,n)=>sum+(s.rows[n]||[]).length,0)+' Würfe insgesamt.</strong> Exakte Zahl treffen. Nach einem Fehlzug steigt die Wurfzahl für diese Zahl um eins. Ein Treffer beendet den Zug.</p>';
  }else if(fence){
   const color=[slatColor,s.config.slatColor,'#bc7949'].find(value=>/^#[0-9a-f]{6}$/i.test(value));
-  body='<div class="extra-fences"'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s,{motionOnly:!!fenceFrame?.reordering})||'')+' style="--fence-color:'+color+'">'+rowNames.map(n=>{
-   const next=dashboard&&(fenceFrame||s.active&&!s.finished&&!s.readyToFinish)&&n===fenceNext;
+  body='<div class="extra-fences"'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s,{motionOnly:!!fenceFrame?.reordering||fenceManualNext})||'')+' style="--fence-color:'+color+'">'+rowNames.map(n=>{
+   const next=(fenceFrame||s.active&&!s.finished&&!s.readyToFinish)&&n===fenceNext;
+   const playerStyle=window.KCPlayerColors?.chartStyle(euroPlayerColor(n,playerColor))||'';
    const slat=idx=>{
     if(idx>=s.scores[n])return '<i></i>';
     if(n!==fenceFrame?.name||idx<fenceFrame.from)return '<i class="filled"></i>';
     const delay=(idx-fenceFrame.from)*FENCE_SLAT_MS-fenceElapsed;
     return '<i class="filled fence-slat-enter" style="--fence-slat-delay:'+delay+'ms"></i>';
    };
-   return '<article'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+' class="extra-fence-row'+(next?' extra-fence-next-thrower':'')+'"'+(next?' aria-label="'+esc(n)+' · Als Nächstes am Wurf"':'')+'><div class="extra-fence-name"><strong>'+esc(n)+'</strong></div>'+
+   return '<article'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+' class="extra-fence-row'+(next?' extra-fence-next-thrower':'')+'" style="'+playerStyle+'"'+(next?' aria-current="true" aria-label="'+esc(n)+' · Als Nächstes am Wurf"':'')+'><div class="extra-fence-name"><strong>'+esc(n)+'</strong></div>'+
     '<div class="extra-fence" style="--fence-slats:'+s.config.slats+';--fence-groups:'+Math.ceil(s.config.slats/5)+'" aria-label="'+s.scores[n]+' von '+s.config.slats+' Latten">'+Array.from({length:Math.ceil(s.config.slats/5)},(_,group)=>'<span class="extra-fence-group" aria-hidden="true">'+Array.from({length:Math.min(5,s.config.slats-group*5)},(_,offset)=>slat(group*5+offset)).join('')+'</span>').join('')+'</div>'+
     '<div class="extra-fence-count"><b'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+s.scores[n]+' / '+s.config.slats+'</b><small>Latten</small></div>'+
     '<div class="extra-fence-price">'+money(s.scores[n]*s.config.slatCents)+'</div></article>';
