@@ -43,13 +43,36 @@ test('only confirmed personal rounds make Prost; changes to team drinks do not',
  root.persons[0].rounds=[{id:'round-1',reason:'Geburtstag',createdAt:new Date(f.now).toISOString()}];
  f.tool.feed(root,'club',f.now);assert.match(f.box.textContent,/Prost/);assert.match(f.box.textContent,/Karl/);
 });
-test('1st to 3rd loser ranks are detected from saved penalty counters',()=>{
- const f=setup(),root={currentEveningStartedAt:'evening-1',STRAFEN:[{key:'v1',label:'1. Verlierer'},{key:'v2',label:'2. Verlierer'},{key:'v3',label:'3. Verlierer'}],persons:[person('A',{present:true,strafen:{v1:0}}),person('B',{present:true,strafen:{v2:0}}),person('C',{present:true,strafen:{v3:0}})]};
+test('1st to 3rd loser ranks appear together in ordered columns and share one display duration',()=>{
+ const f=setup(),root={currentEveningStartedAt:'evening-1',dashboardSettings:{eventToasts:{seconds:6,colors:{loser:'#aa1133'}}},STRAFEN:[{key:'v1',label:'1. Verlierer'},{key:'v2',label:'2. Verlierer'},{key:'v3',label:'3. Verlierer'}],persons:[person('A',{present:true,strafen:{v1:0}}),person('B',{present:true,strafen:{v2:0}}),person('C',{present:true,strafen:{v3:0}})]};
  f.tool.feed(root,'club',f.now);
  root.persons[0].strafen.v1=1;root.persons[1].strafen.v2=1;root.persons[2].strafen.v3=1;
- f.tool.feed(root,'club',f.now);assert.match(f.box.textContent,/1\. Verlierer/);
- f.advance();f.advance();assert.match(f.box.textContent,/2\. Verlierer/);
- f.advance();f.advance();assert.match(f.box.textContent,/3\. Verlierer/);
+ f.tool.feed(root,'club',f.now);
+ assert(f.box.classList.contains('kc-loser-toast-row'));assert(f.box.classList.contains('toast-visible'));
+ assert.equal(f.box.style.gridTemplateColumns,'repeat(3,minmax(0,1fr))');
+ const cards=[...f.box.querySelectorAll('.kc-loser-toast-card')];
+ assert.deepEqual(cards.map(card=>card.dataset.loserRank),['1','2','3']);
+ cards.forEach((card,index)=>{assert.match(card.textContent,new RegExp((index+1)+'\\. Verlierer'));assert(card.textContent.includes(['A','B','C'][index]));assert.equal(card.style.background,'#aa1133');assert(card.querySelector('.kc-toast-avatar'));});
+ assert.equal(f.delay,6000);f.advance();assert(f.box.classList.contains('toast-leaving'));
+ f.advance();assert(f.box.hidden);
+ f.tool.feed(root,'club',f.now);assert(f.box.hidden,'unchanged ranks must not replay');
+ root.persons[0].rounds=[{id:'round-after-ranks',createdAt:new Date(f.now).toISOString()}];f.tool.feed(root,'club',f.now);
+ assert.match(f.box.textContent,/Prost/);assert(!f.box.classList.contains('kc-loser-toast-row'));
+ assert.equal(f.box.style.gridTemplateColumns,undefined);assert.equal(f.box.style.width,'676px');
+});
+test('a queued loser row preserves tied names and omits absent ranks',()=>{
+ const f=setup(),root={currentEveningStartedAt:'evening-1',persons:[person('A'),person('B'),person('C')],strafenHistory:[]};
+ f.tool.feed(root,'club',f.now);root.persons[0].present=true;
+ root.strafenHistory=[{id:'finish',createdAt:new Date(f.now).toISOString(),assigned:[{rank:1,name:'A'},{rank:1,name:'B'},{rank:3,name:'C'}]}];
+ f.tool.feed(root,'club',f.now);assert.match(f.box.textContent,/Willkommen/);
+ f.advance();f.advance();
+ const cards=[...f.box.querySelectorAll('.kc-loser-toast-card')];
+ assert.deepEqual(cards.map(card=>card.dataset.loserRank),['1','3']);
+ assert.equal(f.box.style.gridTemplateColumns,'repeat(2,minmax(0,1fr))');
+ assert.match(cards[0].textContent,/A · B/);assert.equal(cards[0].querySelector('.kc-toast-avatar'),null);
+ assert.match(cards[1].textContent,/C/);
+ root.currentEveningStartedAt='evening-2';f.tool.feed(root,'club',f.now);assert(f.box.hidden);
+ f.advance();assert(f.box.hidden);
 });
 test('recorded team loss produces team toast and does not count as personal round',()=>{
  const f=setup(),root={currentEveningStartedAt:'evening-1',persons:[person('Karl',{present:true})],strafenHistory:[]};
