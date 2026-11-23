@@ -77,19 +77,10 @@
  }
  function positionStation(){
   if(!stationActive||!stationBox)return;
-  const {anchor}=stationActive;
-  if(anchor){
-   const slot=anchor.id?$(anchor.id):anchor;
-   const bounds=slot?.getBoundingClientRect();
-   if(bounds?.height>0&&bounds.width>0)stationBounds(bounds);
-   return;
-  }
-  const main=document.querySelector('main.dashboard'),bounds=main?.getBoundingClientRect();
-  const bottom=main?.querySelector('.dashboard-footer')?.getBoundingClientRect().top||bounds?.bottom||window.innerHeight;
-  const width=Math.min(window.innerWidth-16,Math.max(280,(bounds?.width||window.innerWidth)*stationActive.rightWidth/100));
-  const height=window.innerHeight/2;
-  const right=Math.min(window.innerWidth-8,(bounds?.right||window.innerWidth)-8);
-  stationBounds({left:right-width,top:Math.max(0,bottom-height-8),width,height});
+  const footer=document.querySelector('main.dashboard .dashboard-footer');
+  const bottom=footer?.getBoundingClientRect().top||window.innerHeight;
+  const width=window.innerWidth*.15,height=Math.min(window.innerHeight/2,Math.max(0,bottom-16));
+  stationBounds({left:window.innerWidth-width-8,top:Math.max(8,bottom-height-8),width,height});
  }
  function resetStation(){
   stationQueue.length=0;stationActive=null;
@@ -99,11 +90,6 @@
  function showStation(){
   if(stationActive||!stationQueue.length)return;
   stationActive=stationQueue.shift();
-  const panel=$('dashboard-panel-drinks'),slot=panel?.parentElement;
-  const visible=panel&&!panel.hidden&&(!slot?.dataset.activePanel||slot.dataset.activePanel==='drinks');
-  const target=visible?panel.getBoundingClientRect():null;
-  const anchor=target?.width>0&&target.height>0?panel.closest('.dashboard-panel-slot')||panel:null;
-  stationActive.anchor=anchor;
   const {row,root,seconds}=stationActive;
   const viewport=document.createElement('div'),card=document.createElement('article'),title=document.createElement('h2');
   stationBox=viewport;viewport.id='dashboard-station-booking';viewport.className='station-booking-viewport';
@@ -129,8 +115,7 @@
    const detail=document.createElement('p');detail.textContent=row.description;card.append(detail);
   }
   viewport.append(card);document.body.append(viewport);
-  viewport.classList.toggle('station-from-left',!!anchor?.closest('.side.left'));
-  if(anchor)stationBounds(target);else positionStation();
+  positionStation();
   const motion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:360;
   void card.offsetWidth;viewport.classList.add('station-booking-visible');
   stationTimer=setTimeout(()=>{
@@ -164,13 +149,12 @@
   const enabled=key=>settings[key]!==false&&seconds>0&&!document.hidden;
   const events=[],ranks=new Map();
   const stationSeconds=Math.max(0,Math.min(30,Number(settings.stationSeconds??settings.seconds??4)||0));
-  const rightWidth=Math.max(10,Math.min(35,Number(root.dashboardSettings?.tableWidth?.right)||17));
   for(const row of station){
    if(!row.id||stationSeen.has(row.id))continue;
    stationSeen.add(row.id);
    const at=Date.parse(row.at||'');
    if(settings.station!==false&&stationSeconds>0&&!document.hidden&&row.description&&Number.isFinite(at)&&now-at<=45000&&now-at>=-5000)
-    stationQueue.push({row,root,seconds:stationSeconds,rightWidth});
+    stationQueue.push({row,root,seconds:stationSeconds});
   }
   showStation();
   for(const person of people(root)){
