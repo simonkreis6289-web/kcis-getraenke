@@ -58,8 +58,8 @@ function clubGameControls(key,s,disabled){
  if(s.phase==='numbers'){
   const n=g.current(s),ready=g.validTicket(d.selected);
   return '<div class="club-game-choices"><strong>Sechs Glückszahlen für '+esc(n)+'</strong><p>Mindestens eine Zahl je Zehnerblock wählen.</p>'+
-   Array.from({length:5},(_,block)=>'<div class="club-lotto-choices" aria-label="'+block*10+' bis '+(block*10+9)+'">'+
-    Array.from({length:10},(_,i)=>block*10+i).map(v=>'<button type="button" '+disabled+' aria-pressed="'+d.selected.includes(v)+'" data-lotto-number="'+v+'" onclick="clubGameLottoPick('+v+',this)">'+v+'</button>').join('')+'</div>').join('')+
+   Array.from({length:5},(_,block)=>'<div class="club-lotto-choices" aria-label="'+Math.max(1,block*10)+' bis '+(block*10+9)+'">'+
+    Array.from({length:10},(_,i)=>block*10+i).filter(v=>v>0).map(v=>'<button type="button" '+disabled+' aria-pressed="'+d.selected.includes(v)+'" data-lotto-number="'+v+'" onclick="clubGameLottoPick('+v+',this)">'+v+'</button>').join('')+'</div>').join('')+
     '<div class="ind-actions club-lotto-action"><button class="primary-btn" type="button" data-club-ticket-submit '+(disabled||!ready?'disabled':'')+' onclick="clubGameCommitTicket()">Zahlen übernehmen</button>'+
    '<button class="secondary-btn" type="button" data-club-ticket-random '+disabled+' onclick="clubGameRandomTicket()">Zufallszahlen</button>'+
    '<span data-club-ticket-status aria-live="polite">'+clubGameTicketStatus(d.selected)+'</span></div></div>';

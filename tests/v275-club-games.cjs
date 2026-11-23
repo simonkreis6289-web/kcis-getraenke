@@ -239,13 +239,23 @@ test('Lottokönig follows the ordered tickets and penalizes nonqualifiers before
  assert.match(html.querySelector('.club-game-impact').textContent,/D: 24 → 26 Punkte/);
  f.run('undo');assert.equal(g.current(f.s),'D');
 });
+test('Lottokönig never draws zero and rejects zero for manual and bulk target selection',()=>{
+ const f=game('lottokoenig',{},['A','B']);
+ assert.equal(g.validTicket([0,1,10,20,30,40]),false);
+ assert.throws(()=>f.run('numbers',{numbers:[0,1,10,20,30,40]}),/1 bis 49/);
+ assert.throws(()=>f.run('randomNumbers',{tickets:[{numbers:[0,1,10,20,30,40]},{numbers:[1,2,10,20,30,40]}]}),/Tippschein/);
+ for(let i=0;i<500;i++){
+  const ticket=g.randomTicket();assert(g.validTicket(ticket));assert(!ticket.includes(0));
+  assert.deepEqual(copy(ticket),copy(ticket).sort((a,b)=>a-b));
+ }
+});
 test('Lottokönig draws valid tickets for all players in one action and undoes the draw',()=>{
  const f=game('lottokoenig',{},['A','B','C']);
- assert.deepEqual(copy(g.randomTicket(()=>0)),[0,1,10,20,30,40]);
+ assert.deepEqual(copy(g.randomTicket(()=>0)),[1,2,10,20,30,40]);
  assert.deepEqual(copy(g.randomTicket(()=>0.999)),[9,19,29,39,48,49]);
  const manual=[2,7,12,24,34,47];
  f.run('numbers',{numbers:manual});
- const tickets=[[0,1,10,20,30,40],[9,19,29,39,48,49],[6,16,26,36,46,47]].map(numbers=>({numbers}));
+ const tickets=[[1,2,10,20,30,40],[9,19,29,39,48,49],[6,16,26,36,46,47]].map(numbers=>({numbers}));
  assert.throws(()=>f.run('randomNumbers',{tickets:tickets.slice(1)}),/Tippschein/);
  assert.throws(()=>f.run('randomNumbers',{tickets:[...tickets.slice(0,2),{numbers:[1,2,3,4,5,6]}]}),/Tippschein/);
  f.run('randomNumbers',{tickets});
@@ -421,6 +431,7 @@ test('actual app mounts all four games and saves a Tageskurs booking through the
  assert(!db.root().individualGameLedger.some(row=>row.gameKey==='abschreibung'));
  assert.equal(a.c.indGet('lottokoenig').config.lottoGoal,'49');
  const lotto=a.document.getElementById('tab-lottokoenig'),confirm=()=>lotto.querySelector('[data-club-ticket-submit]');
+ assert.equal(lotto.querySelector('[data-lotto-number="0"]'),null);assert.equal(lotto.querySelectorAll('[data-lotto-number]').length,49);
  const pick=n=>a.c.clubGameLottoPick(n,lotto.querySelector('[data-lotto-number="'+n+'"]'));
  for(const n of [2,7,12,34,47])pick(n);
  assert(confirm().disabled);
