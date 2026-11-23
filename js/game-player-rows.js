@@ -9,10 +9,28 @@
   const escape=value=>String(value).replace(/[&"<>]/g,c=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[c]));
   const row=name=>' data-player-row="'+escape(name)+'"';
   const score=(name,metric='score')=>' data-tv-score="'+escape(JSON.stringify([name,metric]))+'"';
+  function starter(state){
+    if(state.gameKey==='gluecksspirale')return state.teams?.[0]?.id||'';
+    const first=state.partyAlternating?state.participantTeams?.[state.teamOrder?.[0]]?.[0]:null;
+    const player=first||state.startPlayer||state.starter||state.playerOrder?.[0]||state.order?.[0]||state.players?.[state.startIndex||0];
+    return typeof player==='string'?player:player?.name||'';
+  }
   function group(key,state,{motionOnly=false,simpleMotion=false,turn=state.history?.length}={}){
     return ' data-player-rows="'+escape(key)+'" data-player-game="'+escape(state.id||state.startedAt||'')+'"'+
+      ' data-player-starter="'+escape(starter(state))+'" data-player-start-label="'+(state.mode==='team'||key==='gluecksspirale'?'Startteam':'Startspieler')+'"'+
       (Number.isInteger(turn)?' data-player-turn="'+turn+'"':'')+(motionOnly?' data-player-motion-only':'')+
       (simpleMotion?' data-player-simple-motion':'');
+  }
+  function markStarter(parent){
+    for(const row of parent.children){
+      const selected=!!parent.dataset.playerStarter&&row.dataset.playerRow===parent.dataset.playerStarter;
+      const old=row.querySelector('.player-start-marker');
+      if(!selected){old?.remove();continue;}
+      if(old)continue;
+      const label=row.querySelector('.abschreibung-name strong,.extra-fence-name strong,.sichern-card-top>strong,.tg-spiral-team-top>strong')||row.querySelector('th,td')||row.firstElementChild;
+      if(!label)continue;
+      const badge=document.createElement('span');badge.className='player-start-marker';badge.title=parent.dataset.playerStartLabel||'Startspieler';badge.setAttribute('aria-label',badge.title);label.append(badge);
+    }
   }
 
   const timings=settings=>window.KCDashboardLayout?.playerRows(settings?.playerRows)||{holdSeconds:1.5,moveSeconds:0.8};
@@ -85,6 +103,7 @@
       expire();
     }
     return function update(parent){
+      markStarter(parent);
       const key=parent.dataset.playerRows,previous=views.get(key);
       const rows=new Map([...parent.children].map(element=>[element.dataset.playerRow,element]));
       if(rows.has(undefined)||rows.size!==parent.children.length){cancel(previous?.timer);cancel(previous?.gainTimer);views.delete(key);return;}
@@ -166,7 +185,7 @@
     };
   }
 
-  window.KCPlayerRows=Object.freeze({order,row,group,score,createMotion,createCounters,configure,timings});
+  window.KCPlayerRows=Object.freeze({order,row,group,score,starter,markStarter,createMotion,createCounters,configure,timings});
   if(typeof document==='undefined'||!document.body||typeof MutationObserver!=='function')return;
   const selector='[data-player-rows]';
   const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;

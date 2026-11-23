@@ -1,9 +1,10 @@
-/* Zahlen zentrieren, Textspalten links lassen; auch für nachgerenderte Spieltabellen. */
+/* Zahlen und Sonderwürfe zentrieren, Textspalten links lassen; auch für nachgerenderte Spieltabellen. */
 (() => {
- const numeric=/^[\s\d.,+−–\-:;/%€×x()=*·]+$/u;
+ const numeric=/^[\s\d.,+−–—\-:;/%€×x()=*·]+$/u;
+ const special=/^(?:🎳\s*)?(?:G|Gosse|K|Kranz)(?:\s*\(\s*[\d.,]+\s*\))?$/iu;
  const pending=new Set();let frame=0;
  function classify(table){for(const cell of table.querySelectorAll('td,th')){
-  const text=cell.textContent.trim(),primary=cell.querySelector('strong')?.textContent.trim(),isNumber=!!text&&numeric.test(text)||!!primary&&numeric.test(primary)||!!cell.querySelector('.counter,.counter-val,.penalty-counter');
+  const text=cell.textContent.trim(),primary=cell.querySelector('strong')?.textContent.trim(),isNumber=!!text&&(numeric.test(text)||special.test(text))||!!primary&&(numeric.test(primary)||special.test(primary))||!!cell.querySelector('.counter,.counter-val,.penalty-counter');
   cell.classList.toggle('kc-numeric-cell',isNumber);
   cell.classList.toggle('kc-text-cell',!isNumber&&cell.tagName==='TD'&&!cell.querySelector('input,button,select'));
  }}

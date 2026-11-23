@@ -142,8 +142,8 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 #dashboard-seating.seat-avatars-only .seat-avatar{flex-shrink:1;max-width:100%;max-height:100%}
 
 /* Die Buchungsanzeige bleibt während der seitlichen Bewegung im Zielbereich. */
-.station-booking-viewport{position:fixed;z-index:1450;overflow:hidden;border-radius:10px;pointer-events:none}
-.station-booking-card{box-sizing:border-box;width:100%;height:100%;display:flex;flex-direction:column;gap:6px;padding:clamp(8px,1vw,16px);border:2px solid currentColor;border-radius:inherit;transform:translateX(101%);transition:transform 360ms ease;overflow:hidden;font-size:clamp(12px,1.15vw,19px)}
+.station-booking-viewport{display:flex;align-items:flex-end;position:fixed;z-index:1450;overflow:hidden;border-radius:10px;pointer-events:none}
+.station-booking-card{box-sizing:border-box;width:100%;height:auto;max-height:100%;display:flex;flex-direction:column;gap:6px;padding:clamp(8px,1vw,16px);border:2px solid currentColor;border-radius:inherit;transform:translateX(101%);transition:transform 360ms ease;overflow:hidden;font-size:clamp(12px,1.15vw,19px)}
 .station-from-left .station-booking-card{transform:translateX(-101%)}
 .station-booking-viewport.station-booking-visible .station-booking-card{transform:translateX(0)}
 .station-booking-card h2,.station-booking-card p{margin:0;overflow-wrap:break-word}
@@ -163,3 +163,12 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
  box-shadow:0 0 0 1px #17284035;
 }
 #game-body .fox-race-runner[data-dashboard-player]::before{margin-inline-end:.12em;flex:none}
+
+/* Gossenliste: Schrift folgt der tatsächlichen Panelbreite und Zeilenhöhe. */
+#gutters .listrow{font-size:var(--gutter-font,14px)}
+#gutters .listrow .name{font-size:inherit}
+.dashboard-side-full #gutters .listrow .name{font-size:inherit}
+#gutters .gutter-count{display:inline-flex;align-items:center;justify-content:center;min-width:2.6em;padding:.2em .45em;box-sizing:border-box;border:1px solid #d99aa8;border-radius:999px;background:#fce8ed;color:#962841;font-size:1.05em;font-weight:900;line-height:1.1;box-shadow:0 2px 4px #78253b15}
+#gutters .gutter-count.is-empty{border-color:#cbd6e4;background:#eef3f9;color:#60718a;box-shadow:none}
+#gutters .gutter-leader .gutter-count{border-color:#d5a546;background:#ffe9a8;color:#744b06}
+#gutters .gutter-leader .gutter-count::before{content:'👑';margin-right:.25em;font-size:.75em}

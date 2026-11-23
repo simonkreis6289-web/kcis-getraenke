@@ -72,7 +72,38 @@ function animateJumpMeter(previous,fill,now=Date.now()){
  fill.style.setProperty('--jump-delay',(started-now)+'ms');
  fill.classList.add('jump-tv-fill-moving');
 }
-function euroTvSummary(s,current,escape,money){
+function euroPlayerColor(name,playerColor){
+ const colors=window.KCPlayerColors;
+ return colors?.normalize(playerColor?.(name))||colors?.defaultColor(name)||'#405ab0';
+}
+function euroMoneyChart(s,current,escape,money,playerColor){
+ const amounts=s.players.map(name=>Math.max(0,s.scores[name]));
+ const gain=Math.max(0,s.config.penaltyCents,...(s.config.bonusPins||[5]).map(pins=>pins*s.config.pinCents));
+ const scale=Math.max(100,Math.ceil(Math.max(s.config.startCents+s.config.throws*gain,...amounts)/100)*100);
+ return '<aside class="euro-chart" data-euro-game="'+escape(s.id)+'" aria-label="Zu zahlender Betrag je Kegler"><h3>Zu zahlen</h3><small>0 bis '+money(scale)+'</small><ul style="--euro-columns:'+s.players.length+'">'+s.players.map((name,index)=>{
+  const amount=amounts[index],color=euroPlayerColor(name,playerColor),ink=window.KCPlayerColors?.ink(color)||'#fff';
+  return '<li'+(s.active&&name===current?' class="is-current" aria-current="true"':'')+'><strong class="euro-chart-value"'+(window.KCPlayerRows?.score?.(name,'euro-column')||'')+'>'+money(amount)+'</strong><div class="euro-chart-track"><i class="euro-chart-fill" data-euro-player="'+escape(name)+'" data-euro-percent="'+100*amount/scale+'" style="height:'+100*amount/scale+'%;background:'+color+'"></i><span class="euro-chart-name" style="background:'+color+';color:'+ink+'" title="'+escape(name)+'">'+escape(name)+'</span></div></li>';
+ }).join('')+'</ul></aside>';
+}
+function animateEuroChart(previous,chart,now=Date.now()){
+ if(!previous||!chart||previous.dataset.euroGame!==chart.dataset.euroGame||window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
+ const old=new Map([...previous.querySelectorAll('[data-euro-player]')].map(fill=>[fill.dataset.euroPlayer,fill]));
+ for(const fill of chart.querySelectorAll('[data-euro-player]')){
+  const before=old.get(fill.dataset.euroPlayer);if(!before)continue;
+  const target=Number(fill.dataset.euroPercent),oldTarget=Number(before.dataset.euroPercent);
+  const continuing=target===oldTarget,started=continuing?Number(before.dataset.euroStarted):now;
+  if(!Number.isFinite(started)||now-started>=850)continue;
+  let from=continuing?parseFloat(before.style.getPropertyValue('--euro-from')):oldTarget;
+  if(!continuing&&before.classList.contains('euro-chart-moving')){
+   const elapsed=Math.min(1,Math.max(0,(now-Number(before.dataset.euroStarted))/850));
+   const origin=parseFloat(before.style.getPropertyValue('--euro-from'));
+   if(Number.isFinite(origin))from=origin+(oldTarget-origin)*(1-Math.pow(1-elapsed,3));
+  }
+  if(!Number.isFinite(from)||from===target)continue;
+  fill.dataset.euroStarted=String(started);fill.style.setProperty('--euro-from',from+'%');fill.style.setProperty('--euro-delay',(started-now)+'ms');fill.classList.add('euro-chart-moving');
+ }
+}
+function euroTvSummary(s,current,escape,money,playerColor){
  const last=s.history.findLast(entry=>entry.action==='throw');
  const row=last?s.rows[last.name]?.at(-1):null;
  const currentCard=s.active&&current?'<div class="euro-tv-current"><span>🎳 '+escape(current)+' · Am Wurf</span><strong>'+
@@ -82,12 +113,12 @@ function euroTvSummary(s,current,escape,money){
  const change=row.deltaCents,after=row.balance,before=after-change;
  const signed=(change>0?'+':change<0?'−':'')+money(Math.abs(change));
  return '<section class="euro-tv-summary" aria-label="Spielkonto">'+currentCard+
-  '<div class="euro-tv-last"><h3>Letzter Wurf · '+escape(last.name)+' · '+type+'</h3><div class="euro-tv-flow"><div><small>Vor dem Wurf</small><strong>'+money(before)+
+  '<div class="euro-tv-last" style="--euro-last-color:'+euroPlayerColor(last.name,playerColor)+'"><h3>Letzter Wurf · '+escape(last.name)+' · '+type+'</h3><div class="euro-tv-flow"><div><small>Vor dem Wurf</small><strong>'+money(before)+
   '</strong></div><div class="euro-tv-delta '+(change>0?'is-plus':change<0?'is-minus':'')+'"><small>'+(change>0?'Zuschlag':change<0?'Abzug':'Ohne Änderung')+
   '</small><strong>'+signed+'</strong></div><div><small>'+(after<0?'Rechenstand':'Restbetrag')+'</small><strong>'+money(after)+'</strong></div></div></div></section>';
 }
 /* Die gleiche Spieltafel wird in der App und auf dem TV verwendet. */
-function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
+function renderRoundGameBoard(s,{controls='',dashboard=false,playerColor}={}){
  if(!s?.id)return '';if(['poker','pfaelzer','tausend'].includes(s.gameKey))return renderClassicGameBoard(s,{controls});const g=window.KCRoundGames,key=s.gameKey,esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=v=>(v/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),number=n=>Number(n).toLocaleString('de-DE',{maximumFractionDigits:2}),current=window.KCExtraGames.current(s),party=key==='parteienspiel',jump=key==='hochsprung',euro=key==='dreieuro',end=s.round,begin=Math.max(1,end-5),rounds=Array.from({length:end-begin+1},(_,i)=>begin+i),name=n=>party?s.teamNames[n]:n;
  const winners=(s.winners||[]).map(name).join(' · '),heading=s.finished?'🏆 '+winners:g.icons[key]+' '+g.titles[key];
  const rowPlayers=window.KCPlayerRows?.order(s.players,current,{running:s.active&&!s.finished,unavailable:n=>jump&&s.jumps[n].eliminated})||s.players;
@@ -109,11 +140,12 @@ function renderRoundGameBoard(s,{controls='',dashboard=false}={}){
    body='<div class="jump-tv-stage">'+meter+body+'</div>';
   }
  }else{
-  if(euro&&dashboard)top=euroTvSummary(s,current,esc,money);
+  if(euro&&dashboard)top=euroTvSummary(s,current,esc,money,playerColor);
   if(key==='ebbeflut')top='<div class="round-tide round-tide-'+s.tide+'"><strong>Aktuell: '+({ebbe:'🌘 Ebbe · × 0,5',normal:'〰️ Normal · × 1',flut:'🌊 Flut · × 2'}[s.tide])+'</strong><span>3 → nächste Würfe halb · 5 → nächste Würfe einfach · 7 → sofort doppelt</span></div><div class="round-tide-legend" aria-label="Farben der Wurfwertung"><span class="round-tide-cell-ebbe">Ebbe · × 0,5</span><span class="round-tide-cell-normal">Normal · × 1</span><span class="round-tide-cell-flut">Flut · × 2</span></div>';
   turn+=' · '+(euro?'Wurf ':'Runde ')+s.round+' / '+(euro?s.config.throws:s.config.rounds);
   body='<div class="ind-table-scroll"><table class="ind-table"><thead><tr><th>Kegler</th>'+rounds.map(r=>'<th>'+(euro?'Wurf ':'R')+r+'</th>').join('')+'<th>'+(euro?'Restbetrag':'Gesamt')+'</th><th>Würfe</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+rowPlayers.map(n=>'<tr'+(globalThis.window?.KCPlayerRows?.row?.(n)||'')+'><th>'+esc(n)+'</th>'+rounds.map(r=>{const v=s.rows[n][r-1],tide=key==='ebbeflut'&&v?(v.factor===.5?'ebbe':v.factor===2?'flut':'normal'):'';return '<td'+(tide?' class="round-tide-cell round-tide-cell-'+tide+'"':'')+'>'+(v?'<strong>'+(v.kind==='kranz'?'K('+v.pins+')':v.kind==='gosse'?'G':v.pins)+'</strong><small'+(tide?' class="round-tide-value"':'')+'>'+(euro?(v.deltaCents>0?'+':'')+money(v.deltaCents):(tide?{ebbe:'Ebbe',normal:'Normal',flut:'Flut'}[tide]+' · ':'')+'× '+number(v.factor)+' = '+number(v.result))+'</small>':'—')+'</td>';}).join('')+'<td><strong'+(globalThis.window?.KCPlayerRows?.score?.(n)||'')+'>'+(euro?money(Math.max(0,s.scores[n])):number(s.scores[n]))+'</strong></td><td>'+s.rows[n].length+'</td></tr>').join('')+'</tbody></table></div>';
  }
+ if(euro)body='<div class="euro-game-layout">'+body+euroMoneyChart(s,current,esc,money,playerColor)+'</div>';
  return '<section class="ind-board extra-board round-game-board'+(dashboard&&jump?' jump-tv-board':'')+'" data-extra-game="'+key+'"><h2>'+esc(heading)+'</h2>'+(s.active?'<div class="ind-turn extra-turn">🎳 '+turn+'</div>':'')+controls+top+body+'<p class="ind-help">'+esc(g.summary(key,s.config))+'</p>'+(s.finished?'<p class="extra-result">Spiel beendet · '+(euro?'Restbeträge gebucht.':jump?(s.config.classicLosers?'1. Verlierer gebucht.':'Fehlbeträge und 1. Verlierer gebucht.'):'Verliererwertung gebucht.')+'</p>':'')+'</section>';
 }
 
@@ -163,8 +195,8 @@ function createFenceTvPlayback(schedule=setTimeout,cancel=clearTimeout,now=()=>D
  };
 }
 
-function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,abschreibungFrame=null,fenceFrame=null}={}){
- if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
+function renderExtraGameBoard(s,{controls='',slatColor,dashboard=false,playerColor,abschreibungFrame=null,fenceFrame=null}={}){
+ if(!s?.id)return '';if(window.KCClubGames?.keys.includes(s.gameKey))return renderClubGameBoard(s,{controls,dashboard,abschreibungFrame});if(window.KCRoundGames?.keys.includes(s.gameKey))return renderRoundGameBoard(s,{controls,dashboard,playerColor});const g=window.KCExtraGames,esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>(n/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),key=s.gameKey,ball=key==='ballermann',fence=key==='lattenzaun';
  const names=ball?['T2','T1']:s.players,best=fence?Math.min(...names.map(n=>s.scores[n])):Math.max(...names.map(n=>s.scores[n])),place=n=>[...new Set(names.map(n=>s.scores[n]))].sort((a,b)=>fence?a-b:b-a).indexOf(s.scores[n])+1,label=n=>ball?s.teamNames[n]:n;
  const fenceElapsed=fenceFrame?Math.max(0,Date.now()-fenceFrame.started):0;
  const fenceOrder=fenceFrame&&!fenceFrame.reordering?fenceFrame.before:s;

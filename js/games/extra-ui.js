@@ -59,7 +59,10 @@ function renderExtraGame(key){
   controls+='<div class="ind-actions"><button type="button" '+(busy||!s.history.length?'disabled':'')+' onclick="indAction(\''+key+'\',\'undo\')">↩ Letzte Aktion zurücknehmen</button>'+(s.readyToFinish?'<button type="button" class="primary-btn" '+disabled+' onclick="indAction(\''+key+'\',\'finish\')">🏁 Spiel abschließen</button>':'')+'</div></div>';
  }else if(s.finished&&['lattenzaun','guterschnitt',...KCExtraGames.keys.filter(k=>window.KCRoundGames?.keys.includes(k))].includes(key))controls='<div class="extra-controls ind-actions"><button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'undo\')">↩ Letzten Wurf und Abrechnung zurücknehmen</button></div>';
  const p=indPending[key],error=p?.error?'<div class="tg-error">'+indEscape(p.error)+'<button type="button" '+(indBusy[key]?'disabled':'')+' onclick="indRetry(\''+key+'\')">Erneut versuchen</button><button type="button" '+(indBusy[key]?'disabled':'')+' onclick="indReload(\''+key+'\')">Serverstand laden</button></div>':'';
- box.innerHTML=error+renderExtraGameBoard(s,{controls,slatColor:key==='lattenzaun'?extraConfig(key).slatColor:undefined})+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="indReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'');
+ const previousEuro=key==='dreieuro'?box.querySelector('.euro-chart'):null;
+ const playerColor=name=>window.KCPlayerColors?.forPerson((typeof persons==='undefined'?[]:persons).find(person=>person.name===name)||{name});
+ box.innerHTML=error+renderExtraGameBoard(s,{controls,playerColor,slatColor:key==='lattenzaun'?extraConfig(key).slatColor:undefined})+(s.id?'<button type="button" class="secondary-btn" '+disabled+' onclick="indReset(\''+key+'\')">'+(s.finished?'Neues Spiel vorbereiten':'Spiel abbrechen')+'</button>':'');
+ if(key==='dreieuro'&&typeof animateEuroChart==='function')animateEuroChart(previousEuro,box.querySelector('.euro-chart'));
 }
 function renderExtraSettings(){
  if(typeof renderRoundSettings==='function')renderRoundSettings();
