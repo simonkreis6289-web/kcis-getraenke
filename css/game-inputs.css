@@ -31,13 +31,13 @@
 /* Auf den Spielseiten bleiben Zahlen und Sonderwürfe nebeneinander. */
 .game-input-panel .game-pinpad{display:flex;flex-flow:row nowrap;align-items:stretch;gap:6px;width:100%;max-width:none;margin:8px 0 0;padding-bottom:2px;overflow-x:auto;scrollbar-width:thin}
 .game-input-panel .game-pinpad-numbers,.game-input-panel .game-pinpad-specials,.game-input-panel .game-pinpad-extras{display:contents}
-.game-input-panel .game-pinpad .gi-throw{flex:1 0 40px;min-height:48px;height:48px;padding:4px;gap:2px;border-radius:10px;font-size:22px;white-space:nowrap}
+.game-input-panel .game-pinpad .gi-throw{flex:1 0 40px;min-height:64px;height:64px;padding:4px;gap:2px;border-radius:10px;font-size:22px;white-space:nowrap}
 .game-input-panel .game-pin-circle{flex:none;width:30px;height:30px;box-sizing:border-box;font-size:22px}
 .game-input-panel .game-pin-caption{display:none}
 .game-input-panel .game-pinpad-specials .gi-throw{flex:1.6 0 66px;gap:1px;padding:4px 6px}
 .game-input-panel .game-pinpad-specials strong{font-size:19px}
 .game-input-panel .game-pinpad-specials small{font-size:10px;white-space:nowrap}
-.game-input-panel .game-pinpad-extras .gi-throw{flex:2.4 0 112px;min-height:48px!important;font-size:13px!important}
+.game-input-panel .game-pinpad-extras .gi-throw{flex:2.4 0 112px;min-height:64px!important;font-size:13px!important}
 .game-throw-dialog .game-throw-dialog-card{width:min(420px,100%);max-width:420px!important;max-height:95vh;overflow-y:auto;padding:20px;border:1px solid #c5d1e2;border-top:5px solid #e8ab36;border-radius:20px;background:#fff;color:#203455;box-shadow:0 20px 65px #17263d55}
 .game-throw-dialog .game-throw-dialog-card h3{margin:0 0 6px;font:800 23px/1.25 'DM Sans',sans-serif;letter-spacing:0;color:#203455}
 .game-throw-dialog .modal-sub,.game-throw-dialog .haus-modal-card>p{margin:0 0 12px;color:#61718a;font:500 13px/1.4 'DM Sans',sans-serif}
