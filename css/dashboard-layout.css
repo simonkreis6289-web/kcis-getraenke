@@ -33,7 +33,7 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 #gutters .gutter-leader{background:#fff4dc;border-radius:5px}
 #gutters .gutter-leader .name{font-weight:800}
 #gutters .gutter-tally{display:flex;align-items:center;gap:1px;min-width:0}
-#gutters .gutter-tally>span{flex:1 1 4px;max-width:5px;height:.62em;border-radius:2px;background:#bd3148}
+#gutters .gutter-tally>span{flex:1 1 4px;max-width:5px;height:1.2em;min-height:14px;border-radius:2px;background:#bd3148}
 #gutters .gutter-tally>span:nth-child(5n+1):not(:first-child){margin-left:2px}
 .dashboard-side-full #gutters .listrow{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-content:center;column-gap:6px;row-gap:2px}
 .dashboard-side-full #gutters .listrow .name{font-size:1.1em;font-weight:700}
