@@ -8,10 +8,11 @@
  const priority=note=>Object.hasOwn(priorities,note?.priority)?note.priority:'normal';
  function noteAlert(element,items,dashboard=false){
   if(!element)return;
-  const open=sort(items).filter(n=>!n.done),high=open.filter(n=>priority(n)==='high'),important=high.length>0,visible=dashboard?important:open.length>0;
-  element.hidden=!visible;element.classList.toggle('is-important',important);
-  element.textContent=visible?(important?(dashboard?'❗ ':'❗ Besprechen · ')+high.length:'📝 Notizen · '+open.length):'';
-  const label=important?high.length+' wichtige '+(high.length===1?'Notiz':'Notizen')+' zu besprechen':open.length+' offene '+(open.length===1?'Notiz':'Notizen');
+  const open=sort(items).filter(n=>!n.done),high=open.filter(n=>priority(n)==='high'),important=high.length>0;
+  const level=important?'high':open.some(n=>priority(n)==='normal')?'normal':open.length?'low':'clear';
+  element.hidden=dashboard&&!important;element.classList.toggle('is-important',important);element.dataset.priority=level;
+  element.textContent=element.hidden?'':({high:'!',normal:'!',low:'i',clear:'✓'})[level];
+  const label=important?high.length+' wichtige '+(high.length===1?'Notiz':'Notizen')+' zu besprechen':open.length?open.length+' offene '+(open.length===1?'Notiz':'Notizen')+' · Priorität '+priorities[level]:'Keine offenen Notizen';
   element.setAttribute('aria-label',label);element.title=label;
  }
  const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(a.done)-Number(b.done)||Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id));
