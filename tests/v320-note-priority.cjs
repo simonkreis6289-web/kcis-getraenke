@@ -63,3 +63,16 @@ test('compact app symbol sits before the crest and follows the highest open prio
   model.noteAlert(alert,items);assert(!alert.hidden);assert.equal(alert.dataset.priority,level);assert.equal(alert.textContent,symbol);assert(alert.getAttribute('aria-label'));
  }
 });
+
+test('checking notes preserves every item and sorts completed notes newest completion first, including after restoring',()=>{
+ const first=note('old','high'),second={...note('new','normal'),createdAt:'2026-11-24T15:00:00Z'},open={...note('open','low'),createdAt:'2026-11-24T16:00:00Z'};
+ let state={items:[first,second,open],revision:0};
+ const done=(id,checked,at)=>{state=model.change('notes',state,req({action:'done',id,done:checked},state.revision),at);};
+ done(second.id,true,'2026-11-24T17:00:00Z');done(first.id,true,'2026-11-24T18:00:00Z');
+ assert.deepEqual(copy(state.items).map(n=>n.id),[open.id,first.id,second.id]);assert.equal(state.items.length,3);assert.equal(state.items[1].text,first.text);assert.equal(state.items[1].createdAt,first.createdAt);assert(model.noteMarkup(state.items[1],first.text).includes('is-done'));
+ const pages=model.notePages(state.items,()=>true);assert.deepEqual(copy(pages[0]).map(f=>f.note.id),[open.id,first.id,second.id]);
+ done(second.id,false,'2026-11-24T19:00:00Z');assert.deepEqual(copy(state.items).map(n=>n.id),[second.id,open.id,first.id]);assert.equal(state.items[0].completedAt,'');
+ const command=req({action:'done',id:second.id,done:true},state.revision);state=model.change('notes',state,command,'2026-11-24T20:00:00Z');assert.deepEqual(copy(state.items).map(n=>n.id),[open.id,second.id,first.id]);assert.equal(model.change('notes',state,command,'2026-11-25T20:00:00Z'),state);
+ done(second.id,true,'2026-11-25T21:00:00Z');assert.equal(state.items[1].completedAt,'2026-11-24T20:00:00Z');
+ const legacy=[{...first,done:true},{...second,done:true},open];assert.deepEqual(copy(model.sort(legacy)).map(n=>n.id),[open.id,second.id,first.id]);assert.equal(legacy.length,3);
+});

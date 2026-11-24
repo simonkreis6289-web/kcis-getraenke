@@ -15,7 +15,8 @@
   const label=important?high.length+' wichtige '+(high.length===1?'Notiz':'Notizen')+' zu besprechen':open.length?open.length+' offene '+(open.length===1?'Notiz':'Notizen')+' · Priorität '+priorities[level]:'Keine offenen Notizen';
   element.setAttribute('aria-label',label);element.title=label;
  }
- const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(a.done)-Number(b.done)||Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id));
+ const completedAt=note=>Date.parse(note.completedAt)||Date.parse(note.createdAt);
+ const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(!!a.done)-Number(!!b.done)||(a.done&&b.done?completedAt(b)-completedAt(a):Date.parse(a.createdAt)-Date.parse(b.createdAt))||a.id.localeCompare(b.id));
  function value(kind,data){if(kind==='penalties'&&window.KCPenaltyTable)return {text:typeof data?.text==='string'?data.text:penaltiesPlaceholder,table:window.KCPenaltyTable.value(data),revision:Number(data?.revision)||0};return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:kind==='penalties'?penaltiesPlaceholder:placeholder,revision:Number(data?.revision)||0};}
  function change(kind,before,request,now=new Date().toISOString()){
   if(!['notes','statutes','penalties'].includes(kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Änderung.');
@@ -35,7 +36,7 @@
     items=items.map(n=>n.id===request.id?{...n,priority:request.priority}:n);
    }else if(['done','delete'].includes(request.action)){
     if(!validId(request.id)||!items.some(n=>n.id===request.id)||request.action==='done'&&typeof request.done!=='boolean')throw Error('Notiz nicht gefunden. Bitte die Liste aktualisieren.');
-    items=request.action==='delete'?items.filter(n=>n.id!==request.id):items.map(n=>n.id===request.id?{...n,done:request.done}:n);
+    items=request.action==='delete'?items.filter(n=>n.id!==request.id):items.map(n=>n.id===request.id?{...n,done:request.done,completedAt:request.done?(n.done?n.completedAt||now:now):''}:n);
    }else throw Error('Unbekannte Notizaktion.');
    if(items.length>1000||items.reduce((n,item)=>n+item.text.length,0)>180000)throw Error('Die Notizsammlung ist voll. Bitte alte Einträge löschen.');
    result={items:sort(items)};
