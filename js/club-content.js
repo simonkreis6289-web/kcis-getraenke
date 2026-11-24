@@ -4,6 +4,16 @@
  const penaltiesPlaceholder='Strafentabelle des Kegelclubs\n\nHier können die geltenden Strafen, Beträge und Erläuterungen eingetragen werden.';
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const validId=id=>typeof id==='string'&&/^note_[a-zA-Z0-9_-]{1,100}$/.test(id);
+ const priorities={high:'Hoch',normal:'Normal',low:'Niedrig'};
+ const priority=note=>Object.hasOwn(priorities,note?.priority)?note.priority:'normal';
+ function noteAlert(element,items,dashboard=false){
+  if(!element)return;
+  const open=sort(items).filter(n=>!n.done),high=open.filter(n=>priority(n)==='high'),important=high.length>0,visible=dashboard?important:open.length>0;
+  element.hidden=!visible;element.classList.toggle('is-important',important);
+  element.textContent=visible?(important?(dashboard?'❗ ':'❗ Besprechen · ')+high.length:'📝 Notizen · '+open.length):'';
+  const label=important?high.length+' wichtige '+(high.length===1?'Notiz':'Notizen')+' zu besprechen':open.length+' offene '+(open.length===1?'Notiz':'Notizen');
+  element.setAttribute('aria-label',label);element.title=label;
+ }
  const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(a.done)-Number(b.done)||Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id));
  function value(kind,data){if(kind==='penalties'&&window.KCPenaltyTable)return {text:typeof data?.text==='string'?data.text:penaltiesPlaceholder,table:window.KCPenaltyTable.value(data),revision:Number(data?.revision)||0};return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:kind==='penalties'?penaltiesPlaceholder:placeholder,revision:Number(data?.revision)||0};}
  function change(kind,before,request,now=new Date().toISOString()){
@@ -16,7 +26,12 @@
    if(request.action==='add'){
     if(!validId(request.id)||typeof request.text!=='string'||!request.text.trim()||request.text.length>10000)throw Error('Bitte eine Notiz mit 1 bis 10.000 Zeichen eingeben.');
     if(items.some(n=>n.id===request.id))throw Error('Diese Notiz ist bereits gespeichert.');
-    items=[...items,{id:request.id,text:request.text.trim(),done:false,createdAt:now}];
+    if(request.priority!==undefined&&!Object.hasOwn(priorities,request.priority))throw Error('Bitte Hoch, Normal oder Niedrig als Priorität wählen.');
+    items=[...items,{id:request.id,text:request.text.trim(),done:false,createdAt:now,priority:request.priority||'normal'}];
+   }else if(request.action==='priority'){
+    if(!validId(request.id)||!items.some(n=>n.id===request.id))throw Error('Notiz nicht gefunden. Bitte die Liste aktualisieren.');
+    if(!Object.hasOwn(priorities,request.priority))throw Error('Bitte Hoch, Normal oder Niedrig als Priorität wählen.');
+    items=items.map(n=>n.id===request.id?{...n,priority:request.priority}:n);
    }else if(['done','delete'].includes(request.action)){
     if(!validId(request.id)||!items.some(n=>n.id===request.id)||request.action==='done'&&typeof request.done!=='boolean')throw Error('Notiz nicht gefunden. Bitte die Liste aktualisieren.');
     items=request.action==='delete'?items.filter(n=>n.id!==request.id):items.map(n=>n.id===request.id?{...n,done:request.done}:n);
@@ -37,7 +52,10 @@
   if(request.action==='turn'&&![1,-1].includes(request.delta))throw Error('Ungültiger Seitenwechsel.');
   return {open:request.action!=='close',kind:request.kind,session:request.action==='open'?request.opId:before.session,turn:request.action==='open'?0:Number(before.turn||0)+(request.action==='turn'?1:0),delta:request.action==='turn'?request.delta:0,revision:Number(before?.revision||0)+1,commands:[...(before?.commands||[]),request.opId].slice(-128)};
  }
- function noteMarkup(note,text,continued=false,controls=true){return '<article class="club-note'+(note.done?' is-done':'')+'"><div class="club-note-heading">'+(controls?'<label class="club-note-check"><input type="checkbox" data-note-done="'+esc(note.id)+'" '+(note.done?'checked':'')+' aria-label="Notiz '+(note.done?'wieder öffnen':'abhaken')+'"><span>'+(note.done?'Erledigt':'Offen')+'</span></label>':'<strong>'+(note.done?'✓ Erledigt':'○ Offen')+'</strong>')+'<time datetime="'+esc(note.createdAt)+'">'+esc(new Date(note.createdAt).toLocaleString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'short',timeStyle:'short'}))+(continued?' · Fortsetzung':'')+'</time>'+(controls?'<button type="button" class="club-note-delete" data-note-delete="'+esc(note.id)+'" aria-label="Notiz löschen">Löschen</button>':'')+'</div><div class="club-note-text">'+esc(text)+'</div></article>';}
+ function noteMarkup(note,text,continued=false,controls=true){
+  const prio=priority(note),choice=controls?'<label class="club-note-priority">Priorität <select data-note-priority="'+esc(note.id)+'" aria-label="Priorität der Notiz">'+Object.entries(priorities).map(([key,label])=>'<option value="'+key+'" '+(key===prio?'selected':'')+'>'+label+'</option>').join('')+'</select></label>':'<span class="club-note-priority-badge">'+(prio==='high'?'❗ ':'')+priorities[prio]+'</span>';
+  return '<article class="club-note priority-'+prio+(note.done?' is-done':'')+'"><div class="club-note-heading">'+(controls?'<label class="club-note-check"><input type="checkbox" data-note-done="'+esc(note.id)+'" '+(note.done?'checked':'')+' aria-label="Notiz '+(note.done?'wieder öffnen':'abhaken')+'"><span>'+(note.done?'Erledigt':'Offen')+'</span></label>':'<strong>'+(note.done?'✓ Erledigt':'○ Offen')+'</strong>')+choice+'<time datetime="'+esc(note.createdAt)+'">'+esc(new Date(note.createdAt).toLocaleString('de-DE',{timeZone:'Europe/Berlin',dateStyle:'short',timeStyle:'short'}))+(continued?' · Fortsetzung':'')+'</time>'+(controls?'<button type="button" class="club-note-delete" data-note-delete="'+esc(note.id)+'" aria-label="Notiz löschen">Löschen</button>':'')+'</div><div class="club-note-text">'+esc(text)+'</div></article>';
+ }
  // Wortgrenzen bevorzugen, sämtliche Zeichen erhalten (auch Leerzeilen und Emoji).
  function take(text,fits){
   if(fits(text))return text.length;
@@ -115,5 +133,5 @@
   return {text:value,start:a,end:a+replacement.length};
  }
 
- window.KCClubContent=Object.freeze({placeholder,penaltiesPlaceholder,esc,sort,value,change,view,noteMarkup,take,textPages,notePages,statuteLine,statutesMarkup,statutesPages,editStatutes});
+ window.KCClubContent=Object.freeze({placeholder,penaltiesPlaceholder,esc,priorities,priority,noteAlert,sort,value,change,view,noteMarkup,take,textPages,notePages,statuteLine,statutesMarkup,statutesPages,editStatutes});
 })();
