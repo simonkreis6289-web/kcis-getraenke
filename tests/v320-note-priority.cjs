@@ -21,26 +21,26 @@ test('legacy notes default to normal; priority changes preserve text, date and c
  assert.throws(()=>model.change('notes',before,req({action:'priority',id:'note_missing',priority:'high'},3)),/gefunden/);
 });
 test('real app creates with chosen priority and updates existing notes and header through Firestore',async()=>{
- const f=ui(),app=f.c.KCClubContentApp,d=f.document,alert=d.getElementById('club-notes-alert');assert(alert.hidden);
+ const f=ui(),app=f.c.KCClubContentApp,d=f.document,alert=d.getElementById('club-notes-alert');assert(!alert.hidden);assert.equal(alert.dataset.priority,'clear');
  app.edit('notes');f.flush();select(d.getElementById('club-notes-priority'),'high');d.getElementById('club-notes-priority').dispatchEvent(new f.window.Event('change',{bubbles:true}));
  const input=d.getElementById('club-notes-text');input.value='Monatsbeitrag besprechen';input.selectionStart=input.value.length;input.dispatchEvent(new f.window.Event('input',{bubbles:true}));
- assert(await app.save('notes'));f.flush();const saved=f.store.get('A','notes').items[0];assert.equal(saved.priority,'high');assert(!alert.hidden);assert(alert.textContent.includes('❗ Besprechen · 1'));
- let picker=d.querySelector('[data-note-priority]');select(picker,'low');picker.dispatchEvent(new f.window.Event('change',{bubbles:true}));await tick();f.flush();assert.equal(f.store.get('A','notes').items[0].priority,'low');assert(alert.textContent.includes('📝 Notizen · 1'));assert(!alert.classList.contains('is-important'));
- assert(await app.setPriority(saved.id,'normal'));assert(await app.done(saved.id,true));f.flush();assert(alert.hidden);
- assert(await app.setPriority(saved.id,'high'));f.flush();assert(alert.hidden);assert(await app.done(saved.id,false));f.flush();assert(alert.classList.contains('is-important'));
- assert(await app.remove(saved.id));f.flush();assert(alert.hidden);
- app.edit('notes');f.flush();assert.equal(d.getElementById('club-notes-priority').value,'normal');app.cancel('notes');app.stop();assert(alert.hidden);
+ assert(await app.save('notes'));f.flush();const saved=f.store.get('A','notes').items[0];assert.equal(saved.priority,'high');assert(!alert.hidden);assert.equal(alert.textContent,'!');assert.equal(alert.dataset.priority,'high');
+ let picker=d.querySelector('[data-note-priority]');select(picker,'low');picker.dispatchEvent(new f.window.Event('change',{bubbles:true}));await tick();f.flush();assert.equal(f.store.get('A','notes').items[0].priority,'low');assert.equal(alert.textContent,'i');assert.equal(alert.dataset.priority,'low');assert(!alert.classList.contains('is-important'));
+ assert(await app.setPriority(saved.id,'normal'));assert(await app.done(saved.id,true));f.flush();assert(!alert.hidden);assert.equal(alert.dataset.priority,'clear');
+ assert(await app.setPriority(saved.id,'high'));f.flush();assert(!alert.hidden);assert.equal(alert.dataset.priority,'clear');assert(await app.done(saved.id,false));f.flush();assert(alert.classList.contains('is-important'));
+ assert(await app.remove(saved.id));f.flush();assert(!alert.hidden);assert.equal(alert.dataset.priority,'clear');
+ app.edit('notes');f.flush();assert.equal(d.getElementById('club-notes-priority').value,'normal');app.cancel('notes');app.stop();assert(!alert.hidden);assert.equal(alert.dataset.priority,'clear');
 });
 test('existing legacy note can be promoted without recreating it; offline controls and club boundaries remain safe',async()=>{
  const f=ui(),app=f.c.KCClubContentApp,d=f.document;f.store.put('clubs/A/documents/notes',{items:[note('old')],revision:1});f.flush();assert.equal(d.querySelector('[data-note-priority]').value,'normal');
  assert(await app.setPriority('note_old','high'));f.flush();assert.equal(f.store.get('A','notes').items.length,1);assert(!d.getElementById('club-notes-alert').hidden);
  f.c.navigator.onLine=false;f.window.dispatchEvent(new f.window.Event('offline'));assert(d.querySelector('[data-note-priority]').disabled);assert.equal(await app.setPriority('note_old','low'),false);
- app.stop();f.c.ACTIVE_CLUB='B';app.render();f.flush();assert(d.getElementById('club-notes-alert').hidden);
+ app.stop();f.c.ACTIVE_CLUB='B';app.render();f.flush();assert.equal(d.getElementById('club-notes-alert').dataset.priority,'clear');
 });
 test('dashboard alerts subscribe without opening notes and update live while overlays open and close',()=>{
  const f=ui({dashboard:true}),dash=f.c.KCClubContentDashboard,d=f.document,alert=d.getElementById('club-notes-alert');
  dash.update({},'A');assert(alert.hidden);f.store.put('clubs/A/documents/notes',{items:[note('normal'),note('low','low'),note('done','high',true)],revision:1});assert(alert.hidden);
- f.store.put('clubs/A/documents/notes',{items:[note('high','high')],revision:2});assert(!alert.hidden);assert(alert.textContent.includes('❗ 1'));assert(d.getElementById('club-content-dashboard').hidden);
+ f.store.put('clubs/A/documents/notes',{items:[note('high','high')],revision:2});assert(!alert.hidden);assert.equal(alert.textContent,'!');assert(d.getElementById('club-content-dashboard').hidden);
  dash.update({dashboardClubContent:{kind:'statutes',open:true,session:'content_test',turn:0}},'A');f.flush();dash.update({},'A');f.flush();assert(!alert.hidden);
  f.store.put('clubs/A/documents/notes',{items:[note('high','low')],revision:3});assert(alert.hidden);
  f.store.put('clubs/A/documents/notes',{items:[note('high','high')],revision:4});assert(!alert.hidden);
@@ -53,4 +53,13 @@ test('direct tablet alerts survive older cloud snapshots and clear on confirmed 
  f.store.put('clubs/A/documents/notes',pending);assert(!alert.hidden);
  dash.update({directClubDocuments:{notes:{items:[note('topic','high',true)],revision:3}}},'A');assert(alert.hidden);f.store.put('clubs/A/documents/notes',pending);assert(alert.hidden);
  f.store.put('clubs/A/documents/notes',{items:[],revision:4});assert(alert.hidden);dash.reset();
+});
+
+test('compact app symbol sits before the crest and follows the highest open priority',()=>{
+ const f=ui(),d=f.document,alert=d.getElementById('club-notes-alert');
+ assert.equal(alert.nextElementSibling.id,'app-club-crest');assert.equal(alert.textContent,'✓');assert.equal(alert.dataset.priority,'clear');
+ const rows=[note('low','low'),note('normal','normal'),note('high','high')];
+ for(const [items,level,symbol] of [[rows,'high','!'],[rows.slice(0,2),'normal','!'],[rows.slice(0,1),'low','i'],[rows.map(n=>({...n,done:true})),'clear','✓']]){
+  model.noteAlert(alert,items);assert(!alert.hidden);assert.equal(alert.dataset.priority,level);assert.equal(alert.textContent,symbol);assert(alert.getAttribute('aria-label'));
+ }
 });
