@@ -38,11 +38,13 @@
   if(save)save.disabled=busy||!ready[kind]||!navigator.onLine||length>limit||kind==='notes'&&!editors[kind]?.text.trim();
   const count=$('club-'+kind+'-characters');if(count)count.textContent=length.toLocaleString('de-DE')+' / '+limit.toLocaleString('de-DE')+' Zeichen';
   const start=$('club-'+kind+'-edit');if(start){start.disabled=busy||!ready[kind]||!navigator.onLine;start.hidden=!!drafts[kind];}
-  for(const control of $('club-'+kind+'-reader')?.querySelectorAll('[data-note-done],[data-note-delete]')||[])control.disabled=busy||!ready[kind]||!navigator.onLine;
+  for(const control of $('club-'+kind+'-reader')?.querySelectorAll('[data-note-done],[data-note-delete],[data-note-priority]')||[])control.disabled=busy||!ready[kind]||!navigator.onLine;
   editors[kind]?.setBusy(busy);
+  if(kind==='notes'&&$('club-notes-priority'))$('club-notes-priority').disabled=busy;
   const cancel=$('club-'+kind+'-cancel');if(cancel)cancel.disabled=busy;
  }
  function renderPanels(){
+  model.noteAlert($('club-notes-alert'),data.notes?.items);
   initialize();for(const kind of ['notes','statutes','penalties']){
    const root=$('club-'+kind+'-reader');if(!root)continue;const current=model.value(kind,data[kind]),editing=!!drafts[kind];
    if(kind!=='notes'){
@@ -66,18 +68,19 @@
   }catch(error){if(token===epoch&&target===club){message=error.message||'Speichern fehlgeschlagen. Bitte erneut versuchen.';if(/inzwischen/.test(message))pending.delete(key);}return false;}
   finally{if(token===epoch&&target===club){busy=false;renderPanels();}}
  }
- function edit(kind){if(busy||!ready[kind]||!navigator.onLine)return;const current=model.value(kind,data[kind]);drafts[kind]={revision:current.revision,id:kind==='notes'?id('note_'):null};message='';renderPanels();editors[kind].open(kind==='notes'?'':kind==='penalties'&&window.KCPenaltyTable?current.table:current.text);renderButtons(kind);schedule();requestAnimationFrame(()=>editors[kind].focus());}
+ function edit(kind){if(busy||!ready[kind]||!navigator.onLine)return;const current=model.value(kind,data[kind]);drafts[kind]={revision:current.revision,id:kind==='notes'?id('note_'):null};message='';renderPanels();if(kind==='notes'&&$('club-notes-priority'))$('club-notes-priority').value='normal';editors[kind].open(kind==='notes'?'':kind==='penalties'&&window.KCPenaltyTable?current.table:current.text);renderButtons(kind);schedule();requestAnimationFrame(()=>editors[kind].focus());}
  function cancel(kind){if(busy)return;if(drafts[kind]?.changed&&!confirm('Ungespeicherten Entwurf verwerfen?'))return;delete drafts[kind];message='';renderPanels();}
- async function save(kind){const draft=drafts[kind];if(!draft||busy)return false;const fields=kind==='notes'?{action:'add',id:draft.id,text:editors[kind].text}:{action:'save',text:editors[kind].text,...(kind==='penalties'&&editors[kind].table?{table:editors[kind].table}:{})};
+ async function save(kind){const draft=drafts[kind];if(!draft||busy)return false;const fields=kind==='notes'?{action:'add',id:draft.id,text:editors[kind].text,priority:$('club-notes-priority')?.value||'normal'}:{action:'save',text:editors[kind].text,...(kind==='penalties'&&editors[kind].table?{table:editors[kind].table}:{})};
   const target=club,token=epoch,ok=await request('updateClubContent',kind,fields,kind==='notes'?model.value('notes',data.notes).revision:draft.revision);if(ok&&target===club&&token===epoch){delete drafts[kind];message='Gespeichert.';if(kind==='notes')readers.notes.showNote(draft.id);renderPanels();}return ok;
  }
  async function done(noteId,checked){if(!ready.notes)return false;return request('updateClubContent','notes',{action:'done',id:noteId,done:checked},model.value('notes',data.notes).revision);}
+ async function setPriority(noteId,priority){if(!ready.notes||busy)return false;return request('updateClubContent','notes',{action:'priority',id:noteId,priority},model.value('notes',data.notes).revision);}
  async function remove(noteId){if(!ready.notes||busy||!confirm('Diese Notiz wirklich löschen?'))return false;return request('updateClubContent','notes',{action:'delete',id:noteId},model.value('notes',data.notes).revision);}
  function toggle(kind){const current=dashboardControl().view;return request('setClubContentDashboard',kind,{action:current?.open&&current.kind===kind?'close':'open'},Number(current?.revision)||0);}
  function turn(kind,delta){return request('setClubContentDashboard',kind,{action:'turn',delta},Number(dashboardControl().view?.revision)||0);}
  function infoTab(key){if(key==='dashboard'){showSideTab('verwaltung','dashboard');return;}const keys=['statutes','penalties'];if(!keys.includes(key))return;for(const value of keys){const panel=$('club-info-'+value);if(panel)panel.hidden=value!==key;}for(const b of document.querySelectorAll('[data-club-info]')){const selected=b.dataset.clubInfo===key;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;}render();}
  document.addEventListener('keydown',event=>{if(!event.target.matches('[data-club-info]')||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const keys=['statutes','penalties'],index=keys.indexOf(event.target.dataset.clubInfo),key=keys[event.key==='Home'?0:event.key==='End'?1:1-index];infoTab(key);document.querySelector('[data-club-info='+key+']').focus();});
- document.addEventListener('change',event=>{if(event.target.matches('[data-note-done]')){const input=event.target;input.checked=!input.checked;void done(input.dataset.noteDone,!input.checked);}});
+ document.addEventListener('change',event=>{if(event.target.matches('[data-note-priority]')){const input=event.target,next=input.value,note=model.value('notes',data.notes).items.find(n=>n.id===input.dataset.notePriority);input.value=model.priority(note);void setPriority(input.dataset.notePriority,next);}if(event.target.id==='club-notes-priority'&&drafts.notes)drafts.notes.changed=true;if(event.target.matches('[data-note-done]')){const input=event.target;input.checked=!input.checked;void done(input.dataset.noteDone,!input.checked);}});
  document.addEventListener('click',event=>{const button=event.target.closest('[data-note-delete]');if(button)void remove(button.dataset.noteDelete);});
  document.addEventListener('keydown',event=>{
   const kind=['statutes','penalties'].find(key=>drafts[key]);if(!kind||event.defaultPrevented)return;
@@ -87,5 +90,5 @@
   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
  });
  window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);window.addEventListener('online',render);window.addEventListener('offline',renderPanels);
- window.KCClubContentApp=Object.freeze({render,stop,edit,cancel,save,done,remove,toggle,turn,infoTab,schedule,refreshDashboardControls});
+ window.KCClubContentApp=Object.freeze({render,stop,edit,cancel,save,done,setPriority,remove,toggle,turn,infoTab,schedule,refreshDashboardControls});
 })();

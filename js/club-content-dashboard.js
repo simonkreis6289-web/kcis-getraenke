@@ -1,18 +1,36 @@
 /* Clubunterlagen belegen die ganze Dashboard-Fläche, mit lokalem und fernbedientem Blättern. */
 (() => {
  let club='',kind='',session='',turn=0,epoch=0,off=null,pager=null,current=null,directStamp='';
+ let notesClub='',notesEpoch=0,notesOff=null,notesCloud=null,notesDirect=null;
+ const revision=value=>Number(value?.revision)||0;
+ function paintNotesAlert(){window.KCClubContent.noteAlert(document.getElementById('club-notes-alert'),(notesDirect||notesCloud)?.items,true);}
+ function resetNotesAlert(){notesEpoch++;notesOff?.();notesOff=null;notesClub='';notesCloud=null;notesDirect=null;paintNotesAlert();}
+ function updateNotesAlert(state,clubId){
+  if(!clubId){resetNotesAlert();return;}
+  if(notesClub!==clubId){resetNotesAlert();notesClub=clubId;}
+  // Notes remain subscribed while games, tables or another club document are on screen.
+  if(!notesOff&&window.firestoreApi?.subscribeClubContent){const token=notesEpoch;notesOff=window.firestoreApi.subscribeClubContent(clubId,'notes',value=>{if(token!==notesEpoch)return;notesCloud=value;if(notesDirect&&revision(value)>=revision(notesDirect))notesDirect=null;paintNotesAlert();},()=>{});}
+  const documents=state?.directClubDocuments;
+  if(documents&&Object.prototype.hasOwnProperty.call(documents,'notes')){
+   const value=documents.notes;
+   if(value&&revision(value)>revision(notesCloud)&&revision(value)>=revision(notesDirect))notesDirect=value;
+  }
+  paintNotesAlert();
+ }
  const overlay=()=>document.getElementById('club-content-dashboard');
  function inert(){const main=document.querySelector('main.dashboard'),visible=['club-content-dashboard','cash-dashboard-overlay','dashboard-rules-overlay'].some(id=>{const el=document.getElementById(id);return el&&!el.hidden;});if(main){main.toggleAttribute('inert',visible);if(visible)main.setAttribute('aria-hidden','true');else main.removeAttribute('aria-hidden');}}
- function reset(){epoch++;off?.();pager?.destroy();off=null;club='';kind='';session='';turn=0;current=null;directStamp='';pager=null;const box=overlay();if(box)box.hidden=true;inert();}
+ function resetOverlay(){epoch++;off?.();pager?.destroy();off=null;club='';kind='';session='';turn=0;current=null;directStamp='';pager=null;const box=overlay();if(box)box.hidden=true;inert();}
+ function reset(){resetOverlay();resetNotesAlert();}
  function renderContent(value){
   const data=window.KCClubContent.value(kind,value);
   pager.update(kind==='notes'?data.items:kind==='penalties'&&window.KCPenaltyTable?data.table:data.text);
  }
  function update(state,clubId){
+  updateNotesAlert(state,clubId);
   const view=state?.dashboardClubContent,box=overlay();if(!box)return;
-  if(!view?.open||!['notes','statutes','penalties'].includes(view.kind)){if(club)reset();else{box.hidden=true;inert();}return;}
+  if(!view?.open||!['notes','statutes','penalties'].includes(view.kind)){if(club)resetOverlay();else{box.hidden=true;inert();}return;}
   const changed=club!==clubId||kind!==view.kind||session!==view.session;
-  if(changed){reset();club=clubId;kind=view.kind;session=view.session;turn=Number(view.turn)||0;box.hidden=false;box.dataset.contentKind=kind;
+  if(changed){resetOverlay();club=clubId;kind=view.kind;session=view.session;turn=Number(view.turn)||0;box.hidden=false;box.dataset.contentKind=kind;
    document.getElementById('club-content-dashboard-title').textContent=kind==='notes'?'📝 Clubnotizen':kind==='penalties'?'💶 Strafentabelle':'📜 Satzung';
    document.getElementById('club-content-dashboard-help').textContent=kind==='notes'?'Offene Notizen zuerst · Erledigte am Ende · Jeweils älteste zuerst':'In der App unter Info → '+(kind==='penalties'?'Strafentabelle':'Satzung')+' bearbeiten und schließen';
    const reader=document.getElementById('club-content-dashboard-reader');reader.querySelector('[data-content-body]').setAttribute('aria-label',kind==='notes'?'Notizen':kind==='penalties'?'Strafentabelle':'Satzung');pager=window.KCContentPager.create(reader,{notes:kind==='notes',penalties:kind==='penalties'&&!!window.KCPenaltyTable,penaltyDashboard:kind==='penalties'});const token=epoch;
