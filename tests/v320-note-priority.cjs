@@ -76,3 +76,13 @@ test('checking notes preserves every item and sorts completed notes newest compl
  done(second.id,true,'2026-11-25T21:00:00Z');assert.equal(state.items[1].completedAt,'2026-11-24T20:00:00Z');
  const legacy=[{...first,done:true},{...second,done:true},open];assert.deepEqual(copy(model.sort(legacy)).map(n=>n.id),[open.id,second.id,first.id]);assert.equal(legacy.length,3);
 });
+
+test('open notes follow priority before creation date while completed notes follow completion date only',()=>{
+ const low={...note('low','low'),createdAt:'2026-11-01T10:00:00Z'},normal=note('normal','normal'),high={...note('high','high'),createdAt:'2026-11-24T18:00:00Z'},olderHigh={...note('olderhigh','high'),createdAt:'2026-11-24T17:00:00Z'};
+ const doneHigh={...note('donehigh','high',true),completedAt:'2026-11-24T18:00:00Z'},doneLow={...note('donelow','low',true),completedAt:'2026-11-24T19:00:00Z'},legacy=note('legacy');
+ const items=[doneHigh,low,high,normal,doneLow,olderHigh,legacy],before=copy(items),expected=[olderHigh.id,high.id,legacy.id,normal.id,low.id,doneLow.id,doneHigh.id];
+ assert.deepEqual(copy(model.sort(items)).map(n=>n.id),expected);assert.deepEqual(copy(items),before);
+ assert.deepEqual(copy(model.notePages(items,()=>true)[0]).map(f=>f.note.id),expected);
+ let state={items,revision:0};state=model.change('notes',state,req({action:'priority',id:low.id,priority:'high'}));assert.equal(state.items[0].id,low.id);
+ state=model.change('notes',state,req({action:'done',id:low.id,done:true},state.revision),'2026-11-24T20:00:00Z');assert.equal(state.items.find(n=>n.done).id,low.id);
+});

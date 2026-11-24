@@ -52,7 +52,7 @@
     if(editing){stage.setAttribute('role','dialog');stage.setAttribute('aria-modal','true');}else{stage.removeAttribute('role');stage.removeAttribute('aria-modal');}
    }
    root.hidden=editing;$('club-'+kind+'-editor').hidden=!editing;readers[kind].pause(editing);readers[kind].update(kind==='notes'?current.items:kind==='penalties'&&window.KCPenaltyTable?current.table:current.text);
-   if(kind==='notes')$('club-notes-summary').textContent=current.items.filter(n=>!n.done).length+' offen · '+current.items.filter(n=>n.done).length+' erledigt · Offene: älteste zuerst · Erledigte: zuletzt abgehakt zuerst';
+   if(kind==='notes')$('club-notes-summary').textContent=current.items.filter(n=>!n.done).length+' offen · '+current.items.filter(n=>n.done).length+' erledigt · Offene: Hoch → Normal → Niedrig · Erledigte: zuletzt abgehakt zuerst';
    $('club-'+kind+'-status').textContent=message||(!navigator.onLine?'Offline · Gespeicherte Inhalte lesen; Änderungen nach dem Verbinden.':!ready[kind]?'Clubunterlagen werden geladen …':editing&&current.revision!==drafts[kind].revision?'Auf einem anderen Gerät geändert. Dein Entwurf bleibt erhalten.':busy?'Wird gespeichert …':'');
    renderButtons(kind);
   }schedule();
