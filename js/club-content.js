@@ -16,7 +16,8 @@
   element.setAttribute('aria-label',label);element.title=label;
  }
  const completedAt=note=>Date.parse(note.completedAt)||Date.parse(note.createdAt);
- const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(!!a.done)-Number(!!b.done)||(a.done&&b.done?completedAt(b)-completedAt(a):Date.parse(a.createdAt)-Date.parse(b.createdAt))||a.id.localeCompare(b.id));
+ const priorityOrder={high:0,normal:1,low:2};
+ const sort=items=>(Array.isArray(items)?items:[]).filter(item=>item&&validId(item.id)&&typeof item.text==='string'&&Number.isFinite(Date.parse(item.createdAt))).slice().sort((a,b)=>Number(!!a.done)-Number(!!b.done)||(a.done&&b.done?completedAt(b)-completedAt(a):priorityOrder[priority(a)]-priorityOrder[priority(b)]||Date.parse(a.createdAt)-Date.parse(b.createdAt))||a.id.localeCompare(b.id));
  function value(kind,data){if(kind==='penalties'&&window.KCPenaltyTable)return {text:typeof data?.text==='string'?data.text:penaltiesPlaceholder,table:window.KCPenaltyTable.value(data),revision:Number(data?.revision)||0};return kind==='notes'?{items:sort(data?.items),revision:Number(data?.revision)||0}:{text:typeof data?.text==='string'?data.text:kind==='penalties'?penaltiesPlaceholder:placeholder,revision:Number(data?.revision)||0};}
  function change(kind,before,request,now=new Date().toISOString()){
   if(!['notes','statutes','penalties'].includes(kind)||!/^content_[a-zA-Z0-9_-]{1,100}$/.test(request.opId||'')||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw Error('Ungültige Änderung.');
