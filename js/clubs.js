@@ -167,6 +167,7 @@ function createEmptyClubData() {
   return {
     avatar: '',
     dashboardSettings: null,
+    personalThrows:null,
     eveningCounters:null,
     clubTermine: [],
     clubKegelSerie: null,
@@ -273,6 +274,7 @@ function syncCurrentClubToStore() {
     ...(typeof extraSnapshot==='function'?extraSnapshot():{}),
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
     currentEveningStartedAt,
+    personalThrows:typeof personalThrows==='undefined'?null:personalThrows,
     eveningCounters:typeof eveningCounters==='undefined'?{}:{...eveningCounters},
     eveningCounterExcluded:typeof eveningCounterExcluded==='undefined'?{}:eveningCounterExcluded,
     dashboardSettings:typeof dashboardSettings==='undefined'?null:dashboardSettings,
@@ -497,6 +499,7 @@ async function selectClub(clubName) {
   siebenerState=localClub.siebenerState||null;hindernisState=localClub.hindernisState||null;hindernisSettings=localClub.hindernisSettings||null;individualGameLedger=localClub.individualGameLedger||[];individualGameRevision=Number(localClub.individualGameRevision)||0;
   gluecksspiraleState=localClub.gluecksspiraleState?JSON.parse(JSON.stringify(localClub.gluecksspiraleState)):createGluecksspiraleState();
   currentEveningStartedAt=localClub.currentEveningStartedAt||sechstageState.eveningStartedAt||blackjackState.eveningStartedAt||gluecksspiraleState.eveningStartedAt||null;
+  if(typeof personalThrows!=='undefined')personalThrows=localClub.personalThrows||null;
   if(typeof eveningCounters!=='undefined')eveningCounters=window.KCEveningCounters?.normalize(localClub.eveningCounters)||{};
   if(typeof eveningCounterExcluded!=='undefined')eveningCounterExcluded=localClub.eveningCounterExcluded||{};
   if(typeof dashboardSettings!=='undefined')dashboardSettings=window.KCDashboardLayout?.normalize(localClub.dashboardSettings)||localClub.dashboardSettings||null;

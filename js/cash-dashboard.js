@@ -37,7 +37,8 @@
     html=window.KCActivityReports.table(rows,[...data.catalog.map(d=>({...d,drink:true})),{key:'units',label:'Getränke gesamt'},{key:'cents',label:'Betrag inkl. Runden / Teams',money:true}],'Nur archivierte Getränkeabschlüsse');
    }else{
     const rows=mode==='games'?window.KCActivityReports.games(currentState,entries,range):window.KCActivityReports.penaltyRows(currentState,entries,range);
-    html=window.KCActivityReports.table(rows,mode==='games'?[{key:'played',label:'Spiele'},{key:'won',label:'Siege'},...window.KCActivityReports.penaltyColumns]:window.KCActivityReports.penaltyColumns,'Nur PDF-Abschlüsse und nachgetragene Abende');
+    html=window.KCActivityReports.table(rows,mode==='games'?[{key:'played',label:'Spiele'},{key:'won',label:'Siege'},...window.KCActivityReports.penaltyColumns.filter(c=>!['gosse','nine','kranz'].includes(c.key))]:window.KCActivityReports.penaltyColumns.filter(c=>!['gosse','nine','kranz'].includes(c.key)),'Nur PDF-Abschlüsse und nachgetragene Abende');
+    if(mode==='penalties'&&window.KCPersonalThrowsView)html+=KCPersonalThrowsView.yearMarkup(entries,currentState.penaltyStatsSettings,range.custom,range.from,range.to,currentState.persons||[]);
    }
    if(!period){const settings=mode==='drinks'?currentState.penaltyStatsSettings?.drinks:currentState.penaltyStatsSettings;period=range.custom?'Zeitraum: '+(range.from||'Anfang')+' bis '+(range.to||'heute'):settings?.mode==='now'?'Zählbeginn: '+new Date(settings.startAt).toLocaleString('de-DE'):settings?.startDate?'Seit '+settings.startDate.split('-').reverse().join('.'):'Gesamte gespeicherte Historie';}
   }catch(e){html='<p>'+window.KCActivityReports.esc(e.message)+'</p>';}

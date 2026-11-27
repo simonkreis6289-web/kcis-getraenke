@@ -1,7 +1,7 @@
 /* Gemeinsames Modell für Dashboard-Anordnung, Werfer und Termin-Ticker. */
 (() => {
- const keys=['drinks','fines','gutters','seating','counters'],slots=['left-top','left-bottom','right-top','right-bottom'];
- const labels={drinks:'Getränkestand',fines:'Strafenstand',gutters:'Gossenkönig',seating:'Sitzordnung',counters:'Kegelabend-Zähler'};
+ const keys=['drinks','fines','gutters','seating','counters','personal'],slots=['left-top','left-bottom','right-top','right-bottom'];
+ const labels={drinks:'Getränkestand',fines:'Strafenstand',gutters:'Gossenkönig',seating:'Sitzordnung',counters:'Kegelabend-Zähler',personal:'Spielerstatistik'};
  const tickerPalette=['#dbeafe','#fef3c7','#dcfce7','#fce7f3','#ede9fe','#cffafe','#ffedd5','#e2e8f0'];
  const tickerColor=(value,fallback)=>/^#[0-9a-fA-F]{6}$/.test(String(value||''))?String(value).toLowerCase():fallback;
  const tickerTypes={birthdays:'Geburtstage',tour:'Kegeltour',kegeln:'Kegeltermin',bl1:'1. Bundesliga',bl2:'2. Bundesliga'};
@@ -34,7 +34,7 @@
  function menschPopup(value){
   return {seconds:seconds(value?.seconds,2,0,30),color:tickerColor(value?.color,'#ffd36a')};
  }
- const defaults=()=>({playerRows:playerRows(),abschreibungPause:abschreibungPause(),lottoAnimations:lottoAnimations(),menschPopup:menschPopup(),playerRowTint:{fines:false,drinks:false},tableWidth:{left:17,right:17},tableHeight:{left:50,right:50},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:key!=='counters',position:slots[i]||'right-top',seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,stationSeconds:4,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false}}});
+ const defaults=()=>({playerRows:playerRows(),abschreibungPause:abschreibungPause(),lottoAnimations:lottoAnimations(),menschPopup:menschPopup(),playerRowTint:{fines:false,drinks:false},tableWidth:{left:17,right:17},tableHeight:{left:50,right:50},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:!['counters','personal'].includes(key),position:slots[i]||'right-top',seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,stationSeconds:4,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false}}});
  function normalize(value){
   const out=defaults();
   for(const key of ['fines','drinks'])out.playerRowTint[key]=value?.playerRowTint?.[key]===true;

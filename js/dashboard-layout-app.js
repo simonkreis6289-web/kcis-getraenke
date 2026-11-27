@@ -29,7 +29,7 @@
   let box=section('layout','Tabellen und Anordnung');
   box.append(element('p','Alle Tabellen mit derselben Position wechseln automatisch, unabhängig von ihrer Anzahl. Die Anzeigedauer gilt je Tabelle. Ist oben oder unten frei, nutzt der belegte Platz die ganze Höhe. Zwei aktivierte Tabellen stehen links.'));
   const rows=element('div',undefined,'dashboard-layout-options');
-  for(const key of ['fines','drinks','gutters','seating','counters']){
+  for(const key of ['fines','drinks','gutters','seating','counters','personal']){
    const row=element('div',undefined,'dashboard-layout-option'),label=element('label'),check=element('input');check.type='checkbox';check.id='dashboard-show-'+key;check.checked=draft.panels[key].enabled;check.disabled=busy;check.onchange=()=>{draft.panels[key].enabled=check.checked;draw();};label.append(check,document.createTextNode(M.labels[key]));row.append(label);
    const select=element('select');select.id='dashboard-position-'+key;select.setAttribute('aria-label','Position '+M.labels[key]);select.disabled=busy||!check.checked;select.hidden=!check.checked;
    const positions=r.count===1?['left-top','right-top']:r.count===2?['left-top','left-bottom']:M.slots;

@@ -384,6 +384,7 @@ function getStrafenSnapshot() {
   const statsPeople=typeof KCPenaltyStats!=='undefined'&&typeof currentEveningStartedAt!=='undefined'?(()=>{const data=KCPenaltyStats.build({people:persons,catalog:STRAFEN,logs:typeof penaltyStatsLog==='undefined'?[]:penaltyStatsLog,eveningStartedAt:currentEveningStartedAt});return data.sessions.find(x=>x.key===data.currentKey)?.people||[];})():[];
   return {
     statsPeople,
+    personalThrows:typeof personalThrows==='undefined'?null:window.KCEveningCounters?.personalArchive(personalThrows)||null,
     pdfEveningStartedAt:typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt,
     pdfGameLedger:typeof individualGameLedger==='undefined'?[]:JSON.parse(JSON.stringify(individualGameLedger.filter(row=>row.eveningStartedAt===currentEveningStartedAt))),
     date:

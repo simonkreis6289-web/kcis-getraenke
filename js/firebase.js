@@ -360,7 +360,7 @@ window.firestoreApi = {
       if(current.eveningResetOp===request.opId)return {eveningStartedAt:current.currentEveningStartedAt,state:current};
       if(String(current.currentEveningStartedAt||'')!==String(request.expectedEvening||''))throw Error('Der Kegelabend wurde inzwischen gewechselt. Bitte neu laden.');
       const payload=JSON.parse(JSON.stringify(request.payload)),evening=payload.currentEveningStartedAt,keys=Object.keys(window.KCGameFinePolicy.titles);
-      const next={...payload,...current,eveningCounters:window.KCEveningCounters?.empty()||{},eveningCounterExcluded:{}};
+      const next={...payload,...current,personalThrows:{schema:1,partial:false,rows:[],excluded:[]},eveningCounters:window.KCEveningCounters?.empty()||{},eveningCounterExcluded:{}};
       if(window.KCKranzPolicy)next.extraGameSettings={...(current.extraGameSettings||payload.extraGameSettings||{}),kranzRules:Object.fromEntries(KCKranzPolicy.keys.map(key=>[key,KCKranzPolicy.configured(current,key)]))};
       for(const key of ['currentEveningStartedAt','seatingOrder','spiele','selectedLoser','teamDrinks','bahnTimerStart','bahnTimerRunning','bahnElapsedSeconds','teamStopwatchActive','teamStopwatchRunning','teamStopwatchStart','teamCountdownDuration','teamCountdownRemainingBefore'])if(payload[key]!==undefined)next[key]=payload[key];
       const gameDocs=[];for(const key of keys){const target=doc(db,'clubs',clubId,'liveGames',key),old=await tx.get(target);gameDocs.push({key,target,revision:Number(old.exists()?old.data().revision:0)||0});}
@@ -376,7 +376,7 @@ window.firestoreApi = {
         const oldPeople=people.map(x=>x.previous),attendees=oldPeople.filter(p=>!p.isDrinksOnly&&(p.present||p.left)).map(p=>p.name),oldEvening=current.currentEveningStartedAt||request.expectedEvening;
         const data=window.KCPenaltyStats.build({people:oldPeople,catalog:next.STRAFEN||[],logs:current.penaltyStatsLog||[],eveningStartedAt:oldEvening}),session=data.sessions.find(x=>x.key===data.currentKey);
         const history=new Map();for(const entry of [...(payload.kegelAbende||[]),...(current.kegelAbende||[])])history.set(entry.id||entry.eveningStartedAt||entry.date,entry);
-        if(attendees.length){const entry={id:'stats_evening_'+encodeURIComponent(data.currentKey),date:window.KCPenaltyStats.date(oldEvening)||window.KCPenaltyStats.date(new Date().toISOString()),eveningStartedAt:oldEvening||null,attendees,statsPeople:session?.people||[],updatedAt:new Date().toISOString()};history.set(entry.id,entry);}
+        if(attendees.length){const entry={id:'stats_evening_'+encodeURIComponent(data.currentKey),date:window.KCPenaltyStats.date(oldEvening)||window.KCPenaltyStats.date(new Date().toISOString()),eveningStartedAt:oldEvening||null,attendees,statsPeople:session?.people||[],personalThrows:window.KCEveningCounters?.personalArchive(current.personalThrows)||null,updatedAt:new Date().toISOString()};history.set(entry.id,entry);}
         next.kegelAbende=[...history.values()];
       }
       Object.assign(next,{persons:people.map(x=>x.person),currentEveningStartedAt:evening,eveningResetOp:request.opId,eveningResetRevision:(Number(current.eveningResetRevision)||0)+1,dashboardActiveGame:null,dashboardDraw:null,dashboardRandomDraw:null,dashboardRules:null,seatingOrder:Array(16).fill(''),dashboardGameOverview:{open:true,revision:(Number(current.dashboardGameOverview?.revision)||0)+1},dashboardCashView:null,dashboardClubContent:null,individualGameLedger:[],individualGameRevision:0,strafenHistory:[]});
@@ -660,7 +660,7 @@ window.firestoreApi = {
         people.push(live.exists()?{...person,...live.data(),name:person.name}:person);
       }
       const data=window.KCPenaltyStats.build({people,catalog:current.STRAFEN||[],evenings:current.kegelAbende||[],logs:current.penaltyStatsLog||[],eveningStartedAt:current.currentEveningStartedAt||''});
-      const settings={...(request.scope==='drinks'?{}:container),schema:1,mode:request.mode,startDate:request.mode==='date'?request.startDate:window.KCPenaltyStats.date(now),startAt:request.mode==='now'?now:null,baseline:request.mode==='now'?window.KCPenaltyStats.baseline(data):null,revision:(Number(previous?.revision)||0)+1,lastRequestId:request.id};
+      const settings={...(request.scope==='drinks'?{}:container),schema:1,mode:request.mode,startDate:request.mode==='date'?request.startDate:window.KCPenaltyStats.date(now),startAt:request.mode==='now'?now:null,baseline:request.mode==='now'?{...window.KCPenaltyStats.baseline(data),personalThrows:window.KCEveningCounters?.personalArchive(current.personalThrows)||null}:null,revision:(Number(previous?.revision)||0)+1,lastRequestId:request.id};
       if(request.mode==='date'&&window.KCPenaltyStats.date(request.startDate)!==request.startDate)throw new Error('Gültigen Starttermin wählen');
       if(request.scope==='drinks'){if(!window.KCActivityReports)throw Error('Getränkestatistik nicht geladen');settings.baseline=request.mode==='now'?window.KCActivityReports.drinkSession({persons:current.persons||[],drinks:(current.DRINKS||[]).map(d=>({...d,price:current.prices?.[d.key]||0})),date:now,eveningStartedAt:current.currentEveningStartedAt||''}):null;}
       transaction.set(ref,{penaltyStatsSettings:request.scope==='drinks'?{...container,drinks:settings}:settings,updatedAt:serverTimestamp()},{merge:true});return settings;

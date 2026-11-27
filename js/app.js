@@ -46,6 +46,7 @@ function getSerializableState() {
   return {
     cashBookSettings,
     dashboardSettings,
+    personalThrows:typeof personalThrows==='undefined'?null:personalThrows,
     eveningCounters:typeof eveningCounters==='undefined'?{}:eveningCounters,
     eveningCounterExcluded:typeof eveningCounterExcluded==='undefined'?{}:eveningCounterExcluded,
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
@@ -126,6 +127,7 @@ function getTodayMeta() {
 let dashboardActiveGame = null;
 // Startzeit des laufenden Abends, unabhängig vom Kalendertag.
 let currentEveningStartedAt = null;
+let personalThrows=null;
 let eveningCounters = {},eveningCounterExcluded={};
 function getFirestorePersonsWithFineTotals() {
   // Haupt-App ist die einzige Quelle der berechneten Strafbetraege.
@@ -144,6 +146,7 @@ function getFirestoreState() {
   return {
     cashBookSettings,
     dashboardSettings,
+    personalThrows:typeof personalThrows==='undefined'?null:personalThrows,
     eveningCounters:typeof eveningCounters==='undefined'?{}:eveningCounters,
     eveningCounterExcluded:typeof eveningCounterExcluded==='undefined'?{}:eveningCounterExcluded,
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
@@ -236,6 +239,7 @@ function applyLoadedState(state) {
   else clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
   clubTerminGruende = Array.isArray(state.clubTerminGruende) && state.clubTerminGruende.length ? state.clubTerminGruende : clubTerminGruende;
   currentEveningStartedAt = state.currentEveningStartedAt || null;
+  personalThrows=state.personalThrows||null;
   eveningCounters=window.KCEveningCounters?.normalize(state.eveningCounters)||{};
   eveningCounterExcluded=state.eveningCounterExcluded||(!state.eveningCounters&&window.KCEveningCounters&&window.KCSharedCore?KCEveningCounters.exclude(state,KCSharedCore.games):{});
   persons = Array.isArray(state.persons)
@@ -509,7 +513,7 @@ function archiveCurrentKegelabendForStats() {
   const key=KCPenaltyStats.key(currentEveningStartedAt,day),data=penaltyStatsSource(true),session=data.sessions.find(s=>s.key===key);
   if(!Array.isArray(kegelAbende))kegelAbende=[];
   const index=kegelAbende.findIndex(e=>KCPenaltyStats.key(e.eveningStartedAt,e.date)===key);
-  const entry={id:'stats_evening_'+encodeURIComponent(key),date:day,eveningStartedAt:currentEveningStartedAt||null,attendees,statsPeople:session?.people||[],club:ACTIVE_CLUB||'',updatedAt:new Date().toISOString()};
+  const entry={id:'stats_evening_'+encodeURIComponent(key),date:day,eveningStartedAt:currentEveningStartedAt||null,attendees,statsPeople:session?.people||[],personalThrows:window.KCEveningCounters?.personalArchive(personalThrows)||null,club:ACTIVE_CLUB||'',updatedAt:new Date().toISOString()};
   if(index>=0)kegelAbende[index]={...kegelAbende[index],...entry};else kegelAbende.unshift(entry);
 }
 
@@ -3786,6 +3790,7 @@ applyGroupTheme();
 }
 
 function updateStats() {
+  window.KCPersonalThrowsView?.live(personalThrows,persons);
   window.KCEveningCounterView?.paint(typeof eveningCounters==='undefined'?{}:eveningCounters);
   const present = persons.filter(p => p.present);
   const bezahlt = present.reduce((s, p) => s + (p.paid || 0), 0);
