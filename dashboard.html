@@ -1044,7 +1044,7 @@ function fitTvBoard(){
  try{
   const hurdleArea=area.querySelector('.hurdle-tv-fit');
   if(hurdleArea){fitHurdleBoard(hurdleArea,board,hurdleFit);return;}
-  if(board.classList.contains("haus-sport-board")){fitHausBoard(board);return;}
+  if(area.querySelector(".haus-sport-board")){fitHausBoard(board);return;}
   if(board.querySelector('.jump-tv-board')){fitHurdleBoard(area,board);return;}
   board.style.zoom='1';
   const abschreibung=board.querySelector('.abschreibung-tv-layout');
