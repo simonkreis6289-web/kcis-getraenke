@@ -79,7 +79,7 @@
   const form=document.createElement('form');form.className='modal-content';
   const title=document.createElement('h3');title.textContent='Persönliche Wurfstatistik korrigieren';
   const select=document.createElement('select');select.setAttribute('aria-label','Spieler');
-  for(const person of persons.filter(p=>!p.isDrinksOnly)){const option=document.createElement('option');option.value=person.name;option.textContent=person.name;select.append(option);}
+  for(const person of persons.filter(p=>!p.isDrinksOnly)){const option=document.createElement('option');option.value=person.name;option.textContent=person.name;option.selected=select.children.length===0;select.append(option);}
   const inputs={};form.append(title,select);
   for(const key of M.keys){const label=document.createElement('label'),input=document.createElement('input');label.textContent=M.labels[key]+' ';Object.assign(input,{type:'number',min:'0',max:String(Number.MAX_SAFE_INTEGER),step:'1',required:true});input.name=key;label.append(input);form.append(label);inputs[key]=input;}
   const fill=()=>{const row=personalThrows?.rows?.find(x=>x.name===select.value);for(const key of M.keys)inputs[key].value=String(row?.[key]||0);};select.onchange=fill;fill();
@@ -93,7 +93,7 @@
    if(Object.values(row).some(x=>!Number.isSafeInteger(x)||x<0)||row.throws<row.gutters+row.nines+row.wreaths||row.pins<9*row.nines+8*row.wreaths||row.pins>9*(row.throws-row.gutters-row.wreaths)+8*row.wreaths){status.textContent='Bitte zusammenpassende Wurf-, Treffer- und Pinzahlen eingeben.';return;}
    const previous=personalThrows||{schema:1,partial:true,rows:[],excluded:[]},name=select.value;
    const state=getFirestoreState(),ids=new Set(KCSharedCore.games.flatMap(key=>M.entries(key,state[key+'State'])).filter(x=>x[2]===name).map(x=>x[0]));
-   personalThrows={...previous,rows:[...previous.rows.filter(x=>x.name!==name),{name,...row}],excluded:(previous.excluded||[]).filter(id=>!ids.has(id)),corrections:[...(previous.corrections||[]),{name,before:previous.rows.find(x=>x.name===name)||null,after:row,at:new Date().toISOString()}]};
+   personalThrows={...previous,correctionId:'personal_'+crypto.randomUUID(),rows:[...previous.rows.filter(x=>x.name!==name),{name,...row}],excluded:(previous.excluded||[]).filter(id=>!ids.has(id)),corrections:[...(previous.corrections||[]),{name,before:previous.rows.find(x=>x.name===name)||null,after:row,at:new Date().toISOString()}]};
    persistState();renderPenaltyStats();overlay.remove();
   };
   overlay.append(form);document.body.append(overlay);

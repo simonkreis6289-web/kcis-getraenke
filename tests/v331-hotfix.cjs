@@ -69,3 +69,11 @@ test('already initialized Firebase data receives one recovery without changing i
  const db=database({[rootPath]:root}),a=fullApp(db);await a.select();const saved=copy(db.root());assert.equal(saved.hotfix331.schema,1);assert.equal(saved.hausnummerSettings.tief.gosse,9);assert.deepEqual(saved.haustiefState,root.haustiefState);assert.equal(saved.currentEveningStartedAt,root.currentEveningStartedAt);assert.deepEqual(saved.persons.map(p=>p.strafen),root.persons.map(p=>p.strafen));
  await a.c.firestoreApi.initializeSharedState('club',{},'sync_retry_hotfix');assert.equal(db.root().syncRevision,saved.syncRevision);
 });
+
+test('manual personal-stat correction survives sync and subsequent raw throw undo',async()=>{
+ const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();await a.c.startHausGame('hoch');await a.c.hausThrow('hoch',0,true,0);
+ a.c.KCHotfixRecovery.editPersonal();const form=a.document.querySelector('#personal-correction-modal form');assert.equal(form.querySelector('select').value,'A');
+ for(const [key,n] of Object.entries({gutters:1,nines:1,wreaths:0,throws:2,pins:9}))form.querySelector('[name="'+key+'"]').value=String(n);
+ form.onsubmit({preventDefault(){}});assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().personalThrows.rows.find(x=>x.name==='A').pins,9);
+ await a.c.undoHausThrow('hoch');assert(await a.c.KCSharedSync.waitForUpload());const row=db.root().personalThrows.rows.find(x=>x.name==='A');assert.equal(row.throws,1);assert.equal(row.gutters,0);assert.equal(row.nines,1);assert.equal(row.pins,9);assert.equal(db.root().persons[0].strafen.gosse,0);
+});

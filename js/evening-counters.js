@@ -88,7 +88,8 @@
   if((before.currentEveningStartedAt&&before.currentEveningStartedAt!==after.currentEveningStartedAt)||(before.eveningResetOp!==after.eveningResetOp&&after.eveningResetOp)){
    after.personalThrows={schema:1,partial:false,rows:[],excluded:[]};return;
   }
-  const previous=before.personalThrows, totals=new Map((previous?.rows||[]).map(r=>[r.name,normalize(r)]));
+  const corrected=after.personalThrows?.correctionId&&after.personalThrows.correctionId!==before.personalThrows?.correctionId;
+  const previous=corrected?after.personalThrows:before.personalThrows, totals=new Map((previous?.rows||[]).map(r=>[r.name,normalize(r)]));
   const excluded=new Set(previous?.excluded||(!previous?allEntries(before,gameKeys).map(r=>r[0]):[]));
   const roster=new Set([...(before.persons||[]),...(after.persons||[])].filter(p=>!p.isDrinksOnly).map(p=>p.name));
   const remaining=new Set();
@@ -108,7 +109,7 @@
    add(rows,1);
   }
   const m=manual(after);add(manual(before),-1);add(m,1);for(const [id] of m)remaining.add(id);
-  after.personalThrows={schema:1,partial:previous?.partial??true,rows:[...totals].filter(([,r])=>r.throws>0).map(([name,r])=>({name,...normalize(r)})),excluded:[...excluded].filter(id=>remaining.has(id))};
+  after.personalThrows={...previous,schema:1,partial:previous?.partial??true,rows:[...totals].filter(([,r])=>r.throws>0).map(([name,r])=>({name,...normalize(r)})),excluded:[...excluded].filter(id=>remaining.has(id))};
  }
  function personalArchive(value){return value?.schema===1?{schema:1,partial:!!value.partial,rows:value.rows||[]}:null;}
  function transition(before,after,gameKeys){
