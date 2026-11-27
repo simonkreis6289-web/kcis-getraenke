@@ -86,12 +86,16 @@
  function fitTv(){
   const host=document.getElementById('dashboard-personal-throws');if(!host||!host.clientWidth||!host.clientHeight)return;
   const count=host.querySelectorAll('[data-personal-name]').length;
-  const hint=host.querySelector('.kc-personal-hint'),available=host.clientHeight-12-(hint?.offsetHeight||0)-6;
-  const rowHeight=Math.max(14,Math.min(38,Math.floor(available/Math.max(3,count+2))-3));
-  const rowGap=rowHeight<23?1:3;
-  const font=Math.max(9,Math.min(17,Math.floor(rowHeight*.52),Math.floor(host.clientWidth/20)));
-  const avatar=Math.max(9,Math.min(26,rowHeight-5));
-  for(const [key,v] of Object.entries({'row-height':rowHeight,'row-gap':rowGap,font,'avatar-size':avatar,'avatar-font':Math.max(8,Math.floor(avatar*.45))}))host.style.setProperty('--personal-'+key,v+'px');
+  const hint=host.querySelector('.kc-personal-hint');
+  const available=Math.max(0,host.clientHeight-12-(hint?hint.offsetHeight+10:0));
+  const edge=Math.max(14,Math.min(34,Math.floor(available/Math.max(3,count+2))));
+  const gap=count>10||available<400?1:3;
+  const rowHeight=count?Math.max(14,Math.floor((available-2*edge-gap*(count+3))/count)):30;
+  const font=Math.max(9,Math.min(22,Math.floor(rowHeight*.52),Math.floor(host.clientWidth/18)));
+  const avatar=Math.max(9,Math.min(34,rowHeight-5,Math.floor(host.clientWidth*.12)));
+  const edgeFont=Math.max(9,Math.min(15,Math.floor(edge*.55),Math.floor(host.clientWidth/21)));
+  const height=count?Math.max(available,2*edge+count*rowHeight+gap*(count+3)):0;
+  for(const [key,v] of Object.entries({'table-height':height||'auto','row-height':rowHeight,'row-gap':gap,'edge-height':edge,'edge-font':edgeFont,font,'avatar-size':avatar,'avatar-font':Math.max(8,Math.floor(avatar*.45))}))host.style.setProperty('--personal-'+key,typeof v==='number'?v+'px':v);
  }
  function liveRows(value,people=[]){
   const rows=(value?.rows||[]).slice();

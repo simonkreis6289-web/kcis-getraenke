@@ -87,13 +87,14 @@
 .kc-personal-table tbody tr{background:rgba(127,145,170,.12)}
 .kc-personal-table tbody th{font-weight:650}
 .kc-personal-table tfoot{font-weight:800;border-top:2px solid #f4c66a}
-/* TV leaderboard: natural table height, legible on the white dashboard. */
+/* V330: fill the available panel with equal player rows; keep header and total compact. */
 #dashboard-panel-personal{background:#fff}
 #dashboard-panel-personal #dashboard-personal-throws{display:block;flex:1 1 auto;min-height:0;padding:6px 8px;overflow:auto}
-#dashboard-panel-personal .kc-personal-table{width:100%;height:auto;table-layout:fixed;border-collapse:separate;border-spacing:0 var(--personal-row-gap,3px);color:#18334c;font-size:var(--personal-font,14px)}
+#dashboard-panel-personal .kc-personal-table{width:100%;height:var(--personal-table-height,auto);table-layout:fixed;border-collapse:separate;border-spacing:0 var(--personal-row-gap,3px);color:#18334c;font-size:var(--personal-font,14px)}
 #dashboard-panel-personal .kc-personal-table th,#dashboard-panel-personal .kc-personal-table td{height:var(--personal-row-height,32px);padding:2px 4px;line-height:1.15;text-align:right;vertical-align:middle;overflow:hidden}
 #dashboard-panel-personal .kc-personal-table th:first-child{width:46%;text-align:left;white-space:nowrap}
-#dashboard-panel-personal .kc-personal-table thead th{color:#fff;background:#263d56;font-size:.88em;font-weight:750}
+#dashboard-panel-personal .kc-personal-table thead th,#dashboard-panel-personal .kc-personal-table tfoot th,#dashboard-panel-personal .kc-personal-table tfoot td{height:var(--personal-edge-height,30px);font-size:var(--personal-edge-font,13px)}
+#dashboard-panel-personal .kc-personal-table thead th{color:#fff;background:#263d56;font-size:var(--personal-edge-font,13px);font-weight:750}
 #dashboard-panel-personal .kc-personal-table thead th:first-child,#dashboard-panel-personal .kc-personal-table tbody th,#dashboard-panel-personal .kc-personal-table tfoot th{border-radius:5px 0 0 5px}
 #dashboard-panel-personal .kc-personal-table tr>*:last-child{border-radius:0 5px 5px 0}
 #dashboard-panel-personal .kc-personal-table tbody tr{background:#edf2f7}
