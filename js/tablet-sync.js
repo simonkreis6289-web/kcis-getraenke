@@ -200,7 +200,8 @@ s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagn
           s.eveningConflict=false;s.directConflict=false;
           if(!s.pending&&ctx.confirmedState){
             const confirmedRoot=C.normalizeGameData(ctx.confirmedState);
-            s.root=confirmedRoot;if(s===current){server=confirmedRoot;publish(s);}
+            const repaired=!s.root.physicalStatsRepair332&&confirmedRoot.physicalStatsRepair332?.schema===1;
+            s.root=confirmedRoot;if(s===current){server=confirmedRoot;if(repaired&&!unit)project(confirmedRoot,true);publish(s);}
           }
         }catch(error){
           s.retryFailures=(s.retryFailures||0)+1;
