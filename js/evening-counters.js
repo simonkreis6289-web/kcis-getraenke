@@ -7,7 +7,7 @@
  function roll(raw,kind){
   kind=String(kind||'').toLowerCase();
   if(raw==null&&!kind)return empty();
-  const n=Number(raw),wreath=kind==='kranz'||(!kind&&n===12),gutter=kind==='gosse'||(!kind&&n===0),nine=!wreath&&!gutter&&(kind==='9er'||n===9);
+  const n=Number(raw),wreath=kind==='kranz'||(!kind&&n===12),gutter=kind==='gosse'||(!kind&&n===0),nine=!wreath&&!gutter&&!['miss','durchgeworfen'].includes(kind)&&(kind==='9er'||n===9);
   return {gutters:+gutter,nines:+nine,wreaths:+wreath,throws:1,pins:wreath?8:gutter||kind==='miss'||kind==='durchgeworfen'?0:nine?9:Number.isInteger(n)&&n>=0&&n<=9?n:0};
  }
  function session(key,s){const v=key==='tannenbaum'&&s?.closedRound?.state?s.closedRound.state:s;return v?.id||v?.startedAt||'';}
@@ -19,7 +19,7 @@
   const cells=(rows,convert)=>{for(const [name,row] of Object.entries(rows||{}))for(const [i,x] of row.entries())if(x!=null){const [raw,kind]=convert(x,name,i);push(JSON.stringify([name,i]),raw,kind,name);}};
   const list=(rows,convert)=>{for(const [i,x] of (rows||[]).entries()){const v=convert(x);if(v)push(x.id||String(i),v[0],v[1],x.thrower||x.name);}};
   if(key==='lotterie')cells(s.throws,(x,name,i)=>{const meta=legacy?null:s.throwMeta?.[name]?.[i];return [meta?.rawValue??x,meta?.penaltyType];});
-  else if(['haushoch','haustief','plusminus'].includes(key))cells(s.rows,x=>[x.value,x.isGosse?'gosse':undefined]);
+  else if(['haushoch','haustief','plusminus'].includes(key))cells(s.rows,x=>x.physicalThrow?[x.physicalThrow.pins,x.physicalThrow.kind]:[x.rawPins??x.value,x.isGosse?'gosse':undefined]);
   else if(key==='mensch')cells(s.throws,x=>[x.rawPins??x.pins]);
   else if(key==='tiberius')list(s.throws,x=>[x.rawValue??x.value,x.rawValue==='durchgeworfen'?'durchgeworfen':undefined]);
   else if(key==='fuchsjagd')list(s.throws,x=>!legacy&&x.skipped?null:[x.rawPins??x.pins]);

@@ -25,6 +25,7 @@ function hausPlayers(mode) {
 }
 function hausThrowValue(mode,throwData) {
   if (!throwData) return null;
+  if(Number.isFinite(throwData.gameValue))return throwData.gameValue;
   if (throwData.isGosse || Number(throwData.value)===0) return mode==='hoch'?0:9;
   const settings=hausnummerSettings?.[mode]||HAUS_DEFAULTS[mode];
   const key=throwData.isGosse?'gosse':Number(throwData.value)===12?'kranz':Number(throwData.value)===9?'neun':null;
@@ -87,7 +88,7 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
   const scored=n===12&&!isGosse&&window.KCKranzUI?await KCKranzUI.select(hausId(mode)):n;if(scored===null)return;
   s.busy=true;
   try {
-    const throwData={value:n,isGosse:!!isGosse,...(n===12&&!isGosse&&window.KCKranzUI?{kranzValue:scored}:{})};
+    const throwData={value:n,isGosse:!!isGosse,physicalThrow:{kind:isGosse||n===0?'gosse':n===12?'kranz':n===9?'9er':'pins',pins:isGosse||n===0?0:n===12?8:n},...(n===12&&!isGosse&&window.KCKranzUI?{kranzValue:scored}:{})};
     if(!(await changeSoloThrowPenalty(name,null,throwData)))return false;
     row[place]=throwData;
     s.undoStack.push({name,place,index:s.currentPlayerIndex});
@@ -196,11 +197,13 @@ function hausOpenThrowModal(mode,playerIndex,place){
   const title=document.createElement('h3');title.textContent='🎳 Wurf eintragen';
   const subtitle=document.createElement('p');subtitle.textContent=name+' · '+['Hunderter','Zehner','Einer'][place];
   const grid=document.createElement('div');grid.className='haus-modal-grid';
-  const options=[...Array(10).keys()].map(n=>({label:String(n),pins:n,gosse:false}));
-  options.push({label:'👑 Kranz',pins:12,gosse:false},{label:'💀 Gosse',pins:0,gosse:true});
+  const options=Array.from({length:8},(_,i)=>({label:String(i+1),pins:i+1,gosse:false}));
+  options.push({label:String(hausThrowValue(mode,{value:9,isGosse:false}))+' · Neuner',pins:9,gosse:false},{label:mode==='tief'?'9 · Gosse':'0 · Gosse',pins:0,gosse:true},{label:'👑 Kranz',pins:12,gosse:false});
+  subtitle.textContent+=' · Geworfenen Wurf wählen; Spielwert wird automatisch berechnet.';
   for(const opt of options){
     const button=document.createElement('button');button.type='button';
     button.textContent=opt.label;button.className='haus-modal-option';
+    if(mode==='tief'&&(opt.pins===9||opt.gosse)){button.dataset.pin=String(opt.pins);button.dataset.throwLabel=opt.gosse?'Gosse':'Neuner';button.dataset.gameScore=opt.gosse?'9':String(hausThrowValue(mode,{value:9,isGosse:false}));}
     button.onclick=async()=>{if(button.disabled)return;grid.querySelectorAll('button').forEach(b=>b.disabled=true);
       try{const booked=await hausThrow(mode,opt.pins,opt.gosse,place);if(booked)hausCloseThrowModal();else grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
       catch(err){console.error(err);grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
@@ -232,7 +235,7 @@ function renderHausGame(mode) {
   }).join('');
   board.innerHTML='<div class="haus-game-header"><strong>'+label+'</strong><span>'+(s.active?'Am Wurf: '+esc(current):s.finished?'🏁 Beendet':'Spiel starten, um Würfe einzutragen')+'</span>'+(s.undoStack.length?'<button type="button" class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+'</div>'+
   '<div class="haus-table-wrap"><table class="haus-table"><thead><tr><th>Spieler</th><th>Hunderter</th><th>Zehner</th><th>Einer</th><th>Hausnummer</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-  '<p class="haus-help">Tippe beim aktuellen Spieler auf ein freies Kästchen und wähle den Wurf. Kranz und Gosse werden automatisch in der Strafentabelle berücksichtigt.</p>'+
+  '<p class="haus-help">Tippe beim aktuellen Spieler auf ein freies Kästchen und wähle den Wurf. Gosse, Neuner und Kranz als Wurfart wählen. Bei tiefer Hausnummer bedeutet „9 · Gosse“ null tatsächlich gefallene Pins. Die Spielwertung wird automatisch berechnet.</p>'+
   (s.finished?'<div class="haus-winner">🏆 '+esc(s.history[0]?.winner||'')+' gewinnt!'+(s.history[0]?.assigned?.length?' · '+s.history[0].assigned.map(x=>esc(x.name)+' ('+x.rank+'. Verlierer)').join(', '):'')+'</div>':'')+
   (s.active&&s.playerOrder.length&&s.playerOrder.every(name=>hausNumber(mode,s.rows[name])!==null)?'<button type="button" class="secondary-btn" onclick="finishHausGame(\''+mode+'\')">🏁 Abschluss erneut buchen</button>':'');
 }

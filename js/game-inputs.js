@@ -53,6 +53,10 @@ function legacyGameInput(key){
   context=giEscape(name)+' · Stelle wählen';options='<div class="gi-options">'+['Hunderter','Zehner','Einer'].map((label,i)=>'<button type="button" '+(row[i]?'disabled':'')+' aria-pressed="'+(gameInputPlaces[mode]===i)+'" onclick="gameInputPlace(\''+mode+'\','+i+')">'+label+'</button>').join('')+'</div>';
  }
  numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',12,window.KCKranzUI?KCKranzUI.label(key,s):null);
+ if(key==='haustief'){
+  const action=(pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',nineScore=hausThrowValue('tief',{value:9,isGosse:false});
+  numbers=Array.from({length:8},(_,i)=>gameInputButton(String(i+1),action(i+1,false),i+1)).join('')+gameInputButton('Neuner ('+nineScore+' im Spiel)',action(9,false),9).replace('<button ','<button data-throw-label="Neuner" data-game-score="'+nineScore+'" ')+gameInputButton('Gosse (9 im Spiel)',action(0,true)).replace('<button ','<button data-throw-label="Gosse" data-game-score="9" ')+gameInputButton(window.KCKranzUI?KCKranzUI.label(key,s):'Kranz',action(12,false));
+ }
  if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputCurrentTeam('darts');openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
  if(key==='tiberius')numbers+=gameInputButton('Durchgeworfen',"handleTiberiusThrow('durchgeworfen')");
  return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(['tannenbaum','darts'].includes(key)?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
@@ -64,7 +68,7 @@ function buildGameThrowKeypad(buttons){
   if(Number.isInteger(pin)&&pin>=0&&pin<=9){digits.set(pin,button);continue;}extras.append(button);
  }
  if(!digits.has(0)){const source=miss||kinds.get('gosse');if(source){const zero=miss||source.cloneNode(true);if(!miss)zero.onclick=source.onclick;zero.removeAttribute('id');digits.set(0,zero);}}
- for(const n of [1,2,3,4,5,6,7,8,9,0]){let button=digits.get(n);if(!button){button=document.createElement('button');button.type='button';button.disabled=true;button.className='gi-throw';}button.dataset.pin=String(n);button.classList.add('gi-throw');button.setAttribute('aria-label',n+' Holz');button.innerHTML='<span class="game-pin-circle" aria-hidden="true">'+n+'</span><span class="game-pin-caption">Holz</span>';numbers.append(button);}
+ for(const n of [1,2,3,4,5,6,7,8,9,0]){let button=digits.get(n);if(!button){button=document.createElement('button');button.type='button';button.disabled=true;button.className='gi-throw';}button.dataset.pin=String(n);button.classList.add('gi-throw');button.setAttribute('aria-label',button.dataset.throwLabel?button.dataset.throwLabel+' · '+button.dataset.gameScore+' im Spiel':n+' Holz');button.innerHTML='<span class="game-pin-circle" aria-hidden="true">'+giEscape(button.dataset.gameScore??n)+'</span><span class="game-pin-caption">'+giEscape(button.dataset.throwLabel||'Holz')+'</span>';numbers.append(button);}
  for(const kind of ['gosse','kranz']){let button=kinds.get(kind);if(!button){button=document.createElement('button');button.type='button';button.className='gi-throw';button.disabled=true;}const text=button.textContent,detail=text.match(/\([^)]*\)|\d+\s*Punkte/);button.dataset.throwKind=kind;button.setAttribute('aria-label',kind==='gosse'?'Gosse':'Kranz');button.innerHTML='<strong>'+(kind==='gosse'?'Gosse':'Kranz')+'</strong>'+(detail?'<small>'+giEscape(detail[0])+'</small>':'');specials.append(button);}
  pad.append(numbers,specials);if(extras.children.length)pad.append(extras);return pad;
 }
