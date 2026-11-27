@@ -63,3 +63,13 @@
 #dashboard-panel-counters.counter-compact .kc-counter{gap:3px;font-size:10px}
 #dashboard-panel-counters.counter-compact .kc-counter strong{font-size:18px}
 #dashboard-panel-counters.counter-compact .kc-counter svg{width:13px;height:13px}
+
+/* Small individual tiles distinguish the physical counters from the status bar. */
+.kc-counter-app [data-evening-counters]{gap:5px}
+.kc-counter-app .kc-counter{box-sizing:border-box;min-width:53px;padding:5px 7px;border:1px solid #c3d3e1;border-radius:7px;background:#f2f7fc;color:#15354e;gap:2px 5px}
+.kc-counter-app .kc-counter span{color:#40566b;font-size:.63rem;font-weight:700}
+.kc-counter-app .kc-counter strong{color:#124b74;font-size:1rem;line-height:1.05}
+.kc-counter-app .kc-counter svg{color:#315f87;width:18px;height:18px}
+.kc-counter-app .kc-counter-gutters svg{color:#bd3f39}
+.kc-counter-app .kc-counter-nines svg{color:#117a51}
+.kc-counter-app .kc-counter-wreaths svg{color:#9d6a00}

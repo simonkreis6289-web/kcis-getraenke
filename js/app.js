@@ -5550,6 +5550,7 @@ function openActiveGame(el) {
 }
 
 function showSideTab(mainKey, subKey, el) {
+  if(mainKey==='organisation'&&subKey==='gruppen')subKey='sitzordnung';
   document.querySelectorAll('.main-panel').forEach(panel => {
     panel.classList.add('hidden');
   });
