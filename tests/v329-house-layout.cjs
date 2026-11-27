@@ -12,6 +12,7 @@ test('Hausnummer has exactly six explicitly placed cells and excludes the generi
   assert.equal(doc.querySelector('.haus-score-columns').children.length,6);
   for(const row of doc.querySelectorAll('.haus-score-row'))assert.deepEqual(Array.from(row.children,x=>x.className.split(' ')[0]),['haus-position','haus-player','haus-digit','haus-digit','haus-digit','haus-total']);
  }
+ assert.match(css,/background:linear-gradient\(140deg,#f5f8fc,#eaf0f7\);color:#17334e/);
  assert.match(css,/#game-body \.haus-score-row\[data-dashboard-player\]::before\{content:none;display:none\}/);
  assert.match(css,/\.haus-score-row>\.haus-total\{grid-column:6;grid-row:1\}/);
 });
@@ -53,13 +54,13 @@ test('real browser: headings, names, digits and totals align on one row at TV si
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
 
-test('personal TV leaderboard uses compact, readable light-background rows and reserves a dark total footer',()=>{
+test('personal TV leaderboard fills the available height with readable light-background rows and reserves a dark total footer',()=>{
  const styles=fs.readFileSync('css/evening-counters.css','utf8');
  assert.match(styles,/#dashboard-panel-personal #dashboard-personal-throws\{display:block;flex:1 1 auto;min-height:0/);
- assert.match(styles,/#dashboard-panel-personal \.kc-personal-table\{[^}]*height:auto;[^}]*color:#18334c/);
+ assert.match(styles,/#dashboard-panel-personal \.kc-personal-table\{[^}]*height:var\(--personal-table-height,auto\);[^}]*color:#18334c/);
  assert.match(styles,/#dashboard-panel-personal \.kc-personal-table tfoot th,[^{}]+\{background:#233b56;color:#fff/);
 });
-test('real browser: one personal statistic row stays compact; many rows and totals fit a smaller panel',{skip:!chromium&&'Chromium not installed',timeout:60000},async()=>{
+test('real browser: personal table fills the panel for one, seven and sixteen players',{skip:!chromium&&'Chromium not installed',timeout:60000},async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'kcis-personal-'));
  try{
   const baseStyles=[...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m=>m[1]).join('\n');
@@ -73,12 +74,12 @@ test('real browser: one personal statistic row stays compact; many rows and tota
     const value={schema:1,partial:true,rows:people.map((p,i)=>({name:p.name,nines:1,wreaths:i,pins:9+i*8}))};
     KCPersonalThrowsView.tv(value,people,()=>{const avatar=document.createElement('span');avatar.className='seat-avatar';avatar.textContent='S';return avatar;});
     const rows=[...host.querySelectorAll('tbody tr')];if(rows.length!==count)errors.push('missing rows');
-    for(const r of rows){if(r.getBoundingClientRect().height>39)errors.push('stretched row');if(getComputedStyle(r.querySelector('th')).color!=='rgb(24, 51, 76)')errors.push('low contrast');}
+    for(const r of rows){if(count>1&&Math.abs(r.getBoundingClientRect().height-rows[0].getBoundingClientRect().height)>2)errors.push('unequal rows');if(getComputedStyle(r.querySelector('th')).color!=='rgb(24, 51, 76)')errors.push('low contrast');}
     if(host.scrollHeight>host.clientHeight+2)errors.push('table clipped '+count+' '+host.scrollHeight+'>'+host.clientHeight+' row='+rows[0]?.getBoundingClientRect().height+' font='+getComputedStyle(host.querySelector('table')).fontSize);
-    const footer=host.querySelector('tfoot');if(footer.getBoundingClientRect().bottom>host.getBoundingClientRect().bottom)errors.push('missing total '+count+' '+footer.getBoundingClientRect().bottom+'>'+host.getBoundingClientRect().bottom);
+    const footer=host.querySelector('tfoot');if(footer.getBoundingClientRect().bottom<host.getBoundingClientRect().bottom-55)errors.push('table does not fill available height '+count);if(footer.getBoundingClientRect().height>42)errors.push('oversized total');if(footer.getBoundingClientRect().bottom>host.getBoundingClientRect().bottom)errors.push('missing total '+count+' '+footer.getBoundingClientRect().bottom+'>'+host.getBoundingClientRect().bottom);
     if(getComputedStyle(footer.querySelector('th')).backgroundColor!=='rgb(35, 59, 86)')errors.push('total style');
    };
-   check(1,850);check(16,480);document.body.setAttribute('data-layout-errors',JSON.stringify(errors));
+   check(1,850);check(7,850);check(16,480);document.body.setAttribute('data-layout-errors',JSON.stringify(errors));
    </script>`;
   if(process.env.PLAYWRIGHT_MODULE){
    const browser=await require(process.env.PLAYWRIGHT_MODULE).chromium.launch({executablePath:chromium,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--single-process']});
