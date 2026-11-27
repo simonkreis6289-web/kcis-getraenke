@@ -52,6 +52,15 @@
    return {...common(v,'Meilenstein erreicht!'),id,pins:Math.max(1,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(Number(v.pins)||1))),mode:v.mode==='exact'?'exact':'cross'};
   }),repeated:common(value?.repeated,'🥃 Schnapszahl!')};
  }
+ function milestoneHits(config,seen,total,next){
+  const hits=config.items.filter(v=>v.enabled&&(v.mode==='exact'?next===v.pins:total<v.pins&&next>=v.pins)).map(v=>[v,'custom:'+v.id+':'+v.pins]);
+  if(config.repeated.enabled&&/^([1-9])\1+$/.test(String(next)))hits.push([config.repeated,'repeated:'+next]);
+  return hits.filter(([,id])=>!seen.has(id));
+ }
+ function needsThrower(root,pins){
+  const total=normalize(root.eveningCounters).pins;
+  return pins>0&&milestoneHits(milestoneSettings(root.dashboardSettings?.milestoneToasts),new Set(root.eveningMilestones?.seen||[]),total,total+pins).length>0;
+ }
  function milestones(before,after,gameKeys,pins){
   const old=before.eveningMilestones||{},same=before.currentEveningStartedAt===after.currentEveningStartedAt;
   const journal={seen:same?(old.seen||[]).slice():[],events:same?(old.events||[]).slice():[]};
@@ -67,8 +76,7 @@
   let total=prior;
   for(const [,stats,name] of fresh){
    const next=total+stats.pins;
-   const hits=config.items.filter(v=>v.enabled&&(v.mode==='exact'?next===v.pins:total<v.pins&&next>=v.pins)).map(v=>[v,'custom:'+v.id+':'+v.pins]);
-   if(config.repeated.enabled&&/^([1-9])\1+$/.test(String(next)))hits.push([config.repeated,'repeated:'+next]);
+   const hits=milestoneHits(config,seen,total,next);
    for(const [v,id] of hits)if(!seen.has(id)){seen.add(id);journal.events.push({id,name,pins:next,text:v.text,color:v.color,seconds:v.seconds,at:Date.now()});}
    total=next;
   }
@@ -96,5 +104,5 @@
   after.eveningCounterExcluded=Object.fromEntries(keys.filter(k=>skip[k].size).map(k=>[k,[...skip[k]].filter(id=>remaining.has(id))]).filter(([,ids])=>ids.length));
   const result=normalize(out);milestones(before,after,gameKeys,result.pins);return result;
  }
- window.KCEveningCounters=Object.freeze({keys,labels,empty,normalize,roll,throws,exclude,transition,milestoneSettings});
+ window.KCEveningCounters=Object.freeze({keys,labels,empty,normalize,roll,throws,exclude,transition,milestoneSettings,needsThrower});
 })();

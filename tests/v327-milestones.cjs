@@ -51,3 +51,8 @@ test('dashboard consumes live milestone once even when state is repeated',()=>{
  const box=document.getElementById('dashboard-club-event-toast');assert.match(box.textContent,/Treffer/);assert.match(box.textContent,/Simon/);assert.ok(box.querySelector('.kc-toast-avatar'));
  feed();timers.shift()();timers.shift()();assert.equal(box.hidden,true);feed();assert.equal(box.hidden,true);
 });
+test('team throw asks for a person only for a new milestone',()=>{
+ let a=start(496);assert.equal(M.needsThrower(a,2),false);assert.equal(M.needsThrower(a,4),true);
+ const b=change(a,x=>x.lotterieState.throws.Simon.push(7));const undone=change(b,x=>x.lotterieState.throws.Simon.pop());assert.equal(M.needsThrower(undone,7),false);
+ assert.equal(M.needsThrower(start(106),5),true);assert.equal(M.needsThrower(start(106),0),false);
+});
