@@ -325,8 +325,8 @@ function removeOneSoloStatsEntry(name, kind, statId) {
 }
 async function changeSoloThrowPenalty(name, oldThrow, newThrow, finishPenalties=[]) {
   // Beim Korrigieren alle Straf-Deltas in EINEM synchronisierten Schreibvorgang buchen.
-  const oldValue = oldThrow ? Number(oldThrow.pins ?? oldThrow.value) : null;
-  const newValue = newThrow ? Number(newThrow.pins ?? newThrow.value) : null;
+  const oldValue = oldThrow ? Number(oldThrow.rawPins ?? oldThrow.pins ?? oldThrow.value) : null;
+  const newValue = newThrow ? Number(newThrow.rawPins ?? newThrow.pins ?? newThrow.value) : null;
   const oldPenalty = oldThrow ? oldThrow.penaltyBooking || getSoloThrowPenalty(name, oldValue, !!oldThrow.isGosse) : null;
   const newPenalty = newThrow ? getSoloThrowPenalty(name, newValue, !!newThrow.isGosse) : null;
   if (newPenalty && !newPenalty.key) { showToast('Strafenart nicht vorhanden: '+newPenalty.kind,'error'); return false; }
@@ -340,6 +340,10 @@ async function changeSoloThrowPenalty(name, oldThrow, newThrow, finishPenalties=
     }
   };
   add(oldPenalty,-1); add(newPenalty,1);
+  for(const charge of finishPenalties){
+    if(!charge.key){showToast('Verlierer-Strafart fehlt','error');return false;}
+    add({key:charge.key,punished:[charge.personName]},-Number(charge.delta||1));
+  }
   const changes = [...deltas.entries()].filter(([,delta])=>delta!==0).map(([id,delta])=>{
     const [personName,key]=JSON.parse(id);
     return {personName,category:'strafen',key,delta};

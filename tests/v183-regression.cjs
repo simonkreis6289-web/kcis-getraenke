@@ -54,8 +54,8 @@ test('live stats count attendance once, use gutter counters, and count special t
  const result=rows(data({logs:[log('one'),log('kranz','kranz','B'),log('gutter','gosse')]}));
  assert.deepEqual(row(result),{name:'A',present:1,gosse:3,nine:1,kranz:0});assert.equal(row(result,'B').kranz,1);
 });
-test('duplicate throw IDs count once and through throws belong to 9er',()=>{
- const e=log('same');assert.equal(row(rows(data({logs:[e,e,log('through','durchgeworfen')]}))).nine,2);
+test('duplicate throw IDs count once and through throws are not physical nines',()=>{
+ const e=log('same');assert.equal(row(rows(data({logs:[e,e,log('through','durchgeworfen')]}))).nine,1);
 });
 test('gutter counters do not include the gossenkoenig or another player special-fine counters',()=>{
  const result=rows(data({people:[{name:'A',present:true,strafen:{g:2,king:10,fine:12}}]}));assert.equal(row(result).gosse,2);assert.equal(row(result).nine,0);

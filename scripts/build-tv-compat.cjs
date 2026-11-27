@@ -41,8 +41,16 @@ async function bundle(){
         build.resolve(args.path.includes('firebase-app.js')?'firebase/app':'firebase/firestore',{resolveDir:root,kind:'import-statement'}));
     }}]
   });
-  const sdkCode=transform(sdk.outputFiles[0].text,'firebase-tv.js');
-  const notices=[...new Set(sdk.outputFiles[0].text.match(/\/\*![\s\S]*?\*\//g)||[])].join('\n');
+  // esbuild may attach a shared license to different retained declarations.
+  // Preserve every notice once in a stable header, independent of that placement.
+  const sdkText=sdk.outputFiles[0].text;
+  const comments=(babel.parseSync(sdkText,{configFile:false,babelrc:false,sourceType:'script'}).comments||[])
+    .filter(comment=>/@license/.test(comment.value)||comment.value.startsWith('!'));
+  const notices=[...new Set(comments.map(comment=>sdkText.slice(comment.start,comment.end)))].sort().join('\n');
+  let sdkBody='',cursor=0;
+  for(const comment of comments){sdkBody+=sdkText.slice(cursor,comment.start);cursor=comment.end;}
+  sdkBody+=sdkText.slice(cursor);
+  const sdkCode=transform(sdkBody,'firebase-tv.js');
   const dashboard=scripts.map(({file,code})=>file==='dashboard-inline.js'?
     'window.KCFirestoreForTV&&window.KCFirestoreForTV();\n'+transform(code,file):transform(code,file)).join('\n');
   const targets={

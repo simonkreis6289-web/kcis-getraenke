@@ -222,6 +222,7 @@ function getFirestoreState() {
 }
 
 function applyLoadedState(state) {
+  if(state)window.KCHotfixRecovery?.render(state.hotfix331);
   if (!state) {
     return false;
   }
@@ -367,7 +368,7 @@ function applyLoadedState(state) {
 
   haushochState = state.haushochState || createHausState();
   haustiefState = state.haustiefState || createHausState();
-  hausnummerSettings = {hoch:{...HAUS_DEFAULTS.hoch,...(state.hausnummerSettings?.hoch||{})},tief:{...HAUS_DEFAULTS.tief,...(state.hausnummerSettings?.tief||{})}};
+  hausnummerSettings = {hoch:{...HAUS_DEFAULTS.hoch,...(state.hausnummerSettings?.hoch||{}),gosse:0},tief:{...HAUS_DEFAULTS.tief,...(state.hausnummerSettings?.tief||{}),gosse:9}};
   sichernState = state.sichernState || createSichernState();
   if(typeof applySechsServerState==='function'){
     const savedSix=state.sechstageState;
@@ -1597,10 +1598,7 @@ function renderStrafen() {
     const tr = document.createElement('tr');
     tr.className = rowIndex % 2 === 1 ? 'alt-row' : '';
 
-    const manualFree = [...p.freeStrafen.map(x=>({...x,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop})),...getMissingGameCharges(p).filter(x=>x.individualChargeId)].filter(item => {
-      const reason = String(item.reason || '');
-      return reason !== 'Lotterie' && reason !== 'Tiberius';
-    });
+    const manualFree = [...p.freeStrafen.map(x=>({...x,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop})),...getMissingGameCharges(p)];
 
     const freeNormalTotal = manualFree
       .filter(item => !item.onTop)
@@ -1839,27 +1837,7 @@ function renderStrafenHistory() {
 // Abgeschlossene Spiele können in der Historie stehen, ohne dass ihre
 // Einzelbuchungen in freeStrafen synchronisiert wurden.
 function getMissingGameCharges(p) {
-  const entries = Array.isArray(strafenHistory) ? strafenHistory : [];
-  const existing = Array.isArray(p.freeStrafen) ? p.freeStrafen : [];
-  const result = [];
-  for (const entry of entries) {
-    if (!['lotterie', 'tiberius'].includes(entry.type)) continue;
-    const label = entry.type === 'lotterie' ? 'Lotterie' : 'Tiberius';
-    const charges = (entry.assignedTo || []).filter(x =>
-      String(x.name || '').trim().toLocaleLowerCase('de') ===
-      String(p.name || '').trim().toLocaleLowerCase('de')
-    );
-    for (const charge of charges) {
-      const amount = Number(charge.amount) || 0;
-      if (!amount) continue;
-      const alreadyBooked = existing.some(x =>
-        String(x.reason || '').toLocaleLowerCase('de').includes(label.toLocaleLowerCase('de')) &&
-        Math.abs((Number(x.amount) || 0) - amount) < 0.001 &&
-        (typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop) === (typeof gameFineOnTop==='function'?gameFineOnTop(charge,entry.type):!!charge.onTop)
-      );
-      if (!alreadyBooked) result.push({amount, reason: label, onTop:typeof gameFineOnTop==='function'?gameFineOnTop(charge,entry.type):!!charge.onTop});
-    }
-  }
+  const result = typeof window!=='undefined'&&window.KCGameFinePolicy?window.KCGameFinePolicy.legacyMissing(p,{strafenHistory,gameFineSettings:typeof gameFineSettings==='undefined'?{}:gameFineSettings}).map(x=>({...x,amount:x.amountCents/100})):[];
   let hurdleCents=0,hurdleSummary=null;
   for(const charge of typeof individualGameLedger==='undefined'?[]:individualGameLedger){
     if(String(charge.personName||'').trim().toLocaleLowerCase('de')!==String(p.name||'').trim().toLocaleLowerCase('de')||charge.eveningStartedAt!==currentEveningStartedAt)continue;
@@ -3143,33 +3121,11 @@ function getPersonPenaltyExtraLines(p) {
     .filter(x => x.onTop)
     .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
 
-  const lotterieNormal = (p.freeStrafen || []).map(x=>({...x,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop}))
-    .filter(x => String(x.reason || '') === 'Lotterie' && !x.onTop)
-    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-  const lotterieOnTop = (p.freeStrafen || []).map(x=>({...x,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop}))
-    .filter(x => String(x.reason || '') === 'Lotterie' && x.onTop)
-    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-  const tiberiusNormal = (p.freeStrafen || []).map(x=>({...x,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop}))
-    .filter(x => String(x.reason || '') === 'Tiberius' && !x.onTop)
-    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
-  const tiberiusOnTop = (p.freeStrafen || []).map(x=>({...x,onTop:typeof gameFineOnTop==='function'?gameFineOnTop(x):!!x.onTop}))
-    .filter(x => String(x.reason || '') === 'Tiberius' && x.onTop)
-    .reduce((sum, x) => sum + (parseFloat(x.amount || 0) || 0), 0);
-
   const latePenalty = getLatePenaltyDisplay(p);
   const earlyPenalty = getEarlyPenaltyDisplay(p);
 
   if (tannenbaumNormal > 0) lines.push(`🌲 +${euros(tannenbaumNormal)}`);
   if (tannenbaumOnTop > 0) lines.push(`🌲 +${euros(tannenbaumOnTop)} 🔥`);
-
-  if (lotterieNormal > 0) lines.push(`🎰 +${euros(lotterieNormal)}`);
-  if (lotterieOnTop > 0) lines.push(`🎰 +${euros(lotterieOnTop)} 🔥`);
-
-  if (tiberiusNormal > 0) lines.push(`🏛️ +${euros(tiberiusNormal)}`);
-  if (tiberiusOnTop > 0) lines.push(`🏛️ +${euros(tiberiusOnTop)} 🔥`);
 
   const gameTop=typeof gameFineTransfer==='function'?gameFineTransfer(p):0;if(gameTop>0)lines.push(`🔥 OnTop-Spielstrafen +${euros(gameTop)}`);
   if (latePenalty) lines.push(`⏰ ${euros(latePenalty.amount)}`);
@@ -5962,7 +5918,7 @@ function getPenaltyKeyByType(type) {
     }
 
     if (search === 'gosse') {
-      return label.includes('gosse') || label.includes('pudel');
+      return (label.includes('gosse') || label.includes('pudel'))&&!/könig|koenig/.test(label);
     }
 
     return false;

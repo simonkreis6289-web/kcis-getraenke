@@ -56,7 +56,15 @@
     async function initialize(club,defaults,opId){
       return transact(async tx=>{
         const target=ref(club),snap=await tx.get(target),saved=snap.exists()?snap.data():null;
-        if(saved?.syncInitialized===true)return saved;
+        if(saved?.syncInitialized===true){
+          const recovered=window.KCHotfixRecovery?.recover(saved,core)||saved;
+          if(core.equal(saved,recovered))return saved;
+          const next=stamp(core.totals(recovered,policy),(Number(saved.syncRevision)||0)+1,opId);
+          tx.set(receipt(club,opId),{commandId:opId,kind:'hotfix331',createdAt:serverTimestamp()});
+          tx.set(target,next);
+          for(const person of next.persons||[])if(!core.equal(person,(saved.persons||[]).find(p=>core.norm(p.name)===core.norm(person.name))))tx.set(personRef(club,person.name),stamp(person,next.syncRevision,opId));
+          return next;
+        }
         let state=core.clone({
           ...defaults,...saved
         });
@@ -87,6 +95,7 @@
           const time=x=>x?.toMillis?.()||0;
           if(!rootGame||time(data.updatedAt)>time(saved?.updatedAt))state[item.key+'State']=core.clean(game);
         }
+        state=window.KCHotfixRecovery?.recover(state,core)||state;
         state=core.totals(state,policy);
         state=stamp({
           ...state,syncInitialized:true

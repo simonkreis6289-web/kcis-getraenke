@@ -21,7 +21,7 @@
     const parts=dayFormatter.formatToParts(new Date(time)),get=t=>parts.find(p=>p.type===t).value,day=get('year')+'-'+get('month')+'-'+get('day');
     if(dateCache.size>2048)dateCache.clear();dateCache.set(String(value||''),day);return day;
   }
-  function kind(value){const t=String(value||'').toLowerCase();return /gosse|pudel/.test(t)?'gosse':/kranz/.test(t)?'kranz':/9|durch/.test(t)?'nine':'';}
+  function kind(value){const t=String(value||'').toLowerCase();return /gosse|pudel/.test(t)?'gosse':/kranz/.test(t)?'kranz':/9/.test(t)?'nine':'';}
   function key(value,day){const time=stamp(value);return value&&Number.isFinite(time)?'evening:'+time:'day:'+day;}
   function build({people=[],catalog=[],evenings=[],logs=[],archives=[],eveningStartedAt='',archivedOnly=false,statementsOnly=false,today=KCBirthdays.today()}={}){
     const closedKeys=new Set(),archiveLogLimits=new Map(),sessions=new Map(),get=(id,day,value='')=>{if(!sessions.has(id))sessions.set(id,{key:id,date:day,stamp:value?stamp(value):NaN,people:new Map()});return sessions.get(id);};
