@@ -87,9 +87,26 @@
 .kc-personal-table tbody tr{background:rgba(127,145,170,.12)}
 .kc-personal-table tbody th{font-weight:650}
 .kc-personal-table tfoot{font-weight:800;border-top:2px solid #f4c66a}
-#dashboard-panel-personal .kc-personal-table{font-size:clamp(10px,.95vw,17px);color:#e8f0ff}
-#dashboard-panel-personal .kc-personal-table td:last-child{color:#f4c66a;font-weight:850}
-#dashboard-panel-personal .kc-personal-table th:first-child{white-space:normal;overflow-wrap:anywhere}
-#dashboard-panel-personal .seat-avatar{display:inline-grid;vertical-align:middle;margin-right:.3em}
-#dashboard-panel-personal .kc-personal-table thead{color:#a8b9d2}
-.kc-personal-hint{font-size:clamp(9px,.64vw,12px);line-height:1.25;color:#adbed6;margin:.3em .5em .6em;flex-shrink:0}
+/* TV leaderboard: natural table height, legible on the white dashboard. */
+#dashboard-panel-personal{background:#fff}
+#dashboard-panel-personal #dashboard-personal-throws{display:block;flex:1 1 auto;min-height:0;padding:6px 8px;overflow:auto}
+#dashboard-panel-personal .kc-personal-table{width:100%;height:auto;table-layout:fixed;border-collapse:separate;border-spacing:0 var(--personal-row-gap,3px);color:#18334c;font-size:var(--personal-font,14px)}
+#dashboard-panel-personal .kc-personal-table th,#dashboard-panel-personal .kc-personal-table td{height:var(--personal-row-height,32px);padding:2px 4px;line-height:1.15;text-align:right;vertical-align:middle;overflow:hidden}
+#dashboard-panel-personal .kc-personal-table th:first-child{width:46%;text-align:left;white-space:nowrap}
+#dashboard-panel-personal .kc-personal-table thead th{color:#fff;background:#263d56;font-size:.88em;font-weight:750}
+#dashboard-panel-personal .kc-personal-table thead th:first-child,#dashboard-panel-personal .kc-personal-table tbody th,#dashboard-panel-personal .kc-personal-table tfoot th{border-radius:5px 0 0 5px}
+#dashboard-panel-personal .kc-personal-table tr>*:last-child{border-radius:0 5px 5px 0}
+#dashboard-panel-personal .kc-personal-table tbody tr{background:#edf2f7}
+#dashboard-panel-personal .kc-personal-table tbody tr:nth-child(even){background:#f6f8fb}
+#dashboard-panel-personal .kc-personal-table tbody tr:first-child{background:#e5edf7}
+#dashboard-panel-personal .kc-personal-table tbody td:last-child{color:#153e68;font-weight:850;background:rgba(49,84,126,.07)}
+#dashboard-panel-personal .kc-personal-table tfoot th,#dashboard-panel-personal .kc-personal-table tfoot td{background:#233b56;color:#fff;font-weight:850;border-top:2px solid #f5b745}
+#dashboard-panel-personal .kc-personal-table tfoot td:last-child{color:#ffda80}
+#dashboard-panel-personal .kc-personal-cell{display:flex;align-items:center;gap:4px;min-width:0}
+#dashboard-panel-personal .kc-personal-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dashboard-panel-personal .seat-avatar{display:inline-grid;flex:0 0 var(--personal-avatar-size,24px);width:var(--personal-avatar-size,24px);height:var(--personal-avatar-size,24px);margin:0}
+#dashboard-panel-personal .seat-avatar-initials{font-size:var(--personal-avatar-font,10px)}
+#dashboard-panel-personal .kc-personal-empty{padding:8px 5px;color:#40566e;font-size:.9em}
+#dashboard-panel-personal .kc-personal-hint{font-size:clamp(9px,.68vw,12px);line-height:1.3;color:#425b75;margin:6px 8px 8px;flex-shrink:0}
+#dashboard-panel-personal> .kc-personal-hint{padding:7px 8px;border-radius:5px;background:#edf3f9;border-left:3px solid #58799b}
+#dashboard-panel-personal #dashboard-personal-throws .kc-personal-hint{margin:5px 3px;font-size:.82em;color:#516880}

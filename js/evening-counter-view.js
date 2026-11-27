@@ -67,15 +67,31 @@
  function tv(value,people,avatar){
   const host=document.getElementById('dashboard-personal-throws');if(!host)return;
   const rows=liveRows(value,people),stamp=JSON.stringify([value?.partial,rows,people.map(p=>[p.name,p.playerColor,p.avatarData,p.avatar])]);
-  if(host.dataset.stamp===stamp)return;host.dataset.stamp=stamp;
+  if(host.dataset.stamp===stamp){fitTv();return;}host.dataset.stamp=stamp;
   const origins=new Map([...host.querySelectorAll('[data-personal-name]')].map(el=>[el.dataset.personalName,(el.getBoundingClientRect?.().top||0)]));
   host.innerHTML=table(rows,[['nines','9er'],['wreaths','Kränze'],['pins','Pins']],'pins',true)+(value?.partial||!value?'<p class="kc-personal-hint">Erfassung erst ab V328.</p>':'');
   for(const el of host.querySelectorAll('[data-personal-name]')){
    const name=el.dataset.personalName,p=people.find(x=>x.name===name)||{name},th=el.querySelector('th'),color=window.KCPlayerColors?.forPerson(p)||'#8094ad';
-   th.style.borderLeft='3px solid '+color;if(avatar)th.prepend(avatar(p,name));
+   th.style.borderLeft='3px solid '+color;
+   const cell=document.createElement('span');cell.className='kc-personal-cell';
+   if(avatar)cell.append(avatar(p,name));
+   const label=document.createElement('span');label.className='kc-personal-name';label.textContent=name;label.title=name;
+   cell.append(label);th.replaceChildren(cell);
    const y=origins.get(name),delta=y==null?0:y-(el.getBoundingClientRect?.().top||0);
    if(delta&&el.animate&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)el.animate([{transform:'translateY('+delta+'px)'},{transform:'translateY(0)'}],{duration:650,easing:'ease-in-out'});
   }
+  if(!rows.length){const empty=document.createElement('p');empty.className='kc-personal-empty';empty.textContent='Noch keine persönlichen Würfe erfasst.';host.append(empty);}
+  fitTv();
+ }
+ function fitTv(){
+  const host=document.getElementById('dashboard-personal-throws');if(!host||!host.clientWidth||!host.clientHeight)return;
+  const count=host.querySelectorAll('[data-personal-name]').length;
+  const hint=host.querySelector('.kc-personal-hint'),available=host.clientHeight-12-(hint?.offsetHeight||0)-6;
+  const rowHeight=Math.max(14,Math.min(38,Math.floor(available/Math.max(3,count+2))-3));
+  const rowGap=rowHeight<23?1:3;
+  const font=Math.max(9,Math.min(17,Math.floor(rowHeight*.52),Math.floor(host.clientWidth/20)));
+  const avatar=Math.max(9,Math.min(26,rowHeight-5));
+  for(const [key,v] of Object.entries({'row-height':rowHeight,'row-gap':rowGap,font,'avatar-size':avatar,'avatar-font':Math.max(8,Math.floor(avatar*.45))}))host.style.setProperty('--personal-'+key,v+'px');
  }
  function liveRows(value,people=[]){
   const rows=(value?.rows||[]).slice();
@@ -119,5 +135,5 @@
   return table(data.rows,[...fields,['perThrow','Ø Pins/Wurf'],['perEvening','Ø Pins/Abend'],['best','Bester Abend (Pins)'],['bestDate','Datum'],['coverage','Erfassung']],yearSort)+'<p>'+data.unknown+' Abende ohne vollständige persönliche Erfassung. Durchschnittswerte beziehen sich nur auf erfasste Werte.</p>';
  }
  function year(...args){const host=document.getElementById('personal-throws-year');if(host)try{host.innerHTML=yearMarkup(...args);}catch(e){host.textContent=e.message;}}
- window.KCPersonalThrowsView=Object.freeze({tv,live,year,yearMarkup,annual,liveMarkup:(value,people)=>table(liveRows(value,people),fields,'pins',true),sortLive:key=>{liveSort=key;live(personalThrows,persons);},sortYear:key=>{yearSort=key;renderPenaltyStats();},hint});
+ window.KCPersonalThrowsView=Object.freeze({tv,fitTv,live,year,yearMarkup,annual,liveMarkup:(value,people)=>table(liveRows(value,people),fields,'pins',true),sortLive:key=>{liveSort=key;live(personalThrows,persons);},sortYear:key=>{yearSort=key;renderPenaltyStats();},hint});
 })();
