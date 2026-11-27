@@ -44,7 +44,7 @@ test('real low-house dialog stores the physical gutter/nine and undo reverses ex
 });
 test('Firebase initialization repairs root and game mirror once without changing penalty counters',async()=>{
  const root={...initial(),...fixture(),syncInitialized:true,syncProtocol:1,syncRevision:3,syncOperation:'sync_previous'};root.persons=root.persons.map(p=>({...p,present:true}));
- const db=database({[rootPath]:root}),a=fullApp(db);await a.select();assert.equal(db.root().eveningCounters.pins,9);assert.deepEqual(db.root().persons.map(p=>p.strafen),root.persons.map(p=>p.strafen));
+ const db=database({[rootPath]:root}),a=fullApp(db);await a.select();assert.equal(db.root().eveningCounters.pins,9);assert.deepEqual(db.root().persons,root.persons);
  assert.equal(db.data.get('clubs/club/liveGames/haustief').state.rows.A[0].physicalThrow.kind,'gosse');assert.equal(db.root().haustiefState.rows.A[0].gameValue,9);
  const revision=db.root().syncRevision;await a.c.firestoreApi.initializeSharedState('club',{},'sync_332_repeat');assert.equal(db.root().syncRevision,revision);
 });
