@@ -29,13 +29,17 @@
   let box=section('layout','Tabellen und Anordnung');
   box.append(element('p','Anzeigen am selben Platz wechseln automatisch. Die Anzeigedauer gilt je Tabelle. Ist oben oder unten frei, nutzt der belegte Platz die ganze Höhe. Zwei aktivierte Tabellen stehen links.'));
   const rows=element('div',undefined,'dashboard-layout-options');
-  for(const key of ['fines','drinks','gutters','seating']){
+  for(const key of ['fines','drinks','gutters','seating','counters']){
    const row=element('div',undefined,'dashboard-layout-option'),label=element('label'),check=element('input');check.type='checkbox';check.id='dashboard-show-'+key;check.checked=draft.panels[key].enabled;check.disabled=busy;check.onchange=()=>{draft.panels[key].enabled=check.checked;draw();};label.append(check,document.createTextNode(M.labels[key]));row.append(label);
    const select=element('select');select.id='dashboard-position-'+key;select.setAttribute('aria-label','Position '+M.labels[key]);select.disabled=busy||!check.checked;select.hidden=!check.checked;
    const positions=r.count===1?['left-top','right-top']:r.count===2?['left-top','left-bottom']:M.slots;
    for(const slot of positions){const option=element('option',r.count===1?(slot.startsWith('left')?'Links · volle Höhe':'Rechts · volle Höhe'):slotNames[slot]);option.value=slot;option.selected=slot===draft.panels[key].position;select.append(option);}select.value=draft.panels[key].position;select.onchange=()=>{draft=M.move(draft,key,select.value);draw();};row.append(select);
    const dwell=element('label',undefined,'dashboard-dwell');dwell.hidden=!check.checked;const input=duration('dashboard-seconds-'+key,draft.panels[key].seconds,1,300,v=>draft.panels[key].seconds=v);input.setAttribute('aria-label','Anzeigedauer '+M.labels[key]+' in Sekunden');dwell.append(input,document.createTextNode('Sekunden'));row.append(dwell);rows.append(row);
-  }box.append(rows,preview(r));
+  }box.append(rows);
+  if(r.count===5){
+   box.append(element('p','Bei fünf Tabellen bleiben drei fest sichtbar. Diese beiden wechseln am selben Platz:'));
+   for(let i=0;i<2;i++){const label=element('label',undefined,'dashboard-popup-option'),select=element('select');select.id='dashboard-rotation-pair-'+i;select.disabled=busy;for(const key of M.keys){if(key===draft.rotationPair[1-i])continue;const opt=element('option',M.labels[key]);opt.value=key;opt.selected=key===draft.rotationPair[i];select.append(opt);}select.value=draft.rotationPair[i];select.onchange=()=>{draft.rotationPair[i]=select.value;draw();};label.append(document.createTextNode('Wechselanzeige '+(i+1)+' '),select);box.append(label);}
+  }box.append(preview(r));
   for(const key of ['fines','drinks']){
    const label=element('label',undefined,'dashboard-popup-option');
    const check=element('input');
@@ -181,7 +185,7 @@
   const measurement=element('p','Noch nicht gemessen.');measurement.id='dashboard-connection-result';measurement.setAttribute('role','status');
   box.append(diagnostics,test,measurement);
   window.KCTabletSync?.status();
-  const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');frame.append(actions,status);
+  const actions=element('div',undefined,'dashboard-layout-actions'),reset=element('button','Standard wiederherstellen','secondary-btn');reset.type='button';reset.disabled=busy;reset.onclick=()=>{draft={...draft,panels:M.defaults().panels,rotationPair:M.defaults().rotationPair};draw();};const save=element('button',busy?'Wird gespeichert …':'💾 Dashboard-Einstellungen speichern','primary-btn');save.type='button';save.id='dashboard-layout-save';save.disabled=busy;save.onclick=store;actions.append(reset,save);const status=element('p');status.id='dashboard-layout-status';status.setAttribute('role','status');frame.append(actions,status);
  }
  function render(){const box=host();if(!box)return;const value=typeof dashboardSettings==='undefined'?null:dashboardSettings,next=String(typeof ACTIVE_CLUB==='undefined'?'':ACTIVE_CLUB)+'|'+JSON.stringify(value);if(next===stamp&&draft)return;stamp=next;draft=M.resolve(value).settings;draw();}
  async function store(){

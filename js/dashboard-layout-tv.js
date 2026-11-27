@@ -31,6 +31,8 @@
  function resizeSeating(){
   const panel=$('dashboard-seating'),width=panel?.getBoundingClientRect?.().width||0;
   if(width>0)panel.classList.toggle('seat-avatars-only',width<244);
+  const counters=$('dashboard-panel-counters'),counterWidth=counters?.getBoundingClientRect?.().width||0;
+  if(counterWidth>0)counters.classList.toggle('counter-compact',counterWidth<170);
  }
  function apply(settings){
   const r=M.resolve(settings),stamp=JSON.stringify({panels:r.settings.panels,transitionSeconds:r.settings.transitionSeconds,tableWidth:r.settings.tableWidth,tableHeight:r.settings.tableHeight});if(stamp===layoutStamp)return r;const main=document.querySelector('main.dashboard'),left=document.querySelector('.side.left'),right=document.querySelector('.side.right');if(!main||!left||!right)return r;layoutStamp=stamp;clearFades();arrangement=r;rotationStart=Date.now();

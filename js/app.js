@@ -46,6 +46,8 @@ function getSerializableState() {
   return {
     cashBookSettings,
     dashboardSettings,
+    eveningCounters:typeof eveningCounters==='undefined'?{}:eveningCounters,
+    eveningCounterExcluded:typeof eveningCounterExcluded==='undefined'?{}:eveningCounterExcluded,
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
     penaltyStatsSettings,
     currentEveningStartedAt,
@@ -124,6 +126,7 @@ function getTodayMeta() {
 let dashboardActiveGame = null;
 // Startzeit des laufenden Abends, unabhängig vom Kalendertag.
 let currentEveningStartedAt = null;
+let eveningCounters = {},eveningCounterExcluded={};
 function getFirestorePersonsWithFineTotals() {
   // Haupt-App ist die einzige Quelle der berechneten Strafbetraege.
   // Niemals die lokalen Personenobjekte nur fuer die Uebertragung veraendern.
@@ -141,6 +144,8 @@ function getFirestoreState() {
   return {
     cashBookSettings,
     dashboardSettings,
+    eveningCounters:typeof eveningCounters==='undefined'?{}:eveningCounters,
+    eveningCounterExcluded:typeof eveningCounterExcluded==='undefined'?{}:eveningCounterExcluded,
     ...(typeof gameFineSnapshot==='function'?gameFineSnapshot():{}),
     penaltyStatsSettings,
     ...getTodayMeta(),
@@ -231,6 +236,8 @@ function applyLoadedState(state) {
   else clubTermine = Array.isArray(state.clubTermine) ? state.clubTermine : [];
   clubTerminGruende = Array.isArray(state.clubTerminGruende) && state.clubTerminGruende.length ? state.clubTerminGruende : clubTerminGruende;
   currentEveningStartedAt = state.currentEveningStartedAt || null;
+  eveningCounters=window.KCEveningCounters?.normalize(state.eveningCounters)||{};
+  eveningCounterExcluded=state.eveningCounterExcluded||(!state.eveningCounters&&window.KCEveningCounters&&window.KCSharedCore?KCEveningCounters.exclude(state,KCSharedCore.games):{});
   persons = Array.isArray(state.persons)
     ? state.persons
     : [];
@@ -1068,7 +1075,7 @@ async function confirmKranzThrow(winnerName) {
   addPenaltyStatsEntry(
     'Kranz',
     winnerName,
-    punishedNames
+    punishedNames,true
   );
 
   closeKranzModal();
@@ -1364,7 +1371,7 @@ function saveMonatsbeitrag() {
   );
 }
 
-function addPenaltyStatsEntry(type, throwerName, punishedNames) {
+function addPenaltyStatsEntry(type, throwerName, punishedNames, eveningCounterManual=false) {
   if (!Array.isArray(penaltyStatsLog)) penaltyStatsLog = [];
   // Altbestand ohne Startzeit: ab dem ersten neuen Treffer sauber abgrenzen.
   // Keine Zähler zurücksetzen und keinen neuen Kegelabend auslösen.
@@ -1375,6 +1382,7 @@ function addPenaltyStatsEntry(type, throwerName, punishedNames) {
   const entry={
     id: 'penalty_' + Date.now() + '_' + Math.random().toString(36).slice(2),
     type,
+    ...(eveningCounterManual?{eveningCounterManual:true}:{}),
     thrower: throwerName,
     // Die Abendkennung ist unabhängig vom Kalenderdatum. Auch mehrere Abende
     // am gleichen Tag dürfen sich nicht gegenseitig beeinflussen.
@@ -3778,6 +3786,7 @@ applyGroupTheme();
 }
 
 function updateStats() {
+  window.KCEveningCounterView?.paint(typeof eveningCounters==='undefined'?{}:eveningCounters);
   const present = persons.filter(p => p.present);
   const bezahlt = present.reduce((s, p) => s + (p.paid || 0), 0);
   const offen = present.reduce((s, p) => s + getPersonOpenAmount(p), 0);
@@ -6259,7 +6268,7 @@ async function confirmQuickPenalty() {
         addPenaltyStatsEntry(
           quickPenaltyType,
           throwerName,
-          []
+          [],true
         );
       }
     );
@@ -6296,7 +6305,7 @@ async function confirmQuickPenalty() {
       addPenaltyStatsEntry(
         quickPenaltyType,
         throwerName,
-        punishedNames
+        punishedNames,true
       );
     }
   );

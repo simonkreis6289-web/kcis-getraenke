@@ -146,6 +146,7 @@
   function project(state,render=false){
     const old=isApplyingRemoteState;try{isApplyingRemoteState=true;const previousPeople=new Map(persons.map(p=>[C.norm(p.name),p]));applyLoadedState(C.clone(state));persons=persons.map(p=>{const old=previousPeople.get(C.norm(p.name));if(!old)return p;for(const k of Object.keys(old))if(!Object.hasOwn(p,k))delete old[k];return Object.assign(old,p);});livePersonCounters.clear();for(const p of state.persons||[])livePersonCounters.set(p.name,C.clone(p));liveCountersReady=true;if(render)renderAll();cache();}finally{isApplyingRemoteState=old;}
     window.KCClubContentApp?.refreshDashboardControls();
+    window.KCEveningCounterView?.paint(state.eveningCounters);
   }
   function publish(s){
     const content={};
@@ -333,6 +334,7 @@ s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagn
       const changed=C.games.filter(k=>!C.equal(C.clean(action.before[k+'State']),C.clean(draft[k+'State'])));
       if(changed.length===1){draft.dashboardActiveGame=changed[0];draft.dashboardGameOverview={...draft.dashboardGameOverview,selectedGame:changed[0]};}
     }
+    if(window.KCEveningCounters)draft.eveningCounters=KCEveningCounters.transition(action.before,draft,C.games);
     const state=C.totals(draft,window.KCGameFinePolicy);stage(state,docs);
     for(const change of docs)current.docCache.set(change.path,change.deleted?null:C.clone(change.value));
     project(state);if(method==='saveLivePersonStatus'){renderAnwesenheit();updateStats();}return state;
@@ -392,7 +394,7 @@ s.cloudEvening=batch.state.currentEveningStartedAt||'';s.error='';s.failureDiagn
       catch(error){if(current===action.session)project(action.before,true);sharedOriginalToast?.(error.message,'error');return undefined;}finally{unit=null;applyReceived(action.session);status();}
     });
   }
-  function persist(){if(!ready||unit||current?.recovering)return;try{stage({...current.root,...snapshot()});}catch(error){toast(error.message);}}
+  function persist(){if(!ready||unit||current?.recovering)return;try{const next={...current.root,...snapshot()};if(window.KCEveningCounters)next.eveningCounters=KCEveningCounters.transition(current.root,next,C.games);stage(next);if(window.KCEveningCounters&&typeof eveningCounters!=='undefined'){eveningCounters=next.eveningCounters;eveningCounterExcluded=next.eveningCounterExcluded;window.KCEveningCounterView?.paint(eveningCounters);}}catch(error){toast(error.message);}}
   async function flush(){if(unit)return true;persist();return ready;}
   async function waitForUpload(){await localTail;if(!ready)return false;persist();return drain(current,true);}
   async function reconnect(){if(!current)return false;if(!ready)return prepare(current.club,createEmptyClubData());current.nextRetryAt=0;return drain(current,true);}
