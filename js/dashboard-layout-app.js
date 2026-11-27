@@ -161,6 +161,27 @@
   stationColor.htmlFor=stationPicker.id;stationColor.append(document.createTextNode('Hintergrundfarbe der Buchungsanzeige '),stationPicker);
   box.append(stationLabel,stationDuration,stationColor);
 
+  box=section('milestones','Meilenstein-Toasts');
+  box.append(element('p','Pin-Meilensteine werden je Kegelabend einmal ausgelöst. Vorladen und Reset lösen keine Meldung aus.'));
+  function milestoneFields(v,repeated){
+   const row=element('fieldset',undefined,'dashboard-milestone-row');
+   row.append(element('legend',repeated?'Automatische Schnapszahlen':'Pin-Meilenstein'));
+   function field(title,input){const label=element('label',undefined,'dashboard-popup-option');label.append(document.createTextNode(title+' '),input);row.append(label);}
+   const enabled=element('input');enabled.type='checkbox';enabled.checked=v.enabled;enabled.disabled=busy;enabled.onchange=()=>v.enabled=enabled.checked;field('Aktiviert',enabled);
+   if(!repeated){
+    const pins=element('input');pins.type='number';pins.min='1';pins.value=v.pins;pins.disabled=busy;pins.oninput=()=>v.pins=pins.value;field('Pin-Anzahl',pins);
+    const mode=element('select');for(const [key,label] of [['exact','Genau getroffen'],['cross','Erreicht oder überschritten']]){const opt=element('option',label);opt.value=key;mode.append(opt);}mode.value=v.mode;mode.disabled=busy;mode.onchange=()=>v.mode=mode.value;field('Auslöselogik',mode);
+   }
+   const message=element('input');message.type='text';message.maxLength=200;message.value=v.text;message.disabled=busy;message.oninput=()=>v.text=message.value;field('Toasttext',message);
+   const color=element('input');color.type='color';color.value=v.color;color.disabled=busy;color.oninput=()=>v.color=color.value;field('Toastfarbe',color);
+   field('Anzeigedauer (s)',duration('milestone-duration-'+(v.id||'repeated'),v.seconds,1,30,n=>v.seconds=n));
+   if(!repeated){const remove=element('button','Löschen','secondary-btn');remove.type='button';remove.disabled=busy;remove.onclick=()=>{draft.milestoneToasts.items=draft.milestoneToasts.items.filter(x=>x.id!==v.id);draw();};row.append(remove);}
+   box.append(row);
+  }
+  for(const v of draft.milestoneToasts.items)milestoneFields(v,false);
+  const milestoneAdd=element('button','+ Meilenstein hinzufügen','secondary-btn');milestoneAdd.type='button';milestoneAdd.disabled=busy||draft.milestoneToasts.items.length>=100;milestoneAdd.onclick=()=>{draft.milestoneToasts.items.push({id:'pin-'+Date.now()+'-'+Math.random().toString(36).slice(2),pins:500,mode:'cross',enabled:true,text:'500 Kegel gefallen!',color:'#f4c66a',seconds:4});draw();};box.append(milestoneAdd);
+  milestoneFields(draft.milestoneToasts.repeated,true);
+
   box=section('football','Bundesliga');
   box.append(element('p','OpenLigaDB liefert Spielstände und bestätigte Ereignisse. Die angezeigte Spielminute ist eine Schätzung.'));
   for(const [key,name] of [['bl1','1. Bundesliga'],['bl2','2. Bundesliga']]){const label=element('label',undefined,'dashboard-popup-option'),check=element('input');check.type='checkbox';check.checked=draft.football[key];check.disabled=busy;check.onchange=()=>draft.football[key]=check.checked;label.append(check,document.createTextNode(name+' im Laufband anzeigen'));box.append(label);}

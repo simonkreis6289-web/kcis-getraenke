@@ -73,3 +73,9 @@
 .kc-counter-app .kc-counter-gutters svg{color:#bd3f39}
 .kc-counter-app .kc-counter-nines svg{color:#117a51}
 .kc-counter-app .kc-counter-wreaths svg{color:#9d6a00}
+/* V327: equal track widths, independent of the number of digits. */
+.kc-counter-app [data-evening-counters]{display:grid;grid-template-columns:repeat(5,minmax(0,76px));gap:5px}
+.kc-counter-app .kc-counter{width:100%;min-width:0;height:39px;grid-template-columns:18px minmax(0,1fr);padding:4px 5px}
+.kc-counter-app .kc-counter strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.88rem}
+.kc-counter-app .kc-counter span{white-space:nowrap}
+@media(max-width:620px){.kc-counter-app [data-evening-counters]{grid-template-columns:repeat(5,minmax(0,65px))}.kc-counter-app .kc-counter{padding:3px;gap:2px}}

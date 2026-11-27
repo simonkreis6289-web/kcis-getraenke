@@ -55,6 +55,7 @@
   for(const type of Object.keys(tickerTypes))out.tickerColors[type]=tickerColor(value?.tickerColors?.[type],out.tickerColors[type]);
   out.tickerFontSize=seconds(value?.tickerFontSize,18,12,30);
   out.popupSeconds=seconds(value?.popupSeconds,3,0,30);
+  out.milestoneToasts=window.KCEveningCounters?.milestoneSettings(value?.milestoneToasts)||{items:[],repeated:{enabled:false,text:"🥃 Schnapszahl!",color:"#f4c66a",seconds:4}};
   out.eventToasts={seconds:seconds(value?.eventToasts?.seconds,4,0,30),colors:eventToastColors()};
   out.eventToasts.stationSeconds=seconds(value?.eventToasts?.stationSeconds,out.eventToasts.seconds,0,30);
   for(const key of Object.keys(out.eventToasts.colors))out.eventToasts.colors[key]=tickerColor(value?.eventToasts?.colors?.[key],out.eventToasts.colors[key]);

@@ -174,3 +174,5 @@ main.dashboard{height:100vh;height:100dvh;min-height:0;grid-template-rows:auto m
 
 /* Schmale Überschriften geben die Höhe an die Tabellen zurück. */
 .dashboard .panel>h2{padding:5px 10px;line-height:1.15;border-bottom-width:1px;flex:none}
+.kc-club-event-toast.is-milestone{background-image:linear-gradient(120deg,#ffffff35,transparent 55%,#00000012);box-shadow:0 12px 45px #081b3a66,inset 0 0 0 2px #ffffff55}
+.kc-club-event-toast.is-milestone .kc-toast-person-text>strong{letter-spacing:.025em}
