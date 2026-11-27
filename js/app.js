@@ -222,7 +222,7 @@ function getFirestoreState() {
 }
 
 function applyLoadedState(state) {
-  if(state)window.KCHotfixRecovery?.render(state.hotfix331);
+  if(state)window.KCHotfixRecovery?.render(state.hotfix331,state.physicalStatsRepair332);
   if (!state) {
     return false;
   }

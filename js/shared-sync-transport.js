@@ -59,9 +59,11 @@
         if(saved?.syncInitialized===true){
           const recovered=window.KCHotfixRecovery?.recover(saved,core)||saved;
           if(core.equal(saved,recovered))return saved;
+          const gameMirrors=await Promise.all(core.legacy.filter(key=>!core.equal(saved[key+'State'],recovered[key+'State'])).map(async key=>{const target=doc(db,'clubs',club,'liveGames',key),snapshot=await tx.get(target);return {key,target,data:snapshot.exists()?snapshot.data():{}};}));
           const next=stamp(core.totals(recovered,policy),(Number(saved.syncRevision)||0)+1,opId);
           tx.set(receipt(club,opId),{commandId:opId,kind:'hotfix331',createdAt:serverTimestamp()});
           tx.set(target,next);
+          for(const game of gameMirrors)tx.set(game.target,stamp({...game.data,gameKey:game.key,state:recovered[game.key+'State'],revision:(Number(game.data.revision)||0)+1},next.syncRevision,opId));
           for(const person of next.persons||[])if(!core.equal(person,(saved.persons||[]).find(p=>core.norm(p.name)===core.norm(person.name))))tx.set(personRef(club,person.name),stamp(person,next.syncRevision,opId));
           return next;
         }

@@ -1,7 +1,59 @@
 /* V331: conservative, idempotent recovery from the canonical Firebase snapshot. */
 (()=>{
  const clone=x=>JSON.parse(JSON.stringify(x)),norm=x=>String(x||'').trim().toLocaleLowerCase('de');
+ // This one game was confirmed by its owner to contain entered game digits,
+ // not raw pins: 9 = gutter, numeric 0 = a physical nine. Never infer this for
+ // another club/evening/game, or change its already reconciled financial rows.
+ function repairPhysical332(source,core){
+  const evening='2026-11-27T18:17:01.250Z',startedAt='2026-11-27T19:35:58.800Z';
+  if(source.physicalStatsRepair332?.schema===1||source.currentEveningStartedAt!==evening)return source;
+  const result=(source.strafenHistory||[]).find(x=>x.type==='haustief'&&x.createdAt==='2026-11-27T19:43:27.941Z');
+  const live=source.haustiefState,game=live?.startedAt===startedAt?live:null;
+  const original=game?.rows||result?.rows;if(!original)return source;
+  const root=clone(source),M=window.KCEveningCounters;if(!M)return source;
+  const changes=[],statIds=new Map(),corrected=clone(original);
+  for(const [name,row] of Object.entries(corrected))for(const [place,roll] of row.entries()){
+   if(!roll||roll.physicalThrow)continue;
+   const value=Number(roll.value),gutter=roll.isGosse||value===9,nine=!roll.isGosse&&value===0;
+   const kind=gutter?'gosse':nine?'9er':value===12?'kranz':'pins',pins=gutter?0:nine?9:value===12?8:value;
+   const before=M.roll(value,roll.isGosse?'gosse':undefined),after=M.roll(pins,kind);
+   roll.gameValue=roll.isGosse?9:Number(roll.kranzValue??roll.value);
+   roll.physicalThrow={kind,pins,source:'confirmed-game-value-332'};
+   const id=JSON.stringify(['haustief',startedAt])+'|'+JSON.stringify([name,place]);
+   changes.push({id,name,place,before,after,statId:roll.penaltyBooking?.statId||null});
+   if(roll.penaltyBooking?.statId)statIds.set(roll.penaltyBooking.statId,kind);
+  }
+  const beforeCounters=clone(root.eveningCounters||M.empty());
+  const counts=M.normalize(root.eveningCounters),excluded=root.eveningCounterExcluded||{};
+  const restoreExcludedNines=(excluded.nines||[]).every(id=>/^\["haus(?:hoch|tief)",/.test(id)||id.startsWith('manual|'));
+  const isExcluded=(metric,id)=>(excluded[metric]||[]).includes(id);
+  for(const change of changes){
+   for(const metric of M.keys){
+    if(metric==='nines'){
+     // The old zeroing removed bogus score-nines. Include only the confirmed
+     // physical nines again; do not subtract entries already excluded earlier.
+     if(!isExcluded(metric,change.id)||restoreExcludedNines)counts[metric]+=change.after[metric]-(isExcluded(metric,change.id)?0:change.before[metric]);
+    }else if(!(excluded[metric]||[]).includes(change.id))counts[metric]+=change.after[metric]-change.before[metric];
+   }
+   const personal=root.personalThrows,row=personal?.rows?.find(x=>x.name===change.name);
+   if(row&&!(personal.excluded||[]).includes(change.id)&&!(personal.corrections||[]).some(x=>x.name===change.name))for(const metric of M.keys)row[metric]=Math.max(0,(Number(row[metric])||0)+change.after[metric]-change.before[metric]);
+  }
+  root.eveningCounters=M.normalize(counts);
+  const changedIds=new Set(changes.map(x=>x.id));
+  if(excluded.nines&&restoreExcludedNines)root.eveningCounterExcluded={...excluded,nines:excluded.nines.filter(id=>!changedIds.has(id))};
+  if(game)root.haustiefState.rows=clone(corrected);
+  const entryId=result?.id;
+  for(const entry of root.strafenHistory||[])if(entry.id===entryId)entry.rows=clone(corrected);
+  for(const entry of root.haustiefState?.history||[])if(entry.id===entryId)entry.rows=clone(corrected);
+  for(const entry of root.penaltyStatsLog||[])if(statIds.has(entry.id)){
+   entry.originalType332=entry.type;entry.type=statIds.get(entry.id);entry.physicalCorrection332=true;
+  }
+  if(root.hausnummerSettings?.tief)root.hausnummerSettings.tief={...root.hausnummerSettings.tief,neun:0,gosse:9};
+  root.physicalStatsRepair332={schema:1,eveningStartedAt:evening,gameStartedAt:startedAt,beforeCounters,afterCounters:root.eveningCounters,changes};
+  return root;
+ }
  function recover(source,core){
+  source=repairPhysical332(source,core);
   if(source.hotfix331?.schema===1)return source;
   const root=clone(source),report={schema:1,restoredMoney:[],statistics:[],review:[]};
   root.hausnummerSettings={hoch:{neun:9,kranz:12,...root.hausnummerSettings?.hoch,gosse:0},tief:{neun:0,kranz:0,...root.hausnummerSettings?.tief,gosse:9}};
@@ -64,11 +116,12 @@
   }
   root.hotfix331=report;return root;
  }
- function render(report){
+ function render(report,physical){
   const host=document.getElementById('hotfix331-status');if(!host)return;
   host.replaceChildren();
   const lines=report?.review||[];
   const summary=document.createElement('p');summary.textContent='V331: '+(report?.restoredMoney?.length||0)+' fehlende Geldbuchungen wiederhergestellt; '+(report?.statistics?.length||0)+' Statistikwerte anhand der Wurfbelege korrigiert. '+(lines.length?'Offene Punkte bitte anhand der Historie prüfen. Strafen lassen sich in der Strafentabelle über +/− und freie Beträge korrigieren.':'');host.append(summary);
+  if(physical?.schema===1){const row=document.createElement('p');row.textContent='V332: Statistik der bestätigten tiefen Hausnummer anhand der tatsächlichen Wurfarten korrigiert. Strafbeträge und Platzierungsbuchungen wurden dabei nicht verändert.';host.prepend(row);}
   for(const text of lines){const row=document.createElement('p');row.textContent=text;host.append(row);}
  }
  function editPersonal(){
@@ -98,5 +151,5 @@
   };
   overlay.append(form);document.body.append(overlay);
  }
- window.KCHotfixRecovery=Object.freeze({recover,render,editPersonal});
+ window.KCHotfixRecovery=Object.freeze({recover,repairPhysical332,render,editPersonal});
 })();
