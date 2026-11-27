@@ -796,6 +796,7 @@ const clubId =
     ACTIVE_CLUB
   );
 
+if(nextMeta&&!undo)nextMeta.rawValue=value;
 value=scored;
 const previousValue =
   lotterieState.throws[

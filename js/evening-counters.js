@@ -12,17 +12,17 @@
  }
  function session(key,s){const v=key==='tannenbaum'&&s?.closedRound?.state?s.closedRound.state:s;return v?.id||v?.startedAt||'';}
  // IDs are stable under correction and undo, independent of scoring and penalty receipts.
- function entries(key,s){
+ function entries(key,s,legacy=false){
   if(!s)return [];
   const prefix=JSON.stringify([key,session(key,s)])+'|',out=[];
   const push=(id,raw,kind,name)=>out.push([prefix+id,roll(raw,kind),name||'']);
-  const cells=(rows,convert)=>{for(const [name,row] of Object.entries(rows||{}))for(const [i,x] of row.entries())if(x!=null){const [raw,kind]=convert(x);push(JSON.stringify([name,i]),raw,kind,name);}};
+  const cells=(rows,convert)=>{for(const [name,row] of Object.entries(rows||{}))for(const [i,x] of row.entries())if(x!=null){const [raw,kind]=convert(x,name,i);push(JSON.stringify([name,i]),raw,kind,name);}};
   const list=(rows,convert)=>{for(const [i,x] of (rows||[]).entries()){const v=convert(x);if(v)push(x.id||String(i),v[0],v[1],x.thrower||x.name);}};
-  if(key==='lotterie')cells(s.throws,x=>[x]);
+  if(key==='lotterie')cells(s.throws,(x,name,i)=>{const meta=legacy?null:s.throwMeta?.[name]?.[i];return [meta?.rawValue??x,meta?.penaltyType];});
   else if(['haushoch','haustief','plusminus'].includes(key))cells(s.rows,x=>[x.value,x.isGosse?'gosse':undefined]);
   else if(key==='mensch')cells(s.throws,x=>[x.rawPins??x.pins]);
   else if(key==='tiberius')list(s.throws,x=>[x.rawValue??x.value,x.rawValue==='durchgeworfen'?'durchgeworfen':undefined]);
-  else if(key==='fuchsjagd')list(s.throws,x=>[x.rawPins??x.pins]);
+  else if(key==='fuchsjagd')list(s.throws,x=>!legacy&&x.skipped?null:[x.rawPins??x.pins]);
   else if(key==='sichern')list(s.throwHistory,x=>x.saved?null:[x.rawPins??x.pins]);
   else if(key==='tor')list(s.history,x=>[x.pins,x.kind]);
   else if(key==='tannenbaum')list(((s.closedRound?.state||s).history||[]).slice().reverse(),x=>x.type==='manual-restore'?null:[x.number,x.specialType||(x.type==='penalty-gosse'?'gosse':undefined)]);
@@ -133,5 +133,5 @@
   after.eveningCounterExcluded=Object.fromEntries(keys.filter(k=>skip[k].size).map(k=>[k,[...skip[k]].filter(id=>remaining.has(id))]).filter(([,ids])=>ids.length));
   const result=normalize(out);milestones(before,after,gameKeys,result.pins);return result;
  }
- window.KCEveningCounters=Object.freeze({keys,labels,empty,normalize,roll,throws,exclude,transition,milestoneSettings,needsThrower,personalArchive});
+ window.KCEveningCounters=Object.freeze({keys,labels,empty,normalize,roll,throws,entries,exclude,transition,milestoneSettings,needsThrower,personalArchive});
 })();

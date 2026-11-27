@@ -1,7 +1,7 @@
 /* Gemeinsame Regeln für Hohe und Tiefe Hausnummer. */
 const HAUS_DEFAULTS = {
   hoch: { neun: 9, kranz: 12, gosse: 0 },
-  tief: { neun: 0, kranz: 0, gosse: 0 }
+  tief: { neun: 0, kranz: 0, gosse: 9 }
 };
 function hausId(mode) { return mode === 'hoch' ? 'haushoch' : 'haustief'; }
 function hausState(mode) { return mode === 'hoch' ? haushochState : haustiefState; }
@@ -25,6 +25,7 @@ function hausPlayers(mode) {
 }
 function hausThrowValue(mode,throwData) {
   if (!throwData) return null;
+  if (throwData.isGosse || Number(throwData.value)===0) return mode==='hoch'?0:9;
   const settings=hausnummerSettings?.[mode]||HAUS_DEFAULTS[mode];
   const key=throwData.isGosse?'gosse':Number(throwData.value)===12?'kranz':Number(throwData.value)===9?'neun':null;
   if(key==='kranz'&&Number.isInteger(throwData.kranzValue))return throwData.kranzValue;
@@ -40,17 +41,17 @@ function hausDisplay(mode,row) {
 function renderHausSettings() {
   for (const mode of ['hoch','tief']) for(const key of ['neun','kranz','gosse']){
     const el=document.getElementById('haus-'+mode+'-'+key);
-    if(el)el.value=String(hausnummerSettings?.[mode]?.[key]??HAUS_DEFAULTS[mode][key]);
+    if(el){el.value=String(key==='gosse'?(mode==='hoch'?0:9):hausnummerSettings?.[mode]?.[key]??HAUS_DEFAULTS[mode][key]);el.readOnly=key==='gosse';}
   }
 }
 function saveHausSettings() {
   for(const mode of ['hoch','tief']) for(const key of ['neun','kranz','gosse']){
     const value=Number(document.getElementById('haus-'+mode+'-'+key)?.value);
     if(!Number.isInteger(value)||value<0||value>12){showToast('Bitte Werte zwischen 0 und 12 verwenden','error');return;}
-    hausnummerSettings[mode][key]=value;
+    hausnummerSettings[mode][key]=key==='gosse'?(mode==='hoch'?0:9):value;
   }
   persistState();
-  renderHausGame('hoch');renderHausGame('tief');
+  renderHausSettings();renderHausGame('hoch');renderHausGame('tief');
   showToast('Hausnummer-Wertungen gespeichert','success');
 }
 function startHausGame(mode) {
@@ -229,7 +230,7 @@ function renderHausGame(mode) {
     }).join('');
     return '<tr class="'+(active?'haus-current-row':'')+'"><td class="haus-player">'+esc(name)+(active?' <span class="haus-turn-tag">🎳 Am Wurf</span>':'')+'</td>'+cells+'<td class="haus-score">'+(num===null?'–':num)+'</td></tr>';
   }).join('');
-  board.innerHTML='<div class="haus-game-header"><strong>'+label+'</strong><span>'+(s.active?'Am Wurf: '+esc(current):s.finished?'🏁 Beendet':'Spiel starten, um Würfe einzutragen')+'</span>'+(s.undoStack.length&&!s.finished?'<button type="button" class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+'</div>'+
+  board.innerHTML='<div class="haus-game-header"><strong>'+label+'</strong><span>'+(s.active?'Am Wurf: '+esc(current):s.finished?'🏁 Beendet':'Spiel starten, um Würfe einzutragen')+'</span>'+(s.undoStack.length?'<button type="button" class="secondary-btn" onclick="undoHausThrow(\''+mode+'\')">↩ Rückgängig</button>':'')+'</div>'+
   '<div class="haus-table-wrap"><table class="haus-table"><thead><tr><th>Spieler</th><th>Hunderter</th><th>Zehner</th><th>Einer</th><th>Hausnummer</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
   '<p class="haus-help">Tippe beim aktuellen Spieler auf ein freies Kästchen und wähle den Wurf. Kranz und Gosse werden automatisch in der Strafentabelle berücksichtigt.</p>'+
   (s.finished?'<div class="haus-winner">🏆 '+esc(s.history[0]?.winner||'')+' gewinnt!'+(s.history[0]?.assigned?.length?' · '+s.history[0].assigned.map(x=>esc(x.name)+' ('+x.rank+'. Verlierer)').join(', '):'')+'</div>':'')+

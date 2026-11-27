@@ -1,6 +1,6 @@
-const APP_VERSION = '20261127-330';
-const APPVersionSelf = 'V330 © SK';
-const APP_LAST_UPDATE = '27.11.2026, 11:52 Uhr';
+const APP_VERSION = '20261127-331';
+const APPVersionSelf = 'V331 © SK';
+const APP_LAST_UPDATE = '27.11.2026, 21:39 Uhr';
 
 const LOCAL_STATE_KEY = 'kcis_local_state_v6';
 const FIRESTORE_ENABLED = true;
@@ -141,7 +141,7 @@ let menschState = null;
 let plusminusState = null;
 let haushochState = null;
 let haustiefState = null;
-let hausnummerSettings = {hoch:{neun:9,kranz:12,gosse:0},tief:{neun:0,kranz:0,gosse:0}};
+let hausnummerSettings = {hoch:{neun:9,kranz:12,gosse:0},tief:{neun:0,kranz:0,gosse:9}};
 let sichernState = null;
 let sechstageState = null;
 let blackjackState = null;
