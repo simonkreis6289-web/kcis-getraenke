@@ -10,15 +10,15 @@ function fixture(){
  return {currentEveningStartedAt:confirmedEvening,hotfix331:{schema:1},hausnummerSettings:{tief:{neun:9,kranz:0,gosse:9}},haustiefState:game,strafenHistory:[result],eveningCounters:copy(totals),personalThrows:{schema:1,partial:false,excluded:[],rows:Object.entries(people).map(([name,s])=>({name,...s}))},persons:[{name:'A',strafen:{gosse:2,nine:3},freeStrafen:[{id:'manual',amount:4}]},{name:'B',strafen:{loser:1},strafTotal:17}],individualGameLedger:[{id:'fee',amountCents:123}],penaltyStatsLog:[{id:'a',type:'9er',thrower:'A',punished:['B']},{id:'b',type:'gosse',thrower:'A',punished:['A']}]};
 }
 test('confirmed score digits become physical throws without rewriting financial data or results',()=>{
- const before=fixture(),after=R.recover(before,C);assert.deepEqual(copy(after.eveningCounters),{gutters:3,nines:1,wreaths:1,throws:6,pins:18});
+ const before=fixture(),after=R.recover(before,C);assert.deepEqual(copy(after.eveningCounters),{gutters:4,nines:0,wreaths:1,throws:6,pins:9});
  assert.deepEqual(copy(after.persons),before.persons);assert.deepEqual(copy(after.individualGameLedger),before.individualGameLedger);assert.deepEqual(copy(after.strafenHistory[0].assigned),before.strafenHistory[0].assigned);assert.deepEqual(copy(after.strafenHistory[0].results),before.strafenHistory[0].results);
- assert.equal(after.haustiefState.rows.A[0].physicalThrow.kind,'gosse');assert.equal(after.haustiefState.rows.A[0].gameValue,9);assert.equal(after.haustiefState.rows.A[1].physicalThrow.kind,'9er');assert.equal(after.haustiefState.rows.A[1].gameValue,0);assert.equal(after.penaltyStatsLog[0].type,'gosse');assert.deepEqual(copy(after.penaltyStatsLog[0].punished),['B']);assert.equal(after.hausnummerSettings.tief.neun,0);
+ assert.equal(after.haustiefState.rows.A[0].physicalThrow.kind,'gosse');assert.equal(after.haustiefState.rows.A[0].gameValue,9);assert.equal(after.haustiefState.rows.A[1].physicalThrow.kind,'gosse');assert.equal(after.haustiefState.rows.A[1].gameValue,0);assert.equal(after.penaltyStatsLog[0].type,'gosse');assert.deepEqual(copy(after.penaltyStatsLog[0].punished),['B']);assert.equal(after.hausnummerSettings.tief.neun,0);
  assert.deepEqual(copy(R.recover(after,C)),copy(after));assert.equal(before.haustiefState.rows.A[0].physicalThrow,undefined);
 });
-test('a previous zeroing of bogus score-nines never subtracts them again and restores true nines',()=>{
+test('a previous zeroing of bogus score-nines never subtracts them again and never invents true nines',()=>{
  const before=fixture();before.eveningCounterExcluded=M.exclude(before,C.games,['nines']);before.eveningCounters.nines=0;const after=R.recover(before,C);
- assert.equal(after.eveningCounters.nines,1);assert.equal(after.personalThrows.rows.reduce((n,r)=>n+r.nines,0),1);assert.equal(after.eveningCounterExcluded.nines.length,0);
- const undone=copy(after);undone.haustiefState.rows.A[0]=null;undone.eveningCounters=M.transition(after,undone,C.games);assert.equal(undone.eveningCounters.gutters,2);assert.equal(undone.eveningCounters.nines,1);assert.equal(undone.eveningCounters.throws,5);
+ assert.equal(after.eveningCounters.nines,0);assert.equal(after.personalThrows.rows.reduce((n,r)=>n+r.nines,0),0);assert.equal(after.eveningCounterExcluded.nines.length,0);
+ const undone=copy(after);undone.haustiefState.rows.A[0]=null;undone.eveningCounters=M.transition(after,undone,C.games);assert.equal(undone.eveningCounters.gutters,3);assert.equal(undone.eveningCounters.nines,0);assert.equal(undone.eveningCounters.throws,5);
 });
 test('recovery is limited to the confirmed evening and also works after the game has been replaced',()=>{
  const other=fixture();other.currentEveningStartedAt='other';assert.equal(R.recover(other,C),other);
@@ -44,7 +44,14 @@ test('real low-house dialog stores the physical gutter/nine and undo reverses ex
 });
 test('Firebase initialization repairs root and game mirror once without changing penalty counters',async()=>{
  const root={...initial(),...fixture(),syncInitialized:true,syncProtocol:1,syncRevision:3,syncOperation:'sync_previous'};root.persons=root.persons.map(p=>({...p,present:true}));
- const db=database({[rootPath]:root}),a=fullApp(db);await a.select();assert.equal(db.root().eveningCounters.pins,18);assert.deepEqual(db.root().persons.map(p=>p.strafen),root.persons.map(p=>p.strafen));
+ const db=database({[rootPath]:root}),a=fullApp(db);await a.select();assert.equal(db.root().eveningCounters.pins,9);assert.deepEqual(db.root().persons.map(p=>p.strafen),root.persons.map(p=>p.strafen));
  assert.equal(db.data.get('clubs/club/liveGames/haustief').state.rows.A[0].physicalThrow.kind,'gosse');assert.equal(db.root().haustiefState.rows.A[0].gameValue,9);
  const revision=db.root().syncRevision;await a.c.firestoreApi.initializeSharedState('club',{},'sync_332_repeat');assert.equal(db.root().syncRevision,revision);
+});
+
+test('the sole genuine nine in a different game survives while both old score-nine groups are corrected',()=>{
+ const source=fixture(),plusRow={value:9,isGosse:false};source.plusminusState={startedAt:'2026-11-27T19:46:52.259Z',rows:{A:[plusRow]},active:false,finished:true,history:[]};
+ source.siebenerState={id:'real-nine',history:[{action:'throw',kind:'pins',pins:9,name:'B'}]};source.eveningCounters.nines+=2;source.eveningCounters.throws+=2;source.eveningCounters.pins+=18;
+ for(const name of ['A','B']){const row=source.personalThrows.rows.find(x=>x.name===name);row.nines++;row.throws++;row.pins+=9;}
+ const actual=copy(source.siebenerState),after=R.recover(source,C);assert.deepEqual(copy(after.eveningCounters),{gutters:5,nines:1,wreaths:1,throws:8,pins:18});assert.deepEqual(copy(after.siebenerState),actual);assert.equal(after.personalThrows.rows.find(x=>x.name==='A').nines,0);assert.equal(after.personalThrows.rows.find(x=>x.name==='B').nines,1);assert.deepEqual(copy(after.persons),source.persons);
 });
