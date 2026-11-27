@@ -83,7 +83,36 @@
   journal.seen=[...seen];journal.events=journal.events.slice(-100);
   if(journal.seen.length)after.eveningMilestones=journal;
  }
+ // Personal counters use the same physical entries, never penalty recipients.
+ function personalTransition(before,after,gameKeys){
+  if((before.currentEveningStartedAt&&before.currentEveningStartedAt!==after.currentEveningStartedAt)||(before.eveningResetOp!==after.eveningResetOp&&after.eveningResetOp)){
+   after.personalThrows={schema:1,partial:false,rows:[],excluded:[]};return;
+  }
+  const previous=before.personalThrows, totals=new Map((previous?.rows||[]).map(r=>[r.name,normalize(r)]));
+  const excluded=new Set(previous?.excluded||(!previous?allEntries(before,gameKeys).map(r=>r[0]):[]));
+  const roster=new Set([...(before.persons||[]),...(after.persons||[])].filter(p=>!p.isDrinksOnly).map(p=>p.name));
+  const remaining=new Set();
+  function add(rows,sign){
+   for(const [id,stats,name] of rows){
+    if(!name||!roster.has(name)||excluded.has(id))continue;
+    const row=totals.get(name)||empty();
+    for(const k of keys)row[k]+=sign*stats[k];
+    totals.set(name,row);
+   }
+  }
+  for(const key of gameKeys){
+   const a=before[key+'State'],b=after[key+'State'],old=session(key,a),next=session(key,b),rows=entries(key,b);
+   for(const [id] of rows)remaining.add(id);
+   if(!b||old&&!next||!next&&!b.active&&!b.finished&&!b.closedRound&&!rows.length)continue;
+   if(old===next)add(entries(key,a),-1);
+   add(rows,1);
+  }
+  const m=manual(after);add(manual(before),-1);add(m,1);for(const [id] of m)remaining.add(id);
+  after.personalThrows={schema:1,partial:previous?.partial??true,rows:[...totals].filter(([,r])=>r.throws>0).map(([name,r])=>({name,...normalize(r)})),excluded:[...excluded].filter(id=>remaining.has(id))};
+ }
+ function personalArchive(value){return value?.schema===1?{schema:1,partial:!!value.partial,rows:value.rows||[]}:null;}
  function transition(before,after,gameKeys){
+  personalTransition(before,after,gameKeys);
   if(before.eveningResetOp!==after.eveningResetOp&&after.eveningResetOp){after.eveningCounterExcluded={};after.eveningMilestones={seen:[],events:[]};return empty();}
   const out=normalize(after.eveningCounters??before.eveningCounters);
   const excluded=after.eveningCounterExcluded??before.eveningCounterExcluded??(!before.eveningCounters?exclude(before,gameKeys):{}),skip=Object.fromEntries(keys.map(k=>[k,new Set(excluded[k]||[])])),remaining=new Set();
@@ -104,5 +133,5 @@
   after.eveningCounterExcluded=Object.fromEntries(keys.filter(k=>skip[k].size).map(k=>[k,[...skip[k]].filter(id=>remaining.has(id))]).filter(([,ids])=>ids.length));
   const result=normalize(out);milestones(before,after,gameKeys,result.pins);return result;
  }
- window.KCEveningCounters=Object.freeze({keys,labels,empty,normalize,roll,throws,exclude,transition,milestoneSettings,needsThrower});
+ window.KCEveningCounters=Object.freeze({keys,labels,empty,normalize,roll,throws,exclude,transition,milestoneSettings,needsThrower,personalArchive});
 })();

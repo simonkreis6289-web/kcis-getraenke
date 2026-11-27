@@ -114,8 +114,10 @@ function renderPenaltyStats(){
   const dataStatus=document.getElementById('penalty-stats-data-status');if(dataStatus)dataStatus.textContent=typeof cashHistoryClub==='undefined'||cashHistoryClub!==getClubFirestoreId(ACTIVE_CLUB)?(document.getElementById('cash-history-status')?.textContent||'Archiv wird beim Öffnen geladen; bisher fehlen die bestätigten Abrechnungen.'):'';
   if(label)label.textContent=penaltyStatsCustom?'Freier Zeitraum: '+(from||'Anfang')+' bis '+(to||'heute'):'Anzeige seit Zählbeginn';
   try{
+    window.KCPersonalThrowsView?.live(typeof personalThrows==='undefined'?null:personalThrows,persons);
+    window.KCPersonalThrowsView?.year(typeof cashHistoryClub!=='undefined'&&cashHistoryClub===getClubFirestoreId(ACTIVE_CLUB)?cashHistoryEntries:[],settings,penaltyStatsCustom,from,to,persons);
     const rows=KCPenaltyStats.summary(penaltyStatsSource(),{settings,custom:penaltyStatsCustom,from:penaltyStatsCustom?from:'',to:penaltyStatsCustom?to:'',people:persons});
-    if(window.KCActivityReports){const table=body.closest('table');if(table){const holder=table.parentElement;holder.innerHTML=KCActivityReports.table(rows,KCActivityReports.penaltyColumns,'Strafen- und Wurfstatistik');holder.querySelector('tbody').id='penalty-stats-body';}window.KCReportApp?.renderGames();return;}
+    if(window.KCActivityReports){const table=body.closest('table');if(table){const holder=table.parentElement;holder.innerHTML=KCActivityReports.table(rows,KCActivityReports.penaltyColumns.filter(c=>!['gosse','nine','kranz'].includes(c.key)),'Anwesenheit und Verliererwertungen');holder.querySelector('tbody').id='penalty-stats-body';}window.KCReportApp?.renderGames();return;}
     body.innerHTML=rows.map(p=>'<tr><th scope="row" class="sticky-col">'+statsEscape(p.name)+'</th><td>'+p.present+'</td><td>'+p.gosse+'</td><td>'+p.nine+'</td><td>'+p.kranz+'</td></tr>').join('')||'<tr><td colspan="5">Keine Statistikdaten vorhanden.</td></tr>';
   }catch(error){body.innerHTML='<tr><td colspan="5">'+statsEscape(error.message)+'</td></tr>';}
 }

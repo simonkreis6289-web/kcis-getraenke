@@ -54,8 +54,8 @@ test('manual special throws are distinct from penalty recipients and reset on ne
  assert.deepEqual(b.eveningCounters,{gutters:0,nines:0,wreaths:1,throws:1,pins:8});
  assert.deepEqual(update(b,{...b,eveningResetOp:'new',currentEveningStartedAt:'2'}),empty());
 });
-test('all 1024 assignments of five tables preserve their individually selected positions',()=>{
- for(let assignment=0;assignment<1024;assignment++){
+test('all 4096 assignments of six tables preserve their individually selected positions',()=>{
+ for(let assignment=0;assignment<4096;assignment++){
   const settings=L.defaults();
   for(const [i,key] of L.keys.entries()){settings.panels[key].enabled=true;settings.panels[key].position=L.slots[(assignment>>(2*i))&3];settings.panels[key].seconds=i+1;}
   settings.rotationPair=['drinks','seating']; // ignored legacy V324 setting
@@ -80,13 +80,13 @@ test('direct link forwards all counters and Firebase wins over stale direct data
  assert.deepEqual(plain(direct.reconcile(firebase,frame).eveningCounters),next.eveningCounters);
  assert.deepEqual(plain(direct.reconcile({...firebase,tabletSequence:4},frame).eveningCounters),empty());
 });
-test('changing one table position never moves any other table when all five are enabled',()=>{
+test('changing one table position never moves any other table when all six are enabled',()=>{
  const s=L.defaults();for(const key of L.keys)s.panels[key].enabled=true;
  let target=s;
  for(const key of L.keys){const before=target;target=L.move(target,key,'left-top');for(const other of L.keys.filter(k=>k!==key))assert.equal(target.panels[other].position,before.panels[other].position);}
- assert.equal(L.resolve(target).groups['left-top'].length,5);
+ assert.equal(L.resolve(target).groups['left-top'].length,6);
  target=L.move(target,'seating','left-bottom');
- assert.equal(L.resolve(target).groups['left-top'].length,4);
+ assert.equal(L.resolve(target).groups['left-top'].length,5);
  assert.deepEqual(plain(L.resolve(target).groups['left-bottom']),['seating']);
 });
 test('individual resets exclude old throws from subsequent correction and undo, not new rolls',()=>{
@@ -108,16 +108,19 @@ test('actual tablet UI books, corrects, resets and uploads counters to Firebase 
  const {database,initial,fullApp}=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath',factory+';return {database,initial,fullApp};')(read,copy,assert,vm,parseHTML,require,evening,rootPath,personPath);
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();
  const counts=()=>plain(a.run('eveningCounters'));
+ const personal=()=>plain(a.run('personalThrows'));
  await a.c.indStart('bergundtal');
  await a.c.indAction('bergundtal','throw',{kind:'pins',pins:9});
  assert.deepEqual(counts(),{gutters:0,nines:1,wreaths:0,throws:1,pins:9});
+ assert.equal(personal().rows.reduce((n,p)=>n+p.nines,0),1);
  await a.c.indAction('bergundtal','undo');
- assert.deepEqual(counts(),empty());
+ assert.deepEqual(counts(),empty());assert.equal(personal().rows.length,0);
  await a.c.indAction('bergundtal','throw',{kind:'pins',pins:3});
  await a.c.startHausGame('hoch');await a.c.hausThrow('hoch',0,true,0);
  assert.deepEqual(counts(),{gutters:1,nines:0,wreaths:0,throws:2,pins:3});
  assert.equal(a.document.querySelector('.kc-counter-app [data-evening-counter=pins]').textContent,'3');
- await a.c.KCSharedSync.waitForUpload();assert.deepEqual(db.root().eveningCounters,counts());
+ await a.c.KCSharedSync.waitForUpload();assert.deepEqual(db.root().eveningCounters,counts());assert.deepEqual(db.root().personalThrows,personal());
+ assert.deepEqual(plain(a.c.getStrafenSnapshot().personalThrows.rows),personal().rows);
  a.c.KCEveningCounterView.edit();
  assert.equal(a.document.querySelectorAll('#evening-counter-editor .kc-counter-edit-icon svg').length,5);assert.equal(a.document.querySelectorAll('#evening-counter-editor button.kc-counter-edit-reset').length,5);
  const input=a.document.querySelector('#evening-counter-editor input[name=pins]');input.value='42';input.oninput();
@@ -127,8 +130,8 @@ test('actual tablet UI books, corrects, resets and uploads counters to Firebase 
  await a.c.undoHausThrow('hoch');assert.equal(counts().throws,1);assert.equal(counts().gutters,0);assert.equal(counts().pins,42);
  a.c.openPenaltyQuick('gosse');a.run("quickPenaltySelectedPersons.add('A')");await a.c.confirmQuickPenalty();assert.equal(counts().gutters,1);assert.equal(counts().throws,2);assert.equal(counts().pins,42);
  a.c.KCEveningCounterView.edit();a.document.querySelector('[data-counter-reset]').onclick();await a.document.querySelector('[data-counter-save]').onclick();assert.deepEqual(counts(),empty());
- const settings=a.document.getElementById('dashboard-show-counters');settings.checked=true;settings.onchange();assert.equal(a.document.getElementById('dashboard-rotation-pair-0'),null);for(const key of a.c.KCDashboardLayout.keys){const select=a.document.getElementById('dashboard-position-'+key);for(const option of select.querySelectorAll('option')){if(option.value==='left-top')option.setAttribute('selected','');else option.removeAttribute('selected');}select.onchange();}assert(await a.c.KCDashboardSettingsApp.save());assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().dashboardSettings.panels.counters.enabled,true);assert(Object.values(db.root().dashboardSettings.panels).every(p=>p.position==='left-top'));
- assert(await a.c.startNewKegelabend());assert.deepEqual(counts(),empty());
+ const settings=a.document.getElementById('dashboard-show-counters');settings.checked=true;settings.onchange();assert.equal(a.document.getElementById('dashboard-rotation-pair-0'),null);const personalToggle=a.document.getElementById('dashboard-show-personal');personalToggle.checked=true;personalToggle.onchange();for(const key of a.c.KCDashboardLayout.keys){const select=a.document.getElementById('dashboard-position-'+key);for(const option of select.querySelectorAll('option')){if(option.value==='left-top')option.setAttribute('selected','');else option.removeAttribute('selected');}select.onchange();}assert(await a.c.KCDashboardSettingsApp.save());assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().dashboardSettings.panels.counters.enabled,true);assert(Object.values(db.root().dashboardSettings.panels).every(p=>p.position==='left-top'));
+ assert(await a.c.startNewKegelabend());assert.deepEqual(counts(),empty());assert.deepEqual(personal().rows,[]);assert.equal(personal().partial,false);
  assert(await a.c.KCSharedSync.waitForUpload());assert.deepEqual(db.root().eveningCounters,empty());assert.equal(db.root().dashboardSettings.panels.counters.enabled,true);
 });
 test('TV paints five individual SVG pictograms and animates only increasing values',()=>{

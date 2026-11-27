@@ -8,7 +8,7 @@
   const area=document.getElementById('game-stats-table');if(!area||!ACTIVE_CLUB)return;
   const ready=typeof cashHistoryClub!=='undefined'&&cashHistoryClub===getClubFirestoreId(ACTIVE_CLUB);
   if(!ready){area.innerHTML='<p>Archiv wird geladen …</p>';return;}
-  try{const q=getPenaltyStatsRange();area.innerHTML=R.table(R.games(state(),cashHistoryEntries,{custom:penaltyStatsCustom,...q}),[{key:'played',label:'Spiele'},{key:'won',label:'Siege'},...R.penaltyColumns],'Spielstatistik · abgerechnete Abende');}catch(e){area.textContent=e.message;}
+  try{const q=getPenaltyStatsRange();area.innerHTML=R.table(R.games(state(),cashHistoryEntries,{custom:penaltyStatsCustom,...q}),[{key:'played',label:'Spiele'},{key:'won',label:'Siege'},...R.penaltyColumns.filter(c=>!['gosse','nine','kranz'].includes(c.key))],'Spielstatistik · abgerechnete Abende');}catch(e){area.textContent=e.message;}
  }
  function render(){
   if(!ACTIVE_CLUB)return;if(club!==ACTIVE_CLUB){club=ACTIVE_CLUB;custom=false;for(const id of ['drink-stats-from','drink-stats-to'])if(document.getElementById(id))document.getElementById(id).value='';}

@@ -52,3 +52,72 @@
  }
  window.KCEveningCounterView=Object.freeze({paint,edit});
 })();
+
+/* A separate physical-statistics view: no financial penalty values are reused. */
+(()=>{
+ const M=window.KCEveningCounters;
+ const hint='Es werden ausschließlich Würfe mit eindeutiger Spielerzuordnung berücksichtigt. Teamwürfe ohne festen Werfer sind nicht enthalten.';
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const sort=(rows,key)=>rows.slice().sort((a,b)=>(key==='name'?0:(b[key]??-1)-(a[key]??-1))||a.name.localeCompare(b.name,'de'));
+ let liveSort='pins',yearSort='pins';
+ const fields=M.keys.map(key=>[key,M.labels[key]]);
+ function table(rows,columns,key,total=false){
+  return '<table class="kc-personal-table"><thead><tr><th>Spieler</th>'+columns.map(([,label])=>'<th>'+esc(label)+'</th>').join('')+'</tr></thead><tbody>'+sort(rows,key).map(r=>'<tr data-personal-name="'+esc(r.name)+'"><th scope="row">'+esc(r.name)+'</th>'+columns.map(([k])=>'<td>'+esc(r[k]==null?'Nicht erfasst':typeof r[k]==='number'?r[k].toLocaleString('de-DE',{maximumFractionDigits:2}):r[k])+'</td>').join('')+'</tr>').join('')+'</tbody>'+(total?'<tfoot><tr><th>Gesamt</th>'+columns.map(([k])=>'<td>'+rows.reduce((n,r)=>n+(r[k]||0),0).toLocaleString('de-DE')+'</td>').join('')+'</tr></tfoot>':'')+'</table>';
+ }
+ function tv(value,people,avatar){
+  const host=document.getElementById('dashboard-personal-throws');if(!host)return;
+  const rows=liveRows(value,people),stamp=JSON.stringify([value?.partial,rows,people.map(p=>[p.name,p.playerColor,p.avatarData,p.avatar])]);
+  if(host.dataset.stamp===stamp)return;host.dataset.stamp=stamp;
+  const origins=new Map([...host.querySelectorAll('[data-personal-name]')].map(el=>[el.dataset.personalName,(el.getBoundingClientRect?.().top||0)]));
+  host.innerHTML=table(rows,[['nines','9er'],['wreaths','Kränze'],['pins','Pins']],'pins',true)+(value?.partial||!value?'<p class="kc-personal-hint">Erfassung erst ab V328.</p>':'');
+  for(const el of host.querySelectorAll('[data-personal-name]')){
+   const name=el.dataset.personalName,p=people.find(x=>x.name===name)||{name},th=el.querySelector('th'),color=window.KCPlayerColors?.forPerson(p)||'#8094ad';
+   th.style.borderLeft='3px solid '+color;if(avatar)th.prepend(avatar(p,name));
+   const y=origins.get(name),delta=y==null?0:y-(el.getBoundingClientRect?.().top||0);
+   if(delta&&el.animate&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)el.animate([{transform:'translateY('+delta+'px)'},{transform:'translateY(0)'}],{duration:650,easing:'ease-in-out'});
+  }
+ }
+ function liveRows(value,people=[]){
+  const rows=(value?.rows||[]).slice();
+  if(value?.schema===1&&!value.partial)for(const p of people)if(!p.isDrinksOnly&&(p.present||p.left)&&!rows.some(r=>r.name===p.name))rows.push({name:p.name,...M.empty()});
+  return rows;
+ }
+ function live(value,people=[]){
+  const host=document.getElementById('personal-throws-live');if(!host)return;
+  const rows=liveRows(value,people),stamp=JSON.stringify([rows,liveSort,value?.partial]);if(host.dataset.stamp===stamp)return;host.dataset.stamp=stamp;
+  host.innerHTML=table(rows,fields,liveSort,true)+(value?.partial||!value?'<p>Erfassung erst ab V328; frühere Würfe nicht erfasst.</p>':'');
+ }
+ function annual(archives,settings,custom,from,to,people){
+  if(custom&&(from&&!KCBirthdays.parse(from)||to&&!KCBirthdays.parse(to)||from&&to&&from>to))throw Error('Bitte einen gültigen Zeitraum wählen.');
+  const rows=new Map(),seen=new Set(),unknown=new Set();
+  for(const e of archives.slice().sort((a,b)=>String(b.closedAt||b.date).localeCompare(String(a.closedAt||a.date)))){
+   if(e.category&&e.category!=='strafen'||e.kind==='cancelled'||e.status==='deleted')continue;
+   const day=KCPenaltyStats.date(e.eveningStartedAt)||KCPenaltyStats.date(e.date);if(!day)continue;
+   const id=KCPenaltyStats.key(e.eveningStartedAt,day);if(seen.has(id))continue;seen.add(id);
+   const partial=!custom&&settings?.mode==='now'&&id===settings.baseline?.sessionKey;
+   if(custom?(from&&day<from||to&&day>to):settings?.mode==='date'&&settings.startDate&&day<settings.startDate||settings?.mode==='now'&&!partial&&!(KCPenaltyStats.stamp(e.eveningStartedAt)>=Date.parse(settings.startAt)))continue;
+   const stats=e.personalThrows, values=stats?.schema===1?stats.rows||[]:null;
+   const names=new Set([...(e.members||[]),...(e.guests||[]),...(e.statsPeople||[])].filter(p=>p.status==='present'||p.present||p.left).map(p=>p.name));for(const r of values||[])names.add(r.name);
+   if(!values||stats.partial)unknown.add(id);
+   for(const name of names){
+    const r=rows.get(name)||{name,recorded:0,missing:0};rows.set(name,r);
+    const v=values?.find(x=>x.name===name);
+    if(!values||stats.partial&&!v){r.missing++;continue;}
+    const base=partial?settings.baseline?.personalThrows?.rows?.find(x=>x.name===name):null;
+    // A reset during a legacy evening without a baseline cannot reconstruct earlier throws.
+    if(partial&&!settings.baseline?.personalThrows){r.missing++;continue;}
+    r.recorded++;if(stats.partial)r.missing++;
+    const delta=Object.fromEntries(M.keys.map(k=>[k,Math.max(0,(v?.[k]||0)-(base?.[k]||0))]));
+    for(const k of M.keys)r[k]=(r[k]||0)+delta[k];if(r.best==null||delta.pins>r.best){r.best=delta.pins;r.bestDate=day.split('-').reverse().join('.');}
+   }
+  }
+  for(const r of rows.values()){r.perThrow=r.throws?r.pins/r.throws:null;r.perEvening=r.recorded?r.pins/r.recorded:null;r.coverage=r.recorded?(r.missing?r.recorded+' erfasst / '+r.missing+' unvollständig':'Erfasst'):'Nicht erfasst';}
+  return {rows:[...rows.values()],unknown:unknown.size};
+ }
+ function yearMarkup(archives,settings,custom,from,to,people){
+  const data=annual(archives,settings,custom,from,to,people);
+  return table(data.rows,[...fields,['perThrow','Ø Pins/Wurf'],['perEvening','Ø Pins/Abend'],['best','Bester Abend (Pins)'],['bestDate','Datum'],['coverage','Erfassung']],yearSort)+'<p>'+data.unknown+' Abende ohne vollständige persönliche Erfassung. Durchschnittswerte beziehen sich nur auf erfasste Werte.</p>';
+ }
+ function year(...args){const host=document.getElementById('personal-throws-year');if(host)try{host.innerHTML=yearMarkup(...args);}catch(e){host.textContent=e.message;}}
+ window.KCPersonalThrowsView=Object.freeze({tv,live,year,yearMarkup,annual,liveMarkup:(value,people)=>table(liveRows(value,people),fields,'pins',true),sortLive:key=>{liveSort=key;live(personalThrows,persons);},sortYear:key=>{yearSort=key;renderPenaltyStats();},hint});
+})();

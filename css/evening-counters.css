@@ -79,3 +79,17 @@
 .kc-counter-app .kc-counter strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.88rem}
 .kc-counter-app .kc-counter span{white-space:nowrap}
 @media(max-width:620px){.kc-counter-app [data-evening-counters]{grid-template-columns:repeat(5,minmax(0,65px))}.kc-counter-app .kc-counter{padding:3px;gap:2px}}
+
+/* Personal physical throw leaderboard */
+.kc-personal-table{border-collapse:separate;border-spacing:0 3px;width:100%;font-variant-numeric:tabular-nums;text-align:right}
+.kc-personal-table th,.kc-personal-table td{padding:.35em .4em;white-space:nowrap}
+.kc-personal-table th:first-child{text-align:left}
+.kc-personal-table tbody tr{background:rgba(127,145,170,.12)}
+.kc-personal-table tbody th{font-weight:650}
+.kc-personal-table tfoot{font-weight:800;border-top:2px solid #f4c66a}
+#dashboard-panel-personal .kc-personal-table{font-size:clamp(10px,.95vw,17px);color:#e8f0ff}
+#dashboard-panel-personal .kc-personal-table td:last-child{color:#f4c66a;font-weight:850}
+#dashboard-panel-personal .kc-personal-table th:first-child{white-space:normal;overflow-wrap:anywhere}
+#dashboard-panel-personal .seat-avatar{display:inline-grid;vertical-align:middle;margin-right:.3em}
+#dashboard-panel-personal .kc-personal-table thead{color:#a8b9d2}
+.kc-personal-hint{font-size:clamp(9px,.64vw,12px);line-height:1.25;color:#adbed6;margin:.3em .5em .6em;flex-shrink:0}
