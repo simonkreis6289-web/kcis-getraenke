@@ -90,7 +90,8 @@ test('Dashboard settings, club documents and general settings have separate navi
  assert(d.getElementById('tab-info').classList.contains('hidden'));
  assert(d.getElementById('tab-dashboard').contains(d.getElementById('kc-dashboard-link')));
  const sections=[...d.querySelectorAll('#dashboard-layout-settings [data-dashboard-section]')];
- assert.deepEqual(sections.map(x=>x.dataset.dashboardSection),['layout','player-rows','ticker','notifications','football','connection']);
+ assert.deepEqual(sections.map(x=>x.dataset.dashboardSection),['layout','player-rows','ticker','notifications','milestones','football','connection']);
+ assert.equal(sections.find(x=>x.dataset.dashboardSection==='milestones').querySelector('summary').textContent,'Meilenstein-Toasts');
  a.c.showSideTab('verwaltung','info');
  assert(d.getElementById('tab-dashboard').classList.contains('hidden'));
  a.c.KCClubContentApp.infoTab('penalties');
