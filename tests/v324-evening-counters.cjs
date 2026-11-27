@@ -54,16 +54,20 @@ test('manual special throws are distinct from penalty recipients and reset on ne
  assert.deepEqual(b.eveningCounters,{gutters:0,nines:0,wreaths:1,throws:1,pins:8});
  assert.deepEqual(update(b,{...b,eveningResetOp:'new',currentEveningStartedAt:'2'}),empty());
 });
-test('five active panels occupy four slots with exactly one configurable pair',()=>{
- for(const a of L.keys)for(const b of L.keys){
-  if(a===b)continue;
-  const settings=L.defaults();for(const key of L.keys)settings.panels[key].enabled=true;
-  settings.rotationPair=[a,b];settings.panels[a].seconds=3;settings.panels[b].seconds=8;
-  const resolved=L.resolve(settings),groups=Object.values(resolved.groups);
-  assert.deepEqual(groups.map(x=>x.length).sort(),[1,1,1,2]);
-  const pair=groups.find(x=>x.length===2);
-  assert.deepEqual([...pair].sort(),[a,b].sort());
-  assert.notEqual(L.cycle(pair,resolved.settings,0).key,L.cycle(pair,resolved.settings,resolved.settings.panels[pair[0]].seconds*1000).key);
+test('all 1024 assignments of five tables preserve their individually selected positions',()=>{
+ for(let assignment=0;assignment<1024;assignment++){
+  const settings=L.defaults();
+  for(const [i,key] of L.keys.entries()){settings.panels[key].enabled=true;settings.panels[key].position=L.slots[(assignment>>(2*i))&3];settings.panels[key].seconds=i+1;}
+  settings.rotationPair=['drinks','seating']; // ignored legacy V324 setting
+  const resolved=L.resolve(settings);
+  for(const slot of L.slots){
+   const expected=L.keys.filter(key=>settings.panels[key].position===slot);
+   assert.deepEqual(plain(resolved.groups[slot]),plain(expected));
+   let elapsed=0;
+   for(const key of expected){assert.equal(L.cycle(resolved.groups[slot],resolved.settings,elapsed).key,key);elapsed+=settings.panels[key].seconds*1000;}
+   if(expected.length)assert.equal(L.cycle(resolved.groups[slot],resolved.settings,elapsed).key,expected[0]);
+  }
+  assert(!Object.hasOwn(resolved.settings,'rotationPair'));
  }
  assert.equal(L.resolve(null).count,4);
 });
@@ -76,13 +80,14 @@ test('direct link forwards all counters and Firebase wins over stale direct data
  assert.deepEqual(plain(direct.reconcile(firebase,frame).eveningCounters),next.eveningCounters);
  assert.deepEqual(plain(direct.reconcile({...firebase,tabletSequence:4},frame).eveningCounters),empty());
 });
-test('dashboard panel moves swap groups with five enabled',()=>{
- const s=L.defaults();for(const k of L.keys)s.panels[k].enabled=true;
- s.rotationPair=['counters','gutters'];
- const target=L.move(s,'seating','right-top');
- assert.equal(target.panels.seating.position,'right-top');
- assert.equal(target.panels.counters.position,target.panels.gutters.position);
- assert.deepEqual(Object.values(L.resolve(target).groups).map(x=>x.length).sort(),[1,1,1,2]);
+test('changing one table position never moves any other table when all five are enabled',()=>{
+ const s=L.defaults();for(const key of L.keys)s.panels[key].enabled=true;
+ let target=s;
+ for(const key of L.keys){const before=target;target=L.move(target,key,'left-top');for(const other of L.keys.filter(k=>k!==key))assert.equal(target.panels[other].position,before.panels[other].position);}
+ assert.equal(L.resolve(target).groups['left-top'].length,5);
+ target=L.move(target,'seating','left-bottom');
+ assert.equal(L.resolve(target).groups['left-top'].length,4);
+ assert.deepEqual(plain(L.resolve(target).groups['left-bottom']),['seating']);
 });
 test('individual resets exclude old throws from subsequent correction and undo, not new rolls',()=>{
  const a=root('lotterie',{id:'g',throws:{A:[9]}},{gutters:0,nines:1,wreaths:0,throws:1,pins:9});
@@ -114,6 +119,7 @@ test('actual tablet UI books, corrects, resets and uploads counters to Firebase 
  assert.equal(a.document.querySelector('.kc-counter-app [data-evening-counter=pins]').textContent,'3');
  await a.c.KCSharedSync.waitForUpload();assert.deepEqual(db.root().eveningCounters,counts());
  a.c.KCEveningCounterView.edit();
+ assert.equal(a.document.querySelectorAll('#evening-counter-editor .kc-counter-edit-icon svg').length,5);assert.equal(a.document.querySelectorAll('#evening-counter-editor button.kc-counter-edit-reset').length,5);
  const input=a.document.querySelector('#evening-counter-editor input[name=pins]');input.value='42';input.oninput();
  await a.document.querySelector('[data-counter-save]').onclick();
  assert.equal(counts().pins,42);
@@ -121,7 +127,7 @@ test('actual tablet UI books, corrects, resets and uploads counters to Firebase 
  await a.c.undoHausThrow('hoch');assert.equal(counts().throws,1);assert.equal(counts().gutters,0);assert.equal(counts().pins,42);
  a.c.openPenaltyQuick('gosse');a.run("quickPenaltySelectedPersons.add('A')");await a.c.confirmQuickPenalty();assert.equal(counts().gutters,1);assert.equal(counts().throws,2);assert.equal(counts().pins,42);
  a.c.KCEveningCounterView.edit();a.document.querySelector('[data-counter-reset]').onclick();await a.document.querySelector('[data-counter-save]').onclick();assert.deepEqual(counts(),empty());
- const settings=a.document.getElementById('dashboard-show-counters');settings.checked=true;settings.onchange();assert(a.document.getElementById('dashboard-rotation-pair-0'));assert(await a.c.KCDashboardSettingsApp.save());assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().dashboardSettings.panels.counters.enabled,true);
+ const settings=a.document.getElementById('dashboard-show-counters');settings.checked=true;settings.onchange();assert.equal(a.document.getElementById('dashboard-rotation-pair-0'),null);for(const key of a.c.KCDashboardLayout.keys){const select=a.document.getElementById('dashboard-position-'+key);for(const option of select.querySelectorAll('option')){if(option.value==='left-top')option.setAttribute('selected','');else option.removeAttribute('selected');}select.onchange();}assert(await a.c.KCDashboardSettingsApp.save());assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().dashboardSettings.panels.counters.enabled,true);assert(Object.values(db.root().dashboardSettings.panels).every(p=>p.position==='left-top'));
  assert(await a.c.startNewKegelabend());assert.deepEqual(counts(),empty());
  assert(await a.c.KCSharedSync.waitForUpload());assert.deepEqual(db.root().eveningCounters,empty());assert.equal(db.root().dashboardSettings.panels.counters.enabled,true);
 });

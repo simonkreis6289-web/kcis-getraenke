@@ -33,9 +33,9 @@
   const values=M.normalize(eveningCounters),dirty=new Set(),club=ACTIVE_CLUB,evening=currentEveningStartedAt;
   const form=dialog.querySelector('form');form.replaceChildren();
   for(const k of M.keys){
-   const row=document.createElement('label');row.className='kc-counter-edit-row';
-   const title=document.createElement('span');title.textContent=M.labels[k];const input=document.createElement('input');input.type='number';input.min='0';input.max=String(Number.MAX_SAFE_INTEGER);input.step='1';input.required=true;input.name=k;input.value=String(values[k]);
-   const reset=document.createElement('button');reset.type='button';reset.textContent='0';reset.setAttribute('aria-label',M.labels[k]+' zurücksetzen');input.oninput=()=>dirty.add(k);reset.onclick=()=>{input.value='0';dirty.add(k);};row.append(title,input,reset);form.append(row);
+   const row=document.createElement('div');row.className='kc-counter-edit-row kc-counter-edit-'+k;
+   const title=document.createElement('label');title.className='kc-counter-edit-label';title.htmlFor='evening-counter-input-'+k;title.innerHTML='<span class="kc-counter-edit-icon">'+svg(k)+'</span><span>'+M.labels[k]+'</span>';const input=document.createElement('input');input.type='number';input.id='evening-counter-input-'+k;input.inputMode='numeric';input.min='0';input.max=String(Number.MAX_SAFE_INTEGER);input.step='1';input.required=true;input.name=k;input.value=String(values[k]);
+   const reset=document.createElement('button');reset.type='button';reset.className='kc-counter-edit-reset';reset.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2 6M4 4v7h7"/></svg><span>0</span>';reset.title=M.labels[k]+' zurücksetzen';reset.setAttribute('aria-label',M.labels[k]+' zurücksetzen');input.oninput=()=>dirty.add(k);reset.onclick=()=>{input.value='0';dirty.add(k);};row.append(title,input,reset);form.append(row);
   }
   const status=dialog.querySelector('[role=status]');status.textContent='';
   dialog.querySelector('[data-counter-reset]').onclick=()=>{for(const k of M.keys){form.querySelector('input[name="'+k+'"]').value='0';dirty.add(k);}};

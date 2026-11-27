@@ -207,3 +207,34 @@ test('ticker stream settings migrate old ticker enabled state and bound invalid 
  assert.equal(settings.tickerStreams.football.enabled,false);
  assert.equal(settings.tickerStreams.leftPercent,75);
 });
+
+test('all five tables freely share a slot, or four rotate while one remains fixed',()=>{
+ const f=setup(),s=f.model.defaults();
+ s.transitionSeconds=0;
+ for(const [i,key] of f.model.keys.entries())Object.assign(s.panels[key],{enabled:true,position:'left-top',seconds:i+1});
+ const active=slot=>f.document.querySelector('#dashboard-slot-'+slot)?.dataset.activePanel;
+ const visible=()=>[...f.document.querySelectorAll('.side .panel:not([hidden])')].map(p=>p.id);
+ const checkCycle=keys=>{
+  for(const key of keys){
+   assert.equal(active('left-top'),key);
+   assert(visible().includes('dashboard-panel-'+key));
+   f.advance(s.panels[key].seconds*1000-1);
+   assert.equal(active('left-top'),key);
+   if(s.panels.seating.position==='left-bottom')assert.equal(active('left-bottom'),'seating');
+   f.advance(1);
+  }
+  assert.equal(active('left-top'),keys[0]);
+ };
+ f.tv.apply(s);
+ assert(f.document.querySelector('.side.left').classList.contains('dashboard-side-full'));
+ assert(f.document.querySelector('.side.right').hidden);
+ assert.equal(f.document.querySelectorAll('#dashboard-slot-left-top .dashboard-rotation-dots span').length,5);
+ assert.equal(visible().length,1);
+ checkCycle(f.model.keys);
+ s.panels.seating.position='left-bottom';f.tv.apply(s);
+ assert(!f.document.querySelector('.side.left').classList.contains('dashboard-side-full'));
+ assert.equal(f.document.querySelectorAll('#dashboard-slot-left-top .dashboard-rotation-dots span').length,4);
+ assert.equal(visible().length,2);
+ checkCycle(f.model.keys.filter(key=>key!=='seating'));
+ assert.equal(active('left-bottom'),'seating');
+});

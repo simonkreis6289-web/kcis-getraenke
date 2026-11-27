@@ -34,12 +34,11 @@
  function menschPopup(value){
   return {seconds:seconds(value?.seconds,2,0,30),color:tickerColor(value?.color,'#ffd36a')};
  }
- const defaults=()=>({playerRows:playerRows(),abschreibungPause:abschreibungPause(),lottoAnimations:lottoAnimations(),menschPopup:menschPopup(),playerRowTint:{fines:false,drinks:false},tableWidth:{left:17,right:17},tableHeight:{left:50,right:50},rotationPair:['gutters','counters'],panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:key!=='counters',position:slots[i]||'right-top',seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,stationSeconds:4,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false}}});
+ const defaults=()=>({playerRows:playerRows(),abschreibungPause:abschreibungPause(),lottoAnimations:lottoAnimations(),menschPopup:menschPopup(),playerRowTint:{fines:false,drinks:false},tableWidth:{left:17,right:17},tableHeight:{left:50,right:50},panels:Object.fromEntries(keys.map((key,i)=>[key,{enabled:key!=='counters',position:slots[i]||'right-top',seconds:5}])),tickerMessages:[],tickerColors:tickerDefaults(),tickerEnabled:true,tickerFontSize:18,tickerStreams:{club:{enabled:true,position:'left',seconds:8},football:{enabled:true,position:'right',seconds:8},leftPercent:50},popupSeconds:3,eventToasts:{arrival:true,departure:true,round:true,loser:true,teamLoss:true,station:true,stationSeconds:4,seconds:4,colors:eventToastColors()},transitionSeconds:0.6,football:{bl1:false,bl2:false,goalToastSeconds:5,events:{goal:true,kickoff:true,halftime:true,fulltime:true,red:false,secondYellow:false}}});
  function normalize(value){
   const out=defaults();
   for(const key of ['fines','drinks'])out.playerRowTint[key]=value?.playerRowTint?.[key]===true;
   out.playerRows=playerRows(value?.playerRows);out.abschreibungPause=abschreibungPause(value?.abschreibungPause);out.lottoAnimations=lottoAnimations(value?.lottoAnimations);out.menschPopup=menschPopup(value?.menschPopup);for(const key of keys){const p=value?.panels?.[key];if(typeof p?.enabled==='boolean')out.panels[key].enabled=p.enabled;if(slots.includes(p?.position))out.panels[key].position=p.position;out.panels[key].seconds=seconds(p?.seconds,5,1,300);}
-  const pair=value?.rotationPair;if(Array.isArray(pair)&&pair.length===2&&pair[0]!==pair[1]&&pair.every(k=>keys.includes(k)))out.rotationPair=pair.slice();
   for(const side of ['left','right']){
    out.tableWidth[side]=seconds(value?.tableWidth?.[side],17,10,35);
    out.tableHeight[side]=seconds(value?.tableHeight?.[side],50,20,80);
@@ -66,11 +65,6 @@
  }
  function resolve(value){
   const settings=normalize(value),active=keys.filter(key=>settings.panels[key].enabled),left=[],right=[],groups=Object.fromEntries(slots.map(slot=>[slot,[]]));
-  if(active.length===5){
-   const [a,b]=settings.rotationPair,slot=settings.panels[a].position;settings.panels[b].position=slot;
-   const free=slots.filter(x=>x!==slot);
-   for(const key of active.filter(k=>k!==a&&k!==b)){const preferred=settings.panels[key].position,index=free.includes(preferred)?free.indexOf(preferred):0;settings.panels[key].position=free.splice(index,1)[0];}
-  }
   if(active.length===2)for(const key of active)settings.panels[key].position=settings.panels[key].position.replace(/^right-/,'left-');
   if(active.length===1)settings.panels[active[0]].position=settings.panels[active[0]].position.startsWith('right')?'right-top':'left-top';
   active.sort((a,b)=>slots.indexOf(settings.panels[a].position)-slots.indexOf(settings.panels[b].position));
@@ -78,16 +72,8 @@
   return {settings,left,right,groups,count:active.length};
  }
  function move(value,key,position){
-  const s=resolve(value).settings;
-  if(keys.includes(key)&&s.panels[key].enabled&&slots.includes(position)){
-   const old=s.panels[key].position;
-   if(keys.every(k=>s.panels[k].enabled)){
-    // Swap occupied groups so a requested position is always honoured.
-    const group=s.rotationPair.includes(key)?s.rotationPair:[key];
-    for(const other of keys)if(!group.includes(other)&&s.panels[other].position===position)s.panels[other].position=old;
-    for(const member of group)s.panels[member].position=position;
-   }else s.panels[key].position=position;
-  }
+  const s=normalize(value);
+  if(keys.includes(key)&&s.panels[key].enabled&&slots.includes(position))s.panels[key].position=position;
   return resolve(s).settings;
  }
  function cycle(items,settings,elapsed=0){
