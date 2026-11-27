@@ -139,7 +139,7 @@ function openDartsPenaltyPlayerModal(type, team, points) {
   const sub = document.getElementById('darts-penalty-player-sub');
   const select = document.getElementById('darts-penalty-player-select');
 
-  if (title) title.textContent = `${type} geworfen`;
+  if (title) title.textContent = type==='milestone'?'Pin-Meilenstein · Wer hat geworfen?':`${type} geworfen`;
   if (sub) sub.textContent = 'Wer hat geworfen?';
 
   if (select) {
@@ -187,6 +187,10 @@ async function confirmDartsPenaltyPlayer() {
     team,
     points:rawPoints
   } = pendingDartsPenalty;
+  if(type==='milestone'){
+    dartsThrowTeam=team;closeDartsPenaltyPlayerModal();
+    return handleDartsThrow(String(rawPoints),personName);
+  }
   const points=type==='kranz'&&window.KCKranzUI?await KCKranzUI.select('darts'):rawPoints;if(points===null)return;
 
   const key = getPenaltyKeyByType(type);
@@ -277,12 +281,14 @@ async function confirmDartsPenaltyPlayer() {
   }finally{dartsPenaltyBusy=false;}
 }
 
-async function handleDartsThrow(hitKey) {
+async function handleDartsThrow(hitKey,personName='') {
   ensureDartsState();
 
   const team = dartsThrowTeam;
 
   if (!['T1','T2'].includes(team)||!dartsState.active||dartsState.winner) return;
+
+  if(!personName&&window.KCEveningCounters?.needsThrower?.(window.KCSharedSync?.server||getFirestoreState(),Number(hitKey)))return openDartsPenaltyPlayerModal('milestone',team,Number(hitKey));
 
   const rawValue = parseInt(
     dartsState.valueMap[hitKey] ??
@@ -295,6 +301,7 @@ async function handleDartsThrow(hitKey) {
   dartsState.roundThrows[team].push({
     order:(Number(dartsLatestThrow(dartsState)?.entry.order)||0)+1,
     hit: hitKey,
+    ...(personName?{thrower:personName}:{}),
     value,
     createdAt: new Date().toISOString()
   });

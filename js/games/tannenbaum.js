@@ -149,7 +149,7 @@ function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
   if (sub) {
     sub.textContent = type === 'gosse'
       ? 'Wer bekommt die Gosse-Strafe?'
-      : 'Wer hat geworfen und bleibt straffrei?';
+      : type==='milestone'?'Wer hat den Pin-Meilenstein geworfen?':'Wer hat geworfen und bleibt straffrei?';
   }
 
   if (select) {
@@ -273,6 +273,10 @@ async function confirmTannenbaumPenaltyPlayer() {
     .getElementById('tannenbaum-penalty-player-modal')
     ?.classList.add('hidden');
 
+  if(type==='milestone'){
+    pendingTannenbaumPenaltyThrow=null;tannenbaumThrowTeam=team;
+    return handleTannenbaumThrow(number,personName);
+  }
   if (type === 'kranz') {
     pendingTannenbaumKranzChoice = {
       type,
@@ -298,7 +302,7 @@ const booking = await bookTannenbaumPenalty(
 
   if (type === '9er' && number === 9) {
     tannenbaumThrowTeam = team;
-    handleTannenbaumThrow(9);
+    handleTannenbaumThrow(9,personName,'9er');
 
       const latestEntry = tannenbaumState.history?.[0];
 
@@ -664,7 +668,7 @@ const booking = await bookTannenbaumPenalty(
 
   tannenbaumThrowTeam = team;
 
-  handleTannenbaumThrow(number);
+  handleTannenbaumThrow(number,thrower,'kranz');
 
   const latestEntry = tannenbaumState.history?.[0];
 
@@ -860,7 +864,7 @@ function resetTannenbaumGame() {
 }
 
 
-function handleTannenbaumThrow(number) {
+function handleTannenbaumThrow(number,personName='',specialType='') {
   dashboardActiveGame = "tannenbaum";
   ensureTannenbaumState();
   if(typeof gameSetupTeamMap==='function'&&!tannenbaumState.participantTeams)tannenbaumState.participantTeams=gameSetupTeamMap('tannenbaum');
@@ -870,6 +874,7 @@ function handleTannenbaumThrow(number) {
   const team = tannenbaumThrowTeam;
   if (!team) return;
 
+  if(!personName&&window.KCEveningCounters?.needsThrower?.(window.KCSharedSync?.server||getFirestoreState(),Number(number)))return openTannenbaumPenaltyPlayerModal('milestone',team,Number(number));
   const otherTeam = getOtherTeam(team);
   const own = tannenbaumState.teams[team];
   const other = tannenbaumState.teams[otherTeam];
@@ -907,6 +912,8 @@ function handleTannenbaumThrow(number) {
     tannenbaumState.history.unshift({
       team,
       number,
+      ...(personName?{thrower:personName}:{}),
+      ...(specialType?{specialType}:{}),
       action,
       type:
         (own.remaining[n] || 0) >= 0
