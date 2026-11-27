@@ -4715,3 +4715,48 @@ body.view-only #clubBackBtn {
 #tab-tiberius #tiberius-board .tiberius-current-row>td{background:#ffe18a!important;border-top:2px solid #d89a28;border-bottom:2px solid #d89a28;color:#49300c!important}
 #tab-tiberius #tiberius-board .tiberius-current-row>td:first-child{border-left:4px solid #d89a28}
 #tab-tiberius #tiberius-board .tiberius-current-row>td:last-child{border-right:3px solid #d89a28}
+
+/* Combined tablet seating and group allocation. */
+#tab-sitzordnung .seat-plan-tools{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 10px}
+#tab-sitzordnung .seat-plan-tools button{flex:1 1 125px;min-height:40px;font-size:.76rem;padding:7px 9px}
+#tab-sitzordnung .seat-plan{display:grid;grid-template-columns:minmax(230px,1fr) minmax(330px,1.2fr);gap:10px;align-items:start}
+#tab-sitzordnung .seat-pool-card,#tab-sitzordnung .seat-map-card{border:1px solid var(--border);background:var(--statusBar_bg,#fff);border-radius:12px;padding:10px;min-width:0}
+.seat-pool-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;font-size:.9rem;color:var(--statusBarFontColor)}
+#seat-plan-progress{font-size:.72rem;font-weight:700;white-space:nowrap;padding:4px 7px;border-radius:5px;background:#e3f3ec;color:#176b4d}
+#tab-sitzordnung .seating-hint{margin:6px 0 9px;font-size:.73rem;line-height:1.3}
+.seat-plan-pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
+.seat-pool-person{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;min-height:76px;border:2px solid #a8bdce;border-radius:9px;padding:4px 3px;background:#fff;color:#18384d;cursor:pointer}
+.seat-pool-person.team-t1{border-color:var(--t1b);border-bottom-width:4px}
+.seat-pool-person.team-t2{border-color:var(--t2b);border-bottom-width:4px}
+.seat-pool-person.is-seated{background:#e9edf0;color:#5e6c78}
+.seat-pool-person.is-seated .seat-plan-avatar{opacity:.65}
+.seat-pool-person small{font-size:.61rem;white-space:nowrap}
+.seat-plan-name{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:750;font-size:.73rem}
+.seat-plan-avatar{display:flex;flex:0 0 auto;align-items:center;justify-content:center}
+#tab-sitzordnung .seat-plan-avatar .person-avatar{height:32px;width:32px;min-height:32px;min-width:32px;margin:0;border-radius:50%;overflow:hidden;flex:none}
+#tab-sitzordnung .seat-plan-avatar img{width:100%;height:100%;object-fit:cover}
+.seat-plan-selection{font-size:.75rem;font-weight:700;min-height:34px;margin-top:9px;padding:8px;border-radius:7px;background:#e9f2fb;color:#254f78}
+.seat-plan-group-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:6px}
+.seat-plan-group-actions button{font-size:.70rem;font-weight:750;min-height:36px;padding:4px;border:1px solid #b2c6d6;background:#f5f9fc;color:#253b4f;border-radius:7px;cursor:pointer}
+.seat-plan-group-actions button:disabled{opacity:.4;cursor:default}
+#seat-plan-group-t1{border-color:var(--t1b);background:var(--t1b_bg)}
+#seat-plan-group-t2{border-color:var(--t2b);background:var(--t2b_bg)}
+#seat-plan-cancel{grid-column:1/-1}
+.seat-map-head{display:grid;grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:5px;align-items:center;text-align:center;margin-bottom:7px}
+.seat-team-heading{display:grid;gap:2px;border-bottom:3px solid;padding:5px 2px;font-size:.76rem;color:var(--statusBarFontColor);min-width:0}
+.seat-team-heading.t1{border-color:var(--t1b)}
+.seat-team-heading.t2{border-color:var(--t2b)}
+.seat-team-heading span{font-size:.64rem}
+.seat-map-caption{font-size:.68rem;color:var(--muted)}
+#tab-sitzordnung .seating-layout{grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:5px}
+#tab-sitzordnung .seating-side{grid-template-rows:repeat(8,minmax(42px,1fr));gap:4px}
+#tab-sitzordnung .seating-chair{display:grid;grid-template-columns:16px 1fr;gap:4px;align-items:center;text-align:left;min-height:42px;background:#f8fafc;color:#546e82;border:1px dashed #9fb6c6;border-radius:7px;padding:3px 5px}
+#tab-sitzordnung .seating-chair.occupied{grid-template-columns:16px 30px minmax(0,1fr);background:#fff;color:#203a4e;border:1px solid #8ba7ba}
+#tab-sitzordnung #seating-left .seating-chair.occupied{border-left:4px solid var(--t2b)}
+#tab-sitzordnung #seating-right .seating-chair.occupied{border-right:4px solid var(--t1b)}
+#tab-sitzordnung .seating-chair strong{font-size:.71rem;text-align:center}
+#tab-sitzordnung .seating-chair .seat-plan-avatar .person-avatar{width:28px;height:28px;min-width:28px;min-height:28px}
+#tab-sitzordnung .seat-selected{outline:3px solid #1684c1;outline-offset:0;background:#dff2ff!important;color:#173c5a!important}
+#tab-sitzordnung .seating-table{min-height:0;background:linear-gradient(90deg,#283e4f,#496476,#283e4f);font-size:1.3rem;gap:8px}
+#tab-sitzordnung .seating-table small{writing-mode:vertical-rl;font-size:.58rem;letter-spacing:.17em;color:#d5e5ed}
+@media(max-width:760px){#tab-sitzordnung .seat-plan{grid-template-columns:minmax(0,1fr)}.seat-plan-pool{grid-template-columns:repeat(auto-fill,minmax(70px,1fr))}}

@@ -40,15 +40,134 @@ function renderSoloOrderSettings(id) {
   editor.innerHTML='<div class="game-order-editor-title">Abweichende Reihenfolge</div><div class="game-order-list">'+names.map((name,i)=>
     `<div class="game-order-item"><div class="game-order-item-name">${i+1}. ${name.replaceAll('&','&amp;').replaceAll('<','&lt;')}</div><div class="game-order-actions"><button class="order-move-btn" onclick="moveSoloName('${id}',${i},-1)">↑</button><button class="order-move-btn" onclick="moveSoloName('${id}',${i},1)">↓</button></div></div>`).join('')+'</div>';
 }
+// The combined screen keeps the physical seating and default table groups in one atomic snapshot.
+let seatPlanSelectedName='',seatPlanSelectedPlace=0,seatPlanScope='';
+function seatPlanPeople(){return persons.filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly);}
+function seatPlanSnapshot(){
+  const people=seatPlanPeople(),teams=new Map(people.map(p=>[p.name,normalizeTisch(p.tisch)]));
+  const seen=new Set();const seats=Array.from({length:16},(_,i)=>{const name=seatingOrder?.[i]||'';if(!teams.has(name)||seen.has(name))return '';seen.add(name);return name;});
+  return {seats,teams};
+}
+function seatPlanScopeCheck(){
+ const scope=String(typeof ACTIVE_CLUB==='undefined'?'':ACTIVE_CLUB)+'|'+String(typeof currentEveningStartedAt==='undefined'?'':currentEveningStartedAt||'');
+ if(scope!==seatPlanScope){seatPlanScope=scope;seatPlanSelectedName='';seatPlanSelectedPlace=0;}
+}
+function seatPlanSelected(snapshot=seatPlanSnapshot()){
+ const name=seatPlanSelectedName||snapshot.seats[seatPlanSelectedPlace-1]||'';
+ return snapshot.teams.has(name)?name:'';
+}
+function seatPlanCancel(){seatPlanSelectedName='';seatPlanSelectedPlace=0;renderSeatingOrder();}
+function seatPlanCommit(next,message){
+ if(window.KCSharedSync&&(!KCSharedSync.ready||KCSharedSync.inUnit||KCSharedSync.working)){showToast('Sitzordnung kann gerade nicht gespeichert werden','error');return false;}
+ // All person status and seating changes enter the same shared-sync/outbox write.
+ for(const p of seatPlanPeople())if(next.teams.has(p.name))p.tisch=next.teams.get(p.name);
+ seatingOrder=next.seats.slice();
+ seatPlanSelectedName='';seatPlanSelectedPlace=0;
+ persistState();if(!window.KCSharedSync)publishSeatingLive();renderAll();
+ if(message)showToast(message,'success');return true;
+}
+function seatPlanPlace(snapshot,name,place){
+ if(!snapshot.teams.has(name)||!Number.isInteger(place)||place<1||place>16)return false;
+ const dest=place-1,source=snapshot.seats.indexOf(name),other=snapshot.seats[dest];
+ if(source===dest)return false;
+ if(source>=0){snapshot.seats[source]=other;if(snapshot.teams.has(other))snapshot.teams.set(other,getSeatTeam(source+1));}
+ // An unseated player may replace an occupied seat; the displaced player stays in the group and returns to the pool.
+ snapshot.seats[dest]=name;snapshot.teams.set(name,getSeatTeam(place));
+ return true;
+}
+function seatPlanMoveGroup(snapshot,name,team){
+ if(!snapshot.teams.has(name)||!['T1','T2',''].includes(team))return false;
+ const old=snapshot.teams.get(name),seat=snapshot.seats.indexOf(name);
+ if(old===team&&(seat<0||getSeatTeam(seat+1)===team))return false;
+ snapshot.teams.set(name,team);
+ if(seat>=0&&getSeatTeam(seat+1)!==team){
+  snapshot.seats[seat]='';
+  const free=team?snapshot.seats.findIndex((n,i)=>!n&&getSeatTeam(i+1)===team):-1;
+  if(free>=0)snapshot.seats[free]=name;
+ }
+ return true;
+}
+function seatPlanPickPerson(name){
+ seatPlanScopeCheck();const snapshot=seatPlanSnapshot();if(!snapshot.teams.has(name))return;
+ if(seatPlanSelectedPlace){const place=seatPlanSelectedPlace;if(seatPlanPlace(snapshot,name,place))seatPlanCommit(snapshot);else seatPlanCancel();return;}
+ seatPlanSelectedName=seatPlanSelectedName===name?'':name;renderSeatingOrder();
+}
+function seatPlanPickPlace(place){
+ seatPlanScopeCheck();const snapshot=seatPlanSnapshot(),name=seatPlanSelected(snapshot);
+ if(name){if(seatPlanPlace(snapshot,name,place))seatPlanCommit(snapshot);else seatPlanCancel();return;}
+ seatPlanSelectedPlace=seatPlanSelectedPlace===place?0:place;seatPlanSelectedName='';renderSeatingOrder();
+}
+function seatPlanAssignGroup(team){
+ const snapshot=seatPlanSnapshot(),name=seatPlanSelected(snapshot);
+ if(name&&seatPlanMoveGroup(snapshot,name,team))seatPlanCommit(snapshot);else seatPlanCancel();
+}
+function seatPlanClearOne(){
+ const snapshot=seatPlanSnapshot(),name=seatPlanSelected(snapshot),index=snapshot.seats.indexOf(name);
+ if(name&&index>=0){snapshot.seats[index]='';seatPlanCommit(snapshot);}else seatPlanCancel();
+}
+function seatPlanShuffle(items){const a=items.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function seatPlanAllocateUnassigned(snapshot){
+ const pending=seatPlanShuffle([...snapshot.teams.keys()].filter(n=>!snapshot.teams.get(n)));
+ const count=t=>[...snapshot.teams.values()].filter(v=>v===t).length;
+ for(const name of pending)seatPlanMoveGroup(snapshot,name,count('T1')<=count('T2')?'T1':'T2');
+ return pending.length;
+}
+function seatPlanRandomGroups(){
+ const snapshot=seatPlanSnapshot();
+ if(!seatPlanAllocateUnassigned(snapshot)){showToast('Alle Anwesenden sind bereits zugewiesen','success');return;}
+ seatPlanCommit(snapshot,'🎲 Gruppen zufällig verteilt');
+}
+function seatPlanBalance(){
+ const snapshot=seatPlanSnapshot(),teams=t=>[...snapshot.teams.keys()].filter(n=>snapshot.teams.get(n)===t);
+ const a=teams('T1'),b=teams('T2'),difference=Math.abs(a.length-b.length);
+ if(difference<=1){showToast('⚖️ Gruppen sind bestmöglich ausgeglichen','success');return;}
+ const source=a.length>b.length?'T1':'T2',target=source==='T1'?'T2':'T1';
+ for(const name of seatPlanShuffle(teams(source)).slice(0,Math.floor(difference/2)))seatPlanMoveGroup(snapshot,name,target);
+ seatPlanCommit(snapshot,'⚖️ Gruppen ausgeglichen');
+}
 function renderSeatingOrder() {
-  const left=document.getElementById('seating-left'),right=document.getElementById('seating-right');
-  if(!left||!right)return;
-  const t2=document.getElementById('seating-t2-name'),t1=document.getElementById('seating-t1-name');
-  if(t2)t2.textContent=getGroupLabel('T2');if(t1)t1.textContent=getGroupLabel('T1');
-  if(!Array.isArray(seatingOrder))seatingOrder=Array(16).fill('');
-  const button=(n)=>{const name=seatingOrder[n-1]||'frei';return `<button class="seating-chair ${name==='frei'?'':'occupied'}" onclick="chooseSeat(${n})"><strong>${n}</strong><span>${name.replaceAll('&','&amp;').replaceAll('<','&lt;')}</span></button>`;};
-  left.innerHTML=Array.from({length:8},(_,i)=>button(8-i)).join('');
-  right.innerHTML=Array.from({length:8},(_,i)=>button(9+i)).join('');
+ const left=document.getElementById('seating-left'),right=document.getElementById('seating-right');
+ if(!left||!right)return;
+ seatPlanScopeCheck();
+ if(!Array.isArray(seatingOrder))seatingOrder=Array(16).fill('');
+ const snapshot=seatPlanSnapshot(),pool=document.getElementById('seat-plan-pool');
+ if(!pool){ // Older embedded views retain the original seat chooser.
+  const button=n=>{const el=document.createElement('button');el.className='seating-chair';el.textContent=n+' · '+(snapshot.seats[n-1]||'frei');el.onclick=()=>chooseSeat(n);return el;};
+  left.replaceChildren(...Array.from({length:8},(_,i)=>button(8-i)));right.replaceChildren(...Array.from({length:8},(_,i)=>button(9+i)));return;
+ }
+ const text=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+ const selected=seatPlanSelected(snapshot),selectedSeat=selected?snapshot.seats.indexOf(selected)+1:seatPlanSelectedPlace;
+ if(seatPlanSelectedName&&!snapshot.teams.has(seatPlanSelectedName))seatPlanSelectedName='';
+ for(const team of ['T1','T2']){
+  const suffix=team.toLowerCase(),count=[...snapshot.teams.values()].filter(v=>v===team).length;
+  text('seating-'+suffix+'-name',getGroupLabel(team));text('seat-plan-'+suffix+'-count',count+' Kegler');
+  text('seat-plan-group-'+suffix,getGroupLabel(team));
+ }
+ const nameText=name=>{const person=persons.find(p=>p.name===name);return person?.gameAlias||name;};
+ const avatar=name=>{const el=document.createElement('span');el.className='seat-plan-avatar';el.innerHTML=getAvatarHtml(name);return el;};
+ const label=value=>{const el=document.createElement('span');el.className='seat-plan-name';el.textContent=value;return el;};
+ const button=n=>{
+  const name=snapshot.seats[n-1],el=document.createElement('button');el.type='button';el.className='seating-chair'+(name?' occupied':'')+(n===selectedSeat?' seat-selected':'');
+  el.setAttribute('aria-pressed',String(n===selectedSeat));el.setAttribute('aria-label','Platz '+n+': '+(name||'frei'));
+  const number=document.createElement('strong');number.textContent=n;el.append(number);
+  if(name)el.append(avatar(name),label(nameText(name)));else el.append(label('Frei'));
+  el.onclick=()=>seatPlanPickPlace(n);return el;
+ };
+ left.replaceChildren(...Array.from({length:8},(_,i)=>button(8-i)));right.replaceChildren(...Array.from({length:8},(_,i)=>button(9+i)));
+ pool.replaceChildren();
+ const people=seatPlanPeople().slice().sort((a,b)=>a.name.localeCompare(b.name,'de'));
+ for(const person of people){
+  const name=person.name,place=snapshot.seats.indexOf(name)+1,team=snapshot.teams.get(name),el=document.createElement('button');
+  el.type='button';el.className='seat-pool-person'+(place?' is-seated':'')+(name===selected?' seat-selected':'')+(team?' team-'+team.toLowerCase():'');
+  el.setAttribute('aria-pressed',String(name===selected));el.setAttribute('aria-label',name+(place?' · Platz '+place:' · ohne Sitzplatz'));
+  const info=document.createElement('small');info.textContent=place?'✓ Platz '+place:team?(groupSettings[team]?.name||team):'Ohne Gruppe';
+  el.append(avatar(name),label(nameText(name)),info);el.onclick=()=>seatPlanPickPerson(name);pool.append(el);
+ }
+ if(!people.length)pool.textContent='Noch keine anwesenden Kegler.';
+ const seated=people.filter(p=>snapshot.seats.includes(p.name)).length;
+ text('seat-plan-progress',seated+' / '+people.length+' sitzen');
+ text('seat-plan-selection',selected?nameText(selected)+' ausgewählt · Zielplatz oder Gruppe wählen':selectedSeat?'Platz '+selectedSeat+' ausgewählt · Spieler wählen':'Spieler oder Platz auswählen');
+ for(const id of ['seat-plan-group-t1','seat-plan-group-t2','seat-plan-group-none','seat-plan-clear-one','seat-plan-cancel']){const el=document.getElementById(id);if(el)el.disabled=id==='seat-plan-cancel'?!selected&&!selectedSeat:id==='seat-plan-clear-one'?!selected||!snapshot.seats.includes(selected):!selected;}
 }
 // Aenderungen unabhaengig vom gesamten Club-Spielstand publizieren.
 let seatingLiveWriteQueue = Promise.resolve();
@@ -140,11 +259,20 @@ function confirmSeatChoice() {
   renderAll();
 }
 function randomizeSeatingOrder(){
- if(!confirm('Anwesende Kegler zufällig auf die Plätze ihrer Teams verteilen? Die bisherige Sitzordnung wird ersetzt.'))return;
+ const combined=!!document.getElementById('seat-plan-pool');
+ if(!confirm(combined?'Anwesende zufällig platzieren? Bereits zugewiesene Gruppen bleiben erhalten. Freie Kegler werden automatisch aufgeteilt.':'Anwesende Kegler zufällig auf die Plätze ihrer Teams verteilen? Die bisherige Sitzordnung wird ersetzt.'))return;
+ if(combined){
+  const snapshot=seatPlanSnapshot();seatPlanAllocateUnassigned(snapshot);snapshot.seats=Array(16).fill('');
+  for(const [team,start] of [['T2',0],['T1',8]]){
+   const names=seatPlanShuffle([...snapshot.teams.keys()].filter(name=>snapshot.teams.get(name)===team));
+   names.slice(0,8).forEach((name,i)=>snapshot.seats[start+i]=name);
+   if(names.length>8)showToast('Mehr als 8 Spieler in '+getGroupLabel(team)+': Nicht alle haben Platz','error');
+  }
+  seatPlanCommit(snapshot,'🎲 Sitzordnung zufällig verteilt');return;
+ }
  const next=Array(16).fill('');
  for(const [team,start] of [['T2',0],['T1',8]]){
-  const names=persons.filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly&&normalizeTisch(p.tisch)===team).map(p=>p.name);
-  for(let i=names.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[names[i],names[j]]=[names[j],names[i]];}
+  const names=seatPlanShuffle(persons.filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly&&normalizeTisch(p.tisch)===team).map(p=>p.name));
   names.slice(0,8).forEach((name,i)=>next[start+i]=name);
   if(names.length>8)showToast('Mehr als 8 Spieler in '+getGroupLabel(team)+': Nicht alle haben Platz','error');
  }
@@ -152,7 +280,8 @@ function randomizeSeatingOrder(){
 }
 function clearSeatingOrder() {
   if(!confirm('Alle 16 Sitzplätze leeren?'))return;
-  seatingOrder=Array(16).fill('');persistState();publishSeatingLive();renderAll();
+  if(document.getElementById('seat-plan-pool')){const snapshot=seatPlanSnapshot();snapshot.seats=Array(16).fill('');seatPlanCommit(snapshot);return;}
+ seatingOrder=Array(16).fill('');persistState();publishSeatingLive();renderAll();
 }
 function shouldDrawSoloStart(id) {return !!document.getElementById(id+'-random-starter')?.checked;}
 function prepareSoloStarter(id, callback, forceDraw=false) {

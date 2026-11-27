@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kcis-cache-v325';
+const CACHE_NAME = 'kcis-cache-v326';
 
 const ASSETS = [
   './',
@@ -9,13 +9,13 @@ const ASSETS = [
   './station.webmanifest',
   './station-icon-192.png',
   './station-icon-512.png',
-  './css/station.css?v=20261127-v325',
-  './js/station-entry.js?v=20261127-v325',
+  './css/station.css?v=20261127-v326',
+  './js/station-entry.js?v=20261127-v326',
   './js/station-client.js',
-  './js/drink-ledger.js?v=20261127-v325',
-  './js/evening-counters.js?v=20261127-v325',
-  './js/evening-counter-view.js?v=20261127-v325',
-  './css/evening-counters.css?v=20261127-v325',
+  './js/drink-ledger.js?v=20261127-v326',
+  './js/evening-counters.js?v=20261127-v326',
+  './js/evening-counter-view.js?v=20261127-v326',
+  './css/evening-counters.css?v=20261127-v326',
   './sounds/bowling-strike.mp3',
   './sounds/gutter-plop.mp3'
 ];
