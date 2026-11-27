@@ -283,14 +283,37 @@ window.firestoreApi = {
       // The sequence alone cannot prove that this tablet's batch was accepted.
       if(cloudSequence>=batch.sequence||batch.baseSequence!==undefined&&batch.baseSequence!==cloudSequence)
         throw window.KCSharedCore.conflict(['Tablet-Warteschlange']);
-      if(batch.baseOperation?current.syncOperation!==batch.baseOperation:
-         Number.isSafeInteger(batch.baseRevision)&&Number(current.syncRevision||0)!==batch.baseRevision)
-        throw window.KCSharedCore.conflict(['Tablet-Warteschlange','Firebase-Revision']);
+      const stale=batch.baseOperation?current.syncOperation!==batch.baseOperation:
+         Number.isSafeInteger(batch.baseRevision)&&Number(current.syncRevision||0)!==batch.baseRevision;
+      if(stale){
+        // Cross exactly the V332 statistics-only revision, never another booking.
+        const repair=current.physicalStatsRepair332,local=batch.state;
+        let compatible=false;
+        if(repair?.schema===1&&!local?.physicalStatsRepair332&&local?.hotfix331?.schema===1
+          &&window.KCSharedCore.equal(local.hotfix331,current.hotfix331)
+          &&local.currentEveningStartedAt===repair.eveningStartedAt
+          &&batch.baseSequence===cloudSequence
+          &&window.KCSharedCore.equal(current.eveningCounters,repair.afterCounters)){
+          const proof=await tx.get(doc(db,'clubs',clubId,'syncCommands',current.syncOperation));
+          let previousRevision=batch.baseRevision;
+          if(batch.baseOperation){
+            const previous=await tx.get(doc(db,'clubs',clubId,'syncCommands',batch.baseOperation));
+            const result=previous.exists()?previous.data().result:null;
+            previousRevision=result?.sequence===cloudSequence?result.revision:null;
+          }
+          compatible=proof.exists()&&proof.data().kind==='hotfix331'
+            &&Number.isSafeInteger(previousRevision)&&Number(current.syncRevision)===previousRevision+1;
+        }
+        if(!compatible)throw window.KCSharedCore.conflict(['Tablet-Warteschlange','Firebase-Revision']);
+      }
+      // Queued snapshots retain new throws and all existing financial bookings.
+      const batchState=current.physicalStatsRepair332?.schema===1&&!batch.state?.physicalStatsRepair332
+        ?window.KCHotfixRecovery?.repairPhysical332(batch.state,window.KCSharedCore)||batch.state:batch.state;
       const docs=batch.documents.map(row=>{if(typeof row.path!=='string'||!row.path.startsWith('clubs/'+clubId+'/')&&row.path!=='clubs/'+clubId||row.path.split('/').length%2)throw Error('Ungültiger Tablet-Dokumentpfad');return {...row,ref:doc(db,...row.path.split('/'))};});
       const beforeDocs=await Promise.all(docs.map(row=>tx.get(row.ref)));
       const timestamps=value=>{if(value&&typeof value==='object'&&value._methodName==='serverTimestamp')return serverTimestamp();if(Array.isArray(value))return value.map(timestamps);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,timestamps(v)]));return value;};
       const serialize=value=>timestamps(window.KCSharedCore.normalizeGameData(value));
-      tx.set(target,{...current,...serialize(batch.state),tabletSequence:batch.sequence,tabletClock:{...(window.KCSharedClock?.captureTablet?.()||{time:window.KCSharedClock?.now()??Date.now()}),sequence:batch.sequence,serverAt:serverTimestamp()}});
+      tx.set(target,{...current,...serialize(batchState),tabletSequence:batch.sequence,tabletClock:{...(window.KCSharedClock?.captureTablet?.()||{time:window.KCSharedClock?.now()??Date.now()}),sequence:batch.sequence,serverAt:serverTimestamp()}});
       for(const [index,row] of docs.entries()){
         if(row.path.startsWith('clubs/'+clubId+'/stationCommands/')){
           const stored=beforeDocs[index].exists()?beforeDocs[index].data():null;
