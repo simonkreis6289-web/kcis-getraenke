@@ -1837,7 +1837,7 @@ function renderStrafenHistory() {
 // Abgeschlossene Spiele können in der Historie stehen, ohne dass ihre
 // Einzelbuchungen in freeStrafen synchronisiert wurden.
 function getMissingGameCharges(p) {
-  const result = window.KCGameFinePolicy?.legacyMissing(p,{strafenHistory,gameFineSettings}).map(x=>({...x,amount:x.amountCents/100}))||[];
+  const result = typeof window!=='undefined'&&window.KCGameFinePolicy?window.KCGameFinePolicy.legacyMissing(p,{strafenHistory,gameFineSettings:typeof gameFineSettings==='undefined'?{}:gameFineSettings}).map(x=>({...x,amount:x.amountCents/100})):[];
   let hurdleCents=0,hurdleSummary=null;
   for(const charge of typeof individualGameLedger==='undefined'?[]:individualGameLedger){
     if(String(charge.personName||'').trim().toLocaleLowerCase('de')!==String(p.name||'').trim().toLocaleLowerCase('de')||charge.eveningStartedAt!==currentEveningStartedAt)continue;
