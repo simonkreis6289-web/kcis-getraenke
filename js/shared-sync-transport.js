@@ -231,6 +231,7 @@
           const changed=core.games.filter(key=>!core.equal(core.clean(root[key+'State']),core.clean(next[key+'State'])));
           if(changed.length===1){next.dashboardActiveGame=changed[0];next.dashboardGameOverview={...next.dashboardGameOverview,selectedGame:changed[0]};}
         }
+        if(context.method!=='commitTabletBatch'&&window.KCEveningCounters)next.eveningCounters=KCEveningCounters.transition(root,next,core.games);
         next=core.totals(next,policy);
         const revision=(Number(root.syncRevision)||0)+1,id=context.opId;
         // The root transaction protects these mirrors; do not read rows whose old values are unused.
