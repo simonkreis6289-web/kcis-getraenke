@@ -158,9 +158,9 @@
   function effects(before,s,request,context){
     const changes=[],added=[],removed=[];
     if(request.action==='throw'){
-      const e=s.history[s.history.length-1],type=e.kind==='kranz'?'kranz':e.kind==='gosse'?'gosse':e.pins===9?'9er':'';
+      const e=s.history[s.history.length-1],type=window.KCThrows?KCThrows.penalty(e.physicalThrow=KCThrows.physical(e.pins,e.kind)):(e.kind==='miss'?'durchgeworfen':e.kind==='kranz'?'kranz':e.kind==='gosse'?'gosse':e.pins===9?'9er':'');
       if(type){
-        const key=context.catalog.find(item=>type==='gosse'?/gosse|pudel/i.test(item.label):/9er|kranz|durchgeworfen/i.test(item.label))?.key;
+        const key=window.KCThrows?KCThrows.key(context.catalog,type):context.catalog.find(item=>type==='gosse'?/gosse|pudel/i.test(item.label):/9er|kranz|durchgeworfen/i.test(item.label))?.key;
         if(!key)throw Error('Strafenart '+type+' fehlt');
         const names=type==='gosse'?[e.name]:context.people.filter(p=>validPerson(p)&&p.name!==e.name).map(p=>p.name);
         for(const personName of names)changes.push({personName,key,delta:1});

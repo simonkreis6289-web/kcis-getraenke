@@ -18,7 +18,7 @@
     if(Array.isArray(x))return x.map(clean);
     if(!object(x))return x;
     const out={};
-    for(const [k,v] of Object.entries(x))if(v!==undefined&&!['busy','closing','syncProtocol','syncRevision','syncOperation','updatedAt','updatedClientId','updatedClientAt'].includes(k))out[k]=clean(v);
+    for(const [k,v] of Object.entries(x))if(v!==undefined&&!['busy','closing','finishing','syncProtocol','syncRevision','syncOperation','updatedAt','updatedClientId','updatedClientAt'].includes(k))out[k]=clean(v);
     return out;
   }
   // Alte lokale Abschlusswertungen enthalten direkte Unterlisten; Firestore erlaubt sie nur in Objekten.

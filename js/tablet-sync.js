@@ -171,7 +171,7 @@
       baseRevision:predecessor?.baseRevision??s.pending?.baseRevision??s.cloudRevision,
       baseOperation:predecessor?.opId??s.pending?.baseOperation,expectedEvening:predecessor?predecessor.state.currentEveningStartedAt||'':s.cloudEvening,state:C.clean(s.root),documents:[...merged.values()]};
     try{store(s);}catch(error){s.seq=previous.seq;s.pending=previous.pending;s.root=previous.root;throw Error('Tablet-Speicher voll. Buchung wurde nicht übernommen.');}
-    if(!clockOnly)s.ownsClock=true;
+    if(!clockOnly){s.ownsClock=true;window.KCPenaltyBookingToasts?.committed(previous.root,s.root);}
     server=s.root;publish(s);cache();status();clearTimeout(timer);
     timer=setTimeout(()=>{if(!s.retryStopped&&Date.now()>=(s.nextRetryAt||0))void drain(s);},40);return true;
   }

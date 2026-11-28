@@ -120,7 +120,7 @@ function getMenschLoserGroups(winnerName, scoreMap, players) {
   return groups;
 }
 
-async function applyMenschThrow(value) {
+async function applyMenschThrow(value,kind='') {
   ensureMenschState();
   const players=getMenschPlayers();
   if(!menschState.active||!players.length||menschState.busy)return;
@@ -129,8 +129,8 @@ async function applyMenschThrow(value) {
     const current=players[menschState.currentIndex];if(!current)return;
     const pins=Number(value); if(!Number.isInteger(pins)||pins<0||pins>12)return;
     const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('mensch'):pins;if(scored===null)return;
-    const before = {player:current.name,pins,oldScores:{...menschState.scores},oldIndex:menschState.currentIndex, oldWinner:menschState.winner};
-    const roll={pins,isGosse:pins===0};
+    const before = {player:current.name,pins,oldScores:{...menschState.scores},oldIndex:menschState.currentIndex, oldWinner:menschState.winner,physicalThrow:KCThrows.physical(pins,kind|| (pins===0?'gosse':undefined))};
+    const roll={pins,isGosse:kind==='miss'?false:pins===0,kind:kind||undefined};
     if (!(await changeSoloThrowPenalty(current.name,null,roll))) return;
     if(roll.penaltyBooking)before.penaltyBooking=roll.penaltyBooking;
     menschState.undoStack.push(before);
@@ -139,7 +139,7 @@ async function applyMenschThrow(value) {
     if(newScore>MENSCH_TARGET_SCORE)newScore=MENSCH_TARGET_SCORE-(newScore-MENSCH_TARGET_SCORE);
     menschState.scores[current.name]=newScore;
     if(!Array.isArray(menschState.throws[current.name]))menschState.throws[current.name]=[];
-    menschState.throws[current.name].push({pins:scored,rawPins:pins,at:new Date().toISOString()});
+    menschState.throws[current.name].push({pins:scored,rawPins:pins,physicalThrow:roll.physicalThrow,at:new Date().toISOString()});
     // Exakt gleicher Punktestand: bereits dort stehende Spieler werden rausgeworfen.
     const bumped=[];
     if(newScore>0&&newScore!==MENSCH_TARGET_SCORE){
@@ -305,7 +305,7 @@ function renderMenschGame(){
     board.innerHTML=`<div class="game-throw-toolbar"><strong>🎳 ${current?.name||'—'} ist dran</strong><span>Ziel: genau 36</span><button class="secondary-btn" onclick="undoMenschThrow()" ${menschState.undoStack.length?'':'disabled'}>↩ Letzten Wurf</button>${[0,1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyMenschThrow(${n})">${n===0?'G':n===12?'Kranz':n}</button>`).join('')}</div>
       ${Object.entries(menschState.scores).some(([name, score]) => Number(score) === MENSCH_TARGET_SCORE) ? `<button class="primary-btn" onclick="finishMenschGame(Object.keys(menschState.scores).find(name => Number(menschState.scores[name]) === 36))">✅ Abschluss erneut versuchen</button>` : ''}
       <div class="game-compact-wrap"><table class="game-compact-table"><thead><tr><th>Spieler</th><th>Punkte</th><th>Fortschritt</th><th>Letzte Würfe</th></tr></thead><tbody${globalThis.window?.KCPlayerRows?.group?.('mensch',menschState,{turn:menschState.undoStack.length})||''}>
-      ${rowPlayers.map(p=>{const score=Number(menschState.scores[p.name])||0;const recent=(menschState.throws[p.name]||[]).slice(-5).map(t=>t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+t.pins+')':t.pins).join(' · ')||'—';return `<tr${globalThis.window?.KCPlayerRows?.row?.(p.name)||''}><td>${p.name}</td><td class="game-compact-score">${score}</td><td style="min-width:170px"><div class="game-compact-progress"><span style="width:${score/36*100}%"></span></div></td><td>${recent}</td></tr>`;}).join('')}
+      ${rowPlayers.map(p=>{const score=Number(menschState.scores[p.name])||0;const recent=(menschState.throws[p.name]||[]).slice(-5).map(t=>t.physicalThrow?.kind==='durchgeworfen'?'0':t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+t.pins+')':t.pins).join(' · ')||'—';return `<tr${globalThis.window?.KCPlayerRows?.row?.(p.name)||''}><td>${p.name}</td><td class="game-compact-score">${score}</td><td style="min-width:170px"><div class="game-compact-progress"><span style="width:${score/36*100}%"></span></div></td><td>${recent}</td></tr>`;}).join('')}
       </tbody></table></div><div class="game-compact-note">Bei 6 nochmal werfen · gleiche Punktzahl wirft den vorherigen Spieler auf 0 · über 36 wird rückwärts gezählt.</div>`;
   }
   history.innerHTML=(menschState.history||[]).map(entry=>`<div class="spiel-card"><div class="spiel-info"><strong>🏁 ${entry.winner} gewinnt</strong><div class="spiel-detail">${(entry.ranking||[]).map((g,i)=>`${i+1}. Verlierer: ${g.names.join(', ')} (${g.score})`).join(' · ')}</div></div></div>`).join('')||'<div class="game-compact-note">Noch kein Verlauf.</div>';

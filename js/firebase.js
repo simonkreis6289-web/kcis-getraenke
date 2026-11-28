@@ -627,13 +627,16 @@ window.firestoreApi = {
       let payments=(settled.payments||[]).slice();
       if(request.action==='delete'){const removed=payments.find(p=>p.id===request.id);if(!removed)throw Error('Einnahme nicht gefunden.');if(removed.kind==='standing'&&removed.orderId)suppressed.add(window.KCCashOverview.dueKey(removed.orderId,removed.date));payments=payments.filter(p=>p.id!==request.id);}
       else{const {id,personName,amountCents,date,description,kind,orderId=''}=request.payment;
+        const previousPayment=payments.find(p=>p.id===id),person=(current.persons||[]).find(p=>p.name===personName&&!p.isDrinksOnly);
+        const isGuest=!!(person?.isGuest??previousPayment?.isGuest),personId=person?.id|| (person?encodeURIComponent(window.KCCashOverview.key(person.name)):previousPayment?.personId||'');
         if(date>window.KCCashOverview.today())throw Error('Zahlungseingänge können erst am Zahlungstag gebucht werden.');
-        if(personName&&!(current.persons||[]).some(p=>p.name===personName&&!p.isDrinksOnly&&!p.isGuest))throw Error('Mitglied nicht gefunden.');
+        if(personName&&!person&&previousPayment?.personName!==personName)throw Error('Person nicht gefunden.');
+        if(isGuest&&kind==='standing')throw Error('Gastkegler erhalten keine automatischen Monatsbeiträge.');
         if(kind==='standing'&&!(before.orders||[]).some(o=>o.id===orderId&&o.personName===personName))throw Error('Bitte einen passenden Dauerauftrag wählen.');
         if(kind==='standing'&&payments.some(p=>p.id!==id&&p.orderId===orderId&&p.date.slice(0,7)===date.slice(0,7)))throw Error('Dieser Dauerauftrag ist für diesen Zahlungstag bereits gebucht.');
         const previous=payments.find(p=>p.id===id),incurredAt=previous?.date===date?previous.incurredAt||date+'T12:00:00Z':date===window.KCCashOverview.today()?new Date().toISOString():date+'T12:00:00Z';
         if(previous?.orderId&&(previous.orderId!==orderId||previous.date.slice(0,7)!==date.slice(0,7)||kind!=='standing'))suppressed.add(window.KCCashOverview.dueKey(previous.orderId,previous.date));
-        payments=payments.filter(p=>p.id!==id);payments.push({id,personName,amountCents,date,incurredAt,description,kind,orderId,...(previous?.automatic?{automatic:true}:{})});
+        payments=payments.filter(p=>p.id!==id);payments.push({id,personName,...(personName?{personId,isGuest}:{}),amountCents,date,incurredAt,description,kind,orderId,...(previous?.automatic?{automatic:true}:{})});
       }
       if(payments.length>3000)throw Error('Zu viele Einnahmen im Zahlungsbuch.');
       const value={...settled,payments,suppressedDues:[...suppressed],revision:Number(before.revision||0)+1,commands:[...(before.commands||[]),request.opId].slice(-128)};

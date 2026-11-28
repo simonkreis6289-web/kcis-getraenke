@@ -33,12 +33,13 @@ test('repeated Darts and Tannenbaum dialogs also rebuild a single clean keypad',
 });
 test('arithmetic signs sit between the five throw columns in app and TV while each field keeps its own input target',{timeout:60000},async()=>{
  const a=await app();await a.c.startPlusminusGame();a.c.choosePlusminusSlot(2);await a.c.applyPlusminusThrow(7);assert(await a.c.KCSharedSync.waitForUpload());const d=tv(a.db);
- for(const doc of [a.document,d.document]){
+ for(const doc of [a.document]){
   const table=doc.querySelector('.plusminus-table,.tv-plusminus');assert(table);
   assert.deepEqual([...table.querySelectorAll('thead th')].map(x=>x.textContent),['Spieler','①','+','②','−','③','×','④','÷','⑤','Ergebnis']);
   const first=table.querySelector('tbody tr');assert.equal(first.children.length,11);assert.deepEqual([...first.querySelectorAll('.pm-operator')].map(x=>x.textContent),['+','−','×','÷']);
   const player=[...table.querySelectorAll('tbody tr')].find(r=>r.firstElementChild.textContent==='A');assert.equal(player.children[5].textContent,'7');
  }
+ const board=d.document.querySelector('.pm-sport-board');assert(board);assert.deepEqual([...board.querySelectorAll('.pm-score-row:first-child .pm-sign')].map(x=>x.textContent),['+','−','×','÷']);assert.equal(board.querySelector('[data-haus-name=A]').querySelectorAll('.pm-digit')[2].textContent.trim(),'7');
  a.c.choosePlusminusSlot(4);await a.c.applyPlusminusThrow(6);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(a.db.root().plusminusState.rows.B[4].value,6);assert.equal(a.db.root().plusminusState.rows.A[2].value,7);
 });
 test('1000 supports per-round forward, reverse and free placement with custom Gosse/Kranz digits, then undo restores the pending choice',()=>{

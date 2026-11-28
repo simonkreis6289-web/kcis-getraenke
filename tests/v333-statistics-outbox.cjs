@@ -10,7 +10,9 @@ async function setup(){
  const root={...initial(),...legacyFixture(copy,seed.c.KCEveningCounters,'2026-11-27T18:17:01.250Z','2026-11-27T19:35:58.800Z'),syncInitialized:true,syncProtocol:1,syncRevision:3,syncOperation:'sync_previous',tabletSequence:10};
  root.persons=root.persons.map(p=>({...p,present:true,drinks:{beer:0}}));
  const db=database({[rootPath]:root}),a=fullApp(db),recovery=a.c.KCHotfixRecovery;
- a.c.KCHotfixRecovery=null;await a.select();a.c.KCHotfixRecovery=recovery;
+ a.c.KCHotfixRecovery=null;await a.select();
+ // Simulate the already deployed V332 recovery, rather than V335 initialization.
+ a.c.KCHotfixRecovery={...recovery,recover:(root,core)=>recovery.recover(root,core)};
  a.c.navigator.onLine=false;
  await a.c.startHausGame('hoch');await a.c.hausThrow('hoch',4,false,0);
  await a.c.changeDrink('A','beer',1);

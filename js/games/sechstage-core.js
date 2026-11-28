@@ -101,9 +101,9 @@
   function effects(before,state,request,context){
     const changes=[],added=[],removed=[];
     if(request.action==='throw'){
-      const entry=state.history[state.history.length-1],kind=entry.kind==='gosse'?'gosse':entry.kind==='kranz'?'kranz':entry.pins===9?'9er':'';
+      const entry=state.history[state.history.length-1],kind=window.KCThrows?KCThrows.penalty(entry.physicalThrow=KCThrows.physical(entry.pins,entry.kind)):(entry.kind==='miss'?'durchgeworfen':entry.kind==='gosse'?'gosse':entry.kind==='kranz'?'kranz':entry.pins===9?'9er':'');
       if(kind){
-        const key=context.catalog.find(s=>kind==='gosse'?/gosse|pudel/i.test(s.label):/9er|kranz|durchgeworfen/i.test(s.label))?.key;
+        const key=window.KCThrows?KCThrows.key(context.catalog,kind):context.catalog.find(s=>kind==='gosse'?/gosse|pudel/i.test(s.label):/9er|kranz|durchgeworfen/i.test(s.label))?.key;
         if(!key)throw new Error('Strafenart '+kind+' fehlt');
         const names=kind==='gosse'?[entry.name]:context.people.filter(p=>p.present&&!p.left&&!p.inactive&&!p.isDrinksOnly&&p.name!==entry.name).map(p=>p.name);
         for(const personName of names)changes.push({personName,key,delta:1});

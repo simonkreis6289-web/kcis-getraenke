@@ -249,7 +249,7 @@ async function confirmDartsPenaltyPlayer() {
 
   dartsState.roundThrows[team].push({
     order:(Number(dartsLatestThrow(dartsState)?.entry.order)||0)+1,
-    hit: type,statId:stat?.id,
+    hit: type,physicalThrow:KCThrows.physical(type==='9er'?9:0,type),statId:stat?.id,
     value: points,
     thrower: personName,
 
@@ -288,7 +288,7 @@ async function handleDartsThrow(hitKey,personName='') {
 
   if (!['T1','T2'].includes(team)||!dartsState.active||dartsState.winner) return;
 
-  if(!personName&&window.KCEveningCounters?.needsThrower?.(window.KCSharedSync?.server||getFirestoreState(),Number(hitKey)))return openDartsPenaltyPlayerModal('milestone',team,Number(hitKey));
+  // Ordinary team throws stay unassigned; statistics never request an extra thrower.
 
   const rawValue = parseInt(
     dartsState.valueMap[hitKey] ??
@@ -300,7 +300,7 @@ async function handleDartsThrow(hitKey,personName='') {
   const value=hitKey==='kranz'&&window.KCKranzUI?await KCKranzUI.select('darts'):rawValue;if(value===null)return;
   dartsState.roundThrows[team].push({
     order:(Number(dartsLatestThrow(dartsState)?.entry.order)||0)+1,
-    hit: hitKey,
+    hit: hitKey,physicalThrow:KCThrows.physical(Number(hitKey),hitKey==='kranz'?'kranz':undefined),
     ...(personName?{thrower:personName}:{}),
     value,
     createdAt: new Date().toISOString()

@@ -225,14 +225,14 @@ header{grid-column:1/-1;background:var(--header);color:#fff;border:2px solid var
 #tv-announcement{position:fixed;top:120px;left:50%;transform:translate(-50%,-20px);z-index:1000;background:#202b40;color:white;border:3px solid #f2b54c;border-radius:18px;padding:18px 38px;font-size:clamp(24px,3vw,45px);font-weight:900;box-shadow:0 15px 45px #0007;text-align:center;max-width:90vw;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:none}#tv-announcement.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:4px;padding:3px 10px;min-width:115px}#tv-countdown .timer-time{font-size:29px}#tv-countdown .timer-label{font-size:9px}}
 </style>
-<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261128-v334">
-<link rel="stylesheet" href="css/dashboard-layout.css?v=20261128-v334">
-<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261128-v334">
-<link rel="stylesheet" href="css/cash-overview.css?v=20261128-v334">
-<link rel="stylesheet" href="css/club-content.css?v=20261128-v334">
-<link rel="stylesheet" href="css/extra-games.css?v=20261128-v334">
-<link rel="stylesheet" href="css/penalty-table.css?v=20261128-v334">
-<link rel="stylesheet" href="css/evening-counters.css?v=20261128-v334">
+<style id="kc-dashboard-termine-v166">.kc-next-events{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:clamp(11px,.9vw,15px);font-weight:700;color:#f9d78c}.kc-next-events span{white-space:nowrap}</style><style id="kc-haus-tv-v168">.haus-tv-schnaps-row{background:#fff2b7!important}.haus-tv-schnaps{display:inline-block;border-radius:999px;padding:2px 9px;background:#e2b24c;color:#302200;font-size:.7em;font-weight:900;white-space:nowrap}.haus-tv-winner{font-size:1.3em;font-weight:900;margin:10px 0;text-align:center}</style><link rel="stylesheet" href="css/dashboard-header.css?v=20261128-v335">
+<link rel="stylesheet" href="css/dashboard-layout.css?v=20261128-v335">
+<link rel="stylesheet" href="css/dashboard-tannenbaum.css?v=20261128-v335">
+<link rel="stylesheet" href="css/cash-overview.css?v=20261128-v335">
+<link rel="stylesheet" href="css/club-content.css?v=20261128-v335">
+<link rel="stylesheet" href="css/extra-games.css?v=20261128-v335">
+<link rel="stylesheet" href="css/penalty-table.css?v=20261128-v335">
+<link rel="stylesheet" href="css/evening-counters.css?v=20261128-v335">
 </head>
 <body>
 <section id="club-content-dashboard" role="dialog" aria-modal="true" aria-labelledby="club-content-dashboard-title" hidden><div><h2 id="club-content-dashboard-title">Clubunterlagen</h2><p id="club-content-dashboard-help"></p></div><p id="club-content-dashboard-status" class="club-content-status" role="status"></p><div id="club-content-dashboard-reader" class="club-content-reader"><div data-content-body class="club-content-page-body" role="region" aria-label="Satzung"></div><div data-content-measure class="club-content-measure" aria-hidden="true" inert></div><nav class="club-content-pagination" aria-label="Seiten"><button type="button" data-content-prev>← Zurück</button><span data-content-page aria-live="polite">Seite 1 von 1</span><button type="button" data-content-next>Weiter →</button></nav></div></section>
@@ -257,55 +257,57 @@ header{position:relative} @media(max-width:900px){#tv-countdown{top:auto;bottom:
 <section class="stage"><div class="stage-title"><h1 id="game-title">🎯 Aktives Spiel</h1><span id="tv-game-stopwatch" class="game-stopwatch" role="group" aria-label="Stoppuhr" hidden><span aria-hidden="true">⏱</span><span data-stopwatch-label></span><time></time></span><div style="display:flex;gap:8px;align-items:center"><select id="game-select" aria-label="Spiel für Anzeige auswählen" style="padding:8px;border:1px solid #777;border-radius:6px;background:white"><option value="auto">Automatisch</option><option value="tannenbaum">Tannenbaum</option><option value="darts">Darts</option><option value="lotterie">Lotterie</option><option value="tiberius">Tiberius</option><option value="mensch">Mensch ärgere dich nicht</option><option value="plusminus">+ − × ÷</option><option value="fuchsjagd">🦊 Fuchsjagd</option><option value="haushoch">🔢 Hohe Hausnummer</option><option value="haustief">🔽 Tiefe Hausnummer</option><option value="sichern">🔒 Sichern</option><option value="blackjack">🃏 17 + 4 / Blackjack</option><option value="gluecksspirale">🌀 Glücksspirale</option><option value="siebener">🎲 7er-Spiel</option><option value="hindernis">🏃 Hindernislauf</option><option value="sechstage">🏁 Sechs-Tage-Rennen</option><option value="tor">⚽ Tor</option><option value="bergundtal">🏔️ Berg und Tal</option><option value="ballermann">🏖️ Ballermann 6</option><option value="lattenzaun">🪵 Lattenzaun</option><option value="guterschnitt">✂️ Der gute Schnitt</option><option value="parteienspiel">⚖️ Parteienspiel</option><option value="dreieuro">💶 3-Euro-Spiel</option><option value="ebbeflut">🌊 Ebbe und Flut</option><option value="poker">Poker</option><option value="pfaelzer">Pfälzerspiel</option><option value="tausend">1000 in 9 Würfen</option><option value="hochsprung">🏅 Hochsprung</option></select><span class="tag" id="game-info">Live</span></div></div><div class="stage-body" id="game-body"><div class="placeholder"><div class="symbol">🎳</div><h3>Bereit für den Kegelabend</h3><p>Hier erscheint das aktuelle Spiel. Die Live-Daten werden von der Haupt-App übernommen, sobald die Datenanbindung eingerichtet ist.</p></div></div></section>
 <section class="side right"><article class="panel" id="dashboard-panel-gutters"><h2><span>👑</span>Gossenkönig</h2><div class="contents" id="gutters"></div></article><article class="panel" id="dashboard-panel-seating"><h2><span>🪑</span>Sitzordnung</h2><div class="contents seating-tv" id="dashboard-seating"></div></article><article class="panel" id="dashboard-panel-counters" hidden><h2>Kegelabend-Zähler</h2><div class="kc-counter-board" data-evening-counters></div></article><article class="panel" id="dashboard-panel-personal" hidden><h2>🎳 Spielerstatistik</h2><div class="contents" id="dashboard-personal-throws"></div><p class="kc-personal-hint">Es werden ausschließlich Würfe mit eindeutiger Spielerzuordnung berücksichtigt. Teamwürfe ohne festen Werfer sind nicht enthalten.</p></article></section>
 
-<footer class="dashboard-footer"><div class="dashboard-ticker-region" id="dashboard-ticker-region"><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-left"><div class="dashboard-ticker" id="dashboard-ticker" tabindex="0" aria-label="Clubtermine und Informationen · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-ticker-track"><div class="dashboard-ticker-copy"><span id="kc-next-birthdays"></span><span id="kc-next-tour"></span><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span></div></div></div></div><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-right"><div class="dashboard-ticker" id="dashboard-football-ticker" tabindex="0" aria-label="Bundesliga-Ergebnisse · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-football-ticker-track"><div class="dashboard-ticker-copy"><span>⚽ Bundesliga-Live</span></div></div></div></div></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</div><div id="version">Dashboard V334 · Update 28.11.2026, 08:34 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><div id="tv-link-feedback" class="tv-link-feedback" role="status" aria-live="polite" aria-atomic="true"></div><button class="tv-link-check" id="tv-link-check" type="button">TV-Verbindung prüfen</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></footer>
+<footer class="dashboard-footer"><div class="dashboard-ticker-region" id="dashboard-ticker-region"><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-left"><div class="dashboard-ticker" id="dashboard-ticker" tabindex="0" aria-label="Clubtermine und Informationen · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-ticker-track"><div class="dashboard-ticker-copy"><span id="kc-next-birthdays"></span><span id="kc-next-tour"></span><span id="kc-next-kegeln">🎳 Nächstes Kegeln: –</span></div></div></div></div><div class="dashboard-ticker-slot" id="dashboard-ticker-slot-right"><div class="dashboard-ticker" id="dashboard-football-ticker" tabindex="0" aria-label="Bundesliga-Ergebnisse · zum Anhalten fokussieren"><div class="dashboard-ticker-track" id="dashboard-football-ticker-track"><div class="dashboard-ticker-copy"><span>⚽ Bundesliga-Live</span></div></div></div></div></div><div class="header-actions"><details class="header-details"><summary>Info</summary><div class="header-detail-menu"><strong>Dashboard-Informationen</strong><div id="connection" title="Verbindungsstatus">Verbindung wird vorbereitet …</div><div id="version">Dashboard V335 · Update 28.11.2026, 10:15 Uhr</div><div id="sync-time">Noch keine Daten empfangen</div><div id="club-name">Club wird gesucht …</div><div class="dashboard-audio-settings"><label for="dashboard-sound-volume">Tonlautstärke</label><input id="dashboard-sound-volume" type="range" min="0" max="100" step="5" value="45"><p id="dashboard-sound-status" role="status">Ton ausgeschaltet</p><div class="dashboard-sound-tests"><button type="button" data-dashboard-sound-test="nine">9er / Kranz testen</button><button type="button" data-dashboard-sound-test="gutter">Gosse testen</button><button type="button" data-dashboard-sound-test="finish">Countdown testen</button></div></div></div></details><button class="dashboard-sound-toggle" id="dashboard-sound-toggle" type="button" aria-pressed="false">Ton an</button><div id="tv-link-feedback" class="tv-link-feedback" role="status" aria-live="polite" aria-atomic="true"></div><button class="tv-link-check" id="tv-link-check" type="button">TV-Verbindung prüfen</button><button class="fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Vollbild aktivieren" title="Vollbild aktivieren">Vollbild</button></div></footer>
 </main>
-<link rel="stylesheet" href="css/sechstage.css?v=20261128-v334">
-<link rel="stylesheet" href="css/table-games.css?v=20261128-v334">
-<link rel="stylesheet" href="css/individual-games.css?v=20261128-v334">
-<link rel="stylesheet" href="css/dashboard-mensch.css?v=20261128-v334">
-<link rel="stylesheet" href="css/game-rules.css?v=20261128-v334">
-<script src="js/shared-clock.js?v=20261128-v334"></script>
-<script src="js/game-stopwatch.js?v=20261128-v334"></script>
-<script src="js/evening-counters.js?v=20261128-v334"></script>
-<script src="js/evening-counter-view.js?v=20261128-v334"></script>
-<script src="js/dashboard-layout.js?v=20261128-v334"></script>
-<script src="js/dashboard-link.js?v=20261128-v334"></script>
-<script src="js/kranz-policy.js?v=20261128-v334"></script>
-<script src="js/player-colors.js?v=20261128-v334"></script>
-<script src="js/player-names.js?v=20261128-v334"></script>
-<script src="js/game-player-rows.js?v=20261128-v334"></script>
-<link rel="stylesheet" href="css/club-games.css?v=20261128-v334">
-<link rel="stylesheet" href="css/player-charts.css?v=20261128-v334">
-<script src="js/games/club-games-core.js?v=20261128-v334"></script><script src="js/games/club-games-view.js?v=20261128-v334"></script>
-<script src="js/games/extra-core.js?v=20261128-v334"></script><script src="js/games/extra-view.js?v=20261128-v334"></script>
-<script src="js/games/individual-core.js?v=20261128-v334"></script><script src="js/games/individual-view.js?v=20261128-v334"></script>
-<script src="js/game-rules.js?v=20261128-v334"></script>
-<link rel="stylesheet" href="css/starter-draw.css?v=20261128-v334"><script src="js/starter-draw.js?v=20261128-v334"></script>
-<script src="js/birthdays.js?v=20261128-v334"></script>
-<script src="js/games/sechstage-core.js?v=20261128-v334"></script>
-<script src="js/games/table-games-core.js?v=20261128-v334"></script>
-<script src="js/dashboard-sounds.js?v=20261128-v334"></script>
-<script src="js/cash-book.js?v=20261128-v334"></script>
-<script src="js/payment-visibility.js?v=20261128-v334"></script><script src="js/cash-overview.js?v=20261128-v334"></script>
-<script src="js/penalty-table.js?v=20261128-v334"></script>
-<script src="js/club-content.js?v=20261128-v334"></script><script src="js/club-content-pager.js?v=20261128-v334"></script><script src="js/club-content-dashboard.js?v=20261128-v334"></script>
-<script src="js/penalty-statistics.js?v=20261128-v334"></script><script src="js/activity-reports.js?v=20261128-v334"></script>
-<script src="js/cash-dashboard.js?v=20261128-v334"></script>
-<link rel="stylesheet" href="css/game-overview.css?v=20261128-v334"><script src="js/game-overview.js?v=20261128-v334"></script>
-<script src="js/table-alignment.js?v=20261128-v334"></script>
-<script src="js/shared-sync-core.js?v=20261128-v334"></script>
-<script src="js/shared-sync-transport.js?v=20261128-v334"></script>
-<script src="js/dashboard-toast-stack.js?v=20261128-v334"></script>
-<script src="js/football-live.js?v=20261128-v334"></script>
-<script src="js/game-results.js?v=20261128-v334"></script>
-<script src="js/dashboard-event-toasts.js?v=20261128-v334"></script>
-<script src="js/dashboard-lotto-animations.js?v=20261128-v334"></script>
-<script src="js/dashboard-layout-tv.js?v=20261128-v334"></script>
+<link rel="stylesheet" href="css/sechstage.css?v=20261128-v335">
+<link rel="stylesheet" href="css/table-games.css?v=20261128-v335">
+<link rel="stylesheet" href="css/individual-games.css?v=20261128-v335">
+<link rel="stylesheet" href="css/dashboard-mensch.css?v=20261128-v335">
+<link rel="stylesheet" href="css/game-rules.css?v=20261128-v335">
+<script src="js/shared-clock.js?v=20261128-v335"></script>
+<script src="js/game-stopwatch.js?v=20261128-v335"></script>
+<script src="js/games/plusminus-score.js?v=20261128-v335"></script>
+<script src="js/evening-counters.js?v=20261128-v335"></script>
+<script src="js/evening-counter-view.js?v=20261128-v335"></script>
+<script src="js/dashboard-layout.js?v=20261128-v335"></script>
+<script src="js/dashboard-link.js?v=20261128-v335"></script>
+<script src="js/kranz-policy.js?v=20261128-v335"></script>
+<script src="js/player-colors.js?v=20261128-v335"></script>
+<script src="js/player-names.js?v=20261128-v335"></script>
+<script src="js/game-player-rows.js?v=20261128-v335"></script>
+<link rel="stylesheet" href="css/club-games.css?v=20261128-v335">
+<link rel="stylesheet" href="css/player-charts.css?v=20261128-v335">
+<script src="js/games/club-games-core.js?v=20261128-v335"></script><script src="js/games/club-games-view.js?v=20261128-v335"></script>
+<script src="js/games/extra-core.js?v=20261128-v335"></script><script src="js/games/extra-view.js?v=20261128-v335"></script>
+<script src="js/games/individual-core.js?v=20261128-v335"></script><script src="js/games/individual-view.js?v=20261128-v335"></script>
+<script src="js/game-rules.js?v=20261128-v335"></script>
+<link rel="stylesheet" href="css/starter-draw.css?v=20261128-v335"><script src="js/starter-draw.js?v=20261128-v335"></script>
+<script src="js/birthdays.js?v=20261128-v335"></script>
+<script src="js/games/sechstage-core.js?v=20261128-v335"></script>
+<script src="js/games/table-games-core.js?v=20261128-v335"></script>
+<script src="js/dashboard-sounds.js?v=20261128-v335"></script>
+<script src="js/cash-book.js?v=20261128-v335"></script>
+<script src="js/payment-visibility.js?v=20261128-v335"></script><script src="js/cash-overview.js?v=20261128-v335"></script>
+<script src="js/penalty-table.js?v=20261128-v335"></script>
+<script src="js/club-content.js?v=20261128-v335"></script><script src="js/club-content-pager.js?v=20261128-v335"></script><script src="js/club-content-dashboard.js?v=20261128-v335"></script>
+<script src="js/penalty-statistics.js?v=20261128-v335"></script><script src="js/activity-reports.js?v=20261128-v335"></script>
+<script src="js/cash-dashboard.js?v=20261128-v335"></script>
+<link rel="stylesheet" href="css/game-overview.css?v=20261128-v335"><script src="js/game-overview.js?v=20261128-v335"></script>
+<script src="js/table-alignment.js?v=20261128-v335"></script>
+<script src="js/shared-sync-core.js?v=20261128-v335"></script>
+<script src="js/shared-sync-transport.js?v=20261128-v335"></script>
+<script src="js/dashboard-toast-stack.js?v=20261128-v335"></script>
+<script src="js/football-live.js?v=20261128-v335"></script>
+<script src="js/game-results.js?v=20261128-v335"></script>
+<script src="js/dashboard-event-toasts.js?v=20261128-v335"></script>
+<script src="js/dashboard-lotto-animations.js?v=20261128-v335"></script>
+<script src="js/dashboard-layout-tv.js?v=20261128-v335"></script>
+<link rel="stylesheet" href="css/dashboard-light.css?v=20261128-v335">
 <script type="module">
 import './js/firebase.js';
 const api=window.firestoreApi;
-const DASH_VERSION="V334";
-const DASH_RELEASE="28.11.2026, 08:34 Uhr";
+const DASH_VERSION="V335";
+const DASH_RELEASE="28.11.2026, 10:15 Uhr";
 const versionEl=document.getElementById("version");
 versionEl.textContent=`Dashboard ${DASH_VERSION} · Letztes Update: ${DASH_RELEASE}`;
 const $=id=>document.getElementById(id), fmt=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
@@ -336,6 +338,7 @@ function decorateGutterRows(rows,leaders){
  const lines=$('gutters').querySelectorAll('.listrow');
  rows.forEach(({name,count},index)=>{
   const line=lines[index],marks=document.createElement('span');
+  const nameHost=line.querySelector('.name'),nameLabel=document.createElement('span');nameLabel.className='gutter-name';nameLabel.textContent=name;for(const child of [...nameHost.childNodes])if(child.nodeType===3)child.remove();nameHost.append(nameLabel);if(name.length>12)marks.style.display='none';
   marks.className='gutter-tally';marks.setAttribute('aria-hidden','true');
   for(let i=0;i<Math.min(15,Math.floor(count));i++)marks.append(document.createElement('span'));
   line.classList.toggle('gutter-leader',leaders.includes(name));
@@ -345,12 +348,15 @@ function decorateGutterRows(rows,leaders){
  fitGutterText();
 }
 function fitGutterText(){
+ if(typeof requestAnimationFrame==='function'&&typeof fitDashboardNames==='function')requestAnimationFrame(fitDashboardNames);
  const box=$('gutters'),count=box?.querySelectorAll('.listrow').length;if(!count)return;
  const width=box.clientWidth||box.getBoundingClientRect().width,height=box.clientHeight||box.getBoundingClientRect().height;
+ if(width>0)box.style.setProperty('--gutter-indicator-size',Math.max(7,Math.min(13,width/24))+'px');
  if(width>0&&height>0)box.style.setProperty('--gutter-font',Math.max(10,Math.min(24,width/19,height/count*.52))+'px');
 }
 if(typeof ResizeObserver==='function')new ResizeObserver(fitGutterText).observe($('gutters'));
 window.addEventListener('resize',fitGutterText);
+function fitDashboardNames(){for(const label of document.querySelectorAll('.listrow .name,#gutters .gutter-name,.tv-seat .seat-name,#dashboard-panel-personal .kc-personal-name')){if(label.closest('#gutters')&&!label.classList.contains('gutter-name'))continue;label.style.fontSize='';let size=parseFloat(getComputedStyle(label).fontSize)||14;for(let i=0;i<18&&(label.scrollWidth>label.clientWidth+1||label.scrollHeight>(label.closest('.listrow')?.clientHeight||10000))&&size>6;i++){size*=.92;label.style.fontSize=size+'px';}}}
 let confirmedState=null,directFrame=null,lastDirect=null,dashboardLink=null,tvDirect=false,directConflict=false;
 const tvLinkCheck=$('tv-link-check'),tvLinkFeedback=$('tv-link-feedback');
 let tvLinkFeedbackTimer;
@@ -759,51 +765,27 @@ function renderTiberiusBoard(d){
  const rows=names.map(n=>[tiberiusFunnyName(n),fmt.format(gamePenalty(n,'tiberius',true)),...targets.map((_,i)=>({done:(d.penalties?.[i]?.payers||[]).includes(n),passed:score>=Number(targets[i])}))]);
  return `<div class="tv-board tv-matrix-board tv-tiberius-board"><h2 class="tv-headline">🏛️ Tiberius · Am Wurf: ${safe(tiberiusFunnyName(current))}</h2><div class="tv-stats"><div class="tv-stat">Punktestand<strong data-tv-score="tiberius-score">${score}</strong></div><div class="tv-stat">Nächstes Ziel<strong>${next??'🏁'}</strong></div><div class="tv-stat">Bis zum Ziel<strong data-tv-score="tiberius-remaining">${next?next-score:'Fertig'}</strong></div></div>${makeTable(['Spieler','Strafen',...targets],rows,v=>typeof v==='string'?`<strong>${safe(v)}</strong>`:`<div class="tv-cell ${v.done?'miss':v.passed?'done':'pending'}">${v.done?'✕':v.passed?'✓':'–'}</div>`,(row,i)=>names[i]===current&&d.active?'tiberius-active-row':'',names)}</div>`;
 }
-function plusminusSlotValue(idx,slot,partial,smart){
- if(!slot)return null;
- if(!slot.isGosse)return Number.parseInt(slot.kranzValue??slot.value??0,10)||0;
- if(!smart)return [0,0,9,0,9][idx];
- if(idx<=1)return 0;
- if(idx===2)return 9;
- if(idx===3)return partial<0?9:0;
- if(idx===4)return partial<0?1:9;
- return 0;
-}
-function plusminusResult(row,smart){
- let a=plusminusSlotValue(0,row[0],0,smart);
- if(a===null)return null;
- let b=plusminusSlotValue(1,row[1],a,smart);
- if(b===null)return null;
- let val=a+b;
- let c=plusminusSlotValue(2,row[2],val,smart);
- if(c===null)return null;
- val-=c;
- let d=plusminusSlotValue(3,row[3],val,smart);
- if(d===null)return null;
- val*=d;
- let e=plusminusSlotValue(4,row[4],val,smart);
- if(e===null)return null;
- return e===0?0:val/e;
-}
+function plusminusResult(row,smart){return window.KCPlusminus.compute(row,smart).result;}
 function renderPlusminusBoard(d){
- const names=activeNames(d.playerOrder);
- const rows=d.rows||{};
+ const names=(d.playerOrder||[]).slice(),rows=d.rows||{};
  if(!names.length)return null;
- const selected=Number(d.currentPlayerIndex)||0;
- const current=names[selected]||'—';
- const operators=['+','−','×','÷'],places=['①','②','③','④','⑤'];
- const displayNames=window.KCPlayerRows?.order(names,current,{running:d.active&&!d.finished,unavailable:n=>rows[n]?.length===5&&rows[n].every(Boolean)})||names;
- const tableRows=displayNames.map(n=>{
-  const r=Array.isArray(rows[n])?rows[n]:[];
-  const value=plusminusResult(r,!!d.smartGosse);
-  return `<tr${globalThis.window?.KCPlayerRows?.row?.(n)||''}><td class="tv-name">${safe(n)}</td>${Array.from({length:5},(_,j)=>{
-   const slot=r[j];const v=slot?(slot.isGosse?'G':slot.kranzValue??slot.value):'–';
-   const highlight=d.active&&n===current&&j===(Number(d.selectedSlot)||0);
-   return `<td><span class="tv-slot ${slot?'tv-slot-filled':''} ${highlight?'tv-slot-selected':''}">${safe(v)}</span></td>${j<4?`<td class="pm-operator">${operators[j]}</td>`:''}`;
-  }).join('')}<td class="tv-result"${globalThis.window?.KCPlayerRows?.score?.(n)||''}>${value===null?'–':safe(Number(value.toFixed(2)).toLocaleString('de-DE'))}</td></tr>`;
+ const current=d.playerOrder?.[Number(d.currentPlayerIndex)||0]||'–';
+ const result=n=>window.KCPlusminus.compute(rows[n]||[],!!d.smartGosse);
+ const compare=(a,b)=>d.physicalRulesVersion&&!!result(a).gutter!==!!result(b).gutter?Number(!!result(a).gutter)-Number(!!result(b).gutter):(result(b).result??-Infinity)-(result(a).result??-Infinity);
+ if(d.finished)names.sort(compare);
+ const key=n=>d.physicalRulesVersion&&result(n).gutter?'gosse':String(result(n).result),best=key(names[0]);
+ const positions=[...new Set(names.map(key))],assigned=d.history?.[0]?.assigned||[];
+ const operators=['+','−','×','÷'];
+ const displayNames=d.finished?names:window.KCPlayerRows?.order(names,current,{running:d.active,unavailable:n=>rows[n]?.length===5&&rows[n].every(Boolean)})||names;
+ const html=displayNames.map(n=>{
+  const row=rows[n]||[],r=result(n),winner=d.finished&&key(n)===best,rank=assigned.find(x=>x.name===n)?.rank;
+  return '<div class="haus-score-row pm-score-row'+(winner?' is-winner':'')+(d.active&&n===current?' is-current':'')+'" data-haus-name="'+safe(n)+'"'+(window.KCPlayerRows?.row?.(n)||'')+dashboardPlayerAttr(n)+'><span class="haus-position">'+(d.finished?positions.indexOf(key(n))+1:n===current?'▶':'·')+'</span><div class="haus-player"><span class="haus-avatar"></span><strong>'+safe(n)+'</strong></div>'+
+   Array.from({length:5},(_,i)=>{const x=row[i],gutter=x?.physicalThrow?.kind==='gosse'||x?.isGosse,through=x?.physicalThrow?.kind==='durchgeworfen',wreath=x?.physicalThrow?.kind==='kranz'||x?.value===12,selected=d.active&&n===current&&i===(Number(d.selectedSlot)||0);return '<span class="haus-digit pm-digit'+(x?' filled':'')+(selected?' is-next':'')+(gutter?' is-gutter':'')+'"><b>'+safe(x?gutter?'G':x.kranzValue??x.value:'–')+'</b><small>'+safe(gutter?'Gosse':through?'Durchwurf':wreath?'Kranz':'')+'</small></span>'+(i<4?'<span class="pm-sign">'+operators[i]+'</span>':'');}).join('')+
+   '<div class="haus-total pm-total"><strong data-tv-score="pm-'+safe(n)+'">'+(r.complete?safe(Number(r.result.toFixed(2)).toLocaleString('de-DE')):'–')+'</strong><small>'+safe(winner?'🏆 Sieger':rank?rank+'. Verlierer':r.complete&&r.gutter?'Gosse · schlechteste Wertung':r.divisionByZero?'Division durch 0 → 0':r.complete?'Fertig':row.filter(Boolean).length+' von 5')+'</small></div></div>';
  }).join('');
- return `<div class="tv-board plusminus-board"><h2 class="tv-headline">➕ + − × ÷</h2><div class="tv-stats"><div class="tv-stat">${d.finished?'Spiel abgeschlossen':'Aktueller Spieler'}<strong>${safe(d.finished?'🏁':current)}</strong></div><div class="tv-stat">Gewähltes Feld<strong>${d.finished?'–':(Number(d.selectedSlot)||0)+1}</strong></div></div><table class="tv-table tv-plusminus"><thead><tr><th>Spieler</th>${places.map((x,j)=>`<th>${x}</th>${j<4?`<th class="pm-operator">${operators[j]}</th>`:''}`).join('')}<th>Ergebnis</th></tr></thead><tbody${globalThis.window?.KCPlayerRows?.group?.('plusminus',d,{turn:Object.values(rows).reduce((count,r)=>count+(Array.isArray(r)?r.filter(Boolean).length:0),0)})||''}>${tableRows}</tbody></table></div>`;
+ return '<div class="tv-board haus-sport-board pm-sport-board" data-haus-finished="'+!!d.finished+'"><div class="haus-score-heading"><strong>+ − × ÷</strong><span>'+safe(d.finished?'🏁 Endstand':'Am Wurf: '+current)+'</span></div><div class="haus-score-columns pm-score-columns"><span>Pl.</span><span>Spieler</span><span>1</span><span>+</span><span>2</span><span>−</span><span>3</span><span>×</span><span>4</span><span>÷</span><span>5</span><span>Ergebnis</span></div><div class="haus-score-list"'+(!d.finished?window.KCPlayerRows?.group?.('plusminus',d,{turn:Object.values(rows).reduce((sum,r)=>sum+r.filter(Boolean).length,0)})||'':'')+'>'+html+'</div></div>';
 }
+
 function menschThrowCount(d){
  return Object.values(d.throws||{}).reduce((count,rolls)=>count+(rolls?.length||0),0);
 }
@@ -926,7 +908,7 @@ function renderMenschBoard(d,playerColor=dashboardPlayerColor()){
  }).join('');
  const tableRows=displayNames.map(name=>{
   const points=score(name);
-  const throws=(d.throws?.[name]||[]).slice(-5).map(t=>t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+safe(t.pins)+')':safe(t.pins)).join(' · ');
+  const throws=(d.throws?.[name]||[]).slice(-5).map(t=>t.physicalThrow?.kind==='durchgeworfen'?'0':t.pins===0?'G':(t.rawPins??t.pins)===12?'K ('+safe(t.pins)+')':safe(t.pins)).join(' · ');
   const highlight=name===current?' class="mensch-current" aria-current="true"':'';
   return `<tr${globalThis.window?.KCPlayerRows?.row?.(name)||''}${highlight} style="--mensch-player-color:${colors.get(name)}"><td class="tv-name"><i class="mensch-color-dot" aria-hidden="true"></i>${safe(name)} ${d.winner===name?'🏆':''}</td><td><strong${globalThis.window?.KCPlayerRows?.score?.(name)||''}>${points}</strong></td><td><div class="tv-progress"><span style="width:${points/target*100}%"></span></div></td><td>${throws||'–'}</td></tr>`;
  }).join('');
@@ -962,7 +944,7 @@ function renderDartsBoard(d){
 function renderHausBoard(d,mode){
  const names=(d.playerOrder||[]).slice(),rows=d.rows||{};
  const settings=state?.hausnummerSettings?.[mode]||{neun:mode==='hoch'?9:0,kranz:mode==='hoch'?12:0,gosse:0};
- const val=t=>t?(Number.isFinite(t.gameValue)?t.gameValue:t.isGosse||Number(t.value)===0?(mode==='hoch'?0:9):Number(t.value)===12?(t.kranzValue??settings.kranz):Number(t.value)===9?settings.neun:t.value):null;
+ const val=t=>t?(Number.isFinite(t.gameValue)?t.gameValue:t.physicalThrow?.kind==='durchgeworfen'?0:t.physicalThrow?.kind==='9er'?9:t.isGosse||Number(t.value)===0?(mode==='hoch'?0:9):Number(t.value)===12?(t.kranzValue??settings.kranz):Number(t.value)===9?settings.neun:t.value):null;
  const num=r=>r.length===3&&r.every(Boolean)?Number(r.map(x=>String(val(x))).join('')):null;
  const result=d.finished?d.history?.[0]:null;
  if(d.finished)names.sort((a,b)=>mode==='hoch'?num(rows[b]||[])-num(rows[a]||[]):num(rows[a]||[])-num(rows[b]||[]));
@@ -1034,6 +1016,8 @@ function fitHausBoard(board){
  const digitSize=Math.max(9,Math.min(34,h*.80,digitWidth*.55));
  const avatarSize=Math.max(10,Math.min(32,h*.75,nameWidth*.24));
  for(const [key,value] of Object.entries({name:nameSize,status:statusSize,total:totalSize,digit:digitSize,avatar:avatarSize}))board.style.setProperty('--haus-'+key+'-size',Math.floor(value)+'px');
+ for(const name of board.querySelectorAll('.haus-player strong')){name.style.fontSize='';let size=nameSize;const available=Math.max(1,name.closest('.haus-score-row').clientHeight-6);for(let i=0;i<8&&(name.scrollHeight>available||name.scrollWidth>name.clientWidth+1);i++){size*=.9;name.style.fontSize=Math.max(7,size)+'px';}}
+ for(const value of board.querySelectorAll('.haus-total strong')){value.style.fontSize='';let size=totalSize;for(let i=0;i<8&&value.scrollWidth>value.clientWidth+1;i++){size*=.9;value.style.fontSize=Math.max(7,size)+'px';}}
 }
 function fitTvBoard(){
  if(fitInProgress)return;
@@ -1096,7 +1080,7 @@ function renderFuchsjagdBoard(d){
  const ranking=results.length?`<div class="fox-race-legend">${results.map(r=>`<span class="fox-race-summary">${safe(r.fox)}: ${r.station}/${count} ${r.escaped?'🏁':'🦊'}</span>`).join('')}</div>`:'';
  const race=count?`<section class="fox-race" aria-label="Fuchsjagd: Rennstrecke mit ${count} Stationen"><div class="fox-race-title"><strong>🦊 Fuchsjagd-Strecke</strong><span>${d.active?'Fuchs '+(Number(d.foxIndex||0)+1)+' von '+count+' · '+safe(d.fox):'Alle Füchse waren unterwegs'}</span></div><div class="fox-race-stations" style="--fox-stop-count:${count}">${stations}</div>${ranking}</section>`:'';
  const visibleThrows=(d.throws||[]).slice(Math.min((d.throws||[]).length,Math.max(0,Number(d.tableStartIndex)||0)));
- const rows=visibleThrows.slice().reverse().map((x,i)=>`<tr><td>${visibleThrows.length-i}</td><td class="tv-name"${dashboardPlayerAttr(x.name)}>${safe(x.name)}</td><td>${(x.rawPins??x.pins)===12?'🎳 Kranz ('+x.pins+')':x.pins===0?'Gosse':safe(x.pins)}</td><td style="font-weight:800;color:${x.delta<0?'#be2323':'#177e3b'}">${x.delta>0?'+':''}${safe(x.delta)}</td><td><strong>${safe(x.score)}</strong></td></tr>`).join('');
+ const rows=visibleThrows.slice().reverse().map((x,i)=>`<tr><td>${visibleThrows.length-i}</td><td class="tv-name"${dashboardPlayerAttr(x.name)}>${safe(x.name)}</td><td>${(x.rawPins??x.pins)===12?'🎳 Kranz ('+x.pins+')':x.physicalThrow?.kind==='durchgeworfen'?'0 · Durchgeworfen':x.pins===0?'Gosse':safe(x.pins)}</td><td style="font-weight:800;color:${x.delta<0?'#be2323':'#177e3b'}">${x.delta>0?'+':''}${safe(x.delta)}</td><td><strong>${safe(x.score)}</strong></td></tr>`).join('');
  return `<div class="tv-board fox-tv-board"><h2 class="tv-headline">🦊 Fuchsjagd</h2><div class="fox-tv-grid"><div class="fox-tv-card">🦊 Fuchs<strong>${fox}</strong></div><div class="fox-tv-card fox-tv-score">Vorsprung<strong${globalThis.window?.KCPlayerRows?.score?.(d.fox)||''}>${score} Holz</strong></div><div class="fox-tv-card">🎳 Am Wurf<strong>${safe(current||'🏁')}</strong></div></div><div class="fox-tv-phase">${safe(phase)} · ${hunters.length} Jäger</div>${race}${d.result?`<div class="fox-tv-result">🏆 ${safe(d.result)}</div>`:''}<table class="tv-table fox-tv-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;
 }
 
@@ -1110,7 +1094,7 @@ function sichernDashboardThrower(d,key){
   }
   return players[index%players.length]||'–';
 }
-function renderSichernBoard(d){const mode=d.mode==='team',order=d.order||[],secured=d.secured||{},open=d.open||{},target=Number(d.target)||69;const name=k=>mode?(k==='T1'?'Wand':'TV'):k;const current=order[d.currentIndex]||'';const displayOrder=mode?['T2','T1'].filter(k=>order.includes(k)):window.KCPlayerRows?.order(order,current,{running:d.active&&!d.finished})||order;const cards=displayOrder.map(k=>{const locked=Number(secured[k])||0,pending=Number(open[k])||0,total=locked+pending;return `<div${mode?'':globalThis.window?.KCPlayerRows?.row?.(k)||''} style="border:2px solid ${mode&&k===current&&d.active?'#efa92c':'#2b3658'};border-radius:12px;padding:14px;background:${mode&&k===current&&d.active?'#fff9e7':'#fff'};display:grid;gap:8px"><strong style="font-size:clamp(17px,2vw,28px)">${safe(name(k))}</strong><span>🔒 ${locked} gesichert</span><span>+${pending} offen</span><strong${globalThis.window?.KCPlayerRows?.score?.(k)||''} style="font-size:clamp(23px,3vw,42px)">${total} / ${target}</strong><div style="height:11px;border-radius:8px;background:#e8e8ee;overflow:hidden"><div style="height:100%;width:${Math.min(100,total/target*100)}%;background:#159e5a"></div></div>${mode?`<small>${(d.teams?.[k]||[]).map(player=>`<span${dashboardPlayerAttr(player)}>${safe(player)}</span>`).join(' · ')}</small>`:''}</div>`}).join('');const throws=(d.throwHistory||[]).slice(-10).reverse().map(x=>`<tr><td>${safe(x.name)}</td><td>${x.saved?'🔒 Sichern':x.pins===0?'Gosse':(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':safe(x.pins)}</td><td>${x.failed?'❌ Rückfall':safe(x.total)}</td></tr>`).join('');return `<div class="tv-board"><h2 class="tv-headline">🔒 Sichern · ${mode?'Teamspiel':'Einzelspiel'} · Ziel ${target}</h2>${d.finished?`<h2 style="text-align:center;color:#168d4b">🏆 ${safe(d.message)}</h2>`:`<h3 style="text-align:center">🎳 Aktuell: ${safe(name(current)||'–')} · ${mode?safe(sichernDashboardThrower(d,current))+' am Wurf':'Spieler am Wurf'}</h3>`}<div${mode?'':globalThis.window?.KCPlayerRows?.group?.('sichern',d,{turn:d.throwHistory?.length})||''} style="display:grid;grid-template-columns:repeat(${Math.min(4,Math.max(1,order.length))},minmax(0,1fr));gap:10px">${cards}</div><h3 style="margin:14px 0 6px">Letzte Würfe</h3><table class="tv-table"><thead><tr><th>Spieler</th><th>Wurf</th><th>Stand</th></tr></thead><tbody>${throws||'<tr><td colspan="3">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;}
+function renderSichernBoard(d){const mode=d.mode==='team',order=d.order||[],secured=d.secured||{},open=d.open||{},target=Number(d.target)||69;const name=k=>mode?(k==='T1'?'Wand':'TV'):k;const current=order[d.currentIndex]||'';const displayOrder=mode?['T2','T1'].filter(k=>order.includes(k)):window.KCPlayerRows?.order(order,current,{running:d.active&&!d.finished})||order;const cards=displayOrder.map(k=>{const locked=Number(secured[k])||0,pending=Number(open[k])||0,total=locked+pending;return `<div${mode?'':globalThis.window?.KCPlayerRows?.row?.(k)||''} style="border:2px solid ${mode&&k===current&&d.active?'#efa92c':'#2b3658'};border-radius:12px;padding:14px;background:${mode&&k===current&&d.active?'#fff9e7':'#fff'};display:grid;gap:8px"><strong style="font-size:clamp(17px,2vw,28px)">${safe(name(k))}</strong><span>🔒 ${locked} gesichert</span><span>+${pending} offen</span><strong${globalThis.window?.KCPlayerRows?.score?.(k)||''} style="font-size:clamp(23px,3vw,42px)">${total} / ${target}</strong><div style="height:11px;border-radius:8px;background:#e8e8ee;overflow:hidden"><div style="height:100%;width:${Math.min(100,total/target*100)}%;background:#159e5a"></div></div>${mode?`<small>${(d.teams?.[k]||[]).map(player=>`<span${dashboardPlayerAttr(player)}>${safe(player)}</span>`).join(' · ')}</small>`:''}</div>`}).join('');const throws=(d.throwHistory||[]).slice(-10).reverse().map(x=>`<tr><td>${safe(x.name)}</td><td>${x.saved?'🔒 Sichern':x.physicalThrow?.kind==='durchgeworfen'?'0 · Durchgeworfen':x.pins===0?'Gosse':(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':safe(x.pins)}</td><td>${x.failed?'❌ Rückfall':safe(x.total)}</td></tr>`).join('');return `<div class="tv-board"><h2 class="tv-headline">🔒 Sichern · ${mode?'Teamspiel':'Einzelspiel'} · Ziel ${target}</h2>${d.finished?`<h2 style="text-align:center;color:#168d4b">🏆 ${safe(d.message)}</h2>`:`<h3 style="text-align:center">🎳 Aktuell: ${safe(name(current)||'–')} · ${mode?safe(sichernDashboardThrower(d,current))+' am Wurf':'Spieler am Wurf'}</h3>`}<div${mode?'':globalThis.window?.KCPlayerRows?.group?.('sichern',d,{turn:d.throwHistory?.length})||''} style="display:grid;grid-template-columns:repeat(${Math.min(4,Math.max(1,order.length))},minmax(0,1fr));gap:10px">${cards}</div><h3 style="margin:14px 0 6px">Letzte Würfe</h3><table class="tv-table"><thead><tr><th>Spieler</th><th>Wurf</th><th>Stand</th></tr></thead><tbody>${throws||'<tr><td colspan="3">Bereit für den ersten Wurf</td></tr>'}</tbody></table></div>`;}
 function renderTorBoard(d){
  const settings=seatingLive?.groupSettings||state?.groupSettings||{};
  const label=k=>safe(settings[k]?.name||({T1:'Wand',T2:'TV'}[k]));
@@ -1157,7 +1141,7 @@ function markDashboardPlayers(body,key,playerColor){
   column.style.setProperty('--dashboard-player-color',playerColor(column.dataset.abschreibungColumn));
  }
 }
-function paintGame(){window.KCPlayerNames?.configure(state?.persons||[]);const selection=state?.dashboardGameOverview,token=selection?.selectedGame?selection.revision+'|'+selection.selectedGame:'';if(token&&token!==dashboardSelectionSeen){dashboardSelectionSeen=token;$('game-select').value='auto';localStorage.setItem('kc_dashboard_game','auto');}const key=chosenGame(),data=key?gameState(key):null,body=$('game-body'),detailsOpen=!!body.querySelector('.tg-spiral-rounds')?.open;const playAbschreibung=key==='abschreibung'&&data&&!window.KCGameOverview?.visible(state);if(playAbschreibung&&typeof createAbschreibungTvPlayback==='function')abschreibungPlayback||=createAbschreibungTvPlayback();const abschreibungFrame=abschreibungPlayback?.(playAbschreibung?data:null,paintGame,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,(window.KCDashboardLayout?.abschreibungPause(state?.dashboardSettings?.abschreibungPause)??2.5)*1000);const playFence=key==='lattenzaun'&&data&&!window.KCGameOverview?.visible(state);if(playFence&&typeof createFenceTvPlayback==='function')fencePlayback||=createFenceTvPlayback();const fenceFrame=fencePlayback?.(playFence?data:null,paintGame,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,window.KCPlayerRows?.timings?.(state?.dashboardSettings));const results=window.KCGameResults,ranking=results?.dashboardRanking(key,data,state?.strafenHistory,state?.groupSettings)||[];window.KCDashboardLayoutTV?.highlight(state,key,fenceFrame?.before||data);const stamp=JSON.stringify([key,$('game-select').value,data,abschreibungFrame?.holding,abschreibungFrame?.points,!!abschreibungFrame?.ranks?.size,fenceFrame?.reordering,ranking,state?.dashboardGameOverview,state?.teamStopwatchActive,state?.gameOptions,state?.groupSettings,state?.seatingOrder,state?.TANNENBAUM_BASE,state?.hausnummerSettings,state?.extraGameSettings?.lattenzaun?.slatColor,state?.currentEveningStartedAt,(state?.persons||[]).map(p=>[p.name,p.present,p.left,p.inactive,p.isDrinksOnly,p.tisch,p.playerColor,p.gameAlias])]);if(state?.syncProtocol&&stamp===lastGamePaint&&body.firstChild)return;lastGamePaint=stamp;const lottoEffectMs=window.KCDashboardLotto?.update(key==='lottokoenig'&&data&&!window.KCGameOverview?.requested(state)?data:null,body,state?.dashboardSettings)||0;body.classList.remove('has-game-overview');const gameScope=JSON.stringify([clubId,key,data?.id||data?.startedAt||'',state?.currentEveningStartedAt]);const previousHaus=['haushoch','haustief'].includes(key)?houseOrigins(body,gameScope):null;const previousAbschreibung=playAbschreibung&&body.dataset.scoreGame===gameScope&&typeof captureAbschreibungColumns==='function'?captureAbschreibungColumns(body):null;const previousJump=key==='hochsprung'&&body.dataset.scoreGame===gameScope?body.querySelector('.jump-tv-fill'):null;const previousEuro=key==='dreieuro'&&body.dataset.scoreGame===gameScope?body.querySelector('.euro-chart'):null;const menschData=key==='mensch'&&data&&!window.KCGameOverview?.requested(state)?data:null;const pawnOrigins=menschData?menschPawnOrigins(body,data,gameScope):null;const menschTurn=menschData?menschThrowCount(data):0;if(menschPopupScope&&(!menschData||menschPopupScope!==gameScope||menschTurn<menschPopupTurn))clearMenschPopup();body.dataset.scoreGame=gameScope;body.classList.remove('has-abschreibung-board','has-jump-board','has-haus-board');body.replaceChildren();const overviewState={...state,...Object.fromEntries(games.map(k=>[k+'State',gameState(k)]))};if(window.KCGameOverview?.visible(overviewState)||isEmptyDashboardGame(data)){if(showDashboardGameOverview(overviewState))return;}dashboardGameStopwatch=window.KCGameStopwatch?.clock(key,data,state?.teamStopwatchActive)||null;window.KCGameStopwatch?.paint($('tv-game-stopwatch'),dashboardGameStopwatch,window.KCSharedClock?.timerNow?.()??Date.now());$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';const playerColor=dashboardPlayerColor();let html=null;if(data){try{html=['bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend','abschreibung','lottokoenig','tageskurs','swingerclub'].includes(key)?'<div class="tv-board">'+renderExtraGameBoard(data,{dashboard:true,playerColor,abschreibungFrame,fenceFrame,slatColor:state?.extraGameSettings?.lattenzaun?.slatColor})+'</div>':key==='hindernis'?renderIndividualBoard(data,{dashboard:true,playerColor}):key==='siebener'?'<div class="tv-board ind-tv-board">'+renderIndividualBoard(data,{dashboard:true})+'</div>':key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data,playerColor):key==='plusminus'?renderPlusminusBoard(data):key==='haushoch'?renderHausBoard(data,'hoch'):key==='haustief'?renderHausBoard(data,'tief'):key==='fuchsjagd'?renderFuchsjagdBoard(data):['blackjack','gluecksspirale'].includes(key)?'<div class="tv-board tg-tv-board">'+renderTableGameBoard(data,{detailsOpen,dashboard:true})+'</div>':key==='sechstage'?'<div class="tv-board six-tv-board">'+renderSixDaysBoard(data,{dashboard:true})+'</div>':key==='sichern'?renderSichernBoard(data):key==='tor'?renderTorBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;markDashboardPlayers(body,key,playerColor);if(['haushoch','haustief'].includes(key)){body.classList.add('has-haus-board');houseDecorate(body,previousHaus,data);}if(key==='dreieuro'&&typeof animateEuroChart==='function')animateEuroChart(previousEuro,body.querySelector('.euro-chart'));if(key==='hochsprung'){body.classList.add('has-jump-board');body.querySelector('.tv-board')?.classList.add('jump-tv-fit-board');if(typeof animateJumpMeter==='function')animateJumpMeter(previousJump,body.querySelector('.jump-tv-fill'));}if(key==='abschreibung'){body.classList.add('has-abschreibung-board');if(previousAbschreibung)fadeAbschreibungColumns(previousAbschreibung,body);}const lottoRows=body.querySelector('[data-player-rows=lottokoenig]');if(lottoRows&&lottoEffectMs)lottoRows.dataset.playerExtraHold=String(lottoEffectMs);const resultMarkup=results?.dashboardMarkup(ranking);if(resultMarkup&&!["haushoch","haustief"].includes(key))body.querySelector('.tv-board')?.insertAdjacentHTML('afterbegin',resultMarkup);const menschBoard=key==='mensch'?body.querySelector('.mensch-tv-board'):null;if(menschBoard)addMenschPawnAvatars(menschBoard,state?.persons);const knockout=pawnOrigins?menschKnockout(data,pawnOrigins):null;const reduceMensch=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;if(knockout)showMenschPopup(body.closest('.stage'),knockout,gameScope,menschTurn,state?.dashboardSettings,reduceMensch);window.KCPlayerNames?.apply(body,state?.persons||[]);requestAnimationFrame(()=>{fitTvBoard();if(!reduceMensch&&pawnOrigins&&menschBoard?.isConnected)animateMenschPawns(menschBoard,pawnOrigins,data);});return}if(showDashboardGameOverview(overviewState))return;const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
+function paintGame(){window.KCPlayerNames?.configure(state?.persons||[]);const selection=state?.dashboardGameOverview,token=selection?.selectedGame?selection.revision+'|'+selection.selectedGame:'';if(token&&token!==dashboardSelectionSeen){dashboardSelectionSeen=token;$('game-select').value='auto';localStorage.setItem('kc_dashboard_game','auto');}const key=chosenGame(),data=key?gameState(key):null,body=$('game-body'),detailsOpen=!!body.querySelector('.tg-spiral-rounds')?.open;const playAbschreibung=key==='abschreibung'&&data&&!window.KCGameOverview?.visible(state);if(playAbschreibung&&typeof createAbschreibungTvPlayback==='function')abschreibungPlayback||=createAbschreibungTvPlayback();const abschreibungFrame=abschreibungPlayback?.(playAbschreibung?data:null,paintGame,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,(window.KCDashboardLayout?.abschreibungPause(state?.dashboardSettings?.abschreibungPause)??2.5)*1000);const playFence=key==='lattenzaun'&&data&&!window.KCGameOverview?.visible(state);if(playFence&&typeof createFenceTvPlayback==='function')fencePlayback||=createFenceTvPlayback();const fenceFrame=fencePlayback?.(playFence?data:null,paintGame,window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,window.KCPlayerRows?.timings?.(state?.dashboardSettings));const results=window.KCGameResults,ranking=results?.dashboardRanking(key,data,state?.strafenHistory,state?.groupSettings)||[];window.KCDashboardLayoutTV?.highlight(state,key,fenceFrame?.before||data);const stamp=JSON.stringify([key,$('game-select').value,data,abschreibungFrame?.holding,abschreibungFrame?.points,!!abschreibungFrame?.ranks?.size,fenceFrame?.reordering,ranking,state?.dashboardGameOverview,state?.teamStopwatchActive,state?.gameOptions,state?.groupSettings,state?.seatingOrder,state?.TANNENBAUM_BASE,state?.hausnummerSettings,state?.extraGameSettings?.lattenzaun?.slatColor,state?.currentEveningStartedAt,(state?.persons||[]).map(p=>[p.name,p.present,p.left,p.inactive,p.isDrinksOnly,p.tisch,p.playerColor,p.gameAlias])]);if(state?.syncProtocol&&stamp===lastGamePaint&&body.firstChild)return;lastGamePaint=stamp;const lottoEffectMs=window.KCDashboardLotto?.update(key==='lottokoenig'&&data&&!window.KCGameOverview?.requested(state)?data:null,body,state?.dashboardSettings)||0;body.classList.remove('has-game-overview');const gameScope=JSON.stringify([clubId,key,data?.id||data?.startedAt||'',state?.currentEveningStartedAt]);const previousHaus=['haushoch','haustief','plusminus'].includes(key)?houseOrigins(body,gameScope):null;const previousAbschreibung=playAbschreibung&&body.dataset.scoreGame===gameScope&&typeof captureAbschreibungColumns==='function'?captureAbschreibungColumns(body):null;const previousJump=key==='hochsprung'&&body.dataset.scoreGame===gameScope?body.querySelector('.jump-tv-fill'):null;const previousEuro=key==='dreieuro'&&body.dataset.scoreGame===gameScope?body.querySelector('.euro-chart'):null;const menschData=key==='mensch'&&data&&!window.KCGameOverview?.requested(state)?data:null;const pawnOrigins=menschData?menschPawnOrigins(body,data,gameScope):null;const menschTurn=menschData?menschThrowCount(data):0;if(menschPopupScope&&(!menschData||menschPopupScope!==gameScope||menschTurn<menschPopupTurn))clearMenschPopup();body.dataset.scoreGame=gameScope;body.classList.remove('has-abschreibung-board','has-jump-board','has-haus-board');body.replaceChildren();const overviewState={...state,...Object.fromEntries(games.map(k=>[k+'State',gameState(k)]))};if(window.KCGameOverview?.visible(overviewState)||isEmptyDashboardGame(data)){if(showDashboardGameOverview(overviewState))return;}dashboardGameStopwatch=window.KCGameStopwatch?.clock(key,data,state?.teamStopwatchActive)||null;window.KCGameStopwatch?.paint($('tv-game-stopwatch'),dashboardGameStopwatch,window.KCSharedClock?.timerNow?.()??Date.now());$('game-title').textContent=key?'🎯 '+gameNames[key]:'🎯 Aktives Spiel';$('game-info').textContent=key?($('game-select').value==='auto'?'Automatische Auswahl':'Manuelle Auswahl'):'Kein Spiel ausgewählt';const playerColor=dashboardPlayerColor();let html=null;if(data){try{html=['bergundtal','ballermann','lattenzaun','guterschnitt','parteienspiel','dreieuro','ebbeflut','hochsprung','poker','pfaelzer','tausend','abschreibung','lottokoenig','tageskurs','swingerclub'].includes(key)?'<div class="tv-board">'+renderExtraGameBoard(data,{dashboard:true,playerColor,abschreibungFrame,fenceFrame,slatColor:state?.extraGameSettings?.lattenzaun?.slatColor})+'</div>':key==='hindernis'?renderIndividualBoard(data,{dashboard:true,playerColor}):key==='siebener'?'<div class="tv-board ind-tv-board">'+renderIndividualBoard(data,{dashboard:true})+'</div>':key==='tannenbaum'?renderTree(data):key==='lotterie'?renderLottery(data):key==='tiberius'?renderTiberiusBoard(data):key==='mensch'?renderMenschBoard(data,playerColor):key==='plusminus'?renderPlusminusBoard(data):key==='haushoch'?renderHausBoard(data,'hoch'):key==='haustief'?renderHausBoard(data,'tief'):key==='fuchsjagd'?renderFuchsjagdBoard(data):['blackjack','gluecksspirale'].includes(key)?'<div class="tv-board tg-tv-board">'+renderTableGameBoard(data,{detailsOpen,dashboard:true})+'</div>':key==='sechstage'?'<div class="tv-board six-tv-board">'+renderSixDaysBoard(data,{dashboard:true})+'</div>':key==='sichern'?renderSichernBoard(data):key==='tor'?renderTorBoard(data):renderGeneric(data,key)}catch(e){console.error('Spielfeld',key,e)}}if(html){body.innerHTML=html;markDashboardPlayers(body,key,playerColor);if(['haushoch','haustief','plusminus'].includes(key)){body.classList.add('has-haus-board');houseDecorate(body,previousHaus,data);}if(key==='dreieuro'&&typeof animateEuroChart==='function')animateEuroChart(previousEuro,body.querySelector('.euro-chart'));if(key==='hochsprung'){body.classList.add('has-jump-board');body.querySelector('.tv-board')?.classList.add('jump-tv-fit-board');if(typeof animateJumpMeter==='function')animateJumpMeter(previousJump,body.querySelector('.jump-tv-fill'));}if(key==='abschreibung'){body.classList.add('has-abschreibung-board');if(previousAbschreibung)fadeAbschreibungColumns(previousAbschreibung,body);}const lottoRows=body.querySelector('[data-player-rows=lottokoenig]');if(lottoRows&&lottoEffectMs)lottoRows.dataset.playerExtraHold=String(lottoEffectMs);const resultMarkup=results?.dashboardMarkup(ranking);if(resultMarkup&&!["haushoch","haustief","plusminus"].includes(key))body.querySelector('.tv-board')?.insertAdjacentHTML('afterbegin',resultMarkup);const menschBoard=key==='mensch'?body.querySelector('.mensch-tv-board'):null;if(menschBoard)addMenschPawnAvatars(menschBoard,state?.persons);const knockout=pawnOrigins?menschKnockout(data,pawnOrigins):null;const reduceMensch=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;if(knockout)showMenschPopup(body.closest('.stage'),knockout,gameScope,menschTurn,state?.dashboardSettings,reduceMensch);window.KCPlayerNames?.apply(body,state?.persons||[]);requestAnimationFrame(()=>{fitTvBoard();if(!reduceMensch&&pawnOrigins&&menschBoard?.isConnected)animateMenschPawns(menschBoard,pawnOrigins,data);});return}if(showDashboardGameOverview(overviewState))return;const w=node('div',null,'placeholder');w.append(node('div','🎳','symbol'),node('h3',key?'Noch kein Spielstand':'Bereit für den Kegelabend'),node('p','Sobald die Spieldaten vorliegen, erscheint hier das Spielfeld.'));body.append(w)}
 
 function stopLegacyChannels(){
  try{liveUnsub?.()}catch(e){console.warn(e)}try{seatingUnsub?.()}catch(e){console.warn(e)}

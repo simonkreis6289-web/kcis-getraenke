@@ -522,7 +522,7 @@ async function handleTiberiusThrow(value){
   const key=getGosseStrafeKey();if(!key){showToast('Gossen-Strafe nicht gefunden','error');return;}
   changes.push({personName:thrower,category:'strafen',key,delta:1});
  }else if(value===9||value===12||value==='durchgeworfen'){
-  const key=getKranzStrafeKey();if(!key){showToast('9er/Kranz-Strafe nicht gefunden','error');return;}
+  const key=getPenaltyKeyByType(value===9?'9er':value===12?'kranz':'durchgeworfen');if(!key){showToast('Wurfstrafe nicht gefunden','error');return;}
   list.filter(name=>name!==thrower).forEach(personName=>changes.push({personName,category:'strafen',key,delta:1}));
  }
  const hits=(tiberiusState.targets||[]).map((target,colIndex)=>({target:Number(target),colIndex}))
@@ -536,7 +536,7 @@ async function handleTiberiusThrow(value){
   if(changes.length&&!(await changeMultipleSyncedPersonCounters(changes,'🏛️ Tiberius: Sonderwurf')))return;
   const createdAt=new Date().toISOString();
   tiberiusState.score=newScore;
-  tiberiusState.throws.push({value:scored,rawValue:value,oldScore,newScore,thrower,createdAt});
+  tiberiusState.throws.push({value:scored,rawValue:value,physicalThrow:KCThrows.physical(value==='durchgeworfen'?0:value,value==='durchgeworfen'?'durchgeworfen':value===0?'gosse':undefined),oldScore,newScore,thrower,createdAt});
   for(const {target,colIndex} of hits){
    const mode=newScore===target?'exact':'over',payers=mode==='exact'?list.filter(name=>name!==thrower):[thrower];
    tiberiusState.penalties[colIndex]={target,colIndex,mode,thrower,payers,amount:target/100,createdAt};

@@ -90,7 +90,9 @@
   if(req.action!=='throw')throw Error('Ungültige Spielaktion.');
   if(!physical(s.gameKey))return null;
   const board=s.gameKey==='swingerclub'?s.standing:pins;
+  if(req.kind==='miss')return {kind:'miss',pins:0,knocked:[]};
   if(req.kind==='gosse')return {kind:'gosse',pins:0,knocked:[]};
+  if(s.gameKey==='swingerclub'&&req.kind==='kranz'){if(board.length!==9)throw Error('Kranz ist nur ins volle Bild möglich.');return {kind:'kranz',pins:8,knocked:board.filter(n=>n!==5)};}
   if(s.gameKey==='tageskurs'&&req.kind==='kranz')return {kind:'kranz',pins:pins.length,knocked:pins.slice()};
   if(req.kind!=='pins'||!Array.isArray(req.knocked)||!req.knocked.length||
      new Set(req.knocked).size!==req.knocked.length||req.knocked.some(n=>!board.includes(n)))throw Error('Bitte die gefallenen Kegel markieren oder Gosse wählen.');

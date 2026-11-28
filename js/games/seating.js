@@ -292,7 +292,7 @@ function prepareSoloStarter(id, callback, forceDraw=false) {
 }
 let soloPinPenaltyBusy=false;
 async function bookSoloSpecialThrow(name,pins,kind) {
-  if(!['gosse','9er','kranz'].includes(kind))return true;
+  if(!['gosse','9er','kranz','durchgeworfen'].includes(kind))return true;
   if(soloPinPenaltyBusy)return false;
   const key=getPenaltyKeyByType(kind);
   if(!key){showToast('Strafenart '+kind+' nicht angelegt','error');return false;}
@@ -310,8 +310,8 @@ async function bookSoloSpecialThrow(name,pins,kind) {
 
 
 // V108: Gegenbuchungen fuer korrigierte Solospiel-Wuerfe.
-function getSoloThrowPenalty(name, value, isGosse) {
-  const kind = isGosse || value === 0 ? 'gosse' : value === 9 ? '9er' : value === 12 ? 'kranz' : null;
+function getSoloThrowPenalty(name, value, isGosse, physicalThrow=null) {
+  const kind = window.KCThrows ? KCThrows.penalty(physicalThrow||KCThrows.physical(value,isGosse?'gosse':undefined)) : isGosse || value === 0 ? 'gosse' : value === 9 ? '9er' : value === 12 ? 'kranz' : null;
   if (!kind) return null;
   const key = getPenaltyKeyByType(kind);
   if (!key) return { kind, key: null, punished: [] };
@@ -327,8 +327,9 @@ async function changeSoloThrowPenalty(name, oldThrow, newThrow, finishPenalties=
   // Beim Korrigieren alle Straf-Deltas in EINEM synchronisierten Schreibvorgang buchen.
   const oldValue = oldThrow ? Number(oldThrow.rawPins ?? oldThrow.pins ?? oldThrow.value) : null;
   const newValue = newThrow ? Number(newThrow.rawPins ?? newThrow.pins ?? newThrow.value) : null;
-  const oldPenalty = oldThrow ? oldThrow.penaltyBooking || getSoloThrowPenalty(name, oldValue, !!oldThrow.isGosse) : null;
-  const newPenalty = newThrow ? getSoloThrowPenalty(name, newValue, !!newThrow.isGosse) : null;
+  const oldPenalty = oldThrow ? oldThrow.penaltyBooking || getSoloThrowPenalty(name, oldValue, !!oldThrow.isGosse,oldThrow.physicalThrow) : null;
+  if(newThrow&&window.KCThrows&&!newThrow.physicalThrow)newThrow.physicalThrow=KCThrows.physical(newValue,newThrow.kind||(newThrow.isGosse?'gosse':undefined));
+  const newPenalty = newThrow ? getSoloThrowPenalty(name, newValue, !!newThrow.isGosse,newThrow.physicalThrow) : null;
   if (newPenalty && !newPenalty.key) { showToast('Strafenart nicht vorhanden: '+newPenalty.kind,'error'); return false; }
   if (oldPenalty && !oldPenalty.key) { showToast('Alte Strafenart nicht mehr vorhanden: '+oldPenalty.kind,'error'); return false; }
   const deltas = new Map();

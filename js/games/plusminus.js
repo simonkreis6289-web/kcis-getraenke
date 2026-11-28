@@ -69,6 +69,7 @@ function startPlusminusGame() {
   plusminusState.currentThrowIndex = 0;
   plusminusState.selectedSlot=0;
   plusminusState.startedAt = new Date().toISOString();
+  plusminusState.physicalRulesVersion=1;
   plusminusState.rows = {};
   plusminusState.undoStack = [];
   plusminusState.editTarget = null;
@@ -170,7 +171,7 @@ async function confirmPlusminusSlotEdit(value,isGosse=false) {
     const assigned=result?plusminusAssigned(plusminusResults(correctedRows)):[];
     const rebook=result?[...(result.assigned||[]).map(x=>({personName:x.name,key:x.key,delta:1})),...assigned.map(x=>({personName:x.name,key:x.key,delta:-1}))]:[];
     if(!(await changeSoloThrowPenalty(target.name,old,updated,rebook)))return;
-    if(result){result.assigned=assigned;result.ranking=[1,2,3].map(rank=>({rank,names:assigned.filter(x=>x.rank===rank).map(x=>x.name)})).filter(x=>x.names.length);}
+    if(result){const ranked=plusminusResults(correctedRows);result.winnerNames=ranked.filter(r=>plusminusScoreKey(r)===plusminusScoreKey(ranked[0])).map(r=>r.name);result.assigned=assigned;result.ranking=[1,2,3].map(rank=>({rank,names:assigned.filter(x=>x.rank===rank).map(x=>x.name)})).filter(x=>x.names.length);}
     plusminusState.rows[target.name][target.slotIndex]=updated;
     // Falls das bearbeitete Feld der letzte eingegebene Wurf war, auch
     // die Undo-Information erhalten; beim Rückgängigmachen gilt der neue Wert.
@@ -179,7 +180,7 @@ async function confirmPlusminusSlotEdit(value,isGosse=false) {
       const entry=plusminusState.history[0];
       entry.rows=JSON.parse(JSON.stringify(plusminusState.rows));
       entry.results=players.map(player=>({name:player.name,...computePlusminusResult(plusminusState.rows[player.name]||[],plusminusState.smartGosse)}))
-        .sort((a,b)=>(b.result??-Infinity)-(a.result??-Infinity));
+        .sort(plusminusCompare);
       const archived=strafenHistory.findIndex(e=>e.id===entry.id);if(archived>=0)strafenHistory[archived]=JSON.parse(JSON.stringify(entry));
     }
     closePlusminusSlotEdit();plusminusState.busy=false;renderAll();persistState();
@@ -188,48 +189,23 @@ async function confirmPlusminusSlotEdit(value,isGosse=false) {
   finally {plusminusState.busy=false;}
 }
 
-function resolvePlusminusValue(slotIndex, slot, partialBefore, smart) {
-  if (!slot) return null;
-  if (!slot.isGosse) return parseInt(slot.kranzValue ?? slot.value ?? 0, 10) || 0;
-  if (!smart) return [0, 0, 9, 0, 9][slotIndex];
-  if (slotIndex === 0 || slotIndex === 1) return 0;
-  if (slotIndex === 2) return 9;
-  if (slotIndex === 3) return partialBefore < 0 ? 9 : 0;
-  if (slotIndex === 4) return partialBefore < 0 ? 1 : 9;
-  return 0;
-}
-
-function computePlusminusResult(row, smart = false) {
-  const steps = [];
-  let a = resolvePlusminusValue(0, row[0], 0, smart);
-  let b = resolvePlusminusValue(1, row[1], a, smart);
-  if (a === null || b === null) return { complete: false, result: null, display: '—' };
-  let value = a + b;
-  steps.push(`${a} + ${b} = ${value}`);
-  let c = resolvePlusminusValue(2, row[2], value, smart);
-  if (c === null) return { complete: false, result: null, display: '—' };
-  value = value - c;
-  steps.push(`− ${c} = ${value}`);
-  let d = resolvePlusminusValue(3, row[3], value, smart);
-  if (d === null) return { complete: false, result: null, display: '—' };
-  value = value * d;
-  steps.push(`× ${d} = ${value}`);
-  let e = resolvePlusminusValue(4, row[4], value, smart);
-  if (e === null) return { complete: false, result: null, display: '—' };
-  value = e === 0 ? 0 : value / e;
-  steps.push(`÷ ${e} = ${value}`);
-  return { complete: true, result: value, display: String(value), steps };
-}
+function resolvePlusminusValue(...args){return KCPlusminus.value(...args);}
+function computePlusminusResult(...args){return KCPlusminus.compute(...args);}
 
 function plusminusResults(rows=plusminusState.rows){
-  return plusminusState.playerOrder.map(name=>({name,...computePlusminusResult(rows[name]||[],plusminusState.smartGosse)})).sort((a,b)=>(b.result??-Infinity)-(a.result??-Infinity));
+  return plusminusState.playerOrder.map(name=>({name,...computePlusminusResult(rows[name]||[],plusminusState.smartGosse)})).sort(plusminusCompare);
 }
+function plusminusScoreKey(x){return plusminusState.physicalRulesVersion&&x.gutter?'gosse':String(x.result);}
+function plusminusCompare(a,b){return plusminusState.physicalRulesVersion&&!!a.gutter!==!!b.gutter?Number(!!a.gutter)-Number(!!b.gutter):(b.result??-Infinity)-(a.result??-Infinity);}
 function plusminusAssigned(results){
-  const best=results[0]?.result,values=[...new Set(results.filter(x=>x.result!==best).map(x=>x.result))].sort((a,b)=>a-b);
-  return values.slice(0,3).flatMap((value,index)=>results.filter(x=>x.result===value).map(x=>({name:x.name,rank:index+1,key:getLoserPenaltyKeyByRank(index+1)})));
+ const best=plusminusScoreKey(results[0]||{}),losers=results.filter(x=>plusminusScoreKey(x)!==best).slice().sort((a,b)=>plusminusCompare(b,a)),groups=[];
+ for(const x of losers){const k=plusminusScoreKey(x);let g=groups.find(g=>g.key===k);if(!g){g={key:k,names:[]};groups.push(g);}g.names.push(x.name);}
+ return groups.slice(0,3).flatMap((g,i)=>g.names.map(name=>({name,rank:i+1,key:getLoserPenaltyKeyByRank(i+1)})));
 }
 async function finishPlusminusGame() {
-  if(plusminusState.finished)return;
+  if(!plusminusState.active||plusminusState.finished||plusminusState.finishing)return;
+  plusminusState.finishing=true;
+  try{
   const players = getPlusminusPlayers();
   const results=plusminusResults();
   if(results.some(x=>!x.complete)){showToast('Zuerst alle Würfe eintragen','error');return false;}
@@ -242,7 +218,7 @@ async function finishPlusminusGame() {
     id: 'plusminus_' + Date.now(),
     type: 'plusminus',
     assigned,ranking:[1,2,3].map(rank=>({rank,names:assigned.filter(x=>x.rank===rank).map(x=>x.name)})).filter(x=>x.names.length),
-      participants: players.map(p=>p.name),winnerNames: results.length&&results[0].result!=null?results.filter(r=>r.result===results[0].result).map(r=>r.name):[],
+      participants: players.map(p=>p.name),winnerNames: results.length&&results[0].result!=null?results.filter(r=>plusminusScoreKey(r)===plusminusScoreKey(results[0])).map(r=>r.name):[],
     createdAt: new Date().toISOString(),
     smartGosse: !!plusminusState.smartGosse,
     rows: JSON.parse(JSON.stringify(plusminusState.rows)),
@@ -254,6 +230,7 @@ async function finishPlusminusGame() {
   persistState();
   showToast('➕ Spiel abgeschlossen und Verlierer gebucht', 'success');
   return true;
+  }finally{plusminusState.finishing=false;}
 }
 
 function resetPlusminusGame() {
@@ -274,7 +251,7 @@ function renderPlusminusGame(){
   else{
     const current=players[plusminusState.currentPlayerIndex];
     const rowPlayers=window.KCPlayerRows?.order(players,current?.name,{running:plusminusState.active&&!plusminusState.finished,unavailable:p=>plusminusState.rows[p.name]?.length===5&&plusminusState.rows[p.name].every(Boolean)})||players;
-    board.innerHTML=`<div class="game-throw-toolbar"><strong>${plusminusState.finished?'🏁 Spiel beendet':'🎳 '+(current?.name||'—')+' · Kästchen '+(plusminusState.selectedSlot+1)+' wählen'}</strong><button class="secondary-btn" onclick="undoPlusminusThrow()" ${plusminusState.undoStack.length?'':'disabled'}>↩ Letzten Wurf</button>${plusminusState.active?`${[1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyPlusminusThrow(${n},false)">${n===12?'Kranz':n}</button>`).join('')}<button class="pinpad-btn special" onclick="applyPlusminusThrow(0,true)">Gosse</button>`:''}</div>
+    board.innerHTML=`<div class="game-throw-toolbar"><strong>${plusminusState.finished?'🏁 Spiel beendet':'🎳 '+(current?.name||'—')+' · Kästchen '+(plusminusState.selectedSlot+1)+' wählen'}</strong><button class="secondary-btn" onclick="undoPlusminusThrow()" ${plusminusState.undoStack.length?'':'disabled'}>↩ Letzten Wurf</button>${plusminusState.active?`${[0,1,2,3,4,5,6,7,8,9,12].map(n=>`<button class="pinpad-btn" onclick="applyPlusminusThrow(${n},false)">${n===12?'Kranz':n}</button>`).join('')}<button class="pinpad-btn special" onclick="applyPlusminusThrow(0,true)">Gosse</button>`:''}</div>
     ${plusminusState.active&&players.every(p=>(plusminusState.rows[p.name]||[]).length===5&&(plusminusState.rows[p.name]||[]).every(Boolean))?'<button type="button" onclick="finishPlusminusGame()">Abschluss erneut buchen</button>':''}
     <div class="game-compact-wrap"><table class="game-compact-table plusminus-table"><thead><tr><th>Spieler</th>${['①','②','③','④','⑤'].map((label,j)=>`<th>${label}</th>${j<4?`<th class="pm-operator">${['+','−','×','÷'][j]}</th>`:''}`).join('')}<th>Ergebnis</th></tr></thead><tbody${globalThis.window?.KCPlayerRows?.group?.('plusminus',plusminusState,{turn:plusminusState.undoStack.length})||''}>
     ${rowPlayers.map(p=>{const row=plusminusState.rows[p.name]||Array(5).fill(null);const result=computePlusminusResult(row,plusminusState.smartGosse);return `<tr${globalThis.window?.KCPlayerRows?.row?.(p.name)||''}><td>${p.name}</td>${row.map((slot,j)=>`<td><button class="game-slot ${slot?'filled':''} ${p.name===current?.name&&j===plusminusState.selectedSlot?'selected':''}" onclick="${slot?`openPlusminusSlotEdit(${JSON.stringify(p.name)},${j})`:(plusminusState.active&&p.name===current?.name?`choosePlusminusSlot(${j})`:'')}" ${!slot&&(!plusminusState.active||p.name!==current?.name)?'disabled':''}>${slot?(slot.isGosse?'G':slot.kranzValue??slot.value):'—'}</button></td>${j<4?`<td class="pm-operator">${['+','−','×','÷'][j]}</td>`:''}`).join('')}<td class="game-compact-score">${result.complete?Number(result.result.toFixed(2)).toLocaleString('de-DE'):'—'}</td></tr>`;}).join('')}
