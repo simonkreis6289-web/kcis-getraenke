@@ -124,3 +124,10 @@ test('app-only booking toasts and both TV entry pages retain navigation, rotatio
  const app=read('getraenke-abrechnung.html');assert(app.includes('js/penalty-booking-toasts.js'));
  for(const file of ['dashboard.html','dashboard-compat.html']){const html=read(file),{document}=parseHTML(html);assert(![...document.querySelectorAll('a,button')].some(el=>el.textContent.trim()==='Hauptapp'));assert(document.getElementById('fullscreen-btn'));assert(document.getElementById('game-select'));assert(!html.includes('js/penalty-booking-toasts.js'));assert(html.includes('css/dashboard-light.css'));}
 });
+test('actual Swinger Club Kranz button uses its physical rack rule without an unsupported numeric-value chooser',async()=>{
+ const root=initial();root.currentEveningStartedAt=day;root.dartsState={active:false};root.persons.push({...copy(root.persons[0]),name:'C'});root.persons.forEach((p,i)=>p.tisch=i%2?'T2':'T1');
+ const db=database({[rootPath]:root}),a=fullApp(db);await a.select();await a.c.indStart('swingerclub');assert(a.c.indGet('swingerclub').active);
+ const button=[...a.document.querySelectorAll('#tab-swingerclub button')].find(b=>b.textContent==='Kranz (8)');assert(button);assert(!button.disabled);await a.run(button.getAttribute('onclick'));assert(await a.c.KCSharedSync.waitForUpload());
+ const s=db.root().swingerclubState;assert.equal(s.history.at(-1).kind,'kranz');assert.deepEqual(s.history.at(-1).physicalThrow,{kind:'kranz',pins:8});assert.equal(db.root().eveningCounters.wreaths,1);assert.equal(db.root().eveningCounters.nines,0);assert.equal(db.root().eveningCounters.pins,8);
+ await a.c.indAction('swingerclub','undo');assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().eveningCounters.throws,0);
+});
