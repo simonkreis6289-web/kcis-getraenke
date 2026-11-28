@@ -23,11 +23,15 @@
   if(!pending.size)return;clearTimeout(timer);cancelAnimationFrame(frame);
   host ||= Object.assign(document.createElement('div'),{id:'penalty-booking-toasts',className:'penalty-booking-toasts'});
   host.setAttribute('role','status');host.setAttribute('aria-live','polite');host.style.pointerEvents='none';if(!host.isConnected)document.body.append(host);
-  const rows=[...pending.values()],visible=rows.slice(0,6);host.innerHTML=visible.map(r=>{
+  const rows=[...pending.values()],visible=rows.slice(0,6);const render=()=>{host.innerHTML=visible.map(r=>{
    const color=window.KCPlayerColors?.forPerson?.(r.person)||r.person.playerColor||'#4e77a8',safeColor=/^#[0-9a-f]{6}$/i.test(color)?color:'#4e77a8';
    const avatar=typeof getAvatarHtml==='function'?getAvatarHtml(r.name):'';
    return '<article class="penalty-booking-card" style="--booking-color:'+safeColor+'"><div class="penalty-booking-person">'+avatar+'<strong>'+esc(r.name)+'</strong><span>'+(r.delta>0?'+':'')+money(r.delta)+' · '+esc(r.categories.join(', '))+'</span></div><div class="penalty-booking-columns">'+r.columns.map(c=>'<div class="'+(c.before!==c.value?'is-changed':'')+'"><small>'+esc(c.label)+'</small><b data-booking-from="'+c.before+'" data-booking-to="'+c.value+'" data-booking-count="'+!!c.count+'">'+esc(c.count?c.before:money(c.before))+'</b></div>').join('')+'</div></article>';
-  }).join('')+(rows.length>6?'<p>Weitere '+(rows.length-6)+' Spieler gebucht · Gesamt '+money(rows.reduce((n,r)=>n+r.delta,0))+'</p>':'');
+  }).join('')+(rows.length>visible.length?'<p>Weitere '+(rows.length-visible.length)+' Spieler gebucht · Gesamt '+money(rows.reduce((n,r)=>n+r.delta,0))+'</p>':'');};
+  render();
+  // Keep complete rows visible on shorter tablets; the remaining recipients
+  // stay pending and appear in the next non-blocking group.
+  while(visible.length>1&&host.clientHeight>0&&host.scrollHeight>host.clientHeight+1){visible.pop();render();}
   const started=performance.now(),reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   const tick=now=>{const t=reduce?1:Math.min(1,(now-started)/850),ease=1-Math.pow(1-t,3);for(const el of host.querySelectorAll('[data-booking-to]')){const n=Number(el.dataset.bookingFrom)+(Number(el.dataset.bookingTo)-Number(el.dataset.bookingFrom))*ease;el.textContent=el.dataset.bookingCount==='true'?String(Math.round(n)):money(Math.round(n));}if(t<1)frame=requestAnimationFrame(tick);};
   frame=requestAnimationFrame(tick);timer=setTimeout(()=>{host?.remove();for(const r of visible)pending.delete(r.name);if(pending.size)show();},2700);

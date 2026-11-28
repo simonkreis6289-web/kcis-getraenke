@@ -120,6 +120,15 @@ test('booking toasts animate the actual full row, group recipients, deduplicate 
  const free=copy(refund);free.syncOperation='sync_free';free.persons[0].freeStrafen.push({id:'manual',amount:2,reason:'Manuell'});free.persons[0].strafTotal=2;const diff=t.KCPenaltyBookingToasts.diff(refund,free);assert.equal(diff[0].columns.find(c=>c.key==='free').value,200);
  assert.equal(t.KCPenaltyBookingToasts.diff(after,{...refund,currentEveningStartedAt:'new'}).length,0);
 });
+test('booking toast groups fit the available tablet height and retain every undisplayed recipient',()=>{
+ const {document}=parseHTML('<html><body></body></html>'),create=document.createElement.bind(document),timers=new Map();let n=0;
+ document.createElement=(...args)=>{const el=create(...args);Object.defineProperties(el,{clientHeight:{get:()=>468},scrollHeight:{get:()=>el.querySelectorAll('article').length*100+(el.querySelector('p')?28:0)}});return el;};
+ const t={window:null,document,Intl,console,performance:{now:()=>0},setTimeout:fn=>{timers.set(++n,fn);return n;},clearTimeout:id=>timers.delete(id),requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{}};t.window=t;vm.createContext(t);vm.runInContext(read('js/penalty-booking-toasts.js'),t);
+ const before={currentEveningStartedAt:day,STRAFEN:catalog,strafPrices:{n:1},persons:Array.from({length:12},(_,i)=>({name:'P'+i,strafen:{n:0},strafTotal:0}))},after=copy(before);after.syncOperation='tablet-height';after.persons.forEach(p=>{p.strafen.n=1;p.strafTotal=1;});
+ t.KCPenaltyBookingToasts.committed(before,after);const shown=[];
+ while(timers.size){const host=document.getElementById('penalty-booking-toasts');assert(host.scrollHeight<=host.clientHeight);shown.push(...[...host.querySelectorAll('article strong')].map(el=>el.textContent));const fn=timers.values().next().value;timers.clear();fn();}
+ assert.deepEqual(shown,before.persons.map(p=>p.name));assert(!document.getElementById('penalty-booking-toasts'));
+});
 test('app-only booking toasts and both TV entry pages retain navigation, rotation and light design without Hauptapp button',()=>{
  const app=read('getraenke-abrechnung.html');assert(app.includes('js/penalty-booking-toasts.js'));
  for(const file of ['dashboard.html','dashboard-compat.html']){const html=read(file),{document}=parseHTML(html);assert(![...document.querySelectorAll('a,button')].some(el=>el.textContent.trim()==='Hauptapp'));assert(document.getElementById('fullscreen-btn'));assert(document.getElementById('game-select'));assert(!html.includes('js/penalty-booking-toasts.js'));assert(html.includes('css/dashboard-light.css'));}
