@@ -114,12 +114,12 @@ test('simultaneous goals from both leagues remain separate, animate independentl
  assert(!boxes[1].isConnected);
 });
 
-test('main app link with the club crest appears among the footer buttons on both dashboards',()=>{
+test('both dashboards omit the main app link and retain their footer controls',()=>{
  for(const file of ['dashboard.html','dashboard-compat.html']){
   const {document}=parseHTML(read(file));
-  const link=document.querySelector('.dashboard-footer .header-actions a.dashboard-main-app');
-  assert.equal(link.getAttribute('href'),'getraenke-abrechnung.html');
-  assert.equal(link.getAttribute('aria-label'),'Zurück zur Hauptapp');
-  assert.equal(link.querySelector('img').getAttribute('src'),'clubbilder/invaliden-schwadron.jpg');
+  const footer=document.querySelector('.dashboard-footer .header-actions');
+  assert(footer);
+  assert.equal(document.querySelector('a[href="getraenke-abrechnung.html"]'),null);
+  for(const id of ['dashboard-sound-toggle','tv-link-check','fullscreen-btn'])assert(footer.querySelector('#'+id));
  }
 });
