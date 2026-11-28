@@ -10,7 +10,7 @@ test('Tiberius books exact and overrun targets, special throws and advances one 
   getSoloNames:()=>people.map(p=>p.name),getActivePlayersForSoloGame:()=>people,ensureTiberiusState(){},getGosseStrafeKey:()=> 'gosse',getKranzStrafeKey:()=> 'special',
   addPenaltyStatsEntry:(...args)=>stats.push(args),renderAll(){},persistState(){},showToast(){},getFirstLoserStrafeKey:()=> 'loser',
   changeMultipleSyncedPersonCounters:async changes=>{writes.push(plain(changes));for(const x of changes){const p=people.find(v=>v.name===x.personName);p.strafen[x.key]+=x.delta;}return true;}};
- c.window=c;vm.createContext(c);vm.runInContext(read('js/games/tiberius.js'),c);
+ c.window=c;vm.createContext(c);vm.runInContext(read('js/evening-counters.js'),c);c.getPenaltyKeyByType=()=> 'special';vm.runInContext(read('js/games/tiberius.js'),c);
  await c.handleTiberiusThrow(9);
  assert.equal(c.tiberiusState.score,9);assert.equal(c.tiberiusState.currentPlayerIndex,1);assert.equal(c.tiberiusState.pendingHit,null);
  assert.deepEqual(plain(c.tiberiusState.penalties[0].payers),['Simon','Nico']);
@@ -33,7 +33,7 @@ test('Tiberius blocks booking when cloud sync is unavailable, without mutating s
  const people=[{name:'Peter',present:true,strafen:{gosse:0}}],messages=[];
  const c={window:{},document,Date,console,persons:people,tiberiusState:{active:true,score:0,playerOrder:['Peter'],targets:[10],penalties:{},throws:[],undoStack:[]},tiberiusSettings:{},penaltyStatsLog:[],getSoloNames:()=>['Peter'],getActivePlayersForSoloGame:()=>people,ensureTiberiusState(){},getGosseStrafeKey:()=> 'gosse',getKranzStrafeKey:()=> 'special',
  renderAll(){},persistState(){},showToast:m=>messages.push(m),KCSharedSync:{ready:false},changeMultipleSyncedPersonCounters:async()=>{throw Error('Must not be called');}};
- c.window=c;vm.createContext(c);vm.runInContext(read('js/games/tiberius.js'),c);
+ c.window=c;vm.createContext(c);vm.runInContext(read('js/evening-counters.js'),c);c.getPenaltyKeyByType=()=> 'special';vm.runInContext(read('js/games/tiberius.js'),c);
  await c.handleTiberiusThrow(0);
  assert.equal(c.tiberiusState.score,0);assert.equal(c.tiberiusState.throws.length,0);assert.match(messages.join(' '),/Firebase/);
 });

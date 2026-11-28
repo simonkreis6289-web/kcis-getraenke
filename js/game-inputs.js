@@ -22,17 +22,19 @@ async function gameInputThrow(key,pins,gosse=false){
 }
 function dispatchGameInputThrow(key,pins,gosse=false){
  const s=gameSetupState(key);
- if(key==='lotterie'){const target=gameInputTarget();if(!target)return;lotterieEdit={person:target.name,colIndex:target.col};return confirmLotterieThrow(pins);}
- if(key==='tiberius')return handleTiberiusThrow(pins);
+ if(key==='lotterie'){const target=gameInputTarget();if(!target)return;lotterieEdit={person:target.name,colIndex:target.col};return confirmLotterieThrow(pins,null,pins===0&&!gosse?'miss':'');}
+ if(key==='tiberius')return handleTiberiusThrow(pins===0&&!gosse?'durchgeworfen':pins);
  if(key==='haushoch'||key==='haustief'){const mode=key==='haushoch'?'hoch':'tief',name=s.playerOrder[s.currentPlayerIndex],free=(s.rows[name]||[]).map((v,i)=>v?null:i).filter(v=>v!==null),place=free.includes(gameInputPlaces[mode])?gameInputPlaces[mode]:free[0];return hausThrow(mode,pins,gosse,place);}
  const team=gameInputCurrentTeam(key);
  if(key==='tannenbaum'){
   tannenbaumThrowTeam=team;
+  if(pins===0&&!gosse)return openTannenbaumPenaltyPlayerModal('durchgeworfen',team,0);
   if(gosse||pins===9||pins===12)return openTannenbaumPenaltyPlayerModal(gosse?'gosse':pins===9?'9er':'kranz',team,pins===9?9:null);
   return handleTannenbaumThrow(pins);
  }
  if(key==='darts'){
   dartsThrowTeam=team;
+  if(pins===0&&!gosse)return openDartsPenaltyPlayerModal('durchgeworfen',team,0);
   if(gosse||pins===9||pins===12)return openDartsPenaltyPlayerModal(gosse?'gosse':pins===9?'9er':'kranz',team,gosse?0:pins===9?s.valueMap[9]??9:s.valueMap.kranz??50);
   return handleDartsThrow(String(pins));
  }
@@ -54,28 +56,28 @@ function legacyGameInput(key){
  }
  numbers=gameInputNumbers((pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',12,window.KCKranzUI?KCKranzUI.label(key,s):null);
  if(key==='haustief'){
-  const action=(pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',nineScore=hausThrowValue('tief',{value:9,isGosse:false});
+  const action=(pins,gosse)=>'gameInputThrow(\''+key+'\','+pins+','+gosse+')',nineScore=hausThrowValue('tief',{value:9,isGosse:false,physicalThrow:{kind:'9er',pins:9}});
   numbers=Array.from({length:8},(_,i)=>gameInputButton(String(i+1),action(i+1,false),i+1)).join('')+gameInputButton('Neuner ('+nineScore+' im Spiel)',action(9,false),9).replace('<button ','<button data-throw-label="Neuner" data-game-score="'+nineScore+'" ')+gameInputButton('Gosse (9 im Spiel)',action(0,true)).replace('<button ','<button data-throw-label="Gosse" data-game-score="9" ')+gameInputButton(window.KCKranzUI?KCKranzUI.label(key,s):'Kranz',action(12,false));
  }
  if(key==='darts')numbers+=gameInputButton('Durchgeworfen',"dartsThrowTeam=gameInputCurrentTeam('darts');openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0)");
  if(key==='tiberius')numbers+=gameInputButton('Durchgeworfen',"handleTiberiusThrow('durchgeworfen')");
  return '<div class="gi-turn"><span class="gi-turn-label">Am Wurf</span><strong>'+context+'</strong>'+(['tannenbaum','darts'].includes(key)?'<small>Teamwechsel automatisch nach jedem Wurf</small>':'')+'</div>'+options+'<div class="gi-source-pinpad">'+numbers+'</div>';
 }
-function buildGameThrowKeypad(buttons){
+function buildGameThrowKeypad(buttons,zeroAction=null){
  const pad=document.createElement('div'),numbers=document.createElement('div'),specials=document.createElement('div'),extras=document.createElement('div');pad.className='game-pinpad';numbers.className='game-pinpad-numbers';specials.className='game-pinpad-specials';extras.className='game-pinpad-extras';const digits=new Map(),kinds=new Map();let miss=null;
  for(const button of buttons){const text=button.textContent.trim(),lower=text.toLocaleLowerCase('de'),match=(button.firstChild?.nodeType===3?button.firstChild.textContent.trim():text).match(/^(\d+)(?:er)?(?:\s|\/|$)/),pin=button.dataset.pin!==undefined?Number(button.dataset.pin):match?Number(match[1]):NaN;button.type='button';button.classList.add('gi-throw');
-  if(/gosse|^g$/.test(lower)){kinds.set('gosse',button);continue;}if(/kranz/.test(lower)){kinds.set('kranz',button);continue;}if(/vorbei|fehlwurf/.test(lower)){miss=button;continue;}
+  if(/gosse|^g$/.test(lower)){kinds.set('gosse',button);continue;}if(/kranz/.test(lower)){kinds.set('kranz',button);continue;}if(/vorbei|fehlwurf|durchgeworfen/.test(lower)){miss=button;continue;}
   if(Number.isInteger(pin)&&pin>=0&&pin<=9){digits.set(pin,button);continue;}extras.append(button);
  }
- if(!digits.has(0)){const source=miss||kinds.get('gosse');if(source){const zero=miss||source.cloneNode(true);if(!miss)zero.onclick=source.onclick;zero.removeAttribute('id');digits.set(0,zero);}}
- for(const n of [1,2,3,4,5,6,7,8,9,0]){let button=digits.get(n);if(!button){button=document.createElement('button');button.type='button';button.disabled=true;button.className='gi-throw';}button.dataset.pin=String(n);button.classList.add('gi-throw');button.setAttribute('aria-label',button.dataset.throwLabel?button.dataset.throwLabel+' · '+button.dataset.gameScore+' im Spiel':n+' Holz');button.innerHTML='<span class="game-pin-circle" aria-hidden="true">'+giEscape(button.dataset.gameScore??n)+'</span><span class="game-pin-caption">'+giEscape(button.dataset.throwLabel||'Holz')+'</span>';numbers.append(button);}
+ if(!digits.has(0)){if(miss)digits.set(0,miss);else if(zeroAction){const zero=document.createElement('button');zero.type='button';zero.className='gi-throw';zero.onclick=zeroAction;digits.set(0,zero);}}
+ for(const n of [1,2,3,4,5,6,7,8,9,0]){let button=digits.get(n);if(!button){button=document.createElement('button');button.type='button';button.disabled=true;button.className='gi-throw';}button.dataset.pin=String(n);button.classList.add('gi-throw');button.setAttribute('aria-label',button.dataset.throwLabel?button.dataset.throwLabel+' · '+button.dataset.gameScore+' im Spiel':n+' Holz');button.innerHTML='<span class="game-pin-circle" aria-hidden="true">'+giEscape(button.dataset.gameScore??n)+'</span><span class="game-pin-caption">'+giEscape(button.dataset.throwLabel||(n===0?'Durchgeworfen':'Holz'))+'</span>';numbers.append(button);}
  for(const kind of ['gosse','kranz']){let button=kinds.get(kind);if(!button){button=document.createElement('button');button.type='button';button.className='gi-throw';button.disabled=true;}const text=button.textContent,detail=text.match(/\([^)]*\)|\d+\s*Punkte/);button.dataset.throwKind=kind;button.setAttribute('aria-label',kind==='gosse'?'Gosse':'Kranz');button.innerHTML='<strong>'+(kind==='gosse'?'Gosse':'Kranz')+'</strong>'+(detail?'<small>'+giEscape(detail[0])+'</small>':'');specials.append(button);}
  pad.append(numbers,specials);if(extras.children.length)pad.append(extras);return pad;
 }
 function normalizeGameThrowDialog(modal,selector){
  if(!modal)return;const source=modal.querySelector(selector)||modal.querySelector('[data-phone-pad]');if(!source||source.querySelector(':scope > .game-pinpad'))return;const buttons=[...source.querySelectorAll('button')];if(!buttons.length)return;
  modal.classList.add('game-throw-dialog');const card=modal.querySelector('.modal,.haus-modal-card');if(card){card.classList.add('game-throw-dialog-card');card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}
- source.className='game-throw-dialog-pad';source.removeAttribute('style');source.dataset.phonePad='true';source.replaceChildren(buildGameThrowKeypad(buttons));
+ source.className='game-throw-dialog-pad';source.removeAttribute('style');source.dataset.phonePad='true';const zeros={'lotterie-throw-modal':()=>confirmLotterieThrow(0,null,'miss'),'tiberius-throw-modal':()=>handleTiberiusThrow('durchgeworfen'),'tannenbaum-throw-modal':()=>openTannenbaumPenaltyPlayerModal('durchgeworfen',tannenbaumThrowTeam,0),'darts-throw-modal':()=>openDartsPenaltyPlayerModal('durchgeworfen',dartsThrowTeam,0),'plusminus-edit-modal':()=>confirmPlusminusSlotEdit(0,false)};source.replaceChildren(buildGameThrowKeypad(buttons,zeros[modal.id]));
 }
 function installGameThrowDialogs(){
  const entries={hausOpenThrowModal:['haus-throw-modal','.haus-modal-grid'],openDartsThrowModal:['darts-throw-modal','#darts-number-grid'],openTannenbaumThrowModal:['tannenbaum-throw-modal','#tannenbaum-number-grid'],openLotterieThrowModal:['lotterie-throw-modal','#lotterie-number-grid'],openTiberiusThrowModal:['tiberius-throw-modal','#tiberius-number-grid'],openPlusminusSlotEdit:['plusminus-edit-modal','.pinpad-grid']};
@@ -83,7 +85,7 @@ function installGameThrowDialogs(){
 }
 function normalizeGamePinpad(card){
  const selectors=['.gi-source-pinpad button','.six-pinpad button','.tg-pinpad button','.ind-pinpad button','.game-throw-toolbar .pinpad-btn','.sichern-buttons button[onclick^="sichernThrow("]','.fox-actions button[onclick^="applyFuchsjagdThrow("]'];
- const buttons=[...card.querySelectorAll(selectors.join(','))];if(!buttons.length)return;card.append(buildGameThrowKeypad(buttons));for(const node of card.querySelectorAll('.gi-source-pinpad,.six-pinpad,.tg-pinpad,.ind-pinpad'))if(!node.children.length)node.remove();
+ const buttons=[...card.querySelectorAll(selectors.join(','))];if(!buttons.length)return;const key=card.dataset.gameInput,zero={mensch:()=>applyMenschThrow(0,'miss'),sichern:()=>sichernThrow(0,'miss'),fuchsjagd:()=>applyFuchsjagdThrow(0,'miss'),tannenbaum:()=>openTannenbaumPenaltyPlayerModal('durchgeworfen',gameInputCurrentTeam('tannenbaum'),0),tiberius:()=>handleTiberiusThrow('durchgeworfen')}[key];card.append(buildGameThrowKeypad(buttons,zero));for(const node of card.querySelectorAll('.gi-source-pinpad,.six-pinpad,.tg-pinpad,.ind-pinpad'))if(!node.children.length)node.remove();
 }
 async function cancelCurrentGame(key){
  const s=gameSetupState(key);if(!s?.active||!ACTIVE_CLUB)return;

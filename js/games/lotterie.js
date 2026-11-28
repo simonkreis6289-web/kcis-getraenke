@@ -633,7 +633,7 @@ function closeLotterieThrowModal() {
 }
 
 async function confirmLotterieThrow(
-  value, undo = null
+  value, undo = null, kind = ''
 ) {
   ensureLotterieState();
   const scored=!undo&&value===12&&window.KCKranzUI?await KCKranzUI.select('lotterie'):value;if(!undo&&scored===null)return;
@@ -718,7 +718,7 @@ async function confirmLotterieThrow(
   let penaltyType = null;
 
   if (!undo && value === 0) {
-    penaltyType = 'gosse';
+    penaltyType = kind==='miss'?'durchgeworfen':'gosse';
   } else if (!undo && value === 9) {
     penaltyType = '9er';
   } else if (!undo && value === 12) {
@@ -796,7 +796,7 @@ const clubId =
     ACTIVE_CLUB
   );
 
-if(nextMeta&&!undo)nextMeta.rawValue=value;
+if(!undo){nextMeta ||= {};nextMeta.rawValue=value;nextMeta.physicalThrow=KCThrows.physical(value,kind|| (value===0?'gosse':undefined));}
 value=scored;
 const previousValue =
   lotterieState.throws[
@@ -869,7 +869,7 @@ try {
     if(undo.stat)penaltyStatsLog.unshift(undo.stat);
   }else{
     (lotterieState.throwUndo ||= []).push({personName,colIndex,value:previousValue,meta:previousMeta,stat:previousStat,cursor:Number(lotterieState.manualCursor)||0});
-    if(nextMeta&&typeof addPenaltyStatsEntry==='function'){
+    if(nextMeta?.penaltyType&&typeof addPenaltyStatsEntry==='function'){
       const log=addPenaltyStatsEntry(nextMeta.penaltyType,personName,nextMeta.punishedNames);
       if(log)nextMeta.statId=log.id;
     }

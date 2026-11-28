@@ -64,9 +64,9 @@ test('real plusminus completion books losers, correction moves the rank, undo re
  a.c.openPlusminusSlotEdit('A',2);await a.c.confirmPlusminusSlotEdit(9);assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().persons[0].strafen.loser,1);assert.equal(db.root().persons[1].strafen.loser,0);assert.equal(db.root().persons[1].strafen.nine,1);
  await a.c.undoPlusminusThrow();assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().persons[0].strafen.loser,0);assert.equal(db.root().eveningCounters.throws,9);
 });
-test('already initialized Firebase data receives one recovery without changing its evening or resetting games',async()=>{
+test('initialized historical Firebase data is no longer automatically repaired',async()=>{
  const root=initial();root.syncInitialized=true;root.syncProtocol=1;root.syncRevision=4;root.syncOperation='sync_before';root.hausnummerSettings={tief:{neun:0,kranz:0,gosse:0}};root.haustiefState={active:true,startedAt:evening,rows:{A:[{value:0,isGosse:true},null,null]},playerOrder:['A','B'],currentPlayerIndex:1};
- const db=database({[rootPath]:root}),a=fullApp(db);await a.select();const saved=copy(db.root());assert.equal(saved.hotfix331.schema,1);assert.equal(saved.hausnummerSettings.tief.gosse,9);assert.deepEqual(saved.haustiefState,root.haustiefState);assert.equal(saved.currentEveningStartedAt,root.currentEveningStartedAt);assert.deepEqual(saved.persons.map(p=>p.strafen),root.persons.map(p=>p.strafen));
+ const db=database({[rootPath]:root}),a=fullApp(db);await a.select();const saved=copy(db.root());assert.equal(saved.hotfix331,undefined);assert.equal(saved.hausnummerSettings.tief.gosse,0);assert.deepEqual(saved.haustiefState,root.haustiefState);assert.equal(saved.currentEveningStartedAt,root.currentEveningStartedAt);assert.deepEqual(saved.persons.map(p=>p.strafen),root.persons.map(p=>p.strafen));
  await a.c.firestoreApi.initializeSharedState('club',{},'sync_retry_hotfix');assert.equal(db.root().syncRevision,saved.syncRevision);
 });
 

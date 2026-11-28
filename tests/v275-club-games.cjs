@@ -214,7 +214,7 @@ test('Pfälzerspiel shows all nine balls, shared numbers, hits and round progres
  assert.equal(balls[3].querySelector('.is-hit').textContent,'4');
  assert.equal(balls[3].querySelector('.is-current').textContent,'A');
  assert.match(doc.querySelector('.ind-turn').textContent,/Runde 2 von 3/);
- assert.equal(doc.querySelector('.pfaelzer-current .pfaelzer-marks').children.length,2);
+ assert.equal(doc.querySelector('.pfaelzer-current .pfaelzer-marks'),null);assert.match(doc.querySelector('.pfaelzer-current .pfaelzer-strikes').textContent,/2/);
  f.roll('pins',8);
  const miss=parseHTML(c.renderExtraGameBoard(f.s,{dashboard:true})).document;
  assert.equal(miss.querySelector('.pfaelzer-ball.is-unassigned').textContent,'8');

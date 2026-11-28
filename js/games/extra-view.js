@@ -34,7 +34,7 @@ function pfaelzerTable(s,players,current,money){
  return '<table class="ind-table pfaelzer-table"><thead><tr><th>Kegler</th><th>Eigene Zahl</th><th>Striche</th><th>Betrag</th><th>Würfe</th></tr></thead><tbody'+(globalThis.window?.KCPlayerRows?.group?.(s.gameKey,s)||'')+'>'+
   players.map(name=>{
    const count=s.scores[name],number=s.ownNumbers[name];
-   const marks=count<=10?'<span aria-hidden="true" class="pfaelzer-marks">'+Array.from({length:count},()=>'<i></i>').join('')+'</span>':'';
+   const marks=''; // Anzahl ohne Schrägstriche; Mechanik und Strichzähler bleiben gleich.
    return '<tr'+(globalThis.window?.KCPlayerRows?.row?.(name)||'')+(s.active&&name===current?' class="pfaelzer-current"':'')+'><th scope="row">'+indPokerEscape(name)+'</th><td>'+
     (number?'<span class="pfaelzer-ball">'+number+'</span>':'—')+'</td><td><span class="pfaelzer-strikes">'+
     '<span class="pfaelzer-gain-slot"><span class="pfaelzer-gain" data-pfaelzer-gain="'+count+'" aria-hidden="true" hidden></span></span>'+

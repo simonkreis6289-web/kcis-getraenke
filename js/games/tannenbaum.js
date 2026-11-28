@@ -139,7 +139,8 @@ function openTannenbaumPenaltyPlayerModal(type, team, number = null) {
   const labels = {
     '9er': '🎯 9er geworfen',
     kranz: '👑 Kranz geworfen',
-    gosse: '💀 Gosse geworfen'
+    gosse: '💀 Gosse geworfen',
+    durchgeworfen: '0 · Durchgeworfen'
   };
 
   if (title) {
@@ -328,9 +329,9 @@ refreshTannenbaumPenaltyUI();
 
   tannenbaumState.history.unshift({
     team,
-    number: 'gosse',
+    number: type==='durchgeworfen'?0:'gosse',physicalThrow:KCThrows.physical(0,type),specialType:type,
     action:
-      `${getTannenbaumTeamDisplay(team)}: Gosse durch ${personName}`,
+      `${getTannenbaumTeamDisplay(team)}: ${type==='durchgeworfen'?'Durchgeworfen':'Gosse'} durch ${personName}`,
     type: 'penalty-gosse',statId:booking.statId,
     thrower: personName,
     penaltyKey: booking.penaltyKey,
@@ -874,7 +875,7 @@ function handleTannenbaumThrow(number,personName='',specialType='') {
   const team = tannenbaumThrowTeam;
   if (!team) return;
 
-  if(!personName&&window.KCEveningCounters?.needsThrower?.(window.KCSharedSync?.server||getFirestoreState(),Number(number)))return openTannenbaumPenaltyPlayerModal('milestone',team,Number(number));
+  // No additional player selection for unassigned ordinary team throws.
   const otherTeam = getOtherTeam(team);
   const own = tannenbaumState.teams[team];
   const other = tannenbaumState.teams[otherTeam];
@@ -911,7 +912,7 @@ function handleTannenbaumThrow(number,personName='',specialType='') {
 
     tannenbaumState.history.unshift({
       team,
-      number,
+      number,physicalThrow:KCThrows.physical(number,specialType||undefined),
       ...(personName?{thrower:personName}:{}),
       ...(specialType?{specialType}:{}),
       action,

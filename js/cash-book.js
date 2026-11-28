@@ -50,7 +50,7 @@
       if(!byName.has(key))byName.set(key,{name:name||'Ohne Namen',isGuest,values:columns.map(()=>null),total:0});
       return byName.get(key);
     }
-    roster.filter(p=>!p.isGuest&&!p.isDrinksOnly&&!p.inactive).forEach(p=>rowFor(p,false));
+    roster.filter(p=>(!p.isGuest||p.hasPayment)&&!p.isDrinksOnly&&!p.inactive).forEach(p=>rowFor(p,!!p.isGuest));
     const remainder=columns.map(()=>null);
     columns.forEach((column,index)=>{
       let assigned=0;

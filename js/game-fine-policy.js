@@ -42,8 +42,14 @@
   return {rows,amountCents:rows.reduce((n,r)=>n+r.amountCents,0)};
  }
  function parts(person,state,ledger){const rows=charges(person,state,ledger);return {rows,normal:rows.filter(r=>!r.onTop).reduce((n,r)=>n+r.amountCents,0),top:rows.filter(r=>r.onTop).reduce((n,r)=>n+r.amountCents,0)};}
+ // Values used by the actual penalty table and its booking confirmations.
+ function tableAmounts(person,state){
+  const freeCents=(person.freeStrafen||[]).reduce((sum,x)=>sum+cents(x.amount),0)+legacyMissing(person,state).reduce((sum,x)=>sum+x.amountCents,0)+(state.individualGameLedger||[]).filter(x=>x.eveningStartedAt===state.currentEveningStartedAt&&name(x.personName)===name(person.name)).reduce((sum,x)=>sum+(Number(x.amountCents)||0),0);
+  const treeCents=(person.tannenbaumCharges||[]).reduce((sum,x)=>sum+cents(x.amount),0),b=base(person,state);
+  return {freeCents,extrasCents:treeCents+transfers(person,state).amountCents+(b.otherNormalCents||0)+(b.otherTopCents||0)+(b.kingCents||0)};
+ }
  function counted(person,state){return (state.STRAFEN||[]).reduce((sum,s)=>sum+(Number(person.strafen?.[s.key])||0)*cents(state.strafPrices?.[s.key]),0);}
  function base(person,state){if(person.gameFineBase&&['otherNormalCents','otherTopCents','kingCents'].every(k=>Number.isSafeInteger(person.gameFineBase[k])))return person.gameFineBase;const old=parts(person,state),known=Math.min(counted(person,state)+old.normal,cents(state.STRAFEN_LIMIT??30))+old.top;return {otherNormalCents:Math.max(0,cents(person.strafTotal)-known),otherTopCents:0,kingCents:0};}
  function applyTotals(people,state,previous=state){return people.map(person=>{const b=base(person,previous),p=parts(person,state),transfer=transfers(person,state).amountCents,normal=counted(person,state)+b.otherNormalCents+p.normal-transfer,top=b.otherTopCents+p.top+transfer,total=Math.min(normal,cents(state.STRAFEN_LIMIT??30))+top+b.kingCents,ledger=(state.individualGameLedger||[]).filter(x=>x.eveningStartedAt===state.currentEveningStartedAt&&name(x.personName)===name(person.name)).reduce((n,x)=>n+(Number(x.amountCents)||0),0);return {...person,gameFineBase:b,individualChargeCents:ledger,strafTotal:Math.round(total)/100};});}
- window.KCGameFinePolicy=Object.freeze({titles,icons,enabled,key,onTop,legacyMissing,charges,counterRows,transfers,parts,counted,base,applyTotals,cents});
+ window.KCGameFinePolicy=Object.freeze({titles,icons,enabled,key,onTop,legacyMissing,charges,counterRows,transfers,parts,tableAmounts,counted,base,applyTotals,cents});
 })();

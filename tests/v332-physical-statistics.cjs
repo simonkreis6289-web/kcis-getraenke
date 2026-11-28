@@ -36,16 +36,16 @@ const src=read('tests/v215-shared-sync.cjs'),factory=src.slice(src.indexOf('func
 const {database,initial,fullApp}=new Function('read','copy','assert','vm','parseHTML','require','evening','rootPath','personPath',factory+';return {database,initial,fullApp};')(read,copy,assert,vm,parseHTML,require,evening,rootPath,personPath);
 test('real low-house dialog stores the physical gutter/nine and undo reverses exactly one throw',async()=>{
  const db=database({[rootPath]:initial()}),a=fullApp(db);await a.select();await a.c.startHausGame('tief');
- a.c.hausOpenThrowModal('tief',0,0);let modal=a.document.getElementById('haus-throw-modal');assert.match(modal.textContent,/Gosse/);assert.match(modal.textContent,/Neuner/);assert.equal(modal.querySelector('[data-throw-label="Neuner"] .game-pin-circle').textContent,'0');
+ a.c.hausOpenThrowModal('tief',0,0);let modal=a.document.getElementById('haus-throw-modal');assert.match(modal.textContent,/Gosse/);assert.match(modal.textContent,/Neuner/);assert.equal(modal.querySelector('[data-throw-label="Neuner"] .game-pin-circle').textContent,'9');
  const gutter=modal.querySelector('.game-pinpad-specials [data-throw-kind="gosse"]');assert(gutter);await gutter.onclick();assert(await a.c.KCSharedSync.waitForUpload());
  assert.equal(db.root().haustiefState.rows.A[0].physicalThrow.kind,'gosse');assert.equal(db.root().eveningCounters.nines,0);assert.equal(db.root().eveningCounters.gutters,1);assert.equal(db.root().eveningCounters.pins,0);
- a.c.hausOpenThrowModal('tief',1,0);modal=a.document.getElementById('haus-throw-modal');await modal.querySelector('[data-throw-label="Neuner"]').onclick();assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().haustiefState.rows.B[0].physicalThrow.kind,'9er');assert.equal(a.c.hausThrowValue('tief',db.root().haustiefState.rows.B[0]),0);assert.equal(db.root().eveningCounters.nines,1);assert.equal(db.root().eveningCounters.pins,9);
+ a.c.hausOpenThrowModal('tief',1,0);modal=a.document.getElementById('haus-throw-modal');await modal.querySelector('[data-throw-label="Neuner"]').onclick();assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().haustiefState.rows.B[0].physicalThrow.kind,'9er');assert.equal(a.c.hausThrowValue('tief',db.root().haustiefState.rows.B[0]),9);assert.equal(db.root().eveningCounters.nines,1);assert.equal(db.root().eveningCounters.pins,9);
  await a.c.undoHausThrow('tief');assert(await a.c.KCSharedSync.waitForUpload());assert.equal(db.root().eveningCounters.nines,0);assert.equal(db.root().eveningCounters.throws,1);
 });
-test('Firebase initialization repairs root and game mirror once without changing penalty counters',async()=>{
+test('Firebase initialization preserves the already closed evening and creates no repair mirror',async()=>{
  const root={...initial(),...fixture(),syncInitialized:true,syncProtocol:1,syncRevision:3,syncOperation:'sync_previous'};root.persons=root.persons.map(p=>({...p,present:true}));
- const db=database({[rootPath]:root}),a=fullApp(db);await a.select();assert.equal(db.root().eveningCounters.pins,9);assert.deepEqual(db.root().persons,root.persons);
- assert.equal(db.data.get('clubs/club/liveGames/haustief').state.rows.A[0].physicalThrow.kind,'gosse');assert.equal(db.root().haustiefState.rows.A[0].gameValue,9);
+ const db=database({[rootPath]:root}),a=fullApp(db);await a.select();assert.equal(db.root().eveningCounters.pins,root.eveningCounters.pins);assert.deepEqual(db.root().persons,root.persons);
+ assert.equal(db.data.get('clubs/club/liveGames/haustief'),undefined);assert.deepEqual(db.root().haustiefState,root.haustiefState);
  const revision=db.root().syncRevision;await a.c.firestoreApi.initializeSharedState('club',{},'sync_332_repeat');assert.equal(db.root().syncRevision,revision);
 });
 

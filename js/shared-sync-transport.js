@@ -57,7 +57,7 @@
       return transact(async tx=>{
         const target=ref(club),snap=await tx.get(target),saved=snap.exists()?snap.data():null;
         if(saved?.syncInitialized===true){
-          const recovered=window.KCHotfixRecovery?.recover(saved,core)||saved;
+          const recovered=window.KCHotfixRecovery?.recover(saved,core,{automatic:true})||saved;
           if(core.equal(saved,recovered))return saved;
           const gameMirrors=await Promise.all(core.legacy.filter(key=>!core.equal(saved[key+'State'],recovered[key+'State'])).map(async key=>{const target=doc(db,'clubs',club,'liveGames',key),snapshot=await tx.get(target);return {key,target,data:snapshot.exists()?snapshot.data():{}};}));
           const statisticsOnly=saved.hotfix331?.schema===1&&recovered.physicalStatsRepair332?.schema===1&&!saved.physicalStatsRepair332;
@@ -98,7 +98,7 @@
           const time=x=>x?.toMillis?.()||0;
           if(!rootGame||time(data.updatedAt)>time(saved?.updatedAt))state[item.key+'State']=core.clean(game);
         }
-        state=window.KCHotfixRecovery?.recover(state,core)||state;
+        state=window.KCHotfixRecovery?.recover(state,core,{automatic:true})||state;
         state=core.totals(state,policy);
         state=stamp({
           ...state,syncInitialized:true

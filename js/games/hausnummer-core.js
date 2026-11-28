@@ -1,7 +1,7 @@
 /* Gemeinsame Regeln für Hohe und Tiefe Hausnummer. */
 const HAUS_DEFAULTS = {
   hoch: { neun: 9, kranz: 12, gosse: 0 },
-  tief: { neun: 0, kranz: 0, gosse: 9 }
+  tief: { neun: 9, kranz: 0, gosse: 9 }
 };
 function hausId(mode) { return mode === 'hoch' ? 'haushoch' : 'haustief'; }
 function hausState(mode) { return mode === 'hoch' ? haushochState : haustiefState; }
@@ -26,8 +26,10 @@ function hausPlayers(mode) {
 function hausThrowValue(mode,throwData) {
   if (!throwData) return null;
   if(Number.isFinite(throwData.gameValue))return throwData.gameValue;
-  if (throwData.isGosse || Number(throwData.value)===0) return mode==='hoch'?0:9;
-  const settings=hausnummerSettings?.[mode]||HAUS_DEFAULTS[mode];
+  if(throwData.physicalThrow?.kind==='durchgeworfen')return 0;
+  if (throwData.isGosse || !throwData.physicalThrow&&Number(throwData.value)===0) return mode==='hoch'?0:9;
+  if(throwData.physicalThrow?.kind==='9er')return 9;
+  const settings=hausnummerSettings?.[mode]||(mode==='tief'?{...HAUS_DEFAULTS.tief,neun:0}:HAUS_DEFAULTS.hoch);
   const key=throwData.isGosse?'gosse':Number(throwData.value)===12?'kranz':Number(throwData.value)===9?'neun':null;
   if(key==='kranz'&&Number.isInteger(throwData.kranzValue))return throwData.kranzValue;
   return key ? Number(settings[key]) : Number(throwData.value);
@@ -42,14 +44,14 @@ function hausDisplay(mode,row) {
 function renderHausSettings() {
   for (const mode of ['hoch','tief']) for(const key of ['neun','kranz','gosse']){
     const el=document.getElementById('haus-'+mode+'-'+key);
-    if(el){el.value=String(key==='gosse'?(mode==='hoch'?0:9):hausnummerSettings?.[mode]?.[key]??HAUS_DEFAULTS[mode][key]);el.readOnly=key==='gosse';}
+    if(el){el.value=String(key==='neun'?9:key==='gosse'?(mode==='hoch'?0:9):hausnummerSettings?.[mode]?.[key]??HAUS_DEFAULTS[mode][key]);el.readOnly=key==='gosse'||key==='neun';}
   }
 }
 function saveHausSettings() {
   for(const mode of ['hoch','tief']) for(const key of ['neun','kranz','gosse']){
     const value=Number(document.getElementById('haus-'+mode+'-'+key)?.value);
     if(!Number.isInteger(value)||value<0||value>12){showToast('Bitte Werte zwischen 0 und 12 verwenden','error');return;}
-    hausnummerSettings[mode][key]=key==='gosse'?(mode==='hoch'?0:9):value;
+    hausnummerSettings[mode][key]=key==='neun'?9:key==='gosse'?(mode==='hoch'?0:9):value;
   }
   persistState();
   renderHausSettings();renderHausGame('hoch');renderHausGame('tief');
@@ -88,7 +90,8 @@ async function hausThrow(mode,pins,isGosse=false,chosenPlace=null) {
   const scored=n===12&&!isGosse&&window.KCKranzUI?await KCKranzUI.select(hausId(mode)):n;if(scored===null)return;
   s.busy=true;
   try {
-    const throwData={value:n,isGosse:!!isGosse,physicalThrow:{kind:isGosse||n===0?'gosse':n===12?'kranz':n===9?'9er':'pins',pins:isGosse||n===0?0:n===12?8:n},...(n===12&&!isGosse&&window.KCKranzUI?{kranzValue:scored}:{})};
+    const throwData={value:n,isGosse:!!isGosse,physicalThrow:KCThrows.physical(n,isGosse?'gosse':undefined),...(n===12&&!isGosse&&window.KCKranzUI?{kranzValue:scored}:{})};
+    throwData.gameValue=isGosse?(mode==='hoch'?0:9):n===9?9:n===12?scored:n;
     if(!(await changeSoloThrowPenalty(name,null,throwData)))return false;
     row[place]=throwData;
     s.undoStack.push({name,place,index:s.currentPlayerIndex});
@@ -198,12 +201,13 @@ function hausOpenThrowModal(mode,playerIndex,place){
   const subtitle=document.createElement('p');subtitle.textContent=name+' · '+['Hunderter','Zehner','Einer'][place];
   const grid=document.createElement('div');grid.className='haus-modal-grid';
   const options=Array.from({length:8},(_,i)=>({label:String(i+1),pins:i+1,gosse:false}));
-  options.push({label:String(hausThrowValue(mode,{value:9,isGosse:false}))+' · Neuner',pins:9,gosse:false},{label:mode==='tief'?'9 · Gosse':'0 · Gosse',pins:0,gosse:true},{label:'👑 Kranz',pins:12,gosse:false});
+  options.push({label:'0 · Durchgeworfen',pins:0,gosse:false});
+  options.push({label:String(hausThrowValue(mode,{value:9,isGosse:false,physicalThrow:{kind:'9er',pins:9}}))+' · Neuner',pins:9,gosse:false},{label:mode==='tief'?'9 · Gosse':'0 · Gosse',pins:0,gosse:true},{label:'👑 Kranz',pins:12,gosse:false});
   subtitle.textContent+=' · Geworfenen Wurf wählen; Spielwert wird automatisch berechnet.';
   for(const opt of options){
     const button=document.createElement('button');button.type='button';
     button.textContent=opt.label;button.className='haus-modal-option';
-    if(mode==='tief'&&(opt.pins===9||opt.gosse)){button.dataset.pin=String(opt.pins);button.dataset.throwLabel=opt.gosse?'Gosse':'Neuner';button.dataset.gameScore=opt.gosse?'9':String(hausThrowValue(mode,{value:9,isGosse:false}));}
+    if(mode==='tief'&&(opt.pins===9||opt.gosse)){button.dataset.pin=String(opt.pins);button.dataset.throwLabel=opt.gosse?'Gosse':'Neuner';button.dataset.gameScore=opt.gosse?'9':String(hausThrowValue(mode,{value:9,isGosse:false,physicalThrow:{kind:'9er',pins:9}}));}
     button.onclick=async()=>{if(button.disabled)return;grid.querySelectorAll('button').forEach(b=>b.disabled=true);
       try{const booked=await hausThrow(mode,opt.pins,opt.gosse,place);if(booked)hausCloseThrowModal();else grid.querySelectorAll('button').forEach(b=>b.disabled=false);}
       catch(err){console.error(err);grid.querySelectorAll('button').forEach(b=>b.disabled=false);}

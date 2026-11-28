@@ -1,0 +1,38 @@
+/* TV surfaces remain light regardless of app theme or individual game skins. */
+html,body{background:#eef2f7;color:#172d48;color-scheme:light}
+#game-body .tv-board{background:#f8fafc;color:#172d48}
+#game-body .tv-table th,#game-body .ind-table th,#game-body .tg-table th{background:#e7eef7;color:#19354f}
+#game-body .tv-table td,#game-body .ind-table td,#game-body .tg-table td{color:#19354f}
+#game-body .dart-card,#game-body .dart-v137-center,#game-body .tv-stat,#game-body .six-team-card{background:#f1f6fc;color:#19354f;border-color:#bdccdf}
+#game-body .dart-score,#game-body .dart-center-total,#game-body .dart-team,#game-body .dart-note,#game-body .dart-start,#game-body .dart-round-team{color:#19354f}
+.pm-sport-board .pm-score-row,.pm-sport-board .pm-score-columns{grid-template-columns:24px minmax(80px,1.7fr) minmax(22px,.75fr) 16px minmax(22px,.75fr) 16px minmax(22px,.75fr) 16px minmax(22px,.75fr) 16px minmax(22px,.75fr) minmax(60px,1.25fr);gap:5px}
+.pm-sport-board .pm-digit{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;color:#19354f;line-height:1;min-width:0}
+.pm-sport-board .pm-digit b{font-size:var(--haus-digit-size,30px);font-weight:900}
+.pm-sport-board .pm-digit small{font-size:clamp(7px,.65vw,11px);font-weight:600;line-height:1.2;margin-top:2px}
+.pm-sport-board .pm-digit.is-gutter{background:#fff0eb;border-color:#cf5d46;color:#8b3222}
+.pm-sport-board .pm-digit.is-next{border:3px solid #2480a6;background:#e3f4fb;box-shadow:0 0 0 2px #fff,inset 0 0 0 1px #2480a6}
+.pm-sign{font-size:clamp(16px,1.4vw,27px);font-weight:900;text-align:center;color:#556b83}
+.pm-sport-board .haus-score-row{border-color:var(--dashboard-player-color,#c2cfdf);background:var(--player-soft,#f1f5fa)}
+.pm-sport-board .haus-score-row.is-current{background:#eaf5fc;border:3px solid #3183ac;box-shadow:0 0 0 2px #cfe9f7}
+.pm-sport-board .haus-score-row.is-winner{background:#fff7dc;border-color:#d0a545}
+.pm-sport-board .pm-total strong{font-size:var(--haus-total-size,30px);font-variant-numeric:tabular-nums}
+.pm-sport-board .haus-player strong{white-space:normal;overflow-wrap:anywhere;text-overflow:clip;line-height:1.05}
+@media(max-width:1100px){.pm-sport-board .pm-score-row,.pm-sport-board .pm-score-columns{gap:3px;grid-template-columns:17px minmax(65px,1.5fr) repeat(4,minmax(20px,.7fr) 12px) minmax(20px,.7fr) minmax(53px,1.2fr)}}
+
+.pm-sport-board .pm-score-row>*{grid-column:auto!important;grid-row:1}
+.pm-sport-board .haus-total small{white-space:normal;overflow-wrap:anywhere;line-height:1.1}
+
+#game-body .extra-clock,#game-body .swinger-turn>header,#game-body .swinger-first-choice,#game-body .swinger-progress span,#game-body .club-lotto-turn header{background:#e8f0f8;color:#19354f}
+#tv-countdown,#tv-announcement{background:#fff8e1;color:#19354f}
+.dashboard .listrow .name,.dashboard .tv-seat .seat-name,#dashboard-panel-personal .kc-personal-name{white-space:nowrap;text-overflow:clip}
+/* A grid's implicit minimum must not push values beyond narrow TV side panels. */
+.panel .contents{grid-template-columns:minmax(0,1fr)}
+.listrow{min-width:0}
+.listrow .value{flex-shrink:0}
+#gutters .listrow .name{flex:1}
+#gutters .gutter-tally{max-width:22%;overflow:hidden;flex-shrink:1}
+
+#gutters .listrow .name{display:flex;align-items:center;gap:2px}
+#gutters .gutter-name{min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.05}
+#gutters .tv-buy-indicators{gap:2px;margin-right:3px;flex:none}
+#gutters .tv-buy-dot{width:var(--gutter-indicator-size,10px);height:var(--gutter-indicator-size,10px);flex-basis:var(--gutter-indicator-size,10px)}

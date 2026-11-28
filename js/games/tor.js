@@ -45,14 +45,14 @@ async function torThrow(kind='pins'){
  if(kind==='pins'&&!hit.length){showToast('Kegel auswählen oder Vorbei/Gosse drücken','error');return;}
  const isGosse=kind==='gosse';const knocked=hit.length;
  s.busy=true;
- const personalPenalty=isGosse||kind==='kranz'||knocked===9;
- const thrower=personalPenalty?await torChoosePenaltyPlayer(team,isGosse?'Gosse':kind==='kranz'?'Kranz':'9er'):'';
+ const personalPenalty=isGosse||kind==='miss'||kind==='kranz'||knocked===9;
+ const thrower=personalPenalty?await torChoosePenaltyPlayer(team,isGosse?'Gosse':kind==='miss'?'Durchgeworfen':kind==='kranz'?'Kranz':'9er'):'';
  if(personalPenalty&&!thrower){s.busy=false;return;}
  try{
    const standing=kind==='kranz'?[]:s.standing.filter(n=>!hit.includes(n));
    const other=torOther(team),goal=!standing.length;
    const wins=goal&&s.scores[team]+1>=5&&s.scores[team]+1-s.scores[other]>=2;
-   const penalty=personalPenalty?getSoloThrowPenalty(thrower,isGosse?0:kind==='kranz'?12:9,isGosse):null;
+   const penalty=personalPenalty?getSoloThrowPenalty(thrower,kind==='miss'||isGosse?0:kind==='kranz'?12:9,isGosse,KCThrows.physical(knocked,kind)):null;
    const loserKey=wins?getFirstLoserStrafeKey():null;
    if((personalPenalty&&!penalty?.key)||(wins&&!loserKey)){showToast('Benötigte Strafenart fehlt','error');return;}
    const personal=penalty?penalty.punished.map(personName=>({personName,key:penalty.key,delta:1})):[];
@@ -62,7 +62,7 @@ async function torThrow(kind='pins'){
    const statId=penalty?addPenaltyStatsEntry(penalty.kind,thrower,penalty.punished)?.id||null:null;
    const before={standing:s.standing.slice(),scores:{...s.scores},teamTurns:{...s.teamTurns}};
    s.standing=standing;s.selected=[];
-   s.history.push({team,thrower,kind,hit,pins:knocked,...(kranzValue!==undefined?{kranzValue}:{}),at:new Date().toISOString(),before,changes,statId});
+   s.history.push({team,thrower,kind,hit,pins:knocked,physicalThrow:KCThrows.physical(knocked,kind),...(kranzValue!==undefined?{kranzValue}:{}),at:new Date().toISOString(),before,changes,statId});
    s.teamTurns[team]=(s.teamTurns[team]||0)+1;
    if(goal)s.scores[team]++;
    if(wins){s.finishPenalties=finish;s.active=false;s.finished=true;s.winner=team;s.message=getGroupLabel(team)+' gewinnt! '+getGroupLabel(other)+': 1. Verlierer +1 pro Spieler';}

@@ -33,7 +33,7 @@ function swingerAppTurn(s,d,disabled){
   '<div class="swinger-booking"><div class="swinger-member-line">'+swingerMembers(team.names,current)+'</div>'+
   '<p><b>'+team.points+'</b> Holz für das Team</p><div class="swinger-throw-count" aria-live="polite"><strong data-swinger-picked>'+d.selected.length+'</strong> ausgewählt</div>'+
   '<div class="ind-actions"><button type="button" data-club-book-pins class="primary-btn" '+(disabled||!d.selected.length?'disabled':'')+' onclick="clubGameBookPins(\'swingerclub\')">Wurf buchen</button>'+
-  '<button type="button" '+disabled+' onclick="indAction(\'swingerclub\',\'throw\',{kind:\'gosse\'})">Gosse</button></div></div></div></div>';
+  '<button type="button" '+disabled+' onclick="indAction(\'swingerclub\',\'throw\',{kind:\'miss\'})">0 · Durchgeworfen</button><button type="button" '+disabled+' onclick="indAction(\'swingerclub\',\'throw\',{kind:\'gosse\'})">Gosse</button><button type="button" '+(disabled||s.standing.length!==9?'disabled':'')+' onclick="indAction(\'swingerclub\',\'throw\',{kind:\'kranz\'})">Kranz (8)</button></div></div></div></div>';
 }
 function swingerAppPairs(s,d,disabled){
  const remaining=s.players.filter(n=>!d.pairs.some(t=>t.names.includes(n)));
@@ -70,7 +70,7 @@ function clubGameControls(key,s,disabled){
   return '<div class="club-game-choices"><strong>Gefallene Kegel antippen</strong>'+
    clubGameRack({selected:d.selected,prices,buttons:true,disabled:!!disabled})+
    '<div class="ind-actions"><button type="button" data-club-book-pins class="primary-btn" '+(disabled||!d.selected.length?'disabled':'')+' onclick="clubGameBookPins(\''+key+'\')">Wurf buchen</button>'+
-   '<button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'gosse\'})">Gosse</button>'+
+   '<button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'miss\'})">0 · Durchgeworfen</button><button type="button" '+disabled+' onclick="indAction(\''+key+'\',\'throw\',{kind:\'gosse\'})">Gosse</button>'+
    (key==='tageskurs'?'<button type="button" '+disabled+' onclick="clubGameBookPins(\'tageskurs\',true)">Alle Neune</button><button type="button" '+disabled+' onclick="indRun(\'tageskurs\',\'throw\',{kind:\'kranz\'})">👑 Kranz</button>':'')+'</div></div>';
  }
  return '';

@@ -1610,7 +1610,7 @@ function renderStrafen() {
 
     const freeDetails=window.KCGameResults?.moneyMarkup(p,manualFree,typeof individualGameLedger==='undefined'?[]:individualGameLedger,strafenHistory,currentEveningStartedAt)||'';
 
-    const freeDisplayTotal = freeNormalTotal + freeOnTopTotal;
+    const freeDisplayTotal = window.KCGameFinePolicy?.tableAmounts?KCGameFinePolicy.tableAmounts(p,{strafenHistory,individualGameLedger,currentEveningStartedAt,gameFineSettings}).freeCents/100:freeNormalTotal + freeOnTopTotal;
     const extraLines = getPersonPenaltyExtraLines(p);
 
 const avatarHtml =
@@ -5900,6 +5900,7 @@ let buyThrowSelectedPersons =
   new Set();
 
 function getPenaltyKeyByType(type) {
+  if(window.KCThrows)return KCThrows.key(STRAFEN,String(type||'').toLowerCase());
   const search = String(type || '').toLowerCase();
 
   return STRAFEN.find(s => {

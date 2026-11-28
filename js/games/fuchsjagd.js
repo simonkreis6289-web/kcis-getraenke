@@ -80,16 +80,17 @@ async function fuchsjagdFinalize(s){
  if(typeof recordCompletedGame==='function')recordCompletedGame('fuchsjagd',s);
  return true;
 }
-async function applyFuchsjagdThrow(pins){
+async function applyFuchsjagdThrow(pins,kind=''){
  ensureFuchsjagdState();const s=fuchsjagdState;if(!s.active||s.busy)return;
  pins=Number(pins);if(!Number.isInteger(pins)||pins<0||pins>12)return;
  const thrower=fuchsjagdCurrentThrower();if(!thrower)return;
  const scored=pins===12&&window.KCKranzUI?await KCKranzUI.select('fuchsjagd'):pins;if(scored===null)return;
  s.busy=true;
  try{
-  const roll={pins,isGosse:pins===0};
+  const roll={pins,isGosse:kind==='miss'?false:pins===0,kind:kind||undefined};
   if(!(await changeSoloThrowPenalty(thrower,null,roll)))return;
   const status=fuchsjagdApplyThrow(s,pins,scored,thrower,new Date().toISOString());
+  s.throws.at(-1).physicalThrow=roll.physicalThrow;
   if(roll.penaltyBooking)s.throws.at(-1).penaltyBooking=roll.penaltyBooking;
   if(status==='complete'&&!(await fuchsjagdFinalize(s))){
    const last=s.throws.pop();fuchsjagdRestore(s,last.before);
@@ -118,7 +119,7 @@ async function undoFuchsjagdThrow(){
  if(!last.before){showToast('Älterer Wurf kann nicht sicher zurückgenommen werden','error');return;}
  s.busy=true;
  try{
-  const previous=last.skipped?null:{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0,penaltyBooking:last.penaltyBooking};
+  const previous=last.skipped?null:{pins:last.rawPins??last.pins,isGosse:(last.rawPins??last.pins)===0,penaltyBooking:last.penaltyBooking,physicalThrow:last.physicalThrow};
   const finish=s.finished?s.finishPenalties||[]:[];
   if(!(await changeSoloThrowPenalty(last.name,previous,null,finish)))return;
   if(s.finished&&s.resultHistoryId)strafenHistory=strafenHistory.filter(entry=>entry.id!==s.resultHistoryId);
@@ -136,7 +137,7 @@ function renderFuchsjagdGame(){
  const ranking=s.results.map(r=>`<li><strong>${escapeFuchs(r.fox)}</strong> · Station ${r.station}/${s.order.length} ${r.escaped?'🏁 durchgelaufen':'🦊 erlegt von '+escapeFuchs(r.caughtBy)}</li>`).join('');
  const progress=s.order.length?`<div class="fox-game-progress"><strong>Fuchs ${s.foxIndex+1} von ${s.order.length}</strong><ol>${ranking}</ol></div>`:'';
  const visible=s.throws.slice(Math.min(s.throws.length,Math.max(0,Number(s.tableStartIndex)||0)));
- const rows=visible.slice().reverse().map((x,i)=>`<tr><td>${visible.length-i}</td><td>${escapeFuchs(x.name)}</td><td>${(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':x.pins===0?'Gosse':x.pins}</td><td class="${x.delta>=0?'fox-plus':'fox-minus'}">${x.delta>0?'+':''}${x.delta}</td><td><strong>${x.score}</strong></td></tr>`).join('');
+ const rows=visible.slice().reverse().map((x,i)=>`<tr><td>${visible.length-i}</td><td>${escapeFuchs(x.name)}</td><td>${(x.rawPins??x.pins)===12?'Kranz ('+x.pins+')':x.physicalThrow?.kind==='durchgeworfen'?'0 · Durchgeworfen':x.pins===0?'Gosse':x.pins}</td><td class="${x.delta>=0?'fox-plus':'fox-minus'}">${x.delta>0?'+':''}${x.delta}</td><td><strong>${x.score}</strong></td></tr>`).join('');
  const actions=s.active?`<div class="fox-actions">${Array.from({length:9},(_,i)=>`<button class="btn" type="button" onclick="applyFuchsjagdThrow(${i+1})">${i+1}</button>`).join('')}<button class="btn fox-special fox-gosse" type="button" onclick="applyFuchsjagdThrow(0)">💀 Gosse</button><button class="btn fox-special" type="button" onclick="applyFuchsjagdThrow(12)">🎳 Kranz</button><button class="secondary-btn fox-undo" type="button" onclick="undoFuchsjagdThrow()" ${s.throws.length?'':'disabled'}>↩ Rückgängig</button></div>`:'';
  el.innerHTML=`<div class="fox-layout"><div class="fox-top"><div class="fox-stat"><small>🦊 Fuchs</small><strong>${escapeFuchs(s.fox||'Noch keiner')}</strong></div><div class="fox-stat fox-score"><small>Aktueller Vorsprung</small><strong>${s.score} Holz</strong></div><div class="fox-stat"><small>Am Wurf</small><strong>${escapeFuchs(turn)}</strong></div></div>${s.active?`<div class="fox-turn">${escapeFuchs(phase)} · ${s.phase==='hunt'?`Jäger ${s.hunterIndex+1} von ${s.hunters.length}`:`${s.hunters.length} Jäger insgesamt`}</div>`:''}${s.result?`<div class="fox-result">🏁 ${escapeFuchs(s.result)}</div>`:''}${actions}${progress}<div class="fox-table-wrap"><table class="fox-table"><thead><tr><th>#</th><th>Werfer</th><th>Holz</th><th>+/−</th><th>Vorsprung</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Noch keine Würfe</td></tr>'}</tbody></table></div></div>`;
 }

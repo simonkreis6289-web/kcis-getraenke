@@ -22,7 +22,7 @@ function dashboard(store){
  const f=context(read('dashboard.html')),api={subscribeToClubState:(club,callback)=>store.subscribe(club,callback),subscribeToSeatingLive:()=>()=>{},subscribeToLiveGameState:()=>()=>{},subscribeToLivePersons:()=>()=>{},loadClubState:async club=>plain(store.root(club))};
  Object.assign(f.c,{localStorage:{getItem:()=>null,setItem(){}},location:{search:''},URLSearchParams,requestAnimationFrame(){},window:{...f.c.window,firestoreApi:api}});
  vm.runInContext(read('js/birthdays.js'),f.c);f.c.KCBirthdays=f.c.window.KCBirthdays;
- vm.runInContext(read('js/player-colors.js'),f.c);
+ vm.runInContext(read('js/player-colors.js'),f.c);vm.runInContext(read('js/games/plusminus-score.js'),f.c);
  const html=read('dashboard.html'),start=html.indexOf('<script type="module">')+22,end=html.indexOf('</script>',start),script=html.slice(start,end).replace("import './js/firebase.js';",'').replace('void bootstrap();','window.dashboardTest={connect,unsubscribe,paint};');
  vm.runInContext(script,f.c);return f;
 }

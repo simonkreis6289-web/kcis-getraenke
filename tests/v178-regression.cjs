@@ -41,8 +41,8 @@ test('kranz scores eight, resets the full image, and books the special fine rath
  let s=started();const result=step(s,'throw',{kind:'kranz'});s=result.state;assert.equal(s.turn.wood,8);assert.equal(s.turn.standing,9);assert.equal(result.effect.added[0].type,'kranz');
  s=step(s,'throw',{kind:'pins',pins:1}).state;assert.equal(s.turn.wood,9);assert.equal(s.turn.standing,8);assert.throws(()=>step(s,'throw',{kind:'kranz'}),/volle Bild/);
 });
-test('miss and gosse both use a throw without knocking pins; only gosse books the thrower',()=>{
- let s=started();const miss=step(s,'throw',{kind:'miss'});assert.equal(miss.effect.changes.length,0);s=miss.state;
+test('miss and gosse both use a throw without knocking pins; through throws book others and gosse books the thrower',()=>{
+ let s=started();const miss=step(s,'throw',{kind:'miss'});assert.equal(miss.effect.changes.length,6);assert(miss.effect.changes.every(x=>x.personName!=='A'&&x.key==='special'));s=miss.state;
  const gutter=step(s,'throw',{kind:'gosse'});assert.equal(gutter.state.turn.standing,9);assert.equal(gutter.state.turn.wood,0);assert.equal(gutter.effect.changes[0].personName,'B');assert.equal(gutter.effect.changes.length,1);
 });
 test('day multipliers are 1 through 6 and a complete six-day race has exactly 48 throws for two teams',()=>{

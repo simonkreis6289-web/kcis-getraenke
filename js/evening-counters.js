@@ -1,3 +1,25 @@
+/* Canonical physical throws. Numeric zero is a through throw; legacy readers
+ * below deliberately retain their old zero interpretation for untyped records. */
+(()=>{
+ function physical(raw,kind){
+  kind=String(kind||'').toLowerCase();
+  if(kind==='miss')kind='durchgeworfen';
+  if(kind==='nine')kind='9er';
+  const n=Number(raw);
+  if(kind==='gosse'||kind==='durchgeworfen')return {kind,pins:0};
+  if(kind==='kranz'||!kind&&n===12)return {kind:'kranz',pins:8};
+  if(kind==='9er'||n===9)return {kind:'9er',pins:9};
+  if(!Number.isInteger(n)||n<0||n>8)throw Error('Ungültiger tatsächlicher Wurf');
+  return {kind:n===0?'durchgeworfen':'pins',pins:n};
+ }
+ function penalty(roll){return ['gosse','9er','kranz','durchgeworfen'].includes(roll.kind)?roll.kind:null;}
+ function key(catalog,type){
+  const match=x=>{const l=String(x.label||'').toLowerCase();return type==='gosse'?/gosse|pudel/.test(l)&&!/könig|koenig/.test(l):type==='9er'?/9er|neuner/.test(l):type==='kranz'?/kranz/.test(l):/durchgeworfen|durchwurf/.test(l);};
+  return catalog.find(match)?.key||(type!=='gosse'?catalog.find(x=>/9er|kranz|durchgeworfen/i.test(x.label))?.key:null)||null;
+ }
+ function stats(roll){return {gutters:+(roll.kind==='gosse'),nines:+(roll.kind==='9er'),wreaths:+(roll.kind==='kranz'),throws:1,pins:roll.pins};}
+ window.KCThrows=Object.freeze({physical,penalty,key,stats});
+})();
 /* Physical bowling statistics, independent of game scores and financial penalties. */
 (()=>{
  const keys=['gutters','nines','wreaths','throws','pins'];
@@ -15,12 +37,12 @@
  function entries(key,s,legacy=false){
   if(!s)return [];
   const prefix=JSON.stringify([key,session(key,s)])+'|',out=[];
-  const push=(id,raw,kind,name)=>out.push([prefix+id,roll(raw,kind),name||'']);
+  const push=(id,raw,kind,name,physical)=>out.push([prefix+id,physical?KCThrows.stats(physical):roll(raw,kind),name||'']);
   const cells=(rows,convert)=>{for(const [name,row] of Object.entries(rows||{}))for(const [i,x] of row.entries())if(x!=null){const [raw,kind]=convert(x,name,i);push(JSON.stringify([name,i]),raw,kind,name);}};
-  const list=(rows,convert)=>{for(const [i,x] of (rows||[]).entries()){const v=convert(x);if(v)push(x.id||String(i),v[0],v[1],x.thrower||x.name);}};
-  if(key==='lotterie')cells(s.throws,(x,name,i)=>{const meta=legacy?null:s.throwMeta?.[name]?.[i];return [meta?.rawValue??x,meta?.penaltyType];});
+  const list=(rows,convert)=>{for(const [i,x] of (rows||[]).entries()){const v=convert(x);if(v)push(x.id||String(i),v[0],v[1],x.thrower||x.name,x.physicalThrow);}};
+  if(key==='lotterie')cells(s.throws,(x,name,i)=>{const meta=legacy?null:s.throwMeta?.[name]?.[i];return [meta?.physicalThrow?.pins??meta?.rawValue??x,meta?.physicalThrow?.kind??meta?.penaltyType];});
   else if(['haushoch','haustief','plusminus'].includes(key))cells(s.rows,x=>x.physicalThrow?[x.physicalThrow.pins,x.physicalThrow.kind]:[x.rawPins??x.value,x.isGosse?'gosse':undefined]);
-  else if(key==='mensch')cells(s.throws,x=>[x.rawPins??x.pins]);
+  else if(key==='mensch')cells(s.throws,x=>[x.physicalThrow?.pins??x.rawPins??x.pins,x.physicalThrow?.kind]);
   else if(key==='tiberius')list(s.throws,x=>[x.rawValue??x.value,x.rawValue==='durchgeworfen'?'durchgeworfen':undefined]);
   else if(key==='fuchsjagd')list(s.throws,x=>!legacy&&x.skipped?null:[x.rawPins??x.pins]);
   else if(key==='sichern')list(s.throwHistory,x=>x.saved?null:[x.rawPins??x.pins]);
@@ -30,7 +52,7 @@
    // Finished rounds contain snapshots of exactly their own throws. Reopening
    // a round moves it back into roundThrows without creating any new rolls.
    const rounds=[...(s.history||[]).slice().reverse().map(x=>x.undoSnapshot?.roundThrows),s.roundThrows];
-   for(const [r,round] of rounds.entries())for(const [team,rows] of Object.entries(round||{}))for(const [i,x] of rows.entries())push(JSON.stringify([r,team,x.createdAt||'',x.order??i]),Number(x.hit),['kranz','gosse','9er','miss'].includes(x.hit)?x.hit:undefined,x.thrower);
+   for(const [r,round] of rounds.entries())for(const [team,rows] of Object.entries(round||{}))for(const [i,x] of rows.entries())push(JSON.stringify([r,team,x.createdAt||'',x.order??i]),Number(x.hit),['kranz','gosse','9er','miss'].includes(x.hit)?x.hit:undefined,x.thrower,x.physicalThrow);
   }else list(s.history,x=>(key==='sechstage'?!!x.kind:x.action==='throw')?[x.pins,x.kind]:null);
   return out;
  }

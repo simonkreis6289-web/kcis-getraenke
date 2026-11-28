@@ -248,7 +248,9 @@
         let confirmed=ctx.confirmedState;
         if(confirmed&&receivedWhileWorking&&Number(receivedWhileWorking.syncRevision||0)>Number(confirmed.syncRevision||0))confirmed=receivedWhileWorking;
         receivedWhileWorking=null;
-        accept(confirmed||await raw.loadClubState(target));
+        const committed=confirmed||await raw.loadClubState(target);
+        window.KCPenaltyBookingToasts?.committed(ctx.base,committed);
+        accept(committed);
         ready=true;
         lastError='';
         try{

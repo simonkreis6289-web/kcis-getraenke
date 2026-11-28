@@ -59,7 +59,8 @@
   root.physicalStatsRepair332={schema:1,eveningStartedAt:evening,gameStartedAt:confirmed[0].startedAt,beforeCounters,afterCounters:root.eveningCounters,changes};
   return root;
  }
- function recover(source,core){
+ function recover(source,core,{automatic=false}={}){
+  if(automatic&&source.currentEveningStartedAt&&Date.parse(source.currentEveningStartedAt)<Date.parse('2026-11-27T23:00:00Z'))return source;
   source=repairPhysical332(source,core);
   if(source.hotfix331?.schema===1)return source;
   const root=clone(source),report={schema:1,restoredMoney:[],statistics:[],review:[]};

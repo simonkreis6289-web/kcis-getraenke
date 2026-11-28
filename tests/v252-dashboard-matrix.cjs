@@ -13,7 +13,7 @@ test('Tiberius scoreboard has three distinct equally wide stat rectangles',()=>{
  const css=html.slice(html.indexOf('#game-body .tv-matrix-board{'),html.indexOf('matrix dashboard layout. */'));
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/\.tv-stat strong\s*\{[^}]*font-size:clamp\(36px,4\.3vw,76px\)/);
- const source=html.slice(html.indexOf('function tiberiusFunnyName('),html.indexOf('function plusminusSlotValue(',html.indexOf('function renderTiberiusBoard(')));
+ const source=html.slice(html.indexOf('function tiberiusFunnyName('),html.indexOf('function plusminusResult(',html.indexOf('function renderTiberiusBoard(')));
  const sandbox={safe:v=>String(v),activeNames:order=>order,fmt:{format:v=>String(v)},gamePenalty:()=>0,makeTable:(heads,rows)=>'<table><thead><tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+String(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'};
  vm.createContext(sandbox);vm.runInContext(source,sandbox);
  const markup=sandbox.renderTiberiusBoard({targets:[10,20,30],playerOrder:['Peter','Simon'],score:7,penalties:[]});
